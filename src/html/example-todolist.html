@@ -15,8 +15,8 @@
 
 	<template id="TodoItem">
 		<div class="TodoItem">
-			<input class="when-not-edited" type="checkbox" out-value=".checked|bool" />
-			<input class="when-edited" type="text" out-value=".label" />
+			<input class="out" when=".edited"  type="checkbox" out-value=".checked|bool" />
+			<input class="out" when=".edited|not" type="text" out-value=".label" />
 		</div>
 	</template>
 
@@ -24,7 +24,7 @@
 
 	<script type="module">
 		import S from "https://cdn.jsdelivr.net/gh/sebastien/select.js@4d3fbfc82966557c6d04e4237905529bbe98740d/src/js/select.js"
-		import {render, reload) from "../js/ui.js"
+		import {render, reload} from "../js/ui.js"
 		render()
 		reload("../js/ui.js");
 
