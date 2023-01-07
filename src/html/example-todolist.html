@@ -3,8 +3,11 @@
 <body>
 	<div id="placeholder" />
 
+		<div class="ui" data-ui="Todo" data-state="[{label:'Buy milk',checked:true}]" ></div>
+
 	<template id="Todo">
 		<div class="Todo">
+			<h3>Simple todo list</h3>
 			<ul>
 				<slot name="items" out-contents=".|TodoItem" />
 			<ul>
@@ -13,20 +16,43 @@
 		</script>
 	</template>
 
+	<!--
 	<template id="TodoItem">
 		<div class="TodoItem">
 			<input class="out" when=".edited"  type="checkbox" out-value=".checked|bool" />
 			<input class="out" when=".edited|not" type="text" out-value=".label" />
 		</div>
 	</template>
-
+	-->
 
 
 	<script type="module">
-		import S from "https://cdn.jsdelivr.net/gh/sebastien/select.js@4d3fbfc82966557c6d04e4237905529bbe98740d/src/js/select.js"
-		import {render, reload} from "../js/ui.js"
-		render()
+		import ui from "../js/ui.js"
+		// -- doc
+		// Utility function to reload the page automatically when the given URL changes.
+		export const reload = (url, period = 2000.0) => {
+		  const state = { lastModified: undefined, stop: false, interval: undefined };
+		  const update = () => {
+			if (state.stop) {
+			  window.clearInterval(state.interval);
+			}
+			fetch(url, { method: "HEAD" }).then((_) => {
+			  const lastModified = _.headers.get("last-modified");
+			  if (state.lastModified && state.lastModified !== lastModified) {
+				state.lastModified = lastModified;
+				console.log("ui.reload: Monitor has changed, reloading", { url });
+				window.location.reload();
+			  } else {
+				state.lastModified = lastModified;
+			  }
+			});
+		  };
+		  state.interval = window.setInterval(update, period);
+		  return state;
+		};
 		reload("../js/ui.js");
+
+		ui()
 
 	</script>
 </body>

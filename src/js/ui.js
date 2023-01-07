@@ -21,6 +21,27 @@ const nodePath = (node, root = undefined) => {
   return path.reverse(), path;
 };
 
+// -- doc
+// Returns the path for the given node.
+const pathNode = (path, root) =>
+  path.reduce((r, v) => (r ? r.childNodes[v] : r), root);
+
+const pathData = (path, data) => {
+  console.log("pathDdata", { path, data });
+  for (let key of path) {
+    switch (key) {
+      case "":
+        break;
+      default:
+        data = data[key];
+    }
+    if (data === undefined) {
+      return undefined;
+    }
+  }
+  return data;
+};
+
 // --
 // ## Effectors
 //
@@ -28,6 +49,10 @@ class Effector {
   constructor(nodePath, dataPath) {
     this.nodePath = nodePath;
     this.dataPath = dataPath;
+  }
+
+  apply(node, value) {
+    onError("Effector.apply: no implementation defined", { node, value });
   }
 }
 
@@ -45,7 +70,7 @@ class AttributeEffector extends Effector {
 
 class WhenEffector extends Effector {
   constructor(nodePath, dataPath, name, extractor = undefined) {
-    super(nodePath, dataPath, template);
+    super(nodePath, dataPath);
     this.name = name;
     this.extractor = extractor ? extractor : bool;
   }
@@ -61,14 +86,13 @@ class WhenEffector extends Effector {
 
 class SlotEffector extends Effector {
   constructor(nodePath, dataPath, name, formatter = undefined) {
-    super(nodePath, dataPath, template);
+    super(nodePath, dataPath);
     this.name = name;
     this.formatter = formatter ? formatter : text;
-    this.template = template;
   }
 
   apply(node, value) {
-    node.setAttribute(this.name, this.formatter(value));
+    console.log("SLOT EFFECTOR", node, value);
   }
 }
 
@@ -87,7 +111,10 @@ export const Formats = { bool, text, not, idem };
 // data and `formatter` is one of the `Format` entries.
 const parseFormat = (text) => {
   const [path, format] = text.split("|");
-  return [path.split("."), Formats[format] || idem];
+  return [
+    path.trim() === "." ? [""] : path.trim().split("."),
+    Formats[format] || idem,
+  ];
 };
 
 // --
@@ -103,6 +130,7 @@ const view = (root, name = undefined) => {
         effectors.push(
           new AttributeEffector(path, dataPath, attr.name.substring(4), format)
         );
+        _.removeAttribute(attr.name);
       }
     }
   });
@@ -110,13 +138,15 @@ const view = (root, name = undefined) => {
   $("*[when]", root).forEach((_) => {
     const [dataPath, extractor] = parseFormat(_.getAttribute("when"));
     effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
+    _.removeAttribute("when");
   });
   // We take care of slots
   $("slot", root).forEach((_) => {
     const [dataPath, tmpl] = parseFormat(_.getAttribute("out-contents"));
     effectors.push(new SlotEffector(nodePath(_, root), dataPath, tmpl));
+    _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
   });
-  console.log("EFF", { effectors });
+  return { root, effectors };
 };
 
 export const template = (node) => {
@@ -124,15 +154,17 @@ export const template = (node) => {
   let script = undefined;
   let views = [];
   const name = node.getAttribute("id");
+
   $(node.content).forEach((_) => {
     switch (_.nodeName) {
       case "STYLE":
       case "SCRIPT":
         break;
       default:
-        views.push(view(_, name));
+        views.push(view(_.cloneNode(true), name));
     }
   });
+  return { views, name, root: node };
 
   //  console.log("TEMPLATE:", node, $(node.content, "> *[]"));
   //  $(".out", node.content).forEach((_) => {
@@ -143,34 +175,62 @@ export const template = (node) => {
   //  });
 };
 
-export const render = () => {
+const onError = (message, context) => {
+  console.error(message, context);
+};
+
+export const render = (root, template, data) => {
+  const anchor = document.createComment(root.outerHTML);
+  root.parentElement.replaceChild(anchor, root);
+
+  console.log("TEMPLATE", template);
+  const views = [];
+  for (let view of template.views) {
+    const node = view.root.cloneNode(true);
+    anchor.parentElement.insertBefore(node, anchor);
+    views.push({
+      root: node,
+      nodes: view.effectors.map((_) => pathNode(_.nodePath, node)),
+    });
+  }
+
+  for (let i in views) {
+    const view = views[i];
+    const nodes = view.nodes;
+    const effectors = template.views[i].effectors;
+    for (let j in effectors) {
+      const e = effectors[j];
+      e.apply(nodes[j], pathData(e.dataPath, data));
+    }
+  }
+
+  return { anchor, views, data };
+};
+
+const parseState = (text) => eval(text);
+
+export const ui = (state) => {
+  const templates = new Map();
   $("template").forEach((_) => {
-    template(_);
+    const t = template(_);
+    templates.set(_.getAttribute("id") || templates.length, t);
+  });
+
+  // We render the components
+  $(".ui").forEach((node) => {
+    const { ui, state } = node.dataset;
+    const template = templates.get(ui);
+    if (!template) {
+      onError("ui.render: Could not find template '{ui}'", {
+        node,
+        ui,
+      });
+    } else {
+      // We instanciate the template onto the node
+      render(node, template, parseState(state));
+    }
   });
 };
 
-// -- doc
-// Utility function to reload the page automatically when the given URL changes.
-export const reload = (url, period = 2000.0) => {
-  const state = { lastModified: undefined, stop: false, interval: undefined };
-  const update = () => {
-    if (state.stop) {
-      window.clearInterval(state.interval);
-    }
-    fetch(url, { method: "HEAD" }).then((_) => {
-      const lastModified = _.headers.get("last-modified");
-      if (state.lastModified && state.lastModified !== lastModified) {
-        state.lastModified = lastModified;
-        console.log("ui.reload: Monitor has changed, reloading", { url });
-        window.location.reload();
-      } else {
-        state.lastModified = lastModified;
-      }
-    });
-  };
-  state.interval = window.setInterval(update, period);
-  return state;
-};
-
-export default render;
+export default ui;
 // EOF - vim: et ts=2 sw=2
