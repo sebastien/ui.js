@@ -22,12 +22,13 @@ const nodePath = (node, root = undefined) => {
 };
 
 // -- doc
-// Returns the path for the given node.
+// Returns the node at the given `path` for the given `root` node.
 const pathNode = (path, root) =>
   path.reduce((r, v) => (r ? r.childNodes[v] : r), root);
 
+// -- doc
+// Returns the value at the given `path` for the given `data`.
 const pathData = (path, data) => {
-  console.log("pathDdata", { path, data });
   for (let key of path) {
     switch (key) {
       case "":
@@ -60,11 +61,23 @@ class AttributeEffector extends Effector {
   constructor(nodePath, dataPath, name, formatter = undefined) {
     super(nodePath, dataPath);
     this.name = name;
-    this.formatter = formatter ? formatter : text;
+    this.formatter = formatter;
   }
 
   apply(node, value) {
-    node.setAttribute(this.name, this.formatter(value));
+    node.setAttribute(this.name, this.formatter ? this.formatter(value) : text);
+  }
+}
+
+class ValueEffector extends AttributeEffector {
+  apply(node, value) {
+    node[this.name] = this.formatter ? this.formatter(value) : value;
+  }
+}
+
+class StyleEffector extends AttributeEffector {
+  apply(node, value) {
+    Object.assign(node.style, this.formatter ? this.formatter(value) : value);
   }
 }
 
@@ -85,14 +98,26 @@ class WhenEffector extends Effector {
 }
 
 class SlotEffector extends Effector {
-  constructor(nodePath, dataPath, name, formatter = undefined) {
+  constructor(nodePath, dataPath, templateName) {
     super(nodePath, dataPath);
-    this.name = name;
-    this.formatter = formatter ? formatter : text;
+    this.templateName = templateName
+      ? templateName
+      : onError("SlotEffector: templateName is undefined", { templateName });
+    this._template = undefined;
+  }
+
+  get template() {
+    return this._template
+      ? this._template
+      : (this._template = Templates.get(this.templateName));
   }
 
   apply(node, value) {
-    console.log("SLOT EFFECTOR", node, value);
+    for (let k in value) {
+      const root = document.createComment(`slot:${k}`);
+      node.parentElement.insertBefore(root, node);
+      render(root, this.template, value[k]);
+    }
   }
 }
 
@@ -109,30 +134,46 @@ export const Formats = { bool, text, not, idem };
 // Parses the format string defined by `text`, where the format string
 // is like `data|formatter` and data is `.`-separated path to select the
 // data and `formatter` is one of the `Format` entries.
-const parseFormat = (text) => {
+const parseFormat = (text, defaultFormat = idem) => {
   const [path, format] = text.split("|");
   return [
     path.trim() === "." ? [""] : path.trim().split("."),
-    Formats[format] || idem,
+    defaultFormat ? Formats[format] || defaultFormat : format,
   ];
 };
 
 // --
 // ## View
-const view = (root, name = undefined) => {
+const view = (root) => {
   const effectors = [];
   // We take care of attribute effectors
   $(".out", root).forEach((_) => {
     const path = nodePath(_, root);
     for (let attr of _.attributes) {
       if (attr.name.startsWith("out-")) {
-        const [dataPath, format] = parseFormat(attr.value);
+        const name = attr.name.substring(4);
+        const parentName = _.nodeName;
+        const [dataPath, format] = parseFormat(attr.value, false);
         effectors.push(
-          new AttributeEffector(path, dataPath, attr.name.substring(4), format)
+          new (name === "style"
+            ? StyleEffector
+            : ((name === "value" || name === "disabled") &&
+                (parentName === "INPUT" || parentName === "SELECT")) ||
+              (name === "checked" && parentName === "INPUT")
+            ? ValueEffector
+            : AttributeEffector)(
+            path,
+            dataPath,
+            name,
+            typeof format === "string" ? Formats[format] : format
+          )
         );
+        // We remove the attribute
         _.removeAttribute(attr.name);
       }
     }
+    _.classList.remove("out");
+    _.classList.length == 0 && _.removeAttribute("class");
   });
   // We take care of state change effectors
   $("*[when]", root).forEach((_) => {
@@ -142,12 +183,18 @@ const view = (root, name = undefined) => {
   });
   // We take care of slots
   $("slot", root).forEach((_) => {
-    const [dataPath, tmpl] = parseFormat(_.getAttribute("out-contents"));
-    effectors.push(new SlotEffector(nodePath(_, root), dataPath, tmpl));
+    const [dataPath, templateName] = parseFormat(
+      _.getAttribute("out-contents"),
+      false
+    );
+    effectors.push(new SlotEffector(nodePath(_, root), dataPath, templateName));
     _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
+    _.removeAttribute("out-contents");
   });
   return { root, effectors };
 };
+
+const Templates = new Map();
 
 export const template = (node) => {
   let style = undefined;
@@ -182,8 +229,6 @@ const onError = (message, context) => {
 export const render = (root, template, data) => {
   const anchor = document.createComment(root.outerHTML);
   root.parentElement.replaceChild(anchor, root);
-
-  console.log("TEMPLATE", template);
   const views = [];
   for (let view of template.views) {
     const node = view.root.cloneNode(true);
@@ -210,11 +255,13 @@ export const render = (root, template, data) => {
 const parseState = (text) => eval(text);
 
 export const ui = (state) => {
-  const templates = new Map();
-  $("template").forEach((_) => {
+  const templates = Templates;
+
+  for (let _ of document.querySelectorAll("template")) {
     const t = template(_);
     templates.set(_.getAttribute("id") || templates.length, t);
-  });
+  }
+  console.log("TEMPLATES", Templates);
 
   // We render the components
   $(".ui").forEach((node) => {
