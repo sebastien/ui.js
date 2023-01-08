@@ -120,6 +120,74 @@ class SlotEffector extends Effector {
 }
 
 // --
+// ## Pub/Sub
+
+const Sentinel = new Object();
+
+class Topic {
+  constructor(name, parent = null) {
+    this.name = name;
+    this.parent = parent;
+    this.children = new Map();
+    this.value = Sentinel;
+  }
+
+  get(name) {
+    return name instanceof Array
+      ? name.reduce((r, v) => r.get(v), this)
+      : this.children.has(name)
+      ? this.children.get(name)
+      : this.children.set(name, new Topic(name, this)).get(name);
+  }
+
+  pub(data) {
+    this.value = data;
+    for (let handler of this.handlers) {
+      handler(data);
+    }
+  }
+
+  sub(handler, withLast = true) {
+    this.handlers.push(handler);
+    withLast && this.value !== Sentinel && handler(this.value);
+    return this;
+  }
+
+  unsub(handler) {
+    let i = 0;
+    while (i >= 0) {
+      i = this.handlers.indexOf(handler);
+      if (i >= 0) {
+        this.handlers.splice(i, 1);
+      }
+    }
+    return this;
+  }
+}
+
+class PubSub {
+  constructor() {
+    this.topics = new Topic();
+  }
+  get(topic) {
+    return topic
+      ? topic instanceof Topic
+        ? topic
+        : this.topics.get(topic instanceof Array ? topic : topic.split("."))
+      : this.topics;
+  }
+  pub(topic, data) {
+    return this.get(topic).pub(data), this;
+  }
+  sub(topic, handler) {
+    return this.get(topic).sub(handler), this;
+  }
+  unsub(topic, handler) {
+    return this.get(topic).unsub(handler), this;
+  }
+}
+
+// --
 // ## Formats
 const bool = (_) => (_ ? true : false);
 const text = (_) => `${_}`;
@@ -145,9 +213,7 @@ const parseFormat = (text, defaultFormat = idem) => {
 const view = (root) => {
   const effectors = [];
   // We take care of attribute effectors
-  console.log("VIEW", { root });
   for (const _ of root.querySelectorAll(".out")) {
-    console.log("OUT", _);
     const path = nodePath(_, root);
     for (let attr of _.attributes) {
       if (attr.name.startsWith("out-")) {
@@ -250,7 +316,6 @@ export const ui = (state, scope = document) => {
     const t = template(_);
     templates.set(_.getAttribute("id") || templates.length, t);
   }
-  console.log("TEMPLATES", Templates);
 
   // We render the components
   for (const node of scope.querySelectorAll(".ui")) {
@@ -263,7 +328,7 @@ export const ui = (state, scope = document) => {
       });
     } else {
       // We instanciate the template onto the node
-      console.log("RENDER", render(node, template, parseState(state)));
+      render(node, template, parseState(state));
     }
   }
 };
