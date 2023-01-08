@@ -1,5 +1,3 @@
-import $ from "./select.js";
-
 // --
 // ## Paths
 
@@ -147,7 +145,9 @@ const parseFormat = (text, defaultFormat = idem) => {
 const view = (root) => {
   const effectors = [];
   // We take care of attribute effectors
-  $(".out", root).forEach((_) => {
+  console.log("VIEW", { root });
+  for (const _ of root.querySelectorAll(".out")) {
+    console.log("OUT", _);
     const path = nodePath(_, root);
     for (let attr of _.attributes) {
       if (attr.name.startsWith("out-")) {
@@ -174,15 +174,15 @@ const view = (root) => {
     }
     _.classList.remove("out");
     _.classList.length == 0 && _.removeAttribute("class");
-  });
+  }
   // We take care of state change effectors
-  $("*[when]", root).forEach((_) => {
+  for (const _ of root.querySelectorAll("*[when]")) {
     const [dataPath, extractor] = parseFormat(_.getAttribute("when"));
     effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
     _.removeAttribute("when");
-  });
+  }
   // We take care of slots
-  $("slot", root).forEach((_) => {
+  for (const _ of root.querySelectorAll("slot")) {
     const [dataPath, templateName] = parseFormat(
       _.getAttribute("out-contents"),
       false
@@ -190,19 +190,16 @@ const view = (root) => {
     effectors.push(new SlotEffector(nodePath(_, root), dataPath, templateName));
     _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
     _.removeAttribute("out-contents");
-  });
+  }
   return { root, effectors };
 };
 
 const Templates = new Map();
 
-export const template = (node) => {
-  let style = undefined;
-  let script = undefined;
+export const template = (node, name = node.getAttribute("id")) => {
   let views = [];
-  const name = node.getAttribute("id");
-
-  $(node.content).forEach((_) => {
+  // NOTE: We skip text nodes there
+  for (let _ of node.content.children) {
     switch (_.nodeName) {
       case "STYLE":
       case "SCRIPT":
@@ -210,16 +207,8 @@ export const template = (node) => {
       default:
         views.push(view(_.cloneNode(true), name));
     }
-  });
+  }
   return { views, name, root: node };
-
-  //  console.log("TEMPLATE:", node, $(node.content, "> *[]"));
-  //  $(".out", node.content).forEach((_) => {
-  //    for (const attr of _.attributes) {
-  //      if (attr.name.startWith("out-")) {
-  //      }
-  //    }
-  //  });
 };
 
 const onError = (message, context) => {
@@ -254,7 +243,7 @@ export const render = (root, template, data) => {
 
 const parseState = (text) => eval(text);
 
-export const ui = (state) => {
+export const ui = (state, scope = document) => {
   const templates = Templates;
 
   for (let _ of document.querySelectorAll("template")) {
@@ -264,7 +253,7 @@ export const ui = (state) => {
   console.log("TEMPLATES", Templates);
 
   // We render the components
-  $(".ui").forEach((node) => {
+  for (const node of scope.querySelectorAll(".ui")) {
     const { ui, state } = node.dataset;
     const template = templates.get(ui);
     if (!template) {
@@ -274,9 +263,9 @@ export const ui = (state) => {
       });
     } else {
       // We instanciate the template onto the node
-      render(node, template, parseState(state));
+      console.log("RENDER", render(node, template, parseState(state)));
     }
-  });
+  }
 };
 
 export default ui;
