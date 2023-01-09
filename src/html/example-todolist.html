@@ -3,13 +3,13 @@
 <body>
 	<div id="placeholder" />
 
-		<div class="ui" data-ui="Todo" data-state="[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]" ></div>
+		<div class="ui" data-ui="Todo" data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}" ></div>
 
 	<template id="Todo">
 		<div class="Todo">
 			<h3>Simple todo list</h3>
 			<ul>
-				<slot name="items" out-contents=".|TodoItem" />
+				<slot name="items" out-contents=".items|TodoItem" />
 			<ul>
 		</div>
 		<script type="module">

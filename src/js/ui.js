@@ -66,6 +66,12 @@ const pathData = (path, data) => {
   return data;
 };
 
+const composePaths = (...chunks) =>
+  chunks.reduce(
+    (r, v) => (v ? (v[0] === "" ? [...r, ...v.slice(1)] : v) : r),
+    []
+  );
+
 // --
 // ## Effectors
 //
@@ -75,7 +81,7 @@ class Effector {
     this.dataPath = dataPath;
   }
 
-  apply(node, value) {
+  apply(node, value, state = undefined, path = undefined) {
     onError("Effector.apply: no implementation defined", { node, value });
   }
 }
@@ -87,19 +93,19 @@ class AttributeEffector extends Effector {
     this.formatter = formatter;
   }
 
-  apply(node, value) {
+  apply(node, value, state = undefined, path = undefined) {
     node.setAttribute(this.name, this.formatter ? this.formatter(value) : text);
   }
 }
 
 class ValueEffector extends AttributeEffector {
-  apply(node, value) {
+  apply(node, value, state = undefined, path = undefined) {
     node[this.name] = this.formatter ? this.formatter(value) : value;
   }
 }
 
 class StyleEffector extends AttributeEffector {
-  apply(node, value) {
+  apply(node, value, state = undefined, path = undefined) {
     Object.assign(node.style, this.formatter ? this.formatter(value) : value);
   }
 }
@@ -111,7 +117,7 @@ class WhenEffector extends Effector {
     this.extractor = extractor ? extractor : bool;
   }
 
-  apply(node, value) {
+  apply(node, value, state = undefined, path = undefined) {
     if (this.extractor(value)) {
       node.style.display = "none";
     } else {
@@ -121,17 +127,38 @@ class WhenEffector extends Effector {
 }
 
 class EventEffector extends Effector {
+
+  // -- doc
+  // Finds the first ancestor node that has a path.
+  static FindScope(node) {
+    while (node) {
+      let path = node.dataset.path;
+      if (path) {
+        return path;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
   constructor(nodePath, dataPath, event) {
     super(nodePath, dataPath);
     this.event = event;
   }
 
-  apply(node, value, state) {
+  apply(node, value, state = undefined, path = undefined) {
     if (state === undefined) {
+      const scope = EventEffector.FindScope(event.target);
       const handler = (event) => {
-        console.log("EVENT", event);
+        console.log("EVENT", {
+          event,
+          node,
+          value,
+          state,
+          path,
+          scope: ,
+        });
       };
-      console.log("ADDING", this.event, " to", node);
       node.addEventListener(this.event, handler);
       return handler;
     } else if (value === Empty) {
@@ -155,12 +182,11 @@ class SlotEffector extends Effector {
       : (this._template = Templates.get(this.templateName));
   }
 
-  apply(node, value, state, path = null) {
-    console.log("APPLY", path);
+  apply(node, value, state = undefined, path = undefined) {
     for (let k in value) {
       const root = document.createComment(`slot:${k}`);
       node.parentElement.insertBefore(root, node);
-      render(root, this.template, value[k], this.dataPath);
+      render(root, this.template, value[k], path ? [...path, k] : [k]);
     }
   }
 }
@@ -247,7 +273,7 @@ export const Formats = { bool, text, not, idem };
 const parseFormat = (text, defaultFormat = idem) => {
   const [path, format] = text.split("|");
   return [
-    path.trim() === "." ? [""] : path.trim().split("."),
+    path.trim() === "." ? [] : path.trim().split("."),
     defaultFormat ? Formats[format] || defaultFormat : format,
   ];
 };
@@ -327,8 +353,20 @@ const view = (root) => {
   return { root, effectors };
 };
 
+// -- doc
+// Keeps track of all the defined templates, which can then
+// be reused.
 const Templates = new Map();
+class Template {
+  constructor(root, views, name = undefined) {
+    this.name = name;
+    this.root = root;
+    this.views = views;
+  }
+}
 
+// -- doc
+// Parses the given `node` and its descendants as a tempalte definition.
 export const template = (node, name = node.getAttribute("id")) => {
   let views = [];
   // NOTE: We skip text nodes there
@@ -341,11 +379,7 @@ export const template = (node, name = node.getAttribute("id")) => {
         views.push(view(_.cloneNode(true), name));
     }
   }
-  return { views, name, root: node };
-};
-
-const onError = (message, context) => {
-  console.error(message, context);
+  return new Template(node, views, name);
 };
 
 // NOTE: We're storing the topic path of any component in the rendered
@@ -365,7 +399,7 @@ export const render = (root, template, data, path = null) => {
 
   for (let i in views) {
     const view = views[i];
-    path && (view.root.dataset["path"] = path);
+    path && (view.root.dataset["path"] = path ? path.join(".") : ".");
     const nodes = view.nodes;
     const effectors = template.views[i].effectors;
     for (let j in effectors) {
@@ -374,7 +408,7 @@ export const render = (root, template, data, path = null) => {
         nodes[j],
         pathData(e.dataPath, data),
         undefined,
-        path ? [...path, ...e.dataPath] : e.dataPath
+        composePaths(path || [], e.dataPath)
       );
     }
   }
@@ -382,9 +416,9 @@ export const render = (root, template, data, path = null) => {
   return { anchor, views, data };
 };
 
-const parseState = (text) => eval(text);
+const parseState = (text) => eval(`(${text})`);
 
-export const ui = (state, scope = document) => {
+export const ui = (scope = document) => {
   const templates = Templates;
 
   for (let _ of document.querySelectorAll("template")) {
@@ -408,5 +442,11 @@ export const ui = (state, scope = document) => {
   }
 };
 
+// --
+//  ## Utilities
+
+const onError = (message, context) => {
+  console.error(message, context);
+};
 export default ui;
 // EOF - vim: et ts=2 sw=2
