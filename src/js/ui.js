@@ -1,3 +1,28 @@
+/*
+     ___  ___  ___            ___  ________      
+    |\  \|\  \|\  \          |\  \|\   ____\     
+    \ \  \\\  \ \  \         \ \  \ \  \___|_    
+     \ \  \\\  \ \  \      __ \ \  \ \_____  \   
+      \ \  \\\  \ \  \ ___|\  \\_\  \|____|\  \  
+       \ \_______\ \__\\__\ \________\____\_\  \ 
+        \|_______|\|__\|__|\|________|\_________\
+                                     \|_________|
+
+*/
+
+// --
+// # UI.js
+//
+// *UI.js* is a toolkit/library/framework to create user interface for the
+// web using plain JavaScript and HTML. It is designed for the Web and for
+// Browsers, requiring no dedicated tooling or compiler, and to be easily
+// embedded and used in different contexts.
+
+// --
+// ## Symbols
+
+const Empty = new Object();
+
 // --
 // ## Paths
 
@@ -95,6 +120,26 @@ class WhenEffector extends Effector {
   }
 }
 
+class EventEffector extends Effector {
+  constructor(nodePath, dataPath, event) {
+    super(nodePath, dataPath);
+    this.event = event;
+  }
+
+  apply(node, value, state) {
+    if (state === undefined) {
+      const handler = (event) => {
+        console.log("EVENT", event);
+      };
+      console.log("ADDING", this.event, " to", node);
+      node.addEventListener(this.event, handler);
+      return handler;
+    } else if (value === Empty) {
+      node.removeEventListener(this.event, state);
+    }
+  }
+}
+
 class SlotEffector extends Effector {
   constructor(nodePath, dataPath, templateName) {
     super(nodePath, dataPath);
@@ -110,11 +155,12 @@ class SlotEffector extends Effector {
       : (this._template = Templates.get(this.templateName));
   }
 
-  apply(node, value) {
+  apply(node, value, state, path = null) {
+    console.log("APPLY", path);
     for (let k in value) {
       const root = document.createComment(`slot:${k}`);
       node.parentElement.insertBefore(root, node);
-      render(root, this.template, value[k]);
+      render(root, this.template, value[k], this.dataPath);
     }
   }
 }
@@ -122,14 +168,12 @@ class SlotEffector extends Effector {
 // --
 // ## Pub/Sub
 
-const Sentinel = new Object();
-
 class Topic {
   constructor(name, parent = null) {
     this.name = name;
     this.parent = parent;
     this.children = new Map();
-    this.value = Sentinel;
+    this.value = Empty;
   }
 
   get(name) {
@@ -149,7 +193,7 @@ class Topic {
 
   sub(handler, withLast = true) {
     this.handlers.push(handler);
-    withLast && this.value !== Sentinel && handler(this.value);
+    withLast && this.value !== Empty && handler(this.value);
     return this;
   }
 
@@ -210,6 +254,19 @@ const parseFormat = (text, defaultFormat = idem) => {
 
 // --
 // ## View
+
+const queryAttributes = function* (node, prefix) {
+  const attrPrefix = `${prefix}-`;
+  for (const _ of node.querySelectorAll(`.${prefix}`)) {
+    for (let attr of _.attributes) {
+      if (attr.name.startsWith(attrPrefix)) {
+        yield [attr.name.substring(attrPrefix.length), attr.value, attr];
+        _.removeAttribute(attr.name);
+      }
+    }
+  }
+};
+
 const view = (root) => {
   const effectors = [];
   // We take care of attribute effectors
@@ -241,6 +298,16 @@ const view = (root) => {
     _.classList.remove("out");
     _.classList.length == 0 && _.removeAttribute("class");
   }
+
+  for (const _ of queryAttributes(root, "in")) {
+    console.log("ATTR:IN", _);
+  }
+
+  for (const [event, value, _] of queryAttributes(root, "on")) {
+    console.log("EVENT", { event, value });
+    effectors.push(new EventEffector(nodePath(_, root), [], event));
+  }
+
   // We take care of state change effectors
   for (const _ of root.querySelectorAll("*[when]")) {
     const [dataPath, extractor] = parseFormat(_.getAttribute("when"));
@@ -281,7 +348,9 @@ const onError = (message, context) => {
   console.error(message, context);
 };
 
-export const render = (root, template, data) => {
+// NOTE: We're storing the topic path of any component in the rendered
+// component itself. This makes it possible to link a node to the context.
+export const render = (root, template, data, path = null) => {
   const anchor = document.createComment(root.outerHTML);
   root.parentElement.replaceChild(anchor, root);
   const views = [];
@@ -296,11 +365,17 @@ export const render = (root, template, data) => {
 
   for (let i in views) {
     const view = views[i];
+    path && (view.root.dataset["path"] = path);
     const nodes = view.nodes;
     const effectors = template.views[i].effectors;
     for (let j in effectors) {
       const e = effectors[j];
-      e.apply(nodes[j], pathData(e.dataPath, data));
+      e.apply(
+        nodes[j],
+        pathData(e.dataPath, data),
+        undefined,
+        path ? [...path, ...e.dataPath] : e.dataPath
+      );
     }
   }
 

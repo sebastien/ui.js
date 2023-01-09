@@ -13,13 +13,21 @@
 			<ul>
 		</div>
 		<script type="module">
+			import style from "../js/ui.js"
+			// style({
+			// }, "Todo")
 		</script>
 	</template>
 
 	<template id="TodoItem">
 		<div class="TodoItem">
-			<input class="out" when=".edited"  type="checkbox" out-checked=".checked|bool" />
-			<input class="out" when=".edited|not" type="text" out-value=".label" />
+			<input class="out on" when=".edited"  type="checkbox" out-checked=".checked|bool" on-change="XXX" />
+			<input class="out in" when=".edited|not" type="text" out-value=".label" in-value=".value:change" />
+			<!--
+			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
+			<input when:-edited type="text" out:value=".label" on:change=".value!" />
+			-->
+		</div>
 		</div>
 	</template>
 
