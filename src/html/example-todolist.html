@@ -23,6 +23,7 @@
 		<div class="TodoItem">
 			<input class="out on" when=".edited"  type="checkbox" out-checked=".checked|bool" on-change="XXX" />
 			<input class="out in" when=".edited|not" type="text" out-value=".label" in-value=".value:change" />
+			<button class="on" on-click="!Remove">Remove</button>
 			<!--
 			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
 			<input when:-edited type="text" out:value=".label" on:change=".value!" />

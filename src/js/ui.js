@@ -127,37 +127,31 @@ class WhenEffector extends Effector {
 }
 
 class EventEffector extends Effector {
-
   // -- doc
   // Finds the first ancestor node that has a path.
   static FindScope(node) {
     while (node) {
-      let path = node.dataset.path;
-      if (path) {
-        return path;
+      let { template, path } = node.dataset;
+      if (template && path) {
+        return [template, path];
       }
       node = node.parentElement;
     }
     return null;
   }
 
-  constructor(nodePath, dataPath, event) {
+  constructor(nodePath, dataPath, event, triggers) {
     super(nodePath, dataPath);
     this.event = event;
+    this.triggers = triggers;
   }
 
-  apply(node, value, state = undefined, path = undefined) {
+  apply(node, value, state = undefined) {
     if (state === undefined) {
-      const scope = EventEffector.FindScope(event.target);
+      const name = this.triggers;
       const handler = (event) => {
-        console.log("EVENT", {
-          event,
-          node,
-          value,
-          state,
-          path,
-          scope: ,
-        });
+        const [template, scope] = EventEffector.FindScope(event.target);
+        pub([template, event], { name, event, scope });
       };
       node.addEventListener(this.event, handler);
       return handler;
@@ -199,6 +193,7 @@ class Topic {
     this.name = name;
     this.parent = parent;
     this.children = new Map();
+    this.handlers = undefined;
     this.value = Empty;
   }
 
@@ -212,12 +207,22 @@ class Topic {
 
   pub(data) {
     this.value = data;
-    for (let handler of this.handlers) {
-      handler(data);
+    let topic = this;
+    while (topic) {
+      if (topic.handlers) {
+        for (let handler of topic.handlers) {
+          // TODO: We should stop propagation
+          handler(data, topic === this);
+        }
+      }
+      topic = topic.parent;
     }
   }
 
   sub(handler, withLast = true) {
+    if (!this.handlers) {
+      this.handlers = [];
+    }
     this.handlers.push(handler);
     withLast && this.value !== Empty && handler(this.value);
     return this;
@@ -257,6 +262,14 @@ class PubSub {
   }
 }
 
+const bus = new PubSub();
+export const pub = (topic, data) => bus.pub(topic, data);
+export const sub = (topic, handler) => bus.sub(topic, handler);
+export const unsub = (topic, handler) => bus.unsub(topic, handler);
+bus.topics.sub((event, relayed) => {
+  console.log("Bus received", { event, relayed });
+});
+
 // --
 // ## Formats
 const bool = (_) => (_ ? true : false);
@@ -266,15 +279,18 @@ const idem = (_) => _;
 
 export const Formats = { bool, text, not, idem };
 
+const RE_DIRECTIVE = new RegExp(
+  /^(?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+))?$/
+);
 // -- doc
-// Parses the format string defined by `text`, where the format string
-// is like `data|formatter` and data is `.`-separated path to select the
-// data and `formatter` is one of the `Format` entries.
-const parseFormat = (text, defaultFormat = idem) => {
-  const [path, format] = text.split("|");
+// Parses the directive defined by `text`, where the string
+// is like `data.path|formatter!event`.
+const parseDirective = (text, defaultFormat = idem) => {
+  const { path, format, event } = text.match(RE_DIRECTIVE)?.groups || {};
   return [
-    path.trim() === "." ? [] : path.trim().split("."),
+    path ? (path.trim() === "." ? [] : path.trim().split(".")) : undefined,
     defaultFormat ? Formats[format] || defaultFormat : format,
+    event,
   ];
 };
 
@@ -302,7 +318,7 @@ const view = (root) => {
       if (attr.name.startsWith("out-")) {
         const name = attr.name.substring(4);
         const parentName = _.nodeName;
-        const [dataPath, format] = parseFormat(attr.value, false);
+        const [dataPath, format] = parseDirective(attr.value, false);
         effectors.push(
           new (name === "style"
             ? StyleEffector
@@ -329,20 +345,27 @@ const view = (root) => {
     console.log("ATTR:IN", _);
   }
 
-  for (const [event, value, _] of queryAttributes(root, "on")) {
-    console.log("EVENT", { event, value });
-    effectors.push(new EventEffector(nodePath(_, root), [], event));
+  for (const [event, value] of queryAttributes(root, "on")) {
+    const [dataPath, _, effectEvent] = parseDirective(value);
+    effectors.push(
+      new EventEffector(
+        nodePath(_, root),
+        dataPath || ["."],
+        event,
+        effectEvent
+      )
+    );
   }
 
   // We take care of state change effectors
   for (const _ of root.querySelectorAll("*[when]")) {
-    const [dataPath, extractor] = parseFormat(_.getAttribute("when"));
+    const [dataPath, extractor] = parseDirective(_.getAttribute("when"));
     effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
     _.removeAttribute("when");
   }
   // We take care of slots
   for (const _ of root.querySelectorAll("slot")) {
-    const [dataPath, templateName] = parseFormat(
+    const [dataPath, templateName] = parseDirective(
       _.getAttribute("out-contents"),
       false
     );
@@ -400,6 +423,7 @@ export const render = (root, template, data, path = null) => {
   for (let i in views) {
     const view = views[i];
     path && (view.root.dataset["path"] = path ? path.join(".") : ".");
+    template.name && (view.root.dataset["template"] = template.name);
     const nodes = view.nodes;
     const effectors = template.views[i].effectors;
     for (let j in effectors) {
