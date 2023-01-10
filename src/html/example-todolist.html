@@ -13,9 +13,20 @@
 			<ul>
 		</div>
 		<script type="module">
-			import style from "../js/ui.js"
-			// style({
-			// }, "Todo")
+			import {sub} from "../js/ui.js"
+
+
+			// Low Level
+			sub("TodoItem.Remove", (event)=> {
+			})
+
+			// High Level
+			const TodoItem = controller({
+				Remove: (event, data) => {
+					console.log("TODO ITEM REMOVED", event);
+				}
+			})
+			register({TodoItem});
 		</script>
 	</template>
 

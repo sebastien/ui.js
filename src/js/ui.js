@@ -151,7 +151,7 @@ class EventEffector extends Effector {
       const name = this.triggers;
       const handler = (event) => {
         const [template, scope] = EventEffector.FindScope(event.target);
-        pub([template, event], { name, event, scope });
+        pub([template, name], { name, scope, data: event });
       };
       node.addEventListener(this.event, handler);
       return handler;
@@ -195,6 +195,7 @@ class Topic {
     this.children = new Map();
     this.handlers = undefined;
     this.value = Empty;
+    this.path = parent ? [...parent.path, name] : [name];
   }
 
   get(name) {
@@ -212,7 +213,7 @@ class Topic {
       if (topic.handlers) {
         for (let handler of topic.handlers) {
           // TODO: We should stop propagation
-          handler(data, topic === this);
+          handler(data, topic, topic === this);
         }
       }
       topic = topic.parent;
@@ -396,7 +397,9 @@ export const template = (node, name = node.getAttribute("id")) => {
   for (let _ of node.content.children) {
     switch (_.nodeName) {
       case "STYLE":
+        break;
       case "SCRIPT":
+        document.body.appendChild(_);
         break;
       default:
         views.push(view(_.cloneNode(true), name));
