@@ -13,26 +13,26 @@
 			<ul>
 		</div>
 		<script type="module">
-			import {sub} from "../js/ui.js"
+			import {sub, patch} from "../js/ui.js"
 
 
-			// Low Level
-			sub("TodoItem.Remove", (event)=> {
-			})
+			sub("TodoItem.Remove", ({scope,event,data})=> {
+				patch(scope, null)
+			});
 
 			// High Level
-			const TodoItem = controller({
-				Remove: (event, data) => {
-					console.log("TODO ITEM REMOVED", event);
-				}
-			})
-			register({TodoItem});
+			// const TodoItem = controller({
+			// 	Remove: (event, data) => {
+			// 		console.log("TODO ITEM REMOVED", event);
+			// 	}
+			// })
+			// register({TodoItem});
 		</script>
 	</template>
 
 	<template id="TodoItem">
 		<div class="TodoItem">
-			<input class="out on" when=".edited"  type="checkbox" out-checked=".checked|bool" on-change="XXX" />
+			<input class="out on" when=".edited"  type="checkbox" out-checked=".checked|bool" XXXon-change=".checked:not" />
 			<input class="out in" when=".edited|not" type="text" out-value=".label" in-value=".value:change" />
 			<button class="on" on-click="!Remove">Remove</button>
 			<!--

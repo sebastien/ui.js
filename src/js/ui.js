@@ -76,9 +76,14 @@ const composePaths = (...chunks) =>
 // ## Effectors
 //
 class Effector {
+  static Type = "Effector";
   constructor(nodePath, dataPath) {
     this.nodePath = nodePath;
     this.dataPath = dataPath;
+  }
+
+  get type() {
+    return Object.getPrototypeOf(this).Type;
   }
 
   apply(node, value, state = undefined, path = undefined) {
@@ -87,6 +92,7 @@ class Effector {
 }
 
 class AttributeEffector extends Effector {
+  static Type = "AttributeEffector";
   constructor(nodePath, dataPath, name, formatter = undefined) {
     super(nodePath, dataPath);
     this.name = name;
@@ -99,18 +105,21 @@ class AttributeEffector extends Effector {
 }
 
 class ValueEffector extends AttributeEffector {
+  static Type = "ValueEffector";
   apply(node, value, state = undefined, path = undefined) {
     node[this.name] = this.formatter ? this.formatter(value) : value;
   }
 }
 
 class StyleEffector extends AttributeEffector {
+  static Type = "StyleEffector";
   apply(node, value, state = undefined, path = undefined) {
     Object.assign(node.style, this.formatter ? this.formatter(value) : value);
   }
 }
 
 class WhenEffector extends Effector {
+  static Type = "WhenEffector";
   constructor(nodePath, dataPath, name, extractor = undefined) {
     super(nodePath, dataPath);
     this.name = name;
@@ -127,6 +136,7 @@ class WhenEffector extends Effector {
 }
 
 class EventEffector extends Effector {
+  static Type = "EventEffector";
   // -- doc
   // Finds the first ancestor node that has a path.
   static FindScope(node) {
@@ -146,9 +156,11 @@ class EventEffector extends Effector {
     this.triggers = triggers;
   }
 
-  apply(node, value, state = undefined) {
+  apply(node, value, state = undefined, path = undefined) {
     if (state === undefined) {
       const name = this.triggers;
+      const dataPath = composePaths(path, this.dataPath);
+      // TODO: For TodoItem, the path should be .items.0, etc
       const handler = (event) => {
         const [template, scope] = EventEffector.FindScope(event.target);
         pub([template, name], { name, scope, data: event });
@@ -162,6 +174,7 @@ class EventEffector extends Effector {
 }
 
 class SlotEffector extends Effector {
+  static Type = "SlotEffector";
   constructor(nodePath, dataPath, templateName) {
     super(nodePath, dataPath);
     this.templateName = templateName
@@ -267,9 +280,9 @@ const bus = new PubSub();
 export const pub = (topic, data) => bus.pub(topic, data);
 export const sub = (topic, handler) => bus.sub(topic, handler);
 export const unsub = (topic, handler) => bus.unsub(topic, handler);
-bus.topics.sub((event, relayed) => {
-  console.log("Bus received", { event, relayed });
-});
+export const patch = (data, path) => {
+  console.log("Patching", data, "at", path);
+};
 
 // --
 // ## Formats
@@ -349,12 +362,7 @@ const view = (root) => {
   for (const [event, value] of queryAttributes(root, "on")) {
     const [dataPath, _, effectEvent] = parseDirective(value);
     effectors.push(
-      new EventEffector(
-        nodePath(_, root),
-        dataPath || ["."],
-        event,
-        effectEvent
-      )
+      new EventEffector(nodePath(_, root), dataPath || [""], event, effectEvent)
     );
   }
 
@@ -414,6 +422,7 @@ export const render = (root, template, data, path = null) => {
   const anchor = document.createComment(root.outerHTML);
   root.parentElement.replaceChild(anchor, root);
   const views = [];
+  console.log("RENDER", template.name, "at", path);
   for (let view of template.views) {
     const node = view.root.cloneNode(true);
     anchor.parentElement.insertBefore(node, anchor);
@@ -431,11 +440,15 @@ export const render = (root, template, data, path = null) => {
     const effectors = template.views[i].effectors;
     for (let j in effectors) {
       const e = effectors[j];
+      // TODO: For some reason, the EventEffector is not applied with the
+      // proper path, and therefore the state scope is not working.
+      //
+      // TODO: We should probably have a component state tree as well.
       e.apply(
-        nodes[j],
-        pathData(e.dataPath, data),
-        undefined,
-        composePaths(path || [], e.dataPath)
+        nodes[j], // node
+        pathData(e.dataPath, data), // value
+        undefined, // state
+        composePaths(path || [], e.dataPath) // path
       );
     }
   }

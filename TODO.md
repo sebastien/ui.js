@@ -6,7 +6,7 @@
 -   `[X]` Have event handlers find the current state based on the
     ancestors, and use that to dispatch information.
 
--   `[ ]` Implement component lifecycle (create, udpate, delete)
+-   `[ ]` Implement component lifecycle (create, update, delete)
 
 ## Design
 
