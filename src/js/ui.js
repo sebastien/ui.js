@@ -75,6 +75,28 @@ const composePaths = (...chunks) =>
 // --
 // ## Effectors
 //
+//
+
+class EffectorState {
+  constructor(effector, node, value, path) {
+    this.effector = effector;
+    this.node = node;
+    this.value = value;
+    this.path = path;
+    this.updater = this.update.bind(this);
+    sub(this.path, this.updater);
+  }
+
+  update({ value }, topic, isDirect) {
+    console.log("EffectorState.update", { value, topic, isDirect });
+    return this.effector.apply(this.node, { value }, this, undefined);
+  }
+
+  dispose() {
+    unsub(this.path, this.updater);
+  }
+}
+
 class Effector {
   static Type = "Effector";
   constructor(nodePath, dataPath) {
@@ -173,6 +195,14 @@ class EventEffector extends Effector {
   }
 }
 
+class SlotEffectorState extends EffectorState {
+  constructor(effector, node, value, path) {
+    super(effector, node, value, path);
+    this.value = undefined;
+    this.items = new Map();
+  }
+}
+
 class SlotEffector extends Effector {
   static Type = "SlotEffector";
   constructor(nodePath, dataPath, templateName) {
@@ -190,19 +220,41 @@ class SlotEffector extends Effector {
   }
 
   apply(node, value, state = undefined, path = undefined) {
+    state = state ? state : new SlotEffectorState(this, node, value, path);
+    const items = state.items;
     if (value instanceof Array) {
       for (let k = 0; k < value.length; k++) {
         const root = document.createComment(`slot:${k}`);
         node.parentElement.insertBefore(root, node);
-        render(root, this.template, value[k], path ? [...path, k] : [k]);
+        items.set(
+          k,
+          render(
+            root,
+            this.template,
+            value[k],
+            path ? [...path, k] : [k],
+            items.get(k)
+          )
+        );
       }
     } else {
       for (let k in value) {
         const root = document.createComment(`slot:${k}`);
         node.parentElement.insertBefore(root, node);
-        render(root, this.template, value[k], path ? [...path, k] : [k]);
+        items.set(
+          k,
+          render(
+            root,
+            this.template,
+            value[k],
+            path ? [...path, k] : [k],
+            items.get(k)
+          )
+        );
       }
     }
+    state.value = value;
+    return state;
   }
 }
 
@@ -351,13 +403,16 @@ class StateTree {
     } else {
       const scope = this.scope(p);
       const key = p[p.length - 1];
+      const previous = scope[key];
       if (scope[key] !== value) {
+        // scope[key] may be undefined
         if (value === null) {
           if (scope instanceof Array) {
             scope.splice(key, 1);
           } else {
-            scope.delete(key);
+            delete scope[key];
           }
+          pub(p.slice(0, -1), { event: "Remove", previous });
         } else {
           if (scope instanceof Array) {
             while (scope.length < key) {
@@ -367,6 +422,7 @@ class StateTree {
           } else {
             scope[key] = value;
           }
+          pub(p.slice(0, -1), { event: "Update", previous, value });
         }
       }
     }
@@ -376,7 +432,6 @@ class StateTree {
 const state = new StateTree();
 
 export const patch = (path, data) => {
-  console.log("Patching", data, "at", path);
   state.patch(path, data);
 };
 
@@ -530,20 +585,37 @@ export const template = (node, name = node.getAttribute("id")) => {
   return new Template(node, views, name);
 };
 
+class RenderState {
+  constructor(template, anchor, views) {
+    this.template = template;
+    this.anchor = anchor;
+    this.views = views;
+    this.viewState = views.map((_) => undefined);
+  }
+}
 // NOTE: We're storing the topic path of any component in the rendered
 // component itself. This makes it possible to link a node to the context.
-export const render = (root, template, data, path = null) => {
-  const anchor = document.createComment(root.outerHTML);
-  patch(path, data);
-  root.parentElement.replaceChild(anchor, root);
-  const views = [];
-  for (let view of template.views) {
-    const node = view.root.cloneNode(true);
-    anchor.parentElement.insertBefore(node, anchor);
-    views.push({
-      root: node,
-      nodes: view.effectors.map((_) => pathNode(_.nodePath, node)),
-    });
+export const render = (
+  root,
+  template,
+  data,
+  path = null,
+  state = undefined
+) => {
+  const views = state ? state.views : [];
+  // TODO: We should check template when state is there
+  if (!state) {
+    const anchor = document.createComment(root.outerHTML);
+    root.parentElement.replaceChild(anchor, root);
+    for (let view of template.views) {
+      const node = view.root.cloneNode(true);
+      anchor.parentElement.insertBefore(node, anchor);
+      views.push({
+        root: node,
+        nodes: view.effectors.map((_) => pathNode(_.nodePath, node)),
+      });
+    }
+    state = new RenderState(template, anchor, views);
   }
 
   for (let i in views) {
@@ -554,20 +626,21 @@ export const render = (root, template, data, path = null) => {
     const effectors = template.views[i].effectors;
     for (let j in effectors) {
       const e = effectors[j];
+      const effectorPath = composePaths(path || [], e.dataPath);
       // TODO: For some reason, the EventEffector is not applied with the
       // proper path, and therefore the state scope is not working.
       //
       // TODO: We should probably have a component state tree as well.
-      e.apply(
+      state.viewState[j] = e.apply(
         nodes[j], // node
         pathData(e.dataPath, data), // value
         undefined, // state
-        composePaths(path || [], e.dataPath) // path
+        effectorPath // path
       );
     }
   }
 
-  return { anchor, views, data };
+  return state;
 };
 
 const parseState = (text) => eval(`(${text})`);
@@ -592,7 +665,7 @@ export const ui = (scope = document) => {
       });
     } else {
       // We instanciate the template onto the node
-      render(node, template, data);
+      const state = render(node, template, data);
     }
   }
 };
@@ -603,5 +676,7 @@ export const ui = (scope = document) => {
 const onError = (message, context) => {
   console.error(message, context);
 };
+
 export default ui;
+
 // EOF - vim: et ts=2 sw=2
