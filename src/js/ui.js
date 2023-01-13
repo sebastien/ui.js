@@ -143,7 +143,7 @@ class EventEffector extends Effector {
     while (node) {
       let { template, path } = node.dataset;
       if (template && path) {
-        return [template, path];
+        return [template, parsePath(path)];
       }
       node = node.parentElement;
     }
@@ -190,10 +190,18 @@ class SlotEffector extends Effector {
   }
 
   apply(node, value, state = undefined, path = undefined) {
-    for (let k in value) {
-      const root = document.createComment(`slot:${k}`);
-      node.parentElement.insertBefore(root, node);
-      render(root, this.template, value[k], path ? [...path, k] : [k]);
+    if (value instanceof Array) {
+      for (let k = 0; k < value.length; k++) {
+        const root = document.createComment(`slot:${k}`);
+        node.parentElement.insertBefore(root, node);
+        render(root, this.template, value[k], path ? [...path, k] : [k]);
+      }
+    } else {
+      for (let k in value) {
+        const root = document.createComment(`slot:${k}`);
+        node.parentElement.insertBefore(root, node);
+        render(root, this.template, value[k], path ? [...path, k] : [k]);
+      }
     }
   }
 }
@@ -280,8 +288,96 @@ const bus = new PubSub();
 export const pub = (topic, data) => bus.pub(topic, data);
 export const sub = (topic, handler) => bus.sub(topic, handler);
 export const unsub = (topic, handler) => bus.unsub(topic, handler);
-export const patch = (data, path) => {
+
+// --
+// ## State Tree
+
+class StateTree {
+  constructor() {
+    this.state = {};
+  }
+
+  // -- doc
+  // Retrieves the value at the given `path`
+  get(path) {
+    let res = this.state;
+    for (let k of path instanceof Array ? path : path.split(".")) {
+      if (!res) {
+        return undefined;
+      }
+      res = res[k];
+    }
+    return res;
+  }
+
+  // -- doc
+  // Ensures there's a value at the given `path`, assigning the `defaultValue`
+  // if not existing.
+  ensure(path, defaultValue = undefined, offset = 0) {
+    let scope = this.state;
+    const p = path instanceof Array ? path : path.split(".");
+    let i = 0;
+    const j = p.length - 1 + offset;
+    while (i <= j) {
+      const k = p[i++];
+      if (scope[k] === undefined) {
+        if (i === j && defaultValue !== undefined) {
+          scope = scope[k] = defaultValue;
+        } else if (typeof k === "number") {
+          scope = scope[k] = [];
+        } else {
+          scope = scope[k] = {};
+        }
+      } else {
+        scope = scope[k];
+      }
+    }
+    return scope;
+  }
+
+  // -- doc
+  // Returns the scope (ie. the parent object) at the give path. For instance
+  // if the path is `items.1`, this will return the value at path `items`.
+  scope(path) {
+    return this.ensure(path, undefined, -1);
+  }
+
+  // -- doc
+  // Patches the `value` at the given `path`.
+  patch(path = null, value = undefined) {
+    const p = path instanceof Array ? path : path ? path.split(".") : [];
+    if (p.length === 0) {
+      this.state = value;
+    } else {
+      const scope = this.scope(p);
+      const key = p[p.length - 1];
+      if (scope[key] !== value) {
+        if (value === null) {
+          if (scope instanceof Array) {
+            scope.splice(key, 1);
+          } else {
+            scope.delete(key);
+          }
+        } else {
+          if (scope instanceof Array) {
+            while (scope.length < key) {
+              scope.push(undefined);
+            }
+            scope[key] = value;
+          } else {
+            scope[key] = value;
+          }
+        }
+      }
+    }
+  }
+}
+
+const state = new StateTree();
+
+export const patch = (path, data) => {
   console.log("Patching", data, "at", path);
+  state.patch(path, data);
 };
 
 // --
@@ -296,13 +392,31 @@ export const Formats = { bool, text, not, idem };
 const RE_DIRECTIVE = new RegExp(
   /^(?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+))?$/
 );
+const RE_NUMBER = /^\d+$/;
+
+const parsePath = (path) => {
+  if (path instanceof Array) {
+    return path;
+  } else {
+    const p = path ? (path.trim() === "." ? [] : path.split(".")) : [];
+    for (let i in p) {
+      const k = p[i];
+      if (k.match(RE_NUMBER)) {
+        p[i] = parseInt(k);
+      }
+    }
+    return p;
+  }
+};
+
 // -- doc
 // Parses the directive defined by `text`, where the string
 // is like `data.path|formatter!event`.
 const parseDirective = (text, defaultFormat = idem) => {
   const { path, format, event } = text.match(RE_DIRECTIVE)?.groups || {};
+
   return [
-    path ? (path.trim() === "." ? [] : path.trim().split(".")) : undefined,
+    parsePath(path),
     defaultFormat ? Formats[format] || defaultFormat : format,
     event,
   ];
@@ -420,9 +534,9 @@ export const template = (node, name = node.getAttribute("id")) => {
 // component itself. This makes it possible to link a node to the context.
 export const render = (root, template, data, path = null) => {
   const anchor = document.createComment(root.outerHTML);
+  patch(path, data);
   root.parentElement.replaceChild(anchor, root);
   const views = [];
-  console.log("RENDER", template.name, "at", path);
   for (let view of template.views) {
     const node = view.root.cloneNode(true);
     anchor.parentElement.insertBefore(node, anchor);
@@ -470,6 +584,7 @@ export const ui = (scope = document) => {
   for (const node of scope.querySelectorAll(".ui")) {
     const { ui, state } = node.dataset;
     const template = templates.get(ui);
+    const data = parseState(state);
     if (!template) {
       onError("ui.render: Could not find template '{ui}'", {
         node,
@@ -477,7 +592,7 @@ export const ui = (scope = document) => {
       });
     } else {
       // We instanciate the template onto the node
-      render(node, template, parseState(state));
+      render(node, template, data);
     }
   }
 };

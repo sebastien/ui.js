@@ -17,6 +17,7 @@
 
 
 			sub("TodoItem.Remove", ({scope,event,data})=> {
+				console.log("REMOVE SCOPE", scope);
 				patch(scope, null)
 			});
 
