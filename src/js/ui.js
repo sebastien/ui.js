@@ -84,12 +84,13 @@ class EffectorState {
     this.value = value;
     this.path = path;
     this.updater = this.update.bind(this);
+    // TODO: Sub/Unsub should be passed through a context
     sub(this.path, this.updater);
   }
 
-  update({ value }, topic, isDirect) {
-    console.log("EffectorState.update", { value, topic, isDirect });
-    return this.effector.apply(this.node, { value }, this, undefined);
+  update(event, topic, isDirect) {
+    console.log("GOT UPDATE EVENT", event, { topic, isDirect });
+    return this.effector.update(this, event.scope);
   }
 
   dispose() {
@@ -98,57 +99,54 @@ class EffectorState {
 }
 
 class Effector {
-  static Type = "Effector";
   constructor(nodePath, dataPath) {
     this.nodePath = nodePath;
     this.dataPath = dataPath;
   }
 
-  get type() {
-    return Object.getPrototypeOf(this).Type;
+  apply(node, value, path = undefined) {
+    onError("Effector.apply: no implementation defined", { node, value });
   }
 
-  apply(node, value, state = undefined, path = undefined) {
-    onError("Effector.apply: no implementation defined", { node, value });
+  update(state, value) {}
+
+  unapply(state) {
+    state.dispose();
   }
 }
 
 class AttributeEffector extends Effector {
-  static Type = "AttributeEffector";
   constructor(nodePath, dataPath, name, formatter = undefined) {
     super(nodePath, dataPath);
     this.name = name;
     this.formatter = formatter;
   }
 
-  apply(node, value, state = undefined, path = undefined) {
+  apply(node, value, path = undefined) {
     node.setAttribute(this.name, this.formatter ? this.formatter(value) : text);
   }
 }
 
 class ValueEffector extends AttributeEffector {
-  static Type = "ValueEffector";
-  apply(node, value, state = undefined, path = undefined) {
+  apply(node, value, path = undefined) {
     node[this.name] = this.formatter ? this.formatter(value) : value;
   }
 }
 
 class StyleEffector extends AttributeEffector {
-  static Type = "StyleEffector";
-  apply(node, value, state = undefined, path = undefined) {
+  apply(node, value, path = undefined) {
     Object.assign(node.style, this.formatter ? this.formatter(value) : value);
   }
 }
 
 class WhenEffector extends Effector {
-  static Type = "WhenEffector";
   constructor(nodePath, dataPath, name, extractor = undefined) {
     super(nodePath, dataPath);
     this.name = name;
     this.extractor = extractor ? extractor : bool;
   }
 
-  apply(node, value, state = undefined, path = undefined) {
+  apply(node, value, path = undefined) {
     if (this.extractor(value)) {
       node.style.display = "none";
     } else {
@@ -158,7 +156,6 @@ class WhenEffector extends Effector {
 }
 
 class EventEffector extends Effector {
-  static Type = "EventEffector";
   // -- doc
   // Finds the first ancestor node that has a path.
   static FindScope(node) {
@@ -178,20 +175,20 @@ class EventEffector extends Effector {
     this.triggers = triggers;
   }
 
-  apply(node, value, state = undefined, path = undefined) {
-    if (state === undefined) {
-      const name = this.triggers;
-      const dataPath = composePaths(path, this.dataPath);
-      // TODO: For TodoItem, the path should be .items.0, etc
-      const handler = (event) => {
-        const [template, scope] = EventEffector.FindScope(event.target);
-        pub([template, name], { name, scope, data: event });
-      };
-      node.addEventListener(this.event, handler);
-      return handler;
-    } else if (value === Empty) {
-      node.removeEventListener(this.event, state);
-    }
+  apply(node, value, path = undefined) {
+    const name = this.triggers;
+    const dataPath = composePaths(path, this.dataPath);
+    // TODO: For TodoItem, the path should be .items.0, etc
+    const handler = (event) => {
+      const [template, scope] = EventEffector.FindScope(event.target);
+      pub([template, name], { name, scope, data: event });
+    };
+    node.addEventListener(this.event, handler);
+    // TODO: Return state
+  }
+
+  unapply(state) {
+    //node.removeEventListener(this.event, state);
   }
 }
 
@@ -203,8 +200,9 @@ class SlotEffectorState extends EffectorState {
   }
 }
 
+// NOTE: I think the only thing that a slot effector has to do is
+// to detect add remove and relay these.
 class SlotEffector extends Effector {
-  static Type = "SlotEffector";
   constructor(nodePath, dataPath, templateName) {
     super(nodePath, dataPath);
     this.templateName = templateName
@@ -219,8 +217,8 @@ class SlotEffector extends Effector {
       : (this._template = Templates.get(this.templateName));
   }
 
-  apply(node, value, state = undefined, path = undefined) {
-    state = state ? state : new SlotEffectorState(this, node, value, path);
+  apply(node, value, path = undefined) {
+    const state = new SlotEffectorState(this, node, value, path);
     const items = state.items;
     if (value instanceof Array) {
       for (let k = 0; k < value.length; k++) {
@@ -255,6 +253,22 @@ class SlotEffector extends Effector {
     }
     state.value = value;
     return state;
+  }
+
+  addItem(value, path, key) {
+    return render(
+      root,
+      this.template,
+      value[k],
+      path ? [...path, k] : [k],
+      items.get(k)
+    );
+  }
+
+  removeItem(state, value, key) {
+    // TODO: Should totally be an unapply
+    /// render(state.root, this.template, value,
+    //console.log("REMOVE ITEM"
   }
 }
 
@@ -344,6 +358,16 @@ export const unsub = (topic, handler) => bus.unsub(topic, handler);
 // --
 // ## State Tree
 
+class StateEvent {
+  constructor(event, value, previous, scope, key) {
+    this.event = event;
+    this.value = value;
+    this.previous = previous;
+    this.scope = scope;
+    this.key = key;
+  }
+}
+
 class StateTree {
   constructor() {
     this.state = {};
@@ -398,12 +422,14 @@ class StateTree {
   // Patches the `value` at the given `path`.
   patch(path = null, value = undefined) {
     const p = path instanceof Array ? path : path ? path.split(".") : [];
+    console.log("PATCH", path, value);
     if (p.length === 0) {
       this.state = value;
     } else {
       const scope = this.scope(p);
       const key = p[p.length - 1];
       const previous = scope[key];
+      console.log("SCOPE", p, "=", scope);
       if (scope[key] !== value) {
         // scope[key] may be undefined
         if (value === null) {
@@ -412,7 +438,12 @@ class StateTree {
           } else {
             delete scope[key];
           }
-          pub(p.slice(0, -1), { event: "Remove", previous });
+          // QUESTION: Shouldn't we remove at the full path, and then
+          // send an update to the parent?
+          pub(
+            p.slice(0, -1),
+            new StateEvent("Remove", null, previous, scope, key)
+          );
         } else {
           if (scope instanceof Array) {
             while (scope.length < key) {
@@ -422,7 +453,10 @@ class StateTree {
           } else {
             scope[key] = value;
           }
-          pub(p.slice(0, -1), { event: "Update", previous, value });
+          pub(
+            p.slice(0, -1),
+            new StateEvent("Update", value, previous, scope, key)
+          );
         }
       }
     }
@@ -430,6 +464,7 @@ class StateTree {
 }
 
 const state = new StateTree();
+window.State = state;
 
 export const patch = (path, data) => {
   state.patch(path, data);
@@ -586,13 +621,16 @@ export const template = (node, name = node.getAttribute("id")) => {
 };
 
 class RenderState {
-  constructor(template, anchor, views) {
+  constructor(root, template, anchor, views) {
     this.template = template;
     this.anchor = anchor;
     this.views = views;
     this.viewState = views.map((_) => undefined);
   }
 }
+
+// TODO: This should probably be a rendereffector
+//
 // NOTE: We're storing the topic path of any component in the rendered
 // component itself. This makes it possible to link a node to the context.
 export const render = (
@@ -615,7 +653,7 @@ export const render = (
         nodes: view.effectors.map((_) => pathNode(_.nodePath, node)),
       });
     }
-    state = new RenderState(template, anchor, views);
+    state = new RenderState(root, template, anchor, views);
   }
 
   for (let i in views) {
@@ -634,7 +672,6 @@ export const render = (
       state.viewState[j] = e.apply(
         nodes[j], // node
         pathData(e.dataPath, data), // value
-        undefined, // state
         effectorPath // path
       );
     }
@@ -665,6 +702,7 @@ export const ui = (scope = document) => {
       });
     } else {
       // We instanciate the template onto the node
+      patch(null, data);
       const state = render(node, template, data);
     }
   }
