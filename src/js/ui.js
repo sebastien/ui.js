@@ -193,10 +193,9 @@ class EventEffector extends Effector {
 }
 
 class SlotEffectorState extends EffectorState {
-  constructor(effector, node, value, path) {
+  constructor(effector, node, value, path, items) {
     super(effector, node, value, path);
-    this.value = undefined;
-    this.items = new Map();
+    this.items = items;
   }
 }
 
@@ -218,20 +217,17 @@ class SlotEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
-    const state = new SlotEffectorState(this, node, value, path);
-    const items = state.items;
+    const items = new Map();
     if (value instanceof Array) {
       for (let k = 0; k < value.length; k++) {
         const root = document.createComment(`slot:${k}`);
         node.parentElement.insertBefore(root, node);
         items.set(
           k,
-          render(
-            root,
-            this.template,
-            value[k],
-            path ? [...path, k] : [k],
-            items.get(k)
+          this.template.apply(
+            root, // node
+            value[k], // value
+            path ? [...path, k] : [k] // path
           )
         );
       }
@@ -241,34 +237,82 @@ class SlotEffector extends Effector {
         node.parentElement.insertBefore(root, node);
         items.set(
           k,
-          render(
-            root,
-            this.template,
-            value[k],
-            path ? [...path, k] : [k],
-            items.get(k)
+          this.template.apply(
+            root, // node
+            value[k], // value
+            path ? [...path, k] : [k] // path // path // path // path
           )
         );
       }
     }
-    state.value = value;
-    return state;
+    return new SlotEffectorState(this, node, value, path, items);
   }
 
-  addItem(value, path, key) {
-    return render(
-      root,
-      this.template,
-      value[k],
-      path ? [...path, k] : [k],
-      items.get(k)
-    );
+  // addItem(value, path, key) {
+  //   return render(
+  //     root,
+  //     this.template,
+  //     value[k],
+  //     path ? [...path, k] : [k],
+  //     items.get(k)
+  //   );
+  // }
+
+  // removeItem(state, value, key) {
+  //   // TODO: Should totally be an unapply
+  //   /// render(state.root, this.template, value,
+  //   //console.log("REMOVE ITEM"
+  // }
+}
+
+class TemplateEffectorState extends EffectorState {
+  constructor(effector, node, value, path, views, viewState) {
+    super(effector, node, value, path);
+    this.views = views;
+    this.viewState = views.map((_) => undefined);
   }
 
-  removeItem(state, value, key) {
-    // TODO: Should totally be an unapply
-    /// render(state.root, this.template, value,
-    //console.log("REMOVE ITEM"
+  update() {}
+}
+
+class TemplateEffector {
+  constructor(template) {
+    this.template = template;
+  }
+
+  apply(node, value, path = undefined) {
+    const views = [];
+    // Creates nodes and corresponding effector states for each template
+    // views.
+    for (let view of this.template.views) {
+      const root = view.root.cloneNode(true);
+      // We update the `data-path` attribute, which is important to get the
+      // data scope of a node.
+      path && (root.dataset["path"] = path ? path.join(".") : ".");
+      node.parentElement.insertBefore(root, node);
+      const nodes = view.effectors.map((_) => pathNode(_.nodePath, root));
+      // FIXME: Not sure if this is needed
+      // this.template.name && (this.root.dataset["template"] = this.template.name);
+      const states = [];
+      for (let j in view.effectors) {
+        const e = view.effectors[j];
+        const effectorPath = composePaths(path || [], e.dataPath);
+        states.push(
+          e.apply(
+            root, // node
+            pathData(e.dataPath, value), // value
+            effectorPath // path
+          )
+        );
+      }
+      // We add the view, which will be collected in the template effector.
+      views.push({
+        root,
+        nodes,
+        states,
+      });
+    }
+    return new TemplateEffectorState(this, node, value, path, views);
   }
 }
 
@@ -332,6 +376,7 @@ class PubSub {
   constructor() {
     this.topics = new Topic();
   }
+
   get(topic) {
     return topic
       ? topic instanceof Topic
@@ -339,12 +384,15 @@ class PubSub {
         : this.topics.get(topic instanceof Array ? topic : topic.split("."))
       : this.topics;
   }
+
   pub(topic, data) {
     return this.get(topic).pub(data), this;
   }
+
   sub(topic, handler) {
     return this.get(topic).sub(handler), this;
   }
+
   unsub(topic, handler) {
     return this.get(topic).unsub(handler), this;
   }
@@ -620,65 +668,17 @@ export const template = (node, name = node.getAttribute("id")) => {
   return new Template(node, views, name);
 };
 
-class RenderState {
-  constructor(root, template, anchor, views) {
-    this.template = template;
-    this.anchor = anchor;
-    this.views = views;
-    this.viewState = views.map((_) => undefined);
-  }
-}
-
 // TODO: This should probably be a rendereffector
 //
 // NOTE: We're storing the topic path of any component in the rendered
 // component itself. This makes it possible to link a node to the context.
-export const render = (
-  root,
-  template,
-  data,
-  path = null,
-  state = undefined
-) => {
-  const views = state ? state.views : [];
-  // TODO: We should check template when state is there
-  if (!state) {
-    const anchor = document.createComment(root.outerHTML);
-    root.parentElement.replaceChild(anchor, root);
-    for (let view of template.views) {
-      const node = view.root.cloneNode(true);
-      anchor.parentElement.insertBefore(node, anchor);
-      views.push({
-        root: node,
-        nodes: view.effectors.map((_) => pathNode(_.nodePath, node)),
-      });
-    }
-    state = new RenderState(root, template, anchor, views);
-  }
-
-  for (let i in views) {
-    const view = views[i];
-    path && (view.root.dataset["path"] = path ? path.join(".") : ".");
-    template.name && (view.root.dataset["template"] = template.name);
-    const nodes = view.nodes;
-    const effectors = template.views[i].effectors;
-    for (let j in effectors) {
-      const e = effectors[j];
-      const effectorPath = composePaths(path || [], e.dataPath);
-      // TODO: For some reason, the EventEffector is not applied with the
-      // proper path, and therefore the state scope is not working.
-      //
-      // TODO: We should probably have a component state tree as well.
-      state.viewState[j] = e.apply(
-        nodes[j], // node
-        pathData(e.dataPath, data), // value
-        effectorPath // path
-      );
-    }
-  }
-
-  return state;
-};
+// export const render = (
+//   root,
+//   template,
+//   data,
+//   path = null,
+//   state = undefined
+// ) => {};
 
 const parseState = (text) => eval(`(${text})`);
 
@@ -686,7 +686,7 @@ export const ui = (scope = document) => {
   const templates = Templates;
 
   for (let _ of document.querySelectorAll("template")) {
-    const t = template(_);
+    const t = new TemplateEffector(template(_));
     templates.set(_.getAttribute("id") || templates.length, t);
   }
 
@@ -703,7 +703,9 @@ export const ui = (scope = document) => {
     } else {
       // We instanciate the template onto the node
       patch(null, data);
-      const state = render(node, template, data);
+      const anchor = document.createComment(node.outerHTML);
+      node.parentElement.replaceChild(anchor, node);
+      const state = template.apply(anchor, data);
     }
   }
 };
