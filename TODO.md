@@ -1,12 +1,9 @@
 ## Roadmap
 
--   `[X]` Add `path` property to any rendered component, so that it is
-    mapped to the state tree.
-
--   `[X]` Have event handlers find the current state based on the
-    ancestors, and use that to dispatch information.
-
 -   `[ ]` Implement component lifecycle (create, update, delete)
+
+-   `[ ]` Implement granular data update operations (create, update,
+    delete, insert, remove, swap)
 
 ## Design
 

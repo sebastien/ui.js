@@ -123,6 +123,7 @@ class AttributeEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
+    console.log("AttributeEffector", { node, value, path });
     node.setAttribute(this.name, this.formatter ? this.formatter(value) : text);
   }
 }
@@ -294,12 +295,12 @@ class TemplateEffector {
       // FIXME: Not sure if this is needed
       // this.template.name && (this.root.dataset["template"] = this.template.name);
       const states = [];
-      for (let j in view.effectors) {
-        const e = view.effectors[j];
+      for (let i in view.effectors) {
+        const e = view.effectors[i];
         const effectorPath = composePaths(path || [], e.dataPath);
         states.push(
           e.apply(
-            root, // node
+            nodes[i], // node
             pathData(e.dataPath, value), // value
             effectorPath // path
           )
