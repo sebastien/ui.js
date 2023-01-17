@@ -17,6 +17,10 @@
 // web using plain JavaScript and HTML. It is designed for the Web and for
 // Browsers, requiring no dedicated tooling or compiler, and to be easily
 // embedded and used in different contexts.
+//
+// *UI.js* uses granular rendering direcly based on data changes using
+// a centralised state tree. Components can then subscribe and subsribe
+// to data changes to be updated.
 
 // --
 // ## Symbols
@@ -72,6 +76,7 @@ const composePaths = (...chunks) =>
     []
   );
 
+window.composePaths = composePaths;
 // --
 // ## Effectors
 //
@@ -88,10 +93,18 @@ class EffectorState {
     sub(this.path, this.updater);
   }
 
-  update(event, topic, isDirect) {
-    console.log("GOT UPDATE EVENT", event, { topic, isDirect });
-    return this.effector.update(this, event.scope);
+  update(event, topic, offset) {
+    const path = this.path;
+    console.log("EFFECTOR STATE UPDATE", {
+      event,
+      topic,
+      offset,
+      path,
+    });
+    return this.effector.update(this, event.value);
   }
+
+  unmount() {}
 
   dispose() {
     unsub(this.path, this.updater);
@@ -115,6 +128,8 @@ class Effector {
   }
 }
 
+class AttributeEffectorState extends EffectorState {}
+
 class AttributeEffector extends Effector {
   constructor(nodePath, dataPath, name, formatter = undefined) {
     super(nodePath, dataPath);
@@ -124,19 +139,46 @@ class AttributeEffector extends Effector {
 
   apply(node, value, path = undefined) {
     console.log("AttributeEffector", { node, value, path });
-    node.setAttribute(this.name, this.formatter ? this.formatter(value) : text);
+    node.setAttribute(
+      this.name,
+      this.formatter ? this.formatter(value) : value
+    );
+    return new AttributeEffectorState(this, node, value, path);
+  }
+
+  update(state, value) {
+    console.log("AttributeEffector UPDATE", { state, value });
+    state.node.setAttribute(
+      this.name,
+      this.formatter ? this.formatter(value) : value
+    );
   }
 }
 
+class ValueEffectorState extends EffectorState {}
 class ValueEffector extends AttributeEffector {
   apply(node, value, path = undefined) {
     node[this.name] = this.formatter ? this.formatter(value) : value;
+    return new ValueEffectorState(this, node, value, path);
+  }
+
+  update(state, value) {
+    state.node[this.name] = this.formatter ? this.formatter(value) : value;
   }
 }
 
+class StyleEffectorState extends EffectorState {}
 class StyleEffector extends AttributeEffector {
   apply(node, value, path = undefined) {
     Object.assign(node.style, this.formatter ? this.formatter(value) : value);
+    return new StyleEffectorState(this, node, value, path);
+  }
+
+  update(state, value) {
+    Object.assign(
+      state.node.style,
+      this.formatter ? this.formatter(value) : value
+    );
   }
 }
 
@@ -167,7 +209,7 @@ class EventEffector extends Effector {
       }
       node = node.parentElement;
     }
-    return null;
+    return [null, null];
   }
 
   constructor(nodePath, dataPath, event, triggers) {
@@ -197,6 +239,28 @@ class SlotEffectorState extends EffectorState {
   constructor(effector, node, value, path, items) {
     super(effector, node, value, path);
     this.items = items;
+  }
+
+  update(event, topic, offset) {
+    const path = this.path;
+    console.log("SlotEffectoState.Update", { event, topic, offset });
+    switch (event.event) {
+      case "Delete":
+        if (offset !== 1) {
+          return null;
+        } else {
+          this.effector.onItemDelete(this.items, event.key);
+        }
+        break;
+      case "Set":
+        if (offset !== 1) {
+          return null;
+        } else {
+          this.effector.onItemSet(event.key, event.key, event.value);
+        }
+        break;
+    }
+    return this.effector.update(this, event.value);
   }
 }
 
@@ -249,6 +313,18 @@ class SlotEffector extends Effector {
     return new SlotEffectorState(this, node, value, path, items);
   }
 
+  onItemDelete(items, key) {
+    const effector = items.get(key);
+    if (effector) {
+      effector.unmount();
+      effector.dispose();
+      items.delete(key);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   // addItem(value, path, key) {
   //   return render(
   //     root,
@@ -270,10 +346,23 @@ class TemplateEffectorState extends EffectorState {
   constructor(effector, node, value, path, views, viewState) {
     super(effector, node, value, path);
     this.views = views;
-    this.viewState = views.map((_) => undefined);
   }
 
   update() {}
+  unmount() {
+    console.log("UNMOUNTING TEMPLATE", this.views, this.viewState);
+    for (let view of this.views) {
+      view.root?.parentElement?.removeChild(view.root);
+    }
+  }
+
+  dispose() {
+    for (let view of this.views) {
+      for (let state of view.states) {
+        state?.dispose();
+      }
+    }
+  }
 }
 
 class TemplateEffector {
@@ -287,11 +376,15 @@ class TemplateEffector {
     // views.
     for (let view of this.template.views) {
       const root = view.root.cloneNode(true);
+      root.dataset["template"] = this.template.name;
       // We update the `data-path` attribute, which is important to get the
       // data scope of a node.
       path && (root.dataset["path"] = path ? path.join(".") : ".");
       node.parentElement.insertBefore(root, node);
-      const nodes = view.effectors.map((_) => pathNode(_.nodePath, root));
+      const nodes = view.effectors.map((_) => {
+        const n = pathNode(_.nodePath, root);
+        return n;
+      });
       // FIXME: Not sure if this is needed
       // this.template.name && (this.root.dataset["template"] = this.template.name);
       const states = [];
@@ -327,7 +420,12 @@ class Topic {
     this.children = new Map();
     this.handlers = undefined;
     this.value = Empty;
-    this.path = parent ? [...parent.path, name] : [name];
+    this.path =
+      name !== "" && name !== null && name !== undefined
+        ? parent
+          ? [...parent.path, name]
+          : [name]
+        : [];
   }
 
   get(name) {
@@ -338,17 +436,27 @@ class Topic {
       : this.children.set(name, new Topic(name, this)).get(name);
   }
 
+  move(ka, kb) {
+    const a = this.children.get(ka);
+    this.children.delete(ka);
+    const b = this.children.get(kb);
+    this.children.set(kb, a);
+    return b;
+  }
+
   pub(data) {
     this.value = data;
     let topic = this;
+    let offset = 0;
     while (topic) {
       if (topic.handlers) {
         for (let handler of topic.handlers) {
           // TODO: We should stop propagation
-          handler(data, topic, topic === this);
+          handler(data, topic, offset);
         }
       }
       topic = topic.parent;
+      offset += 1;
     }
   }
 
@@ -356,6 +464,7 @@ class Topic {
     if (!this.handlers) {
       this.handlers = [];
     }
+    console.log("SUB", this.path);
     this.handlers.push(handler);
     withLast && this.value !== Empty && handler(this.value);
     return this;
@@ -370,6 +479,22 @@ class Topic {
       }
     }
     return this;
+  }
+
+  walk(callback) {
+    if (callback(this) !== false) {
+      for (let v of this.children.values()) {
+        if (v.walk(callback) === false) {
+          return false;
+        }
+      }
+    }
+  }
+
+  list() {
+    const res = [];
+    this.walk((_) => res.push(_));
+    return res;
   }
 }
 
@@ -470,50 +595,51 @@ class StateTree {
   // -- doc
   // Patches the `value` at the given `path`.
   patch(path = null, value = undefined) {
-    const p = path instanceof Array ? path : path ? path.split(".") : [];
-    console.log("PATCH", path, value);
+    const p = path instanceof Array ? path : path ? parsePath(path) : [];
     if (p.length === 0) {
       this.state = value;
     } else {
       const scope = this.scope(p);
       const key = p[p.length - 1];
-      const previous = scope[key];
-      console.log("SCOPE", p, "=", scope);
+      const base = p.slice(0, -1);
       if (scope[key] !== value) {
         // scope[key] may be undefined
         if (value === null) {
           if (scope instanceof Array) {
+            const n = scope.length;
+            const last = scope[n - 1];
             scope.splice(key, 1);
-          } else {
-            delete scope[key];
+            // NOTE: This is not great as this will send as many events as there are
+            // next items, this is because all the indices have changed, and we need
+            // to update the topic tree.
+            for (let i = key; i < n - 1; i++)
+              pub(
+                [...base, i],
+                new StateEvent("Update", scope[i], scope[i + 1], i)
+              );
           }
-          // QUESTION: Shouldn't we remove at the full path, and then
-          // send an update to the parent?
-          pub(
-            p.slice(0, -1),
-            new StateEvent("Remove", null, previous, scope, key)
-          );
+          pub(p, new StateEvent("Delete", null, previous, scope, key));
         } else {
-          if (scope instanceof Array) {
-            while (scope.length < key) {
-              scope.push(undefined);
-            }
-            scope[key] = value;
-          } else {
-            scope[key] = value;
-          }
-          pub(
-            p.slice(0, -1),
-            new StateEvent("Update", value, previous, scope, key)
-          );
+          const previous = scope[key];
+          delete scope[key];
+          pub(p, new StateEvent("Delete", null, previous, scope, key));
         }
+      } else {
+        if (scope instanceof Array) {
+          while (scope.length < key) {
+            scope.push(undefined);
+          }
+          scope[key] = value;
+        } else {
+          scope[key] = value;
+        }
+        pub(p, new StateEvent("Update", value, previous, scope, key));
       }
     }
   }
 }
 
 const state = new StateTree();
-window.State = state;
 
 export const patch = (path, data) => {
   state.patch(path, data);
@@ -717,6 +843,10 @@ export const ui = (scope = document) => {
 const onError = (message, context) => {
   console.error(message, context);
 };
+
+// DEBUG
+window.STATE = state;
+window.BUS = bus;
 
 export default ui;
 
