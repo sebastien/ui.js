@@ -75,14 +75,6 @@ export class AttributeEffector extends Effector {
 class ValueEffectorState extends EffectorState {
   update(value = this.value) {
     const formatter = this.effector.formatter;
-    console.log(
-      "VALUE EFFECTOR",
-      value,
-      "->",
-      formatter ? formatter(value) : value,
-      "in",
-      this.node
-    );
     this.node[this.effector.name] = formatter ? formatter(value) : value;
     return this;
   }

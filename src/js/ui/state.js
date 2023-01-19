@@ -4,6 +4,34 @@ import { pub } from "./pubsub.js";
 // --
 // ## State Tree
 
+const numcode = (
+  number,
+  alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+) => {
+  const res = [];
+  const n = alphabet.length;
+  let v = number;
+  while (v > 0) {
+    const r = v % n;
+    v = Math.floor(v / n);
+    res.unshift(alphabet.charAt(r));
+  }
+  return res.join("");
+};
+const nextKey = (value) => {
+  if (value instanceof Array) {
+    value.push(undefined);
+    return value.length - 1;
+  } else {
+    while (true) {
+      const k = numcode(new Date().getTime() * 100000 + Math.random() * 100000);
+      if (value[k] === undefined) {
+        return k;
+      }
+    }
+  }
+};
+window.nextKey = nextKey;
 export class StateEvent {
   constructor(event, value, previous, scope, key) {
     this.event = event;
@@ -35,11 +63,11 @@ export class StateTree {
   // -- doc
   // Ensures there's a value at the given `path`, assigning the `defaultValue`
   // if not existing.
-  ensure(path, defaultValue = undefined, offset = 0) {
+  ensure(path, defaultValue = undefined, limit = 0, offset = 0) {
     let scope = this.state;
     const p = path instanceof Array ? path : path.split(".");
-    let i = 0;
-    const j = p.length - 1 + offset;
+    let i = 0 + offset;
+    const j = p.length - 1 + limit;
     while (i <= j) {
       const k = p[i++];
       if (scope[k] === undefined) {
@@ -72,7 +100,10 @@ export class StateTree {
       this.state = value;
     } else {
       const scope = this.scope(p);
-      const key = p[p.length - 1];
+      let key = p[p.length - 1];
+      if (key === null) {
+        key = nextKey(scope);
+      }
       const base = p.slice(0, -1);
       if (scope[key] !== value) {
         // scope[key] may be undefined
