@@ -55,8 +55,10 @@ const pathNode = (path, root) =>
 
 // -- doc
 // Returns the value at the given `path` for the given `data`.
-const pathData = (path, data) => {
-  for (let key of path) {
+const pathData = (path, data, offset = 0) => {
+  const n = path.length;
+  while (offset < n) {
+    const key = path[offset++];
     switch (key) {
       case "":
         break;
@@ -88,26 +90,22 @@ class EffectorState {
     this.node = node;
     this.value = value;
     this.path = path;
-    this.updater = this.update.bind(this);
+    this.handler = this.onChange.bind(this);
     // TODO: Sub/Unsub should be passed through a context
-    sub(this.path, this.updater);
+    sub(this.path, this.handler);
   }
 
-  update(event, topic, offset) {
+  onChange(event, topic, offset) {
     const path = this.path;
-    console.log("EFFECTOR STATE UPDATE", {
-      event,
-      topic,
-      offset,
-      path,
-    });
-    return this.effector.update(this, event.value);
+    return this.update(event.value);
   }
+
+  update(value) {}
 
   unmount() {}
 
   dispose() {
-    unsub(this.path, this.updater);
+    unsub(this.path, this.handler);
   }
 }
 
@@ -120,15 +118,18 @@ class Effector {
   apply(node, value, path = undefined) {
     onError("Effector.apply: no implementation defined", { node, value });
   }
-
-  update(state, value) {}
-
-  unapply(state) {
-    state.dispose();
-  }
 }
 
-class AttributeEffectorState extends EffectorState {}
+class AttributeEffectorState extends EffectorState {
+  update(value = this.value) {
+    const formatter = this.effector.formatter;
+    this.node.setAttribute(
+      this.effector.name,
+      formatter ? formatter(value) : value
+    );
+    return this;
+  }
+}
 
 class AttributeEffector extends Effector {
   constructor(nodePath, dataPath, name, formatter = undefined) {
@@ -138,47 +139,37 @@ class AttributeEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
-    console.log("AttributeEffector", { node, value, path });
-    node.setAttribute(
-      this.name,
-      this.formatter ? this.formatter(value) : value
-    );
-    return new AttributeEffectorState(this, node, value, path);
-  }
-
-  update(state, value) {
-    console.log("AttributeEffector UPDATE", { state, value });
-    state.node.setAttribute(
-      this.name,
-      this.formatter ? this.formatter(value) : value
-    );
+    return new AttributeEffectorState(this, node, value, path).update();
   }
 }
 
-class ValueEffectorState extends EffectorState {}
+class ValueEffectorState extends EffectorState {
+  update(value = this.value) {
+    const formatter = this.effector.formatter;
+    this.node[this.effector.name] = formatter ? formatter(value) : value;
+    return this;
+  }
+}
+
 class ValueEffector extends AttributeEffector {
   apply(node, value, path = undefined) {
-    node[this.name] = this.formatter ? this.formatter(value) : value;
-    return new ValueEffectorState(this, node, value, path);
-  }
-
-  update(state, value) {
-    state.node[this.name] = this.formatter ? this.formatter(value) : value;
+    return new ValueEffectorState(this, node, value, path).update();
   }
 }
 
-class StyleEffectorState extends EffectorState {}
+// --
+// ## Style Effector
+//
+class StyleEffectorState extends EffectorState {
+  update(value = this.value) {
+    const formatter = this.effector.formatter;
+    Object.assign(this.node.style, formatter ? formatter(value) : value);
+    return this;
+  }
+}
 class StyleEffector extends AttributeEffector {
   apply(node, value, path = undefined) {
-    Object.assign(node.style, this.formatter ? this.formatter(value) : value);
-    return new StyleEffectorState(this, node, value, path);
-  }
-
-  update(state, value) {
-    Object.assign(
-      state.node.style,
-      this.formatter ? this.formatter(value) : value
-    );
+    return new StyleEffectorState(this, node, value, path).update(value);
   }
 }
 
@@ -229,10 +220,6 @@ class EventEffector extends Effector {
     node.addEventListener(this.event, handler);
     // TODO: Return state
   }
-
-  unapply(state) {
-    //node.removeEventListener(this.event, state);
-  }
 }
 
 class SlotEffectorState extends EffectorState {
@@ -241,26 +228,38 @@ class SlotEffectorState extends EffectorState {
     this.items = items;
   }
 
-  update(event, topic, offset) {
-    const path = this.path;
-    console.log("SlotEffectoState.Update", { event, topic, offset });
-    switch (event.event) {
-      case "Delete":
-        if (offset !== 1) {
-          return null;
+  onChange(event, topic, offset) {
+    if (offset === 1) {
+      const action = event.event;
+      if (action == "Update") {
+        // NOTE: We don't ahve to do anything, the efefctor should already
+        // be subscribed.
+      } else if (action === "Delete") {
+        const effector = this.items.get(event.key);
+        // NOTE: The effector may be subsribed to already?
+        if (effector) {
+          effector.unmount();
+          effector.dispose();
+          this.items.delete(event.key);
+          return true;
         } else {
-          this.effector.onItemDelete(this.items, event.key);
+          return false;
         }
-        break;
-      case "Set":
-        if (offset !== 1) {
-          return null;
+      } else if (action == "Create") {
+        if (!this.items.has(event.key)) {
+          // FIXME: That does not take into account the order
+          this.items.set(
+            this.effector.createItem(this.node, event.value, [
+              ...this.path,
+              event.key,
+            ])
+          );
+          return true;
         } else {
-          this.effector.onItemSet(event.key, event.key, event.value);
+          return false;
         }
-        break;
+      }
     }
-    return this.effector.update(this, event.value);
   }
 }
 
@@ -282,15 +281,15 @@ class SlotEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
+    // NOTE: This may be moved directly in the SlotEffectorState constructor,
+    // but we leave it here for now.
     const items = new Map();
     if (value instanceof Array) {
       for (let k = 0; k < value.length; k++) {
-        const root = document.createComment(`slot:${k}`);
-        node.parentElement.insertBefore(root, node);
         items.set(
           k,
-          this.template.apply(
-            root, // node
+          this.createItem(
+            node, // node
             value[k], // value
             path ? [...path, k] : [k] // path
           )
@@ -298,12 +297,10 @@ class SlotEffector extends Effector {
       }
     } else {
       for (let k in value) {
-        const root = document.createComment(`slot:${k}`);
-        node.parentElement.insertBefore(root, node);
         items.set(
           k,
-          this.template.apply(
-            root, // node
+          this.createItem(
+            nod, // node
             value[k], // value
             path ? [...path, k] : [k] // path // path // path // path
           )
@@ -313,44 +310,39 @@ class SlotEffector extends Effector {
     return new SlotEffectorState(this, node, value, path, items);
   }
 
-  onItemDelete(items, key) {
-    const effector = items.get(key);
-    if (effector) {
-      effector.unmount();
-      effector.dispose();
-      items.delete(key);
-      return true;
-    } else {
-      return false;
-    }
+  createItem(node, value, path) {
+    const root = document.createComment(`slot:${path.at(-1)}`);
+    // We need to insert the node before as the template needs a parent
+    node.parentElement.insertBefore(root, node);
+    const state = this.template.apply(
+      root, // node
+      value,
+      path
+    );
+    return state;
   }
-
-  // addItem(value, path, key) {
-  //   return render(
-  //     root,
-  //     this.template,
-  //     value[k],
-  //     path ? [...path, k] : [k],
-  //     items.get(k)
-  //   );
-  // }
-
-  // removeItem(state, value, key) {
-  //   // TODO: Should totally be an unapply
-  //   /// render(state.root, this.template, value,
-  //   //console.log("REMOVE ITEM"
-  // }
 }
 
 class TemplateEffectorState extends EffectorState {
-  constructor(effector, node, value, path, views, viewState) {
+  constructor(effector, node, value, path, views) {
     super(effector, node, value, path);
     this.views = views;
   }
 
-  update() {}
+  update(value) {
+    const o = this.path.length;
+    if (value !== null && value !== undefined) {
+      for (let view of this.views) {
+        for (let state of view.states) {
+          if (state) {
+            state.update(pathData(state.path, value, o));
+          }
+        }
+      }
+    }
+  }
+
   unmount() {
-    console.log("UNMOUNTING TEMPLATE", this.views, this.viewState);
     for (let view of this.views) {
       view.root?.parentElement?.removeChild(view.root);
     }
@@ -464,7 +456,6 @@ class Topic {
     if (!this.handlers) {
       this.handlers = [];
     }
-    console.log("SUB", this.path);
     this.handlers.push(handler);
     withLast && this.value !== Empty && handler(this.value);
     return this;
@@ -605,35 +596,50 @@ class StateTree {
       if (scope[key] !== value) {
         // scope[key] may be undefined
         if (value === null) {
+          // If the value is removed
           if (scope instanceof Array) {
+            // We test for an Array
             const n = scope.length;
             const last = scope[n - 1];
             scope.splice(key, 1);
             // NOTE: This is not great as this will send as many events as there are
             // next items, this is because all the indices have changed, and we need
             // to update the topic tree.
-            for (let i = key; i < n - 1; i++)
+            for (let i = key; i < n - 1; i++) {
               pub(
                 [...base, i],
                 new StateEvent("Update", scope[i], scope[i + 1], i)
               );
+            }
+            pub(p, new StateEvent("Delete", null, last, scope, n - 1));
+          } else {
+            // Or a dictionary
+            const previous = scope[key];
+            delete scope[key];
+            pub(p, new StateEvent("Delete", null, previous, scope, key));
           }
-          pub(p, new StateEvent("Delete", null, previous, scope, key));
         } else {
           const previous = scope[key];
-          delete scope[key];
-          pub(p, new StateEvent("Delete", null, previous, scope, key));
-        }
-      } else {
-        if (scope instanceof Array) {
-          while (scope.length < key) {
-            scope.push(undefined);
+          // The value is not removed, easy case
+          if (scope instanceof Array) {
+            while (scope.length < key) {
+              scope.push(undefined);
+            }
+            scope[key] = value;
+          } else {
+            scope[key] = value;
           }
-          scope[key] = value;
-        } else {
-          scope[key] = value;
+          pub(
+            p,
+            new StateEvent(
+              previous === undefined ? "Create" : "Update",
+              value,
+              previous,
+              scope,
+              key
+            )
+          );
         }
-        pub(p, new StateEvent("Update", value, previous, scope, key));
       }
     }
   }
@@ -832,7 +838,7 @@ export const ui = (scope = document) => {
       patch(null, data);
       const anchor = document.createComment(node.outerHTML);
       node.parentElement.replaceChild(anchor, node);
-      const state = template.apply(anchor, data);
+      const state = template.apply(anchor, data, []);
     }
   }
 };

@@ -1,7 +1,5 @@
 ## Roadmap
 
--   `[ ]` Implement component lifecycle (create, update, delete)
-
 -   `[ ]` Implement granular data update operations (create, update,
     delete, insert, remove, swap)
 
@@ -14,12 +12,16 @@
 -   `[ ]` Do some baseline performance tests, in particular the
     performance of updating data structures.
 
+-   `[ ]` split in modules: `effectors`, `templates`, `path`.
+
 ## Challenges
 
 -   When removing an element from a list, all the elements get shifted
     by one.
 
 -   When a list is re-shuffled, what happens?
+
+-   `SlotEffector` needs to mount the nodes in order
 
 ## Tips
 
