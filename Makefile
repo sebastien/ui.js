@@ -1,5 +1,5 @@
 PORT?=8001
-SOURCES_ALL=$(wildcard src/**/*.*)
+SOURCES_ALL=$(wildcard src/*/*.* src/*/*/*.* src/*/*/*/*.*)
 RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%)
 
 run: $(RUN_ALL)
