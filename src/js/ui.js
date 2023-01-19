@@ -719,63 +719,51 @@ const queryAttributesLike = function* (node, regexp) {
 const view = (root) => {
   const effectors = [];
 
+  //--
+  // We start by getting all the nodes within the `in`, `out` and `on`
+  // namespaces.
   const attrs = {};
   for (const [match, attr] of queryAttributesLike(
     root,
-    /^(?<type>in|out|on|x):(?<name>.+)$/
+    /^(?<type>in|out|on):(?<name>.+)$/
   )) {
     const type = match.groups.type;
     const name = match.groups.name;
-    (attrs[type] = attrs[type] || []).push({ type, name, attr });
+    (attrs[type] = attrs[type] || []).push({ name, attr });
   }
   console.log("ATTRS", attrs);
 
-  // We take care of attribute effectors
-  // for (const _ of root.querySelectorAll(".out")) {
-  //   const path = nodePath(_, root);
-  //   for (let attr of _.attributes) {
-  //     if (attr.name.startsWith("out-")) {
-  //       const name = attr.name.substring(4);
-  //       const parentName = _.nodeName;
-  //       const [dataPath, format] = parseDirective(attr.value, false);
-  //       effectors.push(
-  //         new (name === "style"
-  //           ? StyleEffector
-  //           : ((name === "value" || name === "disabled") &&
-  //               (parentName === "INPUT" || parentName === "SELECT")) ||
-  //             (name === "checked" && parentName === "INPUT")
-  //           ? ValueEffector
-  //           : AttributeEffector)(
-  //           path,
-  //           dataPath,
-  //           name,
-  //           typeof format === "string" ? Formats[format] : format
-  //         )
-  //       );
-  //       // We remove the attribute
-  //       _.removeAttribute(attr.name);
-  //     }
-  //   }
-  //   _.classList.remove("out");
-  //   _.classList.length == 0 && _.removeAttribute("class");
-  // }
-
-  // for (const _ of queryAttributes(root, "in")) {
-  //   console.log("ATTR:IN", _);
-  // }
-
-  // for (const [event, value] of queryAttributes(root, "on")) {
-  //   const [dataPath, _, effectEvent] = parseDirective(value);
-  //   effectors.push(
-  //     new EventEffector(nodePath(_, root), dataPath || [""], event, effectEvent)
-  //   );
-  // }
-
-  // We take care of state change effectors
-  for (const _ of root.querySelectorAll("*[when]")) {
-    const [dataPath, extractor] = parseDirective(_.getAttribute("when"));
-    effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
-    _.removeAttribute("when");
+  // We take care of attribute/content/value effectors
+  for (const { name, attr } of attrs["out"] || {}) {
+    const node = attr.ownerElement;
+    const path = nodePath(attr, root);
+    const parentName = node.nodeName;
+    const [dataPath, format] = parseDirective(attr.value, false);
+    if (parentName === "slot" && name === "content") {
+      effectors.push(new SlotEffector(nodePath(node, root), dataPath, format));
+      node.parentElement.replaceChild(
+        // This is a placholder, the contents  is not important.
+        document.createComment(node.outerHTML),
+        node
+      );
+    } else {
+      effectors.push(
+        new (name === "style"
+          ? StyleEffector
+          : ((name === "value" || name === "disabled") &&
+              (parentName === "INPUT" || parentName === "SELECT")) ||
+            (name === "checked" && parentName === "INPUT")
+          ? ValueEffector
+          : AttributeEffector)(
+          path,
+          dataPath,
+          name,
+          typeof format === "string" ? Formats[format] : format
+        )
+      );
+    }
+    // We remove the attribute from the template as it is now processed
+    node.removeAttribute(attr.name);
   }
 
   // We take care of slots
@@ -788,6 +776,29 @@ const view = (root) => {
   //   _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
   //   _.removeAttribute("out:contents");
   // }
+
+  for (const { name, attr } of attrs["in"] || {}) {
+    const node = attr.ownerElement;
+    console.log("TODO: ATTR:IN", { name });
+    node.removeAttribute(attr.name);
+  }
+
+  for (const { name, attr } of attrs["on"] || {}) {
+    const node = attr.ownerElement;
+    const [dataPath, _, effectEvent] = parseDirective(attr.value);
+    effectors.push(
+      new EventEffector(nodePath(_, root), dataPath || [""], name, effectEvent)
+    );
+    node.removeAttribute(attr.name);
+  }
+
+  // We take care of state change effectors
+  for (const _ of root.querySelectorAll("*[when]")) {
+    const [dataPath, extractor] = parseDirective(_.getAttribute("when"));
+    effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
+    _.removeAttribute("when");
+  }
+
   return { root, effectors };
 };
 
@@ -845,12 +856,12 @@ export const ui = (scope = document) => {
   }
 
   // We render the components
-  for (const node of scope.querySelectorAll(".ui")) {
+  for (const node of scope.querySelectorAll("*[data-ui]")) {
     const { ui, state } = node.dataset;
     const template = templates.get(ui);
     const data = parseState(state);
     if (!template) {
-      onError("ui.render: Could not find template '{ui}'", {
+      onError(`ui.render: Could not find template '{ui}'`, {
         node,
         ui,
       });
