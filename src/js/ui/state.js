@@ -1,4 +1,5 @@
 import { parsePath } from "./paths.js";
+import { pub } from "./pubsub.js";
 
 // --
 // ## State Tree
@@ -131,4 +132,6 @@ export const patch = (path, data) => {
   State.patch(path, data);
 };
 
+// DEBUG
+window.STATE = State;
 // EOF

@@ -17,7 +17,7 @@ class EffectorState {
     this.path = path;
     this.handler = this.onChange.bind(this);
     // TODO: Sub/Unsub should be passed through a context
-    sub(this.path, this.handler);
+    sub(this.path, this.handler, false);
   }
 
   onChange(event, topic, offset) {
@@ -75,6 +75,14 @@ export class AttributeEffector extends Effector {
 class ValueEffectorState extends EffectorState {
   update(value = this.value) {
     const formatter = this.effector.formatter;
+    console.log(
+      "VALUE EFFECTOR",
+      value,
+      "->",
+      formatter ? formatter(value) : value,
+      "in",
+      this.node
+    );
     this.node[this.effector.name] = formatter ? formatter(value) : value;
     return this;
   }
@@ -130,7 +138,7 @@ export class EventEffector extends Effector {
   static FindScope(node) {
     while (node) {
       let { template, path } = node.dataset;
-      if (template && path) {
+      if (template && path !== undefined) {
         return [template, parsePath(path)];
       }
       node = node.parentElement;
@@ -138,19 +146,29 @@ export class EventEffector extends Effector {
     return [null, null];
   }
 
-  constructor(nodePath, dataPath, event, triggers) {
+  constructor(nodePath, dataPath, event, triggers, stops = false) {
     super(nodePath, dataPath);
     this.event = event;
     this.triggers = triggers;
+    this.stops = stops;
   }
 
   apply(node, value, path = undefined) {
     const name = this.triggers;
+    const stops = this.stops;
     // const dataPath = composePaths(path, this.dataPath);
     // TODO: For TodoItem, the path should be .items.0, etc
     const handler = (event) => {
-      const [template, scope] = EventEffector.FindScope(event.target);
-      pub([template, name], { name, scope, data: event });
+      if (name) {
+        const [template, scope] = EventEffector.FindScope(event.target);
+        pub([template, name], { name, scope, data: event });
+      } else {
+        console.warn("TODO EventEffector.apply: implement non-named event");
+      }
+      if (stops) {
+        event.stopPropagation();
+        event.cancelDefault();
+      }
     };
     node.addEventListener(this.event, handler);
     // TODO: Return state
@@ -266,6 +284,9 @@ class TemplateEffectorState extends EffectorState {
 
   update(value) {
     const o = this.path.length;
+    if (!this.views) {
+      console.log("TemplateEffectorStatea", this, "views=", this.views);
+    }
     if (value !== null && value !== undefined) {
       for (let view of this.views) {
         for (let state of view.states) {
@@ -303,10 +324,10 @@ export class TemplateEffector {
     // views.
     for (let view of this.template.views) {
       const root = view.root.cloneNode(true);
+      // We update the `data-template` and `data-path` attributes, which is
+      // used by `EventEffectors` in particular to find the scope.
       root.dataset["template"] = this.template.name;
-      // We update the `data-path` attribute, which is important to get the
-      // data scope of a node.
-      path && (root.dataset["path"] = path ? path.join(".") : ".");
+      root.dataset["path"] = path ? path.join(".") : "";
       node.parentElement.insertBefore(root, node);
       const nodes = view.effectors.map((_) => {
         const n = pathNode(_.nodePath, root);

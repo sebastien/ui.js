@@ -42,10 +42,10 @@ const view = (root) => {
   // We take care of attribute/content/value effectors
   for (const { name, attr } of attrs["out"] || {}) {
     const node = attr.ownerElement;
-    const path = nodePath(attr, root);
+    const path = nodePath(node, root);
     const parentName = node.nodeName;
     const [dataPath, format] = parseDirective(attr.value, false);
-    if (parentName === "slot" && name === "content") {
+    if (parentName === "SLOT" && name === "content") {
       effectors.push(new SlotEffector(nodePath(node, root), dataPath, format));
       node.parentElement.replaceChild(
         // This is a placholder, the contents  is not important.
@@ -91,18 +91,25 @@ const view = (root) => {
 
   for (const { name, attr } of attrs["on"] || {}) {
     const node = attr.ownerElement;
-    const [dataPath, _, effectEvent] = parseDirective(attr.value);
+    const [dataPath, format, effectEvent, stops] = parseDirective(attr.value);
+    // TODO: Support "on:change=.checked:not"
     effectors.push(
-      new EventEffector(nodePath(_, root), dataPath || [""], name, effectEvent)
+      new EventEffector(
+        nodePath(node, root),
+        dataPath || [""],
+        name,
+        effectEvent,
+        stops
+      )
     );
     node.removeAttribute(attr.name);
   }
 
   // We take care of state change effectors
-  for (const _ of root.querySelectorAll("*[when]")) {
-    const [dataPath, extractor] = parseDirective(_.getAttribute("when"));
-    effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
-    _.removeAttribute("when");
+  for (const node of root.querySelectorAll("*[when]")) {
+    const [dataPath, extractor] = parseDirective(node.getAttribute("when"));
+    effectors.push(new WhenEffector(nodePath(node, root), dataPath, extractor));
+    node.removeAttribute("when");
   }
 
   return new View(root, effectors);
@@ -146,19 +153,20 @@ export const template = (node, name = node.getAttribute("id")) => {
 // ## Directives
 
 const RE_DIRECTIVE = new RegExp(
-  /^(?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+))?$/
+  /^(?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+)(?<stops>\.)?)?$/
 );
 
 // -- doc
 // Parses the directive defined by `text`, where the string
 // is like `data.path|formatter!event`.
 const parseDirective = (text, defaultFormat = idem) => {
-  const { path, format, event } = text.match(RE_DIRECTIVE)?.groups || {};
+  const { path, format, event, stops } = text.match(RE_DIRECTIVE)?.groups || {};
 
   return [
     parsePath(path),
     defaultFormat ? Formats[format] || defaultFormat : format,
     event,
+    stops && stops.length ? true : false,
   ];
 };
 
