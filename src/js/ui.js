@@ -696,13 +696,21 @@ const parseDirective = (text, defaultFormat = idem) => {
 // --
 // ## View
 
-const queryAttributes = function* (node, prefix) {
-  const attrPrefix = `${prefix}-`;
-  for (const _ of node.querySelectorAll(`.${prefix}`)) {
-    for (let attr of _.attributes) {
-      if (attr.name.startsWith(attrPrefix)) {
-        yield [attr.name.substring(attrPrefix.length), attr.value, attr];
-        _.removeAttribute(attr.name);
+// -- doc
+// Iterates through the attributes that match the given RegExp. This is
+// because we need to query namespace selectors.
+const queryAttributesLike = function* (node, regexp) {
+  let walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
+  const cleanup = [];
+  while (walker.nextNode()) {
+    let node = walker.currentNode;
+    for (let i = 0; i < node.attributes.length; i++) {
+      const attr = node.attributes[i];
+      // NOTE: Not sure that would work for XHTML
+      const match = regexp.exec(attr.name);
+      if (match) {
+        yield [match, attr];
+        cleanup.push(attr);
       }
     }
   }
@@ -710,46 +718,58 @@ const queryAttributes = function* (node, prefix) {
 
 const view = (root) => {
   const effectors = [];
+
+  const attrs = {};
+  for (const [match, attr] of queryAttributesLike(
+    root,
+    /^(?<type>in|out|on|x):(?<name>.+)$/
+  )) {
+    const type = match.groups.type;
+    const name = match.groups.name;
+    (attrs[type] = attrs[type] || []).push({ type, name, attr });
+  }
+  console.log("ATTRS", attrs);
+
   // We take care of attribute effectors
-  for (const _ of root.querySelectorAll(".out")) {
-    const path = nodePath(_, root);
-    for (let attr of _.attributes) {
-      if (attr.name.startsWith("out-")) {
-        const name = attr.name.substring(4);
-        const parentName = _.nodeName;
-        const [dataPath, format] = parseDirective(attr.value, false);
-        effectors.push(
-          new (name === "style"
-            ? StyleEffector
-            : ((name === "value" || name === "disabled") &&
-                (parentName === "INPUT" || parentName === "SELECT")) ||
-              (name === "checked" && parentName === "INPUT")
-            ? ValueEffector
-            : AttributeEffector)(
-            path,
-            dataPath,
-            name,
-            typeof format === "string" ? Formats[format] : format
-          )
-        );
-        // We remove the attribute
-        _.removeAttribute(attr.name);
-      }
-    }
-    _.classList.remove("out");
-    _.classList.length == 0 && _.removeAttribute("class");
-  }
+  // for (const _ of root.querySelectorAll(".out")) {
+  //   const path = nodePath(_, root);
+  //   for (let attr of _.attributes) {
+  //     if (attr.name.startsWith("out-")) {
+  //       const name = attr.name.substring(4);
+  //       const parentName = _.nodeName;
+  //       const [dataPath, format] = parseDirective(attr.value, false);
+  //       effectors.push(
+  //         new (name === "style"
+  //           ? StyleEffector
+  //           : ((name === "value" || name === "disabled") &&
+  //               (parentName === "INPUT" || parentName === "SELECT")) ||
+  //             (name === "checked" && parentName === "INPUT")
+  //           ? ValueEffector
+  //           : AttributeEffector)(
+  //           path,
+  //           dataPath,
+  //           name,
+  //           typeof format === "string" ? Formats[format] : format
+  //         )
+  //       );
+  //       // We remove the attribute
+  //       _.removeAttribute(attr.name);
+  //     }
+  //   }
+  //   _.classList.remove("out");
+  //   _.classList.length == 0 && _.removeAttribute("class");
+  // }
 
-  for (const _ of queryAttributes(root, "in")) {
-    console.log("ATTR:IN", _);
-  }
+  // for (const _ of queryAttributes(root, "in")) {
+  //   console.log("ATTR:IN", _);
+  // }
 
-  for (const [event, value] of queryAttributes(root, "on")) {
-    const [dataPath, _, effectEvent] = parseDirective(value);
-    effectors.push(
-      new EventEffector(nodePath(_, root), dataPath || [""], event, effectEvent)
-    );
-  }
+  // for (const [event, value] of queryAttributes(root, "on")) {
+  //   const [dataPath, _, effectEvent] = parseDirective(value);
+  //   effectors.push(
+  //     new EventEffector(nodePath(_, root), dataPath || [""], event, effectEvent)
+  //   );
+  // }
 
   // We take care of state change effectors
   for (const _ of root.querySelectorAll("*[when]")) {
@@ -757,16 +777,17 @@ const view = (root) => {
     effectors.push(new WhenEffector(nodePath(_, root), dataPath, extractor));
     _.removeAttribute("when");
   }
+
   // We take care of slots
-  for (const _ of root.querySelectorAll("slot")) {
-    const [dataPath, templateName] = parseDirective(
-      _.getAttribute("out-contents"),
-      false
-    );
-    effectors.push(new SlotEffector(nodePath(_, root), dataPath, templateName));
-    _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
-    _.removeAttribute("out-contents");
-  }
+  // for (const _ of root.querySelectorAll("slot")) {
+  //   const [dataPath, templateName] = parseDirective(
+  //     _.getAttribute("out:contents"),
+  //     false
+  //   );
+  //   effectors.push(new SlotEffector(nodePath(_, root), dataPath, templateName));
+  //   _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
+  //   _.removeAttribute("out:contents");
+  // }
   return { root, effectors };
 };
 

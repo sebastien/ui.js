@@ -8,9 +8,15 @@
 	<template id="Todo">
 		<div class="Todo">
 			<h3>Simple todo list</h3>
+
 			<ul>
-				<slot name="items" out-contents=".items|TodoItem" />
-			<ul>
+				<slot name="items" out:content=".items|TodoItem" />
+			</ul>
+			<form>
+				<input in:value=".label" />
+				<button on:click="!AddItem">Add</button>
+			</form>
+
 		</div>
 		<script type="module">
 			import {sub, patch} from "../js/ui.js"
@@ -33,9 +39,9 @@
 
 	<template id="TodoItem">
 		<div class="TodoItem">
-			<input class="out on" when=".edited"  type="checkbox" out-checked=".checked|bool" XXXon-change=".checked:not" />
-			<input class="out in" when=".edited|not" type="text" out-value=".label" in-value=".value:change" />
-			<button class="on" on-click="!Remove">Remove</button>
+			<input  when=".edited"     type="checkbox" out:checked=".checked|bool" on:change=".checked:not" />
+			<input  when=".edited|not" type="text" out:value=".label" in:value=".value:change" />
+			<button  on:click="!Remove">Remove</button>
 			<!--
 			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
 			<input when:-edited type="text" out:value=".label" on:change=".value!" />
