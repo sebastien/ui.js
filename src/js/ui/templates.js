@@ -49,6 +49,17 @@ const TreeWalkerFilter = {
 			: NodeFilter.FILTER_ACCEPT,
 };
 
+const iterAttributesLike = function* (node, regexp) {
+	for (let i = 0; i < node.attributes.length; i++) {
+		const attr = node.attributes[i];
+		// NOTE: Not sure that would work for XHTML
+		const match = regexp.exec(attr.name);
+		if (match) {
+			yield [match, attr];
+		}
+	}
+};
+
 // -- doc
 // Iterates through the attributes that match the given RegExp. This is
 // because we need to query namespace selectors.
@@ -58,17 +69,13 @@ const queryAttributesLike = function* (node, regexp) {
 		NodeFilter.SHOW_ELEMENT,
 		TreeWalkerFilter
 	);
-	const cleanup = [];
+	for (let r of iterAttributesLike(node, regexp)) {
+		yield r;
+	}
 	while (walker.nextNode()) {
 		let node = walker.currentNode;
-		for (let i = 0; i < node.attributes.length; i++) {
-			const attr = node.attributes[i];
-			// NOTE: Not sure that would work for XHTML
-			const match = regexp.exec(attr.name);
-			if (match) {
-				yield [match, attr];
-				cleanup.push(attr);
-			}
+		for (let r of iterAttributesLike(node, regexp)) {
+			yield r;
 		}
 	}
 };
@@ -119,7 +126,9 @@ const view = (root, templateName = undefined) => {
 								node,
 								`${templateName || makeKey()}-${
 									effectors.length
-								}`
+								}`,
+								templateName, // This is the parent name
+								false // No need to clone there
 						  ).name
 						: null
 				)
@@ -172,6 +181,7 @@ const view = (root, templateName = undefined) => {
 		const node = attr.ownerElement;
 		const directive = parseDirective(attr.value);
 		// TODO: Support "on:change=.checked:not"
+		console.log("on", { name, directive, node });
 		effectors.push(
 			new EventEffector(
 				nodePath(node, root),
@@ -209,13 +219,21 @@ class Template {
 }
 
 // -- doc
-// Parses the given `node` and its descendants as a tempalte definition.
-export const template = (node, name = node.getAttribute("id")) => {
+// Parses the given `node` and its descendants as a template definition. The
+// `parentName` is useful for nested templates where the actual root/component
+// template is different.
+export const template = (
+	node,
+	name = node.getAttribute("id"),
+	rootName = undefined,
+	clone = true // TODO: We should probably always have that to false
+) => {
 	let views = [];
 	// NOTE: We skip text nodes there
 	for (let _ of node.nodeName === "TEMPLATE"
 		? node.content.children
 		: node.children) {
+		console.group("VIEW FROM", _);
 		switch (_.nodeName) {
 			case "STYLE":
 				break;
@@ -223,10 +241,11 @@ export const template = (node, name = node.getAttribute("id")) => {
 				document.body.appendChild(_);
 				break;
 			default:
-				views.push(view(_.cloneNode(true), name));
+				views.push(view(clone ? _.cloneNode(true) : _, name));
 		}
+		console.groupEnd();
 	}
-	const res = new TemplateEffector(new Template(node, views, name));
+	const res = new TemplateEffector(new Template(node, views, name), rootName);
 	if (name) {
 		Templates.set(name, res);
 	}

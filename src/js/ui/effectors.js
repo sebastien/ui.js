@@ -280,7 +280,7 @@ export class SlotEffector extends Effector {
 			: (this._template = Templates.get(this.templateName));
 		if (!res) {
 			onError(
-				`SlotEffector: could not find template ${this.templateName}`,
+				`SlotEffector: Could not find template '${this.templateName}'`,
 				[...Templates.keys()]
 			);
 		}
@@ -384,12 +384,10 @@ class TemplateEffectorState extends EffectorState {
 }
 
 export class TemplateEffector {
-	constructor(template) {
+	constructor(template, rootName = undefined) {
 		this.template = template;
-	}
-
-	get name() {
-		return this.template.name;
+		this.name = template.name;
+		this.rootName = rootName;
 	}
 
 	apply(node, value, path = undefined) {
@@ -400,15 +398,13 @@ export class TemplateEffector {
 			const root = view.root.cloneNode(true);
 			// We update the `data-template` and `data-path` attributes, which is
 			// used by `EventEffectors` in particular to find the scope.
-			root.dataset["template"] = this.template.name;
+			root.dataset["template"] = this.rootName || this.name;
 			root.dataset["path"] = path ? path.join(".") : "";
 			node.parentElement.insertBefore(root, node);
 			const nodes = view.effectors.map((_) => {
 				const n = pathNode(_.nodePath, root);
 				return n;
 			});
-			// FIXME: Not sure if this is needed
-			// this.template.name && (this.root.dataset["template"] = this.template.name);
 			const states = [];
 			for (let i in view.effectors) {
 				const e = view.effectors[i];
