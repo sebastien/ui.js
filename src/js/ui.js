@@ -39,6 +39,7 @@ import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
 import { patch, resolve } from "./ui/state.js";
 import { onError } from "./ui/utils.js";
+import tokens from "./ui/tokens.js";
 
 const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
 
@@ -71,7 +72,7 @@ export const ui = (scope = document, context = {}) => {
 	}
 };
 
-export { pub, sub, unsub, patch, resolve };
+export { pub, sub, unsub, patch, resolve, tokens };
 export default ui;
 
 // EOF - vim: et ts=2 sw=2

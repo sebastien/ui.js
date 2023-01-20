@@ -18,6 +18,25 @@ const RE_DIRECTIVE = new RegExp(
 	/^((?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+)(?<stops>\.)?)?$/
 );
 
+// -- topic:directives
+//
+// ## Directives
+//
+// Directives are one-liners in a simple DSL that express selections,
+// transformation, events on updates on data.
+//
+// A directive can have the following components:
+//
+// - A **data selection**, in the form of  path like `todos.items` (absolute) or `.label` (relative), a
+//   special value such as `#key` (current key in the parent) or a combinatio of the above
+//   `[..selected,#key]`, '{count:..items.length,selected:.selected}'
+//
+// - A **data transformation**, prefixed by `|` and using dot-separated names, such as
+//   `.value|lowercase` or `.checked|not`, etc.
+//
+// - An *event*, prefixed by `!` such as `!.Added` or `Todo.Added`. When an event is suffixed by a `.`, it
+//   will stop propagagtino and prevent the default.
+
 // -- doc
 // Parses the directive defined by `text`, where the string
 // is like `data.path|formatter!event`.

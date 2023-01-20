@@ -1,10 +1,12 @@
 // --
-//  ## Utilities
+//  # Utilities
 
 export const onError = (message, context) => {
 	console.error(message, context);
 };
 
+// --
+// ## Key Generation
 export const numcode = (
 	number,
 	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -36,4 +38,70 @@ export const nextKey = (value) => {
 	}
 };
 
+export const hash = (value, seed = 5381) => {
+	const text = typeof value === "string" ? value : JSON.stringify(value);
+	let hash = seed,
+		i = text.length;
+	while (i) {
+		hash = (hash * 33) ^ text.charCodeAt(--i);
+	}
+	return hash >>> 0;
+};
+
+// --
+// ## Structures
+export const asMappable = (f) => (_) => _ instanceof Array ? _.map(f) : f(_);
+export const reduce = (v, f, r) => {
+	if (v instanceof Array) {
+		return v.reduce(f, r);
+	} else {
+		for (let k in v) {
+			const rr = f(r, v[k], k);
+			r = rr !== undefined ? rr : r;
+		}
+		return r;
+	}
+};
+export const map = (v, f) => {
+	if (v instanceof Array) {
+		return v.map(f);
+	} else {
+		const res = {};
+		for (let k in v) {
+			res[k] = f(v[k], k);
+		}
+		return res;
+	}
+};
+export const def = (...rest) => {
+	for (let v of rest) {
+		if (v !== undefined) {
+			return v;
+		}
+	}
+};
+
+export const type = (value) =>
+	value === undefined || value === null
+		? null
+		: typeof value === "object"
+		? value instanceof Array
+			? "array"
+			: Object.getPrototypeOf(value) === Object
+			? "map"
+			: "object"
+		: typeof value;
+
+// --
+// ## Math
+
+export const prel = (v, a, b) => (v - a) / (b - a);
+export const lerp = (a, b, k) => a + (b - a) * k;
+export const clamp = (v, a = 0.0, b = 1.0) => Math.min(Math.max(v, a), b);
+export const minmax = (a, b) => [Math.min(a, b), Math.max(a, b)];
+export const range = (count) => new Array(count).fill(0).map((_, i) => i);
+export const steps = (count) =>
+	range(count)
+		.map((_) => _ / count)
+		.concat([1.0]);
 // EOF

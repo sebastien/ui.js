@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+	<div data-ui="Tabs" data-state="data" ></div>
+
+	<template id="Tabs">
+		<div tabindex="1"
+			styled="reset inline-flex 2pad">
+			<slot out:content=".items">
+				<button 
+					styled="reset 1pad 2round"
+					styled:focus="bg=Blue.focused bd=Blue.border"
+					styled:hover="bg=Blue.hovered bd=Blue.border"
+					on:click="!Select">
+					<slot out:content=".label" /></button>
+			</slot>
+		</div>
+		<!-- FIXME: The following crashes -->
+		<!--
+		<ul>
+			pouet
+			<slot out:content=".items">
+			Pouet
+				<li styled="on-hover-trigger=item">
+					<button styled="on-hover-show=item">Edit</button>
+				</li>
+			</slot>
+		</ul>
+		-->
+		<script type="module">
+		import {tokens} from "../js/ui.js";
+		tokens({
+		
+			// Colors
+			Black: "#000000",
+			White: "#F0F0F0",
+			Blue: "#4979FB",
+
+			// Transformers
+			focused: _ => _.color.tint(_.color.luminance + 0.15),
+			hovered: _ => _.color.tint(_.color.luminance + 0.20),
+			border: _ => _.color.alpha(0.5),
+			pad: _ => _.scaled(["2px", "4px", "6px", "8px"]),
+			round: _ => _.scaled(["2px", "4px", "6px", "8px"]),
+
+			// Rule producers
+			bd: _ => ({borderColor:_}),
+			bg: _ => ({backgroundColor:_}),
+
+			// To be used like `on-hover-trigger=item` in the parent
+			// and `on-hover-show=item`.
+			onHoverTrigger: _ =>  ({
+				[`${_} ${_}-hover`]:{
+					display:"none",
+				},
+				[`${_}:hover ${_}-hover`]:{
+					display:"unset",
+				}}),
+			onHoverShow: _ => `${_}-hover`,
+
+
+			// Rules
+			reset:{
+				outline: "unset",
+				border: "unset",
+				background: "unset",
+				padding: "unset",
+				margin: "unset",
+				lineHeight: "var(--line-height)",
+				fontSize: "1em",
+			},
+			inlineFlex:{
+				display:"inline-flex",
+			},
+
+
+		}).parse(
+"bg=Blue.hovered bd=Blue.border"
+		)
+
+
+		</script>
+	</template>
+
+	<script type="module">
+		import ui from "../js/ui.js";
+		ui(document, {
+		items:[
+		{label:"Home"},
+		{label:"Projects"},
+		{label:"Deployments"},
+		{label:"Members"},
+		{label:"Settings"},
+		] });
+	</script>
+
+</body>
+</html>
