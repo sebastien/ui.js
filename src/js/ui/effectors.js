@@ -1,7 +1,8 @@
 import { composePaths, parsePath, pathNode, pathData } from "./paths.js";
 import { sub, unsub, pub } from "./pubsub.js";
+import { patch } from "./state.js";
 import { onError } from "./utils.js";
-import { bool } from "./formats.js";
+import { Formats, bool, idem } from "./formats.js";
 import { Templates } from "./templates.js";
 
 // --
@@ -25,7 +26,7 @@ class EffectorState {
     return this.update(event.value);
   }
 
-  update(value) {}
+  update(value = this.value) {}
 
   unmount() {}
 
@@ -52,6 +53,7 @@ class AttributeEffectorState extends EffectorState {
       this.effector.name,
       formatter ? formatter(value) : value
     );
+    this.value = value;
     return this;
   }
 }
@@ -76,6 +78,7 @@ class ValueEffectorState extends EffectorState {
   update(value = this.value) {
     const formatter = this.effector.formatter;
     this.node[this.effector.name] = formatter ? formatter(value) : value;
+    this.value = value;
     return this;
   }
 }
@@ -93,6 +96,7 @@ class StyleEffectorState extends EffectorState {
   update(value = this.value) {
     const formatter = this.effector.formatter;
     Object.assign(this.node.style, formatter ? formatter(value) : value);
+    this.value = value;
     return this;
   }
 }
@@ -125,6 +129,10 @@ export class WhenEffector extends Effector {
 // ## Event Effector
 //
 export class EventEffector extends Effector {
+  static Value(event) {
+    // TODO: Should automatically extract data
+    return event.target.value;
+  }
   // -- doc
   // Finds the first ancestor node that has a path.
   static FindScope(node) {
@@ -138,24 +146,32 @@ export class EventEffector extends Effector {
     return [null, null];
   }
 
-  constructor(nodePath, dataPath, event, triggers, stops = false) {
+  // -- doc
+  // Creates a new `EventEffector` that  is triggered by the given `event`,
+  // generating an event `triggers` (when defined), or
+  constructor(nodePath, dataPath, event, directive, stops = false) {
     super(nodePath, dataPath);
     this.event = event;
-    this.triggers = triggers;
-    this.stops = stops;
+    this.directive = directive;
   }
 
   apply(node, value, path = undefined) {
-    const name = this.triggers;
-    const stops = this.stops;
-    // const dataPath = composePaths(path, this.dataPath);
+    const directive = this.directive;
+    const { source, format, event, stops } = directive;
     // TODO: For TodoItem, the path should be .items.0, etc
-    const handler = (event) => {
-      if (name) {
-        const [template, scope] = EventEffector.FindScope(event.target);
-        pub([template, name], { name, scope, data: event });
-      } else {
-        console.warn("TODO EventEffector.apply: implement non-named event");
+    const handler = (data) => {
+      // If there is a path then we update this based on the value
+      if (path && path.length) {
+        patch(
+          path,
+          (Formats[format] || idem)(
+            source ? pathData(source, data) : EventEffector.Value(data)
+          )
+        );
+      }
+      if (event) {
+        const [template, scope] = EventEffector.FindScope(data.target);
+        pub([template, event], { event, scope, data });
       }
       if (stops) {
         event.stopPropagation();
@@ -194,6 +210,7 @@ class SlotEffectorState extends EffectorState {
         if (!this.items.has(event.key)) {
           // FIXME: That does not take into account the order
           this.items.set(
+            event.key,
             this.effector.createItem(this.node, event.value, [
               ...this.path,
               event.key,
@@ -276,9 +293,6 @@ class TemplateEffectorState extends EffectorState {
 
   update(value) {
     const o = this.path.length;
-    if (!this.views) {
-      console.log("TemplateEffectorStatea", this, "views=", this.views);
-    }
     if (value !== null && value !== undefined) {
       for (let view of this.views) {
         for (let state of view.states) {

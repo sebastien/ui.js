@@ -12,26 +12,27 @@
 			<ul>
 				<slot name="items" out:content=".items|TodoItem" />
 			</ul>
-				<input placeholder="New item label" in:value=".label" />
+				<input placeholder="New item label" on:change=".label:.target.value" />
 				<button on:click="!Add">Add</button>
 			<form on:submit="!Add">
 			</form>
 
 		</div>
 		<script type="module">
-			import {sub, patch} from "../js/ui.js"
+			import {sub, patch, resolve} from "../js/ui.js"
 
 
 			sub("TodoItem.Remove", ({scope,event,data})=> {
-				console.log("REMOVE SCOPE", scope);
 				patch(scope, null)
 			});
 
 			sub("Todo.Add", ({scope,event,data})=> {
-				console.log("Add Item SCOPE", scope, data);
+			const state = resolve(scope);
+				const label = state?.label || `New item #${(state?.items?.length||0)+1}`;
+				
 				// TODO: The `null` here indicates that we want to add it
 				// to which ever slot works.
-				patch([...scope, "items", null], {label:"New item"})
+				patch([...scope, "items", null], {label,checked:false})
 			});
 
 			// High Level
@@ -46,8 +47,8 @@
 
 	<template id="TodoItem">
 		<div>
-			<input when=".edited" type="checkbox" out:checked=".checked|bool" on:change=".checked:not" />
-			<input when=".edited|not" type="text" out:value=".label" in:value=".value:change" />
+			<input when=".edited" type="checkbox" out:checked=".checked|bool" on:change=".checked:.target.checked" />
+			<input when=".edited|not" type="text" out:value=".label" on:change=".label:.target.value" />
 			<button on:click="!Remove">Remove</button>
 			<!--
 			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />

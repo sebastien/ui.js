@@ -8,6 +8,7 @@ import {
   AttributeEffector,
 } from "./effectors.js";
 import { Formats, idem } from "./formats.js";
+import { onError } from "./utils.js";
 
 // --
 // ## Views
@@ -44,9 +45,12 @@ const view = (root) => {
     const node = attr.ownerElement;
     const path = nodePath(node, root);
     const parentName = node.nodeName;
-    const [dataPath, format] = parseDirective(attr.value, false);
+    const directive = parseDirective(attr.value, false);
+    const { format } = directive;
     if (parentName === "SLOT" && name === "content") {
-      effectors.push(new SlotEffector(nodePath(node, root), dataPath, format));
+      effectors.push(
+        new SlotEffector(nodePath(node, root), directive.path, format)
+      );
       node.parentElement.replaceChild(
         // This is a placholder, the contents  is not important.
         document.createComment(node.outerHTML),
@@ -62,7 +66,7 @@ const view = (root) => {
           ? ValueEffector
           : AttributeEffector)(
           path,
-          dataPath,
+          directive.path,
           name,
           typeof format === "string" ? Formats[format] : format
         )
@@ -83,23 +87,22 @@ const view = (root) => {
   //   _.removeAttribute("out:contents");
   // }
 
-  for (const { name, attr } of attrs["in"] || {}) {
+  for (const { name, attr } of attrs["in"] || []) {
     const node = attr.ownerElement;
     console.log("TODO: ATTR:IN", { name });
     node.removeAttribute(attr.name);
   }
 
-  for (const { name, attr } of attrs["on"] || {}) {
+  for (const { name, attr } of attrs["on"] || []) {
     const node = attr.ownerElement;
-    const [dataPath, format, effectEvent, stops] = parseDirective(attr.value);
+    const directive = parseDirective(attr.value);
     // TODO: Support "on:change=.checked:not"
     effectors.push(
       new EventEffector(
         nodePath(node, root),
-        dataPath || [""],
+        directive.path || [""],
         name,
-        effectEvent,
-        stops
+        directive
       )
     );
     node.removeAttribute(attr.name);
@@ -107,8 +110,8 @@ const view = (root) => {
 
   // We take care of state change effectors
   for (const node of root.querySelectorAll("*[when]")) {
-    const [dataPath, extractor] = parseDirective(node.getAttribute("when"));
-    effectors.push(new WhenEffector(nodePath(node, root), dataPath, extractor));
+    const { path, format } = parseDirective(node.getAttribute("when"));
+    effectors.push(new WhenEffector(nodePath(node, root), path, format));
     node.removeAttribute("when");
   }
 
@@ -153,21 +156,26 @@ export const template = (node, name = node.getAttribute("id")) => {
 // ## Directives
 
 const RE_DIRECTIVE = new RegExp(
-  /^(?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+)(?<stops>\.)?)?$/
+  /^((?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+)(?<stops>\.)?)?$/
 );
 
 // -- doc
 // Parses the directive defined by `text`, where the string
 // is like `data.path|formatter!event`.
 const parseDirective = (text, defaultFormat = idem) => {
-  const { path, format, event, stops } = text.match(RE_DIRECTIVE)?.groups || {};
+  const match = text.match(RE_DIRECTIVE);
+  if (!match) {
+    onError(`parseDirective: directive cannot be parsed "${text}"`);
+  }
+  const { path, source, format, event, stops } = match.groups;
 
-  return [
-    parsePath(path),
-    defaultFormat ? Formats[format] || defaultFormat : format,
+  return {
+    path: parsePath(path),
+    source: parsePath(source),
+    format: defaultFormat ? Formats[format] || defaultFormat : format,
     event,
-    stops && stops.length ? true : false,
-  ];
+    stops: stops && stops.length ? true : false,
+  };
 };
 
 // -- doc

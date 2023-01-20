@@ -37,7 +37,7 @@
 import { TemplateEffector } from "./ui/effectors.js";
 import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
-import { patch } from "./ui/state.js";
+import { patch, resolve } from "./ui/state.js";
 import { onError } from "./ui/utils.js";
 
 const parseState = (text) => eval(`(${text})`);
@@ -71,7 +71,7 @@ export const ui = (scope = document) => {
   }
 };
 
-export { pub, sub, unsub, patch };
+export { pub, sub, unsub, patch, resolve };
 export default ui;
 
 // EOF - vim: et ts=2 sw=2

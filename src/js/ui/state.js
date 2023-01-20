@@ -49,7 +49,7 @@ export class StateTree {
 
   // -- doc
   // Retrieves the value at the given `path`
-  get(path) {
+  resolve(path) {
     let res = this.state;
     for (let k of path instanceof Array ? path : path.split(".")) {
       if (!res) {
@@ -96,6 +96,7 @@ export class StateTree {
   // Patches the `value` at the given `path`.
   patch(path = null, value = undefined) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
+    console.log("PATCH", path, "with", value);
     if (p.length === 0) {
       this.state = value;
     } else {
@@ -120,15 +121,24 @@ export class StateTree {
             for (let i = key; i < n - 1; i++) {
               pub(
                 [...base, i],
-                new StateEvent("Update", scope[i], scope[i + 1], i)
+                new StateEvent("Update", scope[i], scope[i + 1], i),
+                1 // We limit propagation to the current topic
               );
             }
-            pub(p, new StateEvent("Delete", null, last, scope, n - 1));
+            pub(
+              p,
+              new StateEvent("Delete", null, last, scope, n - 1),
+              1 // We limit propagation to the current topic
+            );
           } else {
             // Or a dictionary
             const previous = scope[key];
             delete scope[key];
-            pub(p, new StateEvent("Delete", null, previous, scope, key));
+            pub(
+              p,
+              new StateEvent("Delete", null, previous, scope, key),
+              1 // We limit propagation to the current topic
+            );
           }
         } else {
           const previous = scope[key];
@@ -149,7 +159,8 @@ export class StateTree {
               previous,
               scope,
               key
-            )
+            ),
+            1 // We limit propagation to the current topic
           );
         }
       }
@@ -159,9 +170,8 @@ export class StateTree {
 
 export const State = new StateTree();
 
-export const patch = (path, data) => {
-  State.patch(path, data);
-};
+export const resolve = (path) => State.resolve(path);
+export const patch = (path, data) => State.patch(path, data);
 
 // DEBUG
 window.STATE = State;

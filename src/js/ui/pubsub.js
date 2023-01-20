@@ -34,11 +34,11 @@ export class Topic {
     return b;
   }
 
-  pub(data) {
+  pub(data, limit = -1) {
     this.value = data;
     let topic = this;
     let offset = 0;
-    while (topic) {
+    while (topic && (limit === -1 || offset < limit)) {
       if (topic.handlers) {
         for (let handler of topic.handlers) {
           // TODO: We should stop propagation
