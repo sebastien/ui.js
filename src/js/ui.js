@@ -40,35 +40,35 @@ import { pub, sub, unsub } from "./ui/pubsub.js";
 import { patch, resolve } from "./ui/state.js";
 import { onError } from "./ui/utils.js";
 
-const parseState = (text) => eval(`(${text})`);
+const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
 
-export const ui = (scope = document) => {
-  const templates = Templates;
+export const ui = (scope = document, context = {}) => {
+	const templates = Templates;
 
-  for (let _ of document.querySelectorAll("template")) {
-    const t = new TemplateEffector(template(_));
-    templates.set(_.getAttribute("id") || templates.length, t);
-  }
+	for (let _ of document.querySelectorAll("template")) {
+		const t = new TemplateEffector(template(_));
+		templates.set(_.getAttribute("id") || templates.length, t);
+	}
 
-  // We render the components
-  for (const node of scope.querySelectorAll("*[data-ui]")) {
-    const { ui, state } = node.dataset;
-    const template = templates.get(ui);
-    const data = parseState(state);
-    if (!template) {
-      onError(`ui.render: Could not find template '{ui}'`, {
-        node,
-        ui,
-      });
-    } else {
-      // We instanciate the template onto the node
-      patch(null, data);
-      const anchor = document.createComment(node.outerHTML);
-      node.parentElement.replaceChild(anchor, node);
-      // TODO: We should keep the returned state
-      template.apply(anchor, data, []);
-    }
-  }
+	// We render the components
+	for (const node of scope.querySelectorAll("*[data-ui]")) {
+		const { ui, state } = node.dataset;
+		const template = templates.get(ui);
+		const data = parseState(state, context);
+		if (!template) {
+			onError(`ui.render: Could not find template '{ui}'`, {
+				node,
+				ui,
+			});
+		} else {
+			// We instanciate the template onto the node
+			patch(null, data);
+			const anchor = document.createComment(node.outerHTML);
+			node.parentElement.replaceChild(anchor, node);
+			// TODO: We should keep the returned state
+			template.apply(anchor, data, []);
+		}
+	}
 };
 
 export { pub, sub, unsub, patch, resolve };
