@@ -174,8 +174,8 @@ export class EventEffector extends Effector {
         pub([template, event], { event, scope, data });
       }
       if (stops) {
-        event.stopPropagation();
-        event.cancelDefault();
+        data.preventDefault();
+        data.stopPropagation();
       }
     };
     node.addEventListener(this.event, handler);

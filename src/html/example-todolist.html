@@ -12,9 +12,9 @@
 			<ul>
 				<slot name="items" out:content=".items|TodoItem" />
 			</ul>
+			<form on:submit="!Nil.">
 				<input placeholder="New item label" on:change=".label:.target.value" />
 				<button on:click="!Add">Add</button>
-			<form on:submit="!Add">
 			</form>
 
 		</div>
