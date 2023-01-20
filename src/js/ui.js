@@ -46,8 +46,8 @@ export const ui = (scope = document, context = {}) => {
 	const templates = Templates;
 
 	for (let _ of document.querySelectorAll("template")) {
-		const t = new TemplateEffector(template(_));
-		templates.set(_.getAttribute("id") || templates.length, t);
+		// This will register the templates in `templates`
+		template(_);
 	}
 
 	// We render the components

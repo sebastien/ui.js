@@ -6,6 +6,7 @@ import {
 	StyleEffector,
 	ValueEffector,
 	AttributeEffector,
+	TemplateEffector,
 } from "./effectors.js";
 import { Formats, idem } from "./formats.js";
 import { onError, makeKey } from "./utils.js";
@@ -225,8 +226,11 @@ export const template = (node, name = node.getAttribute("id")) => {
 				views.push(view(_.cloneNode(true), name));
 		}
 	}
-	console.log("TEMPLATE", node, name);
-	return new Template(node, views, name);
+	const res = new TemplateEffector(new Template(node, views, name));
+	if (name) {
+		Templates.set(name, res);
+	}
+	return res;
 };
 
 // EOF

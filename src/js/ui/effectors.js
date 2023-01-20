@@ -50,19 +50,30 @@ export class Effector {
 // ## Attribute Effector
 //
 class TextEffectorState extends EffectorState {
+	constructor(effector, node, value, path) {
+		super(effector, node, value, path);
+		this.textNode = document.createTextNode("");
+	}
+
 	update(value = this.value) {
-		console.log("EFFECTOR STATE", value, "on", this.node);
+		if (this.value !== value || !this.textNode.parentElement) {
+			this.textNode.data =
+				value === null || value === undefined
+					? ""
+					: typeof value === "string"
+					? value
+					: `${value}`;
+			if (!this.textNode.parentElement) {
+				this.node.parentElement.insertBefore(this.textNode, this.node);
+			}
+		}
+	}
+	unmount() {
+		this.textNode.parentElement?.removeChild(this.textNode);
 	}
 }
 
 class TextEffector extends Effector {
-	static Singleton = null;
-	static Get() {
-		if (!TextEffector.Singleton) {
-			TextEffector.Singleton = new TextEffector();
-		}
-		return TextEffector.Singleton;
-	}
 	apply(node, value, path = undefined) {
 		return new TextEffectorState(this, node, value, path).update();
 	}
@@ -259,23 +270,46 @@ export class SlotEffector extends Effector {
 		super(nodePath, dataPath);
 		this.templateName = templateName;
 		this._template = templateName
-			? Templates.get(templateName)
-			: TextEffector.Get();
+			? undefined
+			: new TextEffector(nodePath, dataPath);
 	}
 
 	get template() {
-		return this._template
+		const res = this._template
 			? this._template
-			: (this._template = this.templateName
-					? Templates.get(this.templateName)
-					: TextEffector.Get());
+			: (this._template = Templates.get(this.templateName));
+		if (!res) {
+			onError(
+				`SlotEffector: could not find template ${this.templateName}`,
+				[...Templates.keys()]
+			);
+		}
+		return res;
 	}
 
 	apply(node, value, path = undefined) {
 		// NOTE: This may be moved directly in the SlotEffectorState constructor,
 		// but we leave it here for now.
+		const isEmpty = value === null || value === undefined;
+		const isAtom =
+			isEmpty ||
+			typeof value !== "object" ||
+			(!(value instanceof Array) &&
+				Object.getPrototypeOf(value) !== Object);
 		const items = new Map();
-		if (value instanceof Array) {
+		if (isEmpty) {
+			// Nothing to do
+		} else if (isAtom) {
+			items.set(
+				null,
+				this.createItem(
+					node, // node
+					value, // value
+					path ? path : [], // path
+					true // isEmpty
+				)
+			);
+		} else if (value instanceof Array) {
 			for (let k = 0; k < value.length; k++) {
 				items.set(
 					k,
@@ -291,7 +325,7 @@ export class SlotEffector extends Effector {
 				items.set(
 					k,
 					this.createItem(
-						nod, // node
+						node, // node
 						value[k], // value
 						path ? [...path, k] : [k] // path // path // path // path
 					)
@@ -301,8 +335,10 @@ export class SlotEffector extends Effector {
 		return new SlotEffectorState(this, node, value, path, items);
 	}
 
-	createItem(node, value, path) {
-		const root = document.createComment(`slot:${path.at(-1)}`);
+	createItem(node, value, path, isEmpty = false) {
+		const root = document.createComment(
+			`slot:${isEmpty ? "null" : path.at(-1)}`
+		);
 		// We need to insert the node before as the template needs a parent
 		node.parentElement.insertBefore(root, node);
 		return this.template.apply(
@@ -350,6 +386,10 @@ class TemplateEffectorState extends EffectorState {
 export class TemplateEffector {
 	constructor(template) {
 		this.template = template;
+	}
+
+	get name() {
+		return this.template.name;
 	}
 
 	apply(node, value, path = undefined) {
