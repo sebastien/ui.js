@@ -30,7 +30,8 @@
 		-->
 		<script type="module">
 		import {tokens} from "../js/ui.js";
-		const t = tokens({
+		console.log("=== Loading tokens");
+		tokens({
 		
 			// Colors
 			Black: "#000000",
@@ -73,15 +74,7 @@
 			inlineFlex:{
 				display:"inline-flex",
 			},
-
-
-		});
-		console.log(t.parse(
-		"on-hover-trigger=item reset inline-flex bg=Blue.hovered bd=Blue.border"
-//"reset inline-flex bg=Blue.hovered bd=Blue.border"
-		))
-
-
+		})
 		</script>
 	</template>
 

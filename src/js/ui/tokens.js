@@ -29,7 +29,9 @@ class TokensContext {
 }
 
 class Tokens {
-	constructor(tokens) {
+	static Context = {};
+
+	constructor(tokens = Tokens.Context) {
 		this.tokens = tokens;
 	}
 
@@ -137,8 +139,12 @@ class Tokens {
 	}
 }
 
+export const styled = (directive) =>
+	new Tokens(Tokens.Context).parse(directive);
+
 export const tokens = (tokens) =>
-	new Tokens(
+	Object.assign(
+		Tokens.Context,
 		map(tokens, (v) =>
 			typeof v === "string" && v.match(RE_COLOR) ? color(v) : v
 		)

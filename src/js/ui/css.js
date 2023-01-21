@@ -138,6 +138,33 @@ export const rules = (rules, parser = undefined) =>
 		{ "&": {} }
 	);
 
+export const css = (rule) => {
+	const res = [];
+
+	return res.join("\n");
+};
+
+// TODO: We should probably not do that
+
+// We register the stylesheet if it's not there already.
+
+export const stylesheet = (rules) => {
+	const res = [];
+	const node = document.createElement("style");
+	for (let selector in rules) {
+		const body = Object.entries(rules[selector])
+			.reduce((r, [k, v]) => (r.push(`${k}:${v}`), r), [])
+			.join(";");
+		// FIXME: This may only work when the  Style node is registered.
+		res.push(`${selector} {${body}}`);
+		//Style.sheet.insertRule(`${selector} {${body}}`, 0);
+	}
+	// This works
+	document.head.appendChild(node);
+	node.innerHTML = res.join("\n");
+	return node;
+};
+
 // -- doc
 // Formats the given `value` with the given `unit` with the given
 // `precision` (in decimals).

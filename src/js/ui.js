@@ -38,6 +38,7 @@ import { TemplateEffector } from "./ui/effectors.js";
 import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
 import { patch, resolve } from "./ui/state.js";
+import { stylesheet } from "./ui/css.js";
 import { onError } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
 
@@ -72,7 +73,7 @@ export const ui = (scope = document, context = {}) => {
 	}
 };
 
-export { pub, sub, unsub, patch, resolve, tokens };
+export { pub, sub, unsub, patch, resolve, tokens, stylesheet };
 export default ui;
 
 // EOF - vim: et ts=2 sw=2

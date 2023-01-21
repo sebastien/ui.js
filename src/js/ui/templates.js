@@ -10,6 +10,8 @@ import {
 } from "./effectors.js";
 import { Formats, idem } from "./formats.js";
 import { onError, makeKey } from "./utils.js";
+import { styled } from "./tokens.js";
+import { stylesheet } from "./css.js";
 
 // --
 // ## Directives
@@ -113,6 +115,17 @@ class View {
 const view = (root, templateName = undefined) => {
 	const effectors = [];
 
+	console.log("=== Processing styles");
+	// We expand the style attributes
+	for (const node of root.querySelectorAll("*[styled]")) {
+		const { rules, classes } = styled(node.getAttribute("styled"));
+		stylesheet(rules);
+		classes.forEach((_) => node.classList.add(_));
+		node.removeAttribute("styled");
+	}
+
+	// TODO: Query the styled variants
+
 	//--
 	// We start by getting all the nodes within the `in`, `out` and `on`
 	// namespaces.
@@ -212,12 +225,13 @@ const view = (root, templateName = undefined) => {
 		node.removeAttribute(attr.name);
 	}
 
-	// We take care of state change effectors
-	for (const node of root.querySelectorAll("*[when]")) {
-		const { path, format } = parseDirective(node.getAttribute("when"));
-		effectors.push(new WhenEffector(nodePath(node, root), path, format));
-		node.removeAttribute("when");
-	}
+	// // We take care of state change effectors
+	// // TODO: This won't work for nested templates
+	// for (const node of root.querySelectorAll("*[when]")) {
+	// 	const { path, format } = parseDirective(node.getAttribute("when"));
+	// 	effectors.push(new WhenEffector(nodePath(node, root), path, format));
+	// 	node.removeAttribute("when");
+	// }
 
 	return new View(root, effectors);
 };
@@ -252,7 +266,6 @@ export const template = (
 	for (let _ of node.nodeName === "TEMPLATE"
 		? node.content.children
 		: node.children) {
-		console.group("VIEW FROM", _);
 		switch (_.nodeName) {
 			case "STYLE":
 				break;
@@ -260,11 +273,18 @@ export const template = (
 				document.body.appendChild(_);
 				break;
 			default:
-				views.push(view(clone ? _.cloneNode(true) : _, name));
+				views.push(_);
 		}
 		console.groupEnd();
 	}
-	const res = new TemplateEffector(new Template(node, views, name), rootName);
+	const res = new TemplateEffector(
+		new Template(
+			node,
+			views.map((_) => view(clone ? _.cloneNode(true) : _), name),
+			name
+		),
+		rootName
+	);
 	if (name) {
 		Templates.set(name, res);
 	}
