@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html>
-<body>
+	<head>
+		<style>
+			@import url("https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&Karla:wght@400;500;600;700;800&display=swap");
+		</style>
+	</head>
+	<body>
+		<div data-ui="Tabs" data-state="data"></div>
 
-	<div data-ui="Tabs" data-state="data" ></div>
-
-	<template id="Tabs">
-		<div tabindex="1"
-			styled="reset inline-flex 2pad">
-			<slot out:content=".items">
-				<button 
-					styled="reset 1pad 2round"
-					styled:focus="bg=Blue.focused bd=Blue.border"
-					styled:hover="bg=Blue.hovered bd=Blue.border"
-					on:click="!Select">
-					<slot out:content=".label" /></button>
-			</slot>
-		</div>
-		<!-- FIXME: The following crashes -->
-		<!--
+		<template id="Tabs">
+			<div tabindex="1" styled="reset base inline-flex 2pad">
+				<slot out:content=".items">
+					<button
+						styled="selectable reset 1rd ph=4pad pv=2pad bg=Blue.fill.grey mg=1pad"
+						styled:focus="bg=Blue.focused bd=Blue.border"
+						styled:hover="bg=Blue.hovered bd=Blue.border"
+						on:click="!Select"
+					>
+						<slot out:content=".label" />
+					</button>
+				</slot>
+			</div>
+			<!-- FIXME: The following crashes -->
+			<!--
 		<ul>
 			pouet
 			<slot out:content=".items">
@@ -28,67 +33,99 @@
 			</slot>
 		</ul>
 		-->
+		</template>
+
 		<script type="module">
-		import {tokens} from "../js/ui.js";
-		console.log("=== Loading tokens");
-		tokens({
-		
-			// Colors
-			Black: "#000000",
-			White: "#F0F0F0",
-			Blue: "#4979FB",
-
-			// Transformers
-			focused: _ => _.color.tint(_.color.luminance + 0.15),
-			hovered: _ => _.color.tint(_.color.luminance + 0.20),
-			border: _ => _.color.alpha(0.5),
-			pad: _ => _.scaled(["2px", "4px", "6px", "8px"]),
-			round: _ => _.scaled(["2px", "4px", "6px", "8px"]),
-
-			// Rule producers
-			bd: _ => ({borderColor:_.color}),
-			bg: _ => ({backgroundColor:_.color}),
-
-			// To be used like `on-hover-trigger=item` in the parent
-			// and `on-hover-show=item`.
-			onHoverTrigger: _ =>  ({
-				[`.${_.addClass(_)} .${_}-hover`]:{
-					display:"none",
+			import ui from "../js/ui.js";
+			ui(
+				document,
+				{
+					items: [
+						{ label: "Home" },
+						{ label: "Projects" },
+						{ label: "Deployments" },
+						{ label: "Members" },
+						{ label: "Settings" },
+					],
 				},
-				[`.${_}:hover .${_}-hover`]:{
-					display:"unset",
-				}}),
-			onHoverShow: _ => `${_}-hover`,
+				{
+					// Colors
+					Black: "#000000",
+					White: "#F0F0F0",
+					Blue: "#4979FB",
 
+					// Transformers
+					focused: (_) => _.color.tint(_.color.luminance + 0.15),
+					hovered: (_) => _.color.tint(_.color.luminance + 0.2),
+					fill: (_) => _.color.grey(0.5).alpha(0.5),
+					border: (_) => _.color.alpha(0.5),
+					grey: (_) => _.color.grey,
+					pad: (_) => _.scaled(["2px", "4px", "6px", "8px"]),
 
-			// Rules
-			reset:{
-				outline: "unset",
-				border: "unset",
-				background: "unset",
-				padding: "unset",
-				margin: "unset",
-				lineHeight: "var(--line-height)",
-				fontSize: "1em",
-			},
-			inlineFlex:{
-				display:"inline-flex",
-			},
-		})
+					// Rule producers
+					rd: (_) => ({
+						borderRadius: _.scaled(["2px", "4px", "6px", "8px"]),
+					}),
+					bd: (_) => ({ borderColor: _.color }),
+					bg: (_) => ({ backgroundColor: _.color }),
+					// Padding
+					pd: (_) => ({ padding: _.value }),
+					ph: (_) => ({
+						paddingLeft: _.value,
+						paddingRight: _.value,
+					}),
+					pv: (_) => ({
+						paddingTop: _.value,
+						paddingBottom: _.value,
+					}),
+					// Margin
+					mg: (_) => ({ margin: _.value }),
+					mh: (_) => ({
+						marginLeft: _.value,
+						marginRight: _.value,
+					}),
+					mv: (_) => ({
+						marginTop: _.value,
+						marginBottom: _.value,
+					}),
+
+					// To be used like `on-hover-trigger=item` in the parent
+					// and `on-hover-show=item`.
+					onHoverTrigger: (_) => ({
+						[`.${_.addClass(_)} .${_}-hover`]: {
+							display: "none",
+						},
+						[`.${_}:hover .${_}-hover`]: {
+							display: "unset",
+						},
+					}),
+					onHoverShow: (_) => `${_}-hover`,
+
+					// Rules
+					reset: {
+						outline: "unset",
+						border: "unset",
+						background: "unset",
+						padding: "unset",
+						margin: "unset",
+						lineHeight: "var(--line-height)",
+						fontSize: "1em",
+					},
+					base: {
+						// "@import": "url('https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&Karla:wght@400;500;600;700;800&display=swap')"
+						fontFamily: ["Karla", "sans-serif"],
+						fontSize: "14px",
+						["--line-height"]: "1.25em",
+					},
+					selectable: {
+						cursor: "pointer",
+					},
+					inlineFlex: {
+						display: "inline-flex",
+						flexWrap: "wrap",
+					},
+				}
+			);
 		</script>
-	</template>
-
-	<script type="module">
-		import ui from "../js/ui.js";
-		ui(document, {
-		items:[
-		{label:"Home"},
-		{label:"Projects"},
-		{label:"Deployments"},
-		{label:"Members"},
-		{label:"Settings"},
-		] });
-	</script>
-
-</body>
+	</body>
 </html>

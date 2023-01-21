@@ -84,7 +84,7 @@ const iterAttributesLike = function* (node, regexp) {
 // -- doc
 // Iterates through the attributes that match the given RegExp. This is
 // because we need to query namespace selectors.
-const queryAttributesLike = function* (node, regexp) {
+const iterAttributes = function* (node, regexp) {
 	let walker = document.createTreeWalker(
 		node,
 		NodeFilter.SHOW_ELEMENT,
@@ -108,6 +108,15 @@ class View {
 	}
 }
 
+const iterSelector = function* (node, selector) {
+	if (node.matches(selector)) {
+		yield node;
+	}
+	for (const _ of node.querySelectorAll(selector)) {
+		yield _;
+	}
+};
+
 // -- doc
 // Creates a view from the given `root` node, looking for specific
 // attribute types (`in:*=`, `out:*=`, `on:*=`, `when=`) and
@@ -115,9 +124,8 @@ class View {
 const view = (root, templateName = undefined) => {
 	const effectors = [];
 
-	console.log("=== Processing styles");
 	// We expand the style attributes
-	for (const node of root.querySelectorAll("*[styled]")) {
+	for (const node of iterSelector(root, "*[styled]")) {
 		const { rules, classes } = styled(node.getAttribute("styled"));
 		stylesheet(rules);
 		classes.forEach((_) => node.classList.add(_));
@@ -130,7 +138,7 @@ const view = (root, templateName = undefined) => {
 	// We start by getting all the nodes within the `in`, `out` and `on`
 	// namespaces.
 	const attrs = {};
-	for (const [match, attr] of queryAttributesLike(
+	for (const [match, attr] of iterAttributes(
 		root,
 		/^(?<type>in|out|on):(?<name>.+)$/
 	)) {
@@ -213,7 +221,6 @@ const view = (root, templateName = undefined) => {
 		const node = attr.ownerElement;
 		const directive = parseDirective(attr.value);
 		// TODO: Support "on:change=.checked:not"
-		console.log("on", { name, directive, node });
 		effectors.push(
 			new EventEffector(
 				nodePath(node, root),

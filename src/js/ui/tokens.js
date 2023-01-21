@@ -15,8 +15,28 @@ const RE_TOKEN = new RegExp(
 
 class TokensContext {
 	constructor(tokens, classes = []) {
-		Object.assign(this, tokens);
 		this.classes = classes;
+		this.value = undefined;
+		this.color = undefined;
+		Object.assign(this, tokens);
+	}
+
+	eval(value) {
+		return value instanceof TokensContext ? this.value : value;
+	}
+
+	scaled(options) {
+		const value = this.value;
+		if (typeof value === "number") {
+			const n = options.length;
+			return options[Math.max(Math.min(n - 1, parseInt(value)), 0)];
+		} else {
+			onError(
+				`TokensContext.scaled: value should be a number, got ${typeof value}`,
+				{ value }
+			);
+			return null;
+		}
 	}
 	addClass(name) {
 		const n = name instanceof TokensContext ? name.value : name;
@@ -79,8 +99,9 @@ class Tokens {
 						const v = token.decimal
 							? parseFloat(token.number)
 							: parseInt(token.number);
+						context.value = v;
 						const u = context[token.unit];
-						value = `${v}${u ? u(v) : token.unit || "px"}`;
+						value = u ? u(context) : `${v}${token.unit || "px"}`;
 					}
 					// We assign the created value.
 					context.value = value;

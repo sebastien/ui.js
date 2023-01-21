@@ -44,18 +44,23 @@ import tokens from "./ui/tokens.js";
 
 const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
 
-export const ui = (scope = document, context = {}) => {
-	const templates = Templates;
+export const ui = (scope = document, context = {}, styles = undefined) => {
+	const templates = [];
+	const components = [];
+	const style = undefined;
+
+	// NOTE: This is a side-effect and will register the styles as tokens.
+	tokens(styles);
 
 	for (let _ of document.querySelectorAll("template")) {
 		// This will register the templates in `templates`
-		template(_);
+		templates.push(template(_));
 	}
 
 	// We render the components
 	for (const node of scope.querySelectorAll("*[data-ui]")) {
 		const { ui, state } = node.dataset;
-		const template = templates.get(ui);
+		const template = Templates.get(ui);
 		const data = parseState(state, context);
 		if (!template) {
 			onError(`ui.render: Could not find template '{ui}'`, {
@@ -68,9 +73,11 @@ export const ui = (scope = document, context = {}) => {
 			const anchor = document.createComment(node.outerHTML);
 			node.parentElement.replaceChild(anchor, node);
 			// TODO: We should keep the returned state
-			template.apply(anchor, data, []);
+			components.push(template.apply(anchor, data, []));
 		}
 	}
+
+	return { templates, components, style };
 };
 
 export { pub, sub, unsub, patch, resolve, tokens, stylesheet };

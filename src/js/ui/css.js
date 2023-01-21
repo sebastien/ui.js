@@ -94,6 +94,11 @@ const RE_PROPERY_TEMPLATE = new RegExp(
 export const expandProperty = (value, parser = undefined) => {
 	if (value instanceof Color) {
 		return value.hex;
+	} else if (value instanceof Array) {
+		// To support `fontFamily:["Karla", "sans-serif"]`
+		value = value
+			.map((_) => (_.indexOf(" ") !== -1 ? `"${_}"` : _))
+			.join(", ");
 	} else if (value instanceof Object) {
 		return Object.entries(value).reduce(
 			(r, [k, v]) => (
