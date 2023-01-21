@@ -58,7 +58,7 @@ class Tokens {
 	// -- doc
 	// Returns `{rules, classes}` for the expanded tokens defined in the given
 	// `text`, based on the `tokens` definition (optionally the current ones)
-	parse(text, tokens = this.tokens) {
+	parse(text, suffix = undefined, tokens = this.tokens) {
 		const classes = [];
 		const css = {};
 		// Tokens are separated by spaces, like "TOKEN TOKEN TOKEN"
@@ -149,7 +149,7 @@ class Tokens {
 				if (k.indexOf("&") !== -1) {
 					const c = numcode(hash(v));
 					classes.indexOf(c) === -1 && classes.push(c);
-					r[k.replaceAll("&", `.${c}`)] = v;
+					r[k.replaceAll("&", `.${c}${suffix ? suffix : ""}`)] = v;
 				} else {
 					r[k] = v;
 				}
@@ -160,8 +160,8 @@ class Tokens {
 	}
 }
 
-export const styled = (directive) =>
-	new Tokens(Tokens.Context).parse(directive);
+export const styled = (directive, suffix = undefined) =>
+	new Tokens(Tokens.Context).parse(directive, suffix);
 
 export const tokens = (tokens) =>
 	Object.assign(

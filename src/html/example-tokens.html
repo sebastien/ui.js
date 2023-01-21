@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<style>
-			@import url("https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&Karla:wght@400;500;600;700;800&display=swap");
-		</style>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&family=Karla:wght@400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		/>
 	</head>
 	<body>
 		<div data-ui="Tabs" data-state="data"></div>
 
 		<template id="Tabs">
-			<div tabindex="1" styled="reset base inline-flex 2pad">
+			<div styled="reset base inline-flex 2pad">
 				<slot out:content=".items">
 					<button
-						styled="selectable reset 1rd ph=4pad pv=2pad bg=Blue.fill.grey mg=1pad"
-						styled:focus="bg=Blue.focused bd=Blue.border"
-						styled:hover="bg=Blue.hovered bd=Blue.border"
+						styled="selectable reset 2br ph=4pad pv=2pad bg=Blue.fill.transparent bd=Blue.border txt=Blue bs=1px mg=1pad"
+						styled:hover="bg=Blue.hovered"
+						styled:focus="bg=Blue.focused bd=Blue.focused"
+						styled:active="bg=Blue.focused"
 						on:click="!Select"
+						tabindex="1"
 					>
 						<slot out:content=".label" />
 					</button>
@@ -52,21 +57,30 @@
 					// Colors
 					Black: "#000000",
 					White: "#F0F0F0",
-					Blue: "#4979FB",
+					Blue: "#3e38af",
 
 					// Transformers
-					focused: (_) => _.color.tint(_.color.luminance + 0.15),
-					hovered: (_) => _.color.tint(_.color.luminance + 0.2),
+					focused: (_) => _.color.tint(0.5),
+					hovered: (_) => _.color.tint(0.75),
 					fill: (_) => _.color.grey(0.5).alpha(0.5),
+					transparent: (_) => _.color.alpha(0.0),
 					border: (_) => _.color.alpha(0.5),
 					grey: (_) => _.color.grey,
 					pad: (_) => _.scaled(["2px", "4px", "6px", "8px"]),
 
 					// Rule producers
-					rd: (_) => ({
+					txt: (_) => ({
+						color: _.color,
+					}),
+					br: (_) => ({
 						borderRadius: _.scaled(["2px", "4px", "6px", "8px"]),
 					}),
-					bd: (_) => ({ borderColor: _.color }),
+					bd: (_) => ({
+						borderColor: _.color,
+					}),
+					bs: (_) => ({
+						borderWidth: _.value,
+					}),
 					bg: (_) => ({ backgroundColor: _.color }),
 					// Padding
 					pd: (_) => ({ padding: _.value }),
@@ -103,11 +117,11 @@
 
 					// Rules
 					reset: {
-						outline: "unset",
-						border: "unset",
-						background: "unset",
-						padding: "unset",
-						margin: "unset",
+						outline: "0px solid transparent",
+						border: "0px solid transparent",
+						background: "transparent",
+						padding: "0px",
+						margin: "0px",
 						lineHeight: "var(--line-height)",
 						fontSize: "1em",
 					},

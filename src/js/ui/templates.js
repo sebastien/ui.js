@@ -124,14 +124,6 @@ const iterSelector = function* (node, selector) {
 const view = (root, templateName = undefined) => {
 	const effectors = [];
 
-	// We expand the style attributes
-	for (const node of iterSelector(root, "*[styled]")) {
-		const { rules, classes } = styled(node.getAttribute("styled"));
-		stylesheet(rules);
-		classes.forEach((_) => node.classList.add(_));
-		node.removeAttribute("styled");
-	}
-
 	// TODO: Query the styled variants
 
 	//--
@@ -140,15 +132,35 @@ const view = (root, templateName = undefined) => {
 	const attrs = {};
 	for (const [match, attr] of iterAttributes(
 		root,
-		/^(?<type>in|out|on):(?<name>.+)$/
+		/^(?<type>in|out|on|styled):(?<name>.+)$/
 	)) {
 		const type = match.groups.type;
 		const name = match.groups.name;
 		(attrs[type] = attrs[type] || []).push({ name, attr });
 	}
 
+	// We expand the style attributes
+	const styledRules = {};
+	for (const node of iterSelector(root, "*[styled]")) {
+		const { rules, classes } = styled(node.getAttribute("styled"));
+		Object.assign(styledRules, rules);
+		classes.forEach((_) => node.classList.add(_));
+		node.removeAttribute("styled");
+	}
+
+	for (const { name, attr } of attrs["styled"] || []) {
+		const { rules, classes } = styled(attr.value, `:${name}`);
+		Object.assign(styledRules, rules);
+		const node = attr.ownerElement;
+		classes.forEach((_) => node.classList.add(_));
+		node.removeAttribute("styled");
+	}
+	if (Object.keys(styledRules).length > 0) {
+		stylesheet(styledRules);
+	}
+
 	// We take care of attribute/content/value effectors
-	for (const { name, attr } of attrs["out"] || {}) {
+	for (const { name, attr } of attrs["out"] || []) {
 		const node = attr.ownerElement;
 		const path = nodePath(node, root);
 		const parentName = node.nodeName;
