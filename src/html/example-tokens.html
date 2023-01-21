@@ -30,7 +30,7 @@
 		-->
 		<script type="module">
 		import {tokens} from "../js/ui.js";
-		tokens({
+		const t = tokens({
 		
 			// Colors
 			Black: "#000000",
@@ -45,16 +45,16 @@
 			round: _ => _.scaled(["2px", "4px", "6px", "8px"]),
 
 			// Rule producers
-			bd: _ => ({borderColor:_}),
-			bg: _ => ({backgroundColor:_}),
+			bd: _ => ({borderColor:_.color}),
+			bg: _ => ({backgroundColor:_.color}),
 
 			// To be used like `on-hover-trigger=item` in the parent
 			// and `on-hover-show=item`.
 			onHoverTrigger: _ =>  ({
-				[`${_} ${_}-hover`]:{
+				[`.${_.addClass(_)} .${_}-hover`]:{
 					display:"none",
 				},
-				[`${_}:hover ${_}-hover`]:{
+				[`.${_}:hover .${_}-hover`]:{
 					display:"unset",
 				}}),
 			onHoverShow: _ => `${_}-hover`,
@@ -75,9 +75,11 @@
 			},
 
 
-		}).parse(
-"bg=Blue.hovered bd=Blue.border"
-		)
+		});
+		console.log(t.parse(
+		"on-hover-trigger=item reset inline-flex bg=Blue.hovered bd=Blue.border"
+//"reset inline-flex bg=Blue.hovered bd=Blue.border"
+		))
 
 
 		</script>

@@ -2,164 +2,147 @@
 // # Tokens
 
 import color, { RE_COLOR, Color } from "./color.js";
+import { rules, propertyName, unpropertyName } from "./css.js";
+import { map, numcode, hash, onError } from "./utils.js";
 
-// const RE_TOKEN = new RegExp(
-// 	"(\\.(?<key>[A-Za-z_]+)(?<factor>\\d+)|(?<value>\\d+(\\.\\d+)?)(?<unit>[A-Za-z]+)|(?<name>[A-Za-z_]+))",
-// 	"g"
-// );
+const RE_TOKEN_DIRECTIVE =
+	/^((?<assignment>[A-Za-z][A-Za-z0-9]*(-[A-Za-z][A-Za-z0-9]*)*)=)?(?<tokens>.+)$/;
 
-export class Token {
-	constructor(steps) {
-		this.steps = [...steps];
+// TODO: We may want to have a literal string
+const RE_TOKEN = new RegExp(
+	"^((?<number>\\d+(?<decimal>\\.\\d+)?)(?<unit>\\w+)|(?<name>[\\w\\d_]+))$"
+);
+
+class TokensContext {
+	constructor(tokens, classes = []) {
+		Object.assign(this, tokens);
+		this.classes = classes;
 	}
-
-	// This is the main function
-	eval(context = {}) {
-		// The resolver becomes a function that gets assigned the state, while resolving
-		// The context.
-		const resolver = (
-			name = "value",
-			factor = undefined,
-			state = undefined
-		) => {
-			const value =
-				state && state[name] !== undefined
-					? state[name]
-					: context[name];
-			if (typeof value === "string") {
-				return { value: color(value) };
-			} else if (typeof value === "function") {
-				// TODO: We may want to merge in the rest of the context, maybe not only the value?
-				factor = factor ? parseFloat(factor) : factor;
-				const res = value(
-					// NOTE: We copy the state in the function so that the context is accessible
-					Object.assign(
-						(name, factor) => resolver(name, factor, state).value,
-						state
-					),
-					factor
-				);
-				return {
-					value: res,
-				};
-			} else if (typeof value === "object") {
-				return (({ value, ...rest }) => rest)(value);
-			} else {
-				throw new Error(`Undefined token '${name}'`);
-			}
-		};
-
-		return this.steps.reduce((r, v) => {
-			const { name, factor } = v;
-			const { value, ...rest } = resolver(name, factor, r);
-			return Object.assign(r, {
-				color: value instanceof Color ? value : r.color,
-				value,
-				...rest,
-			});
-		}, {});
+	addClass(name) {
+		const n = name instanceof TokensContext ? name.value : name;
+		this.classes.indexOf(n) === -1 && this.classes.push(n);
+		return this;
+	}
+	toString() {
+		return this.value instanceof Color ? this.value.hex : `${this.value}`;
 	}
 }
 
-export const token = (text) => {
-	const r = [];
-	while (true) {
-		const m = RE_TOKEN.exec(text);
-		if (!m) {
-			break;
-		} else if (m.groups.key !== undefined) {
-			r.push({
-				type: "factor",
-				name: m.groups.key,
-				factor: parseInt(m.groups.factor),
-			});
-		} else if (m.groups.name !== undefined) {
-			r.push({ type: "symbol", name: m.groups.name });
-		} else if (m.groups.value !== undefined) {
-			r.push({
-				type: "metric",
-				factor: m.groups.value,
-				name: m.groups.unit,
-			});
-		} else {
-			throw new Error(`Unexpected match: ${m}`);
-		}
-	}
-	return new Token(r);
-};
-
-const RE_TOKEN_DIRECTIVE = /((?<assignment>[a-z]+)=)?(?<tokens>.+)/;
-const RE_TOKEN = new RegExp(
-	"(?<number>\\d+(?<decimal>\\.\\d+)?)(?<unit>\\w+)|(?<name>[\\w\\d_]+)"
-);
-
-class TokensDefinition {
+class Tokens {
 	constructor(tokens) {
 		this.tokens = tokens;
 	}
+
+	// -- doc
+	// Returns `{rules, classes}` for the expanded tokens defined in the given
+	// `text`, based on the `tokens` definition (optionally the current ones)
 	parse(text, tokens = this.tokens) {
-		console.log("PARSING", text);
+		const classes = [];
+		const css = {};
+		// Tokens are separated by spaces, like "TOKEN TOKEN TOKEN"
 		for (let d of text.split(" ")) {
+			// Tokens are now parsed
 			const match = d.match(RE_TOKEN_DIRECTIVE);
-			if (match) {
-				// We parse the token and get a value
-				const context = { ...tokens };
+			if (!match) {
+				// They're expected to match
+				onError(`Tokens.parse: Cannot parse token '${d}' in ${text}`);
+			} else {
+				// We parse the token and get a value from the chain of
+				// tokens.
+				const context = new TokensContext(tokens, classes);
+				// The chain of tokens is separated by dots.
 				for (let t of match.groups.tokens.split(".")) {
+					// Now we try to parse the token
 					const token = t.match(RE_TOKEN)?.groups;
 					let value = undefined;
 					if (!token) {
-						// TODO: Should log error
+						// We can't match a token, so we look for the name
+						// in our context, or otherwise the value will
+						// be the string itself.
+						value = context[t] || context[unpropertyName(t)] || t;
 					} else if (token.name) {
-						value = context[token.name];
+						// If it's a named token, we lookup the corresponding
+						// token in the context, defaulting to the token name.
+						value =
+							context[token.name] ||
+							context[unpropertyName(token.name)] ||
+							token.name;
+						// If we have a function, we apply it to the context
 						if (typeof value === "function") {
 							value = value(context);
 						}
 					} else {
+						// If it's a number, we apply it to the unit,
+						// which we lookup in the context first.
 						const v = token.decimal
 							? parseFloat(token.number)
 							: parseInt(token.number);
 						const u = context[token.unit];
 						value = `${v}${u ? u(v) : token.unit || "px"}`;
 					}
+					// We assign the created value.
 					context.value = value;
+					// If it's a color, we assign it.
 					if (value instanceof Color) {
 						context.color = value;
 					}
 				}
-				// We assign the value
-				const value = context.value;
+				// We assign the to our css;
+				let value = context.value;
 				const name = match.groups.assignment;
 				if (name) {
-					const transform = context[name];
-					const rule = transform(value);
-					// TODO: We should process and register the rule
+					// If the directive has an assignment (eg. `bg=Blue`), then we need to
+					// pass the context to the transformer, which will generate
+					// CSS directives.
+					const transformer =
+						context[name] || context[unpropertyName(name)];
+					if (!transformer) {
+						onError(
+							`Tokens.parse: Can't find transformer '${name}' or '${propertyName(
+								name
+							)}`,
+							Object.keys(context)
+						);
+						value = null;
+					} else {
+						value = transformer(context);
+						Object.assign(css, transformer(context));
+					}
+				}
+				if (value === null) {
+					// We had an error
+				} else if (typeof value === "object") {
+					Object.assign(css, value);
+				} else {
+					onError(
+						`Token.parse: token expected to return an object: '${d} produced '${typeof value}'`,
+						value
+					);
 				}
 			}
 		}
+		return {
+			rules: Object.entries(rules(css)).reduce((r, [k, v]) => {
+				if (k.indexOf("&") !== -1) {
+					const c = numcode(hash(v));
+					classes.indexOf(c) === -1 && classes.push(c);
+					r[k.replaceAll("&", `.${c}`)] = v;
+				} else {
+					r[k] = v;
+				}
+				return r;
+			}, {}),
+			classes,
+		};
 	}
 }
-export const parseDefinition = (definition) => {
-	const res = {};
-	for (let k in definition) {
-		const v = definition[k];
-		const t = typeof v;
-		if (t === "string") {
-			if (v.match(RE_COLOR)) {
-				res[k] = color(v);
-			} else {
-				console.log("TODO: String", v);
-			}
-		} else if (t === "function") {
-			res[k] = v;
-		} else {
-			res[k] = v;
-		}
-	}
-	return new TokensDefinition(res);
-};
 
-export const tokens = parseDefinition;
-// SEE: Sourced from <https://observablehq.com/@sebastien/styling>
+export const tokens = (tokens) =>
+	new Tokens(
+		map(tokens, (v) =>
+			typeof v === "string" && v.match(RE_COLOR) ? color(v) : v
+		)
+	);
 
 // --
 // ## DSL
@@ -169,4 +152,4 @@ export const tokens = parseDefinition;
 
 export default tokens;
 
-// EOF
+// EOF  - vim: ts=4 sw=4 noet

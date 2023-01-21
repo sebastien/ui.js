@@ -7,6 +7,18 @@ export const onError = (message, context) => {
 
 // --
 // ## Key Generation
+
+export const numfmt = (value, precision = 0) => {
+	const p = Math.pow(10, precision);
+	const v = parseFloat(value);
+	const w = Math.round(v * p);
+	const k = `${w}`;
+	const i = k.length - precision;
+	return precision && v * p != w
+		? `${k.substring(0, i) || "0"}.${k.substring(i) || "0"}`
+		: value;
+};
+
 export const numcode = (
 	number,
 	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

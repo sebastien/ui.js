@@ -1,3 +1,7 @@
+import { map, numfmt } from "./utils.js";
+import { idem } from "./formats.js";
+import { Color } from "./color.js";
+
 // --
 // ## CSS
 
@@ -42,11 +46,18 @@ const CSS_UNITS = [
 	return r;
 }, {});
 
-const RE_CSS_PROPERTY = /[A-Za-z][a-z]*/g;
-export const cssPropertyName = (name) => {
-	if (name && name.startsWith("--")) return name;
-	else {
-		const property = RE_CSS_PROPERTY;
+const RE_PROPERTY =
+	/^((?<kebab>(--)?[a-z]+(-[a-z]+)*)|(?<pascal>[a-z]+([A-Z][a-z]+)*))$/;
+window.RE_PROPERTY = RE_PROPERTY;
+
+// --
+// Normalize the given name to be a CSS property name, typically
+// by taking a `camelCase` and returning a `kebab-case`.
+export const propertyName = (name) => {
+	if (name && name.startsWith("--")) {
+		return name;
+	} else {
+		const property = /[A-Za-z][a-z]*/g;
 		const res = [];
 		let match = null;
 		while ((match = property.exec(name)) !== null) {
@@ -56,4 +67,83 @@ export const cssPropertyName = (name) => {
 	}
 };
 
-// EOF
+// -- doc
+// Takes a `kebab-case` name and returns a `camelCase` version.
+export const unpropertyName = (name) =>
+	name.indexOf("-") >= 0
+		? name
+				.split("-")
+				.map((v, i) =>
+					i === 0
+						? v.toLowerCase()
+						: `${v.at(0).toUpperCase()}${v
+								.substring(1)
+								.toLowerCase()}`
+				)
+				.join("")
+		: name;
+
+const RE_PROPERY_TEMPLATE = new RegExp(
+	"\\$((?<token>[\\w_]+(\\.[\\w_]+)*)|{(?<expr>[^}]+)})",
+	"g"
+);
+
+// -- doc
+// Expands the property `value` as a string, where any expression
+// like `$token.name` or `${...}` is passed to the `parser` function.
+export const expandProperty = (value, parser = undefined) => {
+	if (value instanceof Color) {
+		return value.hex;
+	} else if (value instanceof Object) {
+		return Object.entries(value).reduce(
+			(r, [k, v]) => (
+				(r[typeof v === "string" ? propertyName(k) : k] =
+					expandProperty(v, parser)),
+				r
+			),
+			{}
+		);
+	}
+	const res = [];
+	let match = null;
+	let offset = 0;
+	while ((match = RE_PROPERY_TEMPLATE.exec(value)) !== null) {
+		// We push the inbetween text
+		res.push(value.substring(offset, match.index));
+		// We parse the token and push the result
+		res.push(
+			(parser || idem)(
+				match.groups.token || match.groups.expr,
+				match.groups.expr ? true : false
+			)
+		);
+		offset = match.index + match[0].length;
+	}
+	if (offset === 0) {
+		return value;
+	} else {
+		res.push(value.substring(offset, value.length));
+		return res.join("");
+	}
+};
+
+export const rules = (rules, parser = undefined) =>
+	Object.entries(expandProperty(rules, parser)).reduce(
+		(r, [k, v]) => (
+			k.match(RE_PROPERTY)
+				? (r["&"][propertyName(k)] = expandProperty(v))
+				: (r[k] = v),
+			r
+		),
+		{ "&": {} }
+	);
+
+// -- doc
+// Formats the given `value` with the given `unit` with the given
+// `precision` (in decimals).
+export const unit = (value, unit = "px", precision = 3) =>
+	`${typeof value === "number" ? numfmt(value, precision) : value}${
+		unit || "px"
+	}`;
+
+// EOF  - vim: ts=4 sw=4 noet
