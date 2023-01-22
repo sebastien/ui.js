@@ -69,7 +69,6 @@ export class StateTree {
   // Patches the `value` at the given `path`.
   patch(path = null, value = undefined) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
-    console.log("PATCH", path, "with", value);
     if (p.length === 0) {
       this.state = value;
     } else {

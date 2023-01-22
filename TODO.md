@@ -7,7 +7,8 @@
 ## Roadmap
 
 -   `[ ]` Implement local state management, and define how it used for
-    components.
+    components. This should probably be done by using a State proxy that
+    interfaces with the store and local values as well.
 
 -   `[ ]` Implement batching for many updates, for instance re-sorting a
     large array. Actually this can probably be done with a `set` that is
@@ -31,6 +32,9 @@
     want a template with `svg` nodes in there, linters will complain.
 
 ## Challenges
+
+-   When using patch, differentiate between `update`, like
+    `patch("nodes.1", {x:100,y:30})` and set, which sets the value.
 
 -   Tokens depend on the corresponding module to be loaded, so we should
     pretty much always make sure the module is loaded before the

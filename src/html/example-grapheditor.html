@@ -50,30 +50,37 @@
         import { sub } from "../js/ui.js";
         import { patch, get } from "../js/ui.js";
         import { on, off } from "../js/ui/interaction.js";
-        sub("NodeMove", ({ scope, event, data, id, state }) => {
-          console.log("NODE MOVE", { scope, event, data, id, state });
+        import { round } from "../js/ui/utils.js";
+        sub("NodeMove", ({ event, path, state }) => {
           off(window.document.body, state?.handlers);
           const dragging = {
             xo: event.pageX,
             yo: event.pageY,
-            // TODO: We could have `state` present an amalgamated view
-            // x: get([...scope, "x"]),
-            // y: get([...scope, "y"]),
+            x: get([...path, "x"]),
+            y: get([...path, "y"]),
+            node: event.target,
+            pointerEvents: event.target.style.pointerEvents,
+            userSelect: event.target.style.userSelect,
           };
-          console.log("DRAGGING", dragging);
           const handlers = {
             mousemove: (event) => {
               const dx = event.pageX - dragging.xo;
               const dy = event.pageY - dragging.yo;
-              console.log("DRAG", { dx, dy });
-              return state.update({ dx, dy });
+              return patch(path, {
+                x: round(dragging.x + dx, 10),
+                y: round(dragging.y + dy, 10),
+              });
             },
-            mouseup: (event) => {
+            mouseup: () => {
+              dragging.node.style.pointerEvents = dragging.pointerEvents;
+              dragging.node.style.userSelect = dragging.userSelect;
               off(window.document.body, handlers);
             },
           };
           state.dragging = dragging;
           state.handlers = handlers;
+          event.target.style.pointerEvents = "none";
+          event.target.style.userSelect = "none";
           on(window.document.body, handlers);
         });
       </script>

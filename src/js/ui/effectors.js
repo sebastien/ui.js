@@ -206,10 +206,10 @@ export class EventEffector extends Effector {
         );
       }
       if (name?.length) {
-        const { template, scope, id } = EventEffector.FindScope(event.target);
+        const { template, path, id } = EventEffector.FindScope(event.target);
         pub(composePaths([template], name), {
           name,
-          scope,
+          path,
           event,
           // The internal state of each template effector is accessible globally.
           state: TemplateEffectorState.All.get(id)?.state,

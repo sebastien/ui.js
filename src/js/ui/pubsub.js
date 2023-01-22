@@ -101,12 +101,10 @@ class PubSub {
   }
 
   pub(topic, data) {
-    console.log("PUB", this.get(topic).path.join("."), data);
     return this.get(topic).pub(data), this;
   }
 
   sub(topic, handler, withLast = true) {
-    console.log("SUB", this.get(topic).path.join("."), handler);
     return this.get(topic).sub(handler, withLast), this;
   }
 
