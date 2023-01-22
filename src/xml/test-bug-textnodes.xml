@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" media="screen" href="../xsl/testing.xsl"?>
+<Test>
+	<Expected>ABC</Expected>
+	<Actual><Component name="ABC" /></Actual>
+	<template name="ABC">ABC</template>
+</Test>

@@ -7,7 +7,11 @@
         \|_______|\|__\|__|\|________|\_________\
                                      \|_________|
 
-*UI.js* is an old-school designed, modern JavaScript UI library.
+*UI.js* is a toolkit to create interactive user interfaces in
+JavaScript. It is designed to be batteries-included (components, state
+management, styling and interaction) and targeting web browsers first
+(no compiler or server-side JavaScript required).
+
 Front-end development has become [quite
 complicated](https://news.ycombinator.com/item?id=34218003), and our
 goal is to provide a simple API to create rich UIs directly from the
@@ -52,3 +56,13 @@ In the document:
 
 -   `template`
 -   `slot`
+
+# References
+
+-   [DIY UI](https://observablehq.com/@sebastien/diy-ui),
+    [styling](https://observablehq.com/@sebastien/diy-ui) and [design
+    tokens](https://observablehq.com/@sebastien/tokens) all served  
+    as the baseline for *UI.js*.
+
+-   [Alpine.js](https://alpinejs.dev) seems like a close relative in
+    terms of approach

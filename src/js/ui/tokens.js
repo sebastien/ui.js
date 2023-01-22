@@ -179,4 +179,4 @@ export const tokens = (tokens) =>
 
 export default tokens;
 
-// EOF  - vim: ts=4 sw=4 noet
+// EOF

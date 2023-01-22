@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <div style="width: 800px; height: 800px">
+      <div data-ui="Canvas" data-state="data.graph"></div>
+    </div>
+
+    <template id="Canvas">
+      <svg width="100%" height="100%">
+        <defs>
+          <pattern
+            id="grid"
+            x="48"
+            y="48"
+            width="50"
+            height="50"
+            patternUnits="userSpaceOnUse"
+          >
+            <rect x="0" y="0" width="50" height="50" fill="#18584a" />
+            <rect x="48" y="48" width="50" height="50" fill="#689a90" />
+          </pattern>
+        </defs>
+        <g>
+          <rect fill="url(#grid)" width="100%" height="100%" />
+        </g>
+        <g>
+          <slot out:content=".nodes">
+            <foreignObject
+              out:width
+              out:height
+              out:x
+              out:y
+              on:mouseDown="!NodeMove"
+            >
+              <div
+                xmlns="http://www.w3.org/1999/xhtml"
+                style="
+                  background-color: #ff0000a0;
+                  min-width: 100%;
+                  min-height: 100%;
+                "
+              >
+                Hello, HTML!
+              </div>
+            </foreignObject>
+          </slot>
+        </g>
+      </svg>
+      <script type="module">
+        import { sub } from "../js/ui.js";
+        import { patch, get } from "../js/ui.js";
+        import { on, off } from "../js/ui/interaction.js";
+        sub("NodeMove", ({ scope, event, data, id, state }) => {
+          console.log("NODE MOVE", { scope, event, data, id, state });
+          off(window.document.body, state?.handlers);
+          const dragging = {
+            xo: event.pageX,
+            yo: event.pageY,
+            // TODO: We could have `state` present an amalgamated view
+            // x: get([...scope, "x"]),
+            // y: get([...scope, "y"]),
+          };
+          console.log("DRAGGING", dragging);
+          const handlers = {
+            mousemove: (event) => {
+              const dx = event.pageX - dragging.xo;
+              const dy = event.pageY - dragging.yo;
+              console.log("DRAG", { dx, dy });
+              return state.update({ dx, dy });
+            },
+            mouseup: (event) => {
+              off(window.document.body, handlers);
+            },
+          };
+          state.dragging = dragging;
+          state.handlers = handlers;
+          on(window.document.body, handlers);
+        });
+      </script>
+    </template>
+
+    <!--
+    <template id="Node">
+      <rect out:width out:height out:x out:y fill="#FF0000" />
+    </template>
+
+    <template id="Grid">
+      <pattern
+        out:id=".name"
+        out:x
+        out:y
+        out:width=".step"
+        out:height=".step"
+        patternUnits="userSpaceOnUse"
+      >
+        <rect
+          x="0"
+          y="0"
+          out:width=".step"
+          out:height=".step"
+          out:fill=".background"
+        />
+        <rect
+          out:x
+          out:y
+          out:width=".width"
+          out:height=".width"
+          out:fill=".foreground"
+        />
+      </pattern>
+      <script type="module">
+        //import {component} from "./js/ui.js"
+        // const Grid = {
+        //     defaults:{width:2,background:'#F0F0F0',foreground:'#909090'},
+        //     state:{
+        //         "x": ({width,step}) =>
+        //     }
+        // }
+        // component({Grid})
+        //component( ({width,step})=>{
+        //    const {x,y} = state;
+        //
+        //})
+      </script>
+    </template>
+    -->
+
+    <script type="module">
+      import ui from "../js/ui.js";
+      ui(document, {
+        graph: {
+          nodes: [
+            { x: 100, y: 100, width: 100, height: 100 },
+            { x: 100, y: 300, width: 75, height: 50 },
+          ],
+        },
+      });
+    </script>
+  </body>
+</html>

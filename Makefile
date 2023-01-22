@@ -9,6 +9,10 @@ run/lib/%: src/%
 	@mkdir -p "$(dir $@)"
 	ln -sfr "$<" "$@"
 
+# fmt:
+# 	nvim -u NONE -c 'ALEFix' -c 'wq' <file_name>
+# 	@nvim --headless +'ALEFix' +'wq' $(SUORCES_ALL)
+
 print-%:
 	@echo $($*)
 

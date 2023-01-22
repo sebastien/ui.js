@@ -1,91 +1,80 @@
 <!DOCTYPE html>
 <html>
-<body>
-	<div id="placeholder" />
+  <body>
+    <div id="placeholder" />
 
-		<div data-ui="Todo" data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}" ></div>
+    <div
+      data-ui="Todo"
+      data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}"
+    ></div>
 
-	<template id="Todo">
-		<div>
-			<h3>Simple todo list</h3>
+    <template id="Todo">
+      <div>
+        <h3>Simple todo list</h3>
 
-			<ul>
-				<slot name="items" out:content=".items|TodoItem" />
-			</ul>
-			<form on:submit="!Nil.">
-				<input placeholder="New item label" on:change=".label:.target.value" />
-				<button on:click="!Add">Add</button>
-			</form>
+        <ul>
+          <slot name="items" out:content=".items|TodoItem" />
+        </ul>
+        <form on:submit="!Nil.">
+          <input
+            placeholder="New item label"
+            on:change=".label:.target.value"
+          />
+          <button on:click="!Todo.Add">Add</button>
+        </form>
+      </div>
+      <script type="module">
+        import { sub, patch, get } from "../js/ui.js";
 
-		</div>
-		<script type="module">
-			import {sub, patch, resolve} from "../js/ui.js"
+        sub("TodoItem.Remove", ({ scope, event, data }) => {
+          patch(scope, null);
+        });
 
+        sub("Todo.Add", ({ scope, event, data }) => {
+          const state = get(scope);
+          const label =
+            state?.label || `New item #${(state?.items?.length || 0) + 1}`;
 
-			sub("TodoItem.Remove", ({scope,event,data})=> {
-				patch(scope, null)
-			});
+          // TODO: The `null` here indicates that we want to add it
+          // to which ever slot works.
+          patch([...scope, "items", null], { label, checked: false });
+        });
 
-			sub("Todo.Add", ({scope,event,data})=> {
-			const state = resolve(scope);
-				const label = state?.label || `New item #${(state?.items?.length||0)+1}`;
-				
-				// TODO: The `null` here indicates that we want to add it
-				// to which ever slot works.
-				patch([...scope, "items", null], {label,checked:false})
-			});
+        // High Level
+        // const TodoItem = controller({
+        //	Remove: (event, data) => {
+        //		console.log("TODO ITEM REMOVED", event);
+        //	}
+        // })
+        // register({TodoItem});
+      </script>
+    </template>
 
-			// High Level
-			// const TodoItem = controller({
-			// 	Remove: (event, data) => {
-			// 		console.log("TODO ITEM REMOVED", event);
-			// 	}
-			// })
-			// register({TodoItem});
-		</script>
-	</template>
-
-	<template id="TodoItem">
-		<div>
-			<input when=".edited" type="checkbox" out:checked=".checked|bool" on:change=".checked:.target.checked" />
-			<input when=".edited|not" type="text" out:value=".label" on:change=".label:.target.value" />
-			<button on:click="!Remove">Remove</button>
-			<!--
+    <template id="TodoItem">
+      <div>
+        <input
+          when=".edited"
+          type="checkbox"
+          out:checked=".checked|bool"
+          on:change=".checked:.target.checked"
+        />
+        <input
+          when=".edited|not"
+          type="text"
+          out:value=".label"
+          on:change=".label:.target.value"
+        />
+        <button on:click="!TodoItem.Remove">Remove</button>
+        <!--
 			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
 			<input when:-edited type="text" out:value=".label" on:change=".value!" />
 			-->
-		</div>
-		</div>
-	</template>
+      </div>
+    </template>
 
-	<script type="module">
-		import ui from "../js/ui.js"
-		// -- doc
-		// Utility function to reload the page automatically when the given URL changes.
-		export const reload = (url, period = 2000.0) => {
-		  const state = { lastModified: undefined, stop: false, interval: undefined };
-		  const update = () => {
-			if (state.stop) {
-			  window.clearInterval(state.interval);
-			}
-			fetch(url, { method: "HEAD" }).then((_) => {
-			  const lastModified = _.headers.get("last-modified");
-			  if (state.lastModified && state.lastModified !== lastModified) {
-				state.lastModified = lastModified;
-				console.log("ui.reload: Monitor has changed, reloading", { url });
-				window.location.reload();
-			  } else {
-				state.lastModified = lastModified;
-			  }
-			});
-		  };
-		  state.interval = window.setInterval(update, period);
-		  return state;
-		};
-		reload("../js/ui.js");
-
-		console.log("RENDER", ui())
-
-	</script>
-</body>
+    <script type="module">
+      import ui from "../js/ui.js";
+      ui();
+    </script>
+  </body>
 </html>

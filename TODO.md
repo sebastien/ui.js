@@ -6,11 +6,17 @@
 
 ## Roadmap
 
--   `[ ]` Implement local state management
+-   `[ ]` Implement local state management, and define how it used for
+    components.
 
 -   `[ ]` Implement batching for many updates, for instance re-sorting a
     large array. Actually this can probably be done with a `set` that is
     smart and detects changes.
+
+-   `[ ]` tokens: remove `bg=Blue.hovered` and make it `Blue.hovered.bg`
+
+-   `[ ]` custom rules: we might still want to define custom stylesheets
+    for the component.
 
 -   `[ ]` Implement granular data update operations (create, update,
     delete, insert, remove, swap) -- or rework the way to update large
@@ -18,6 +24,11 @@
 
 -   `[ ]` Do some baseline performance tests, in particular the
     performance of updating data structures.
+
+## Nice to haves
+
+-   [ ] In a template, allow to skip the parent, for instance, if we
+    want a template with `svg` nodes in there, linters will complain.
 
 ## Challenges
 
@@ -50,7 +61,6 @@ We also need to find a way to pass specific props in a sub-component
     <slot out:content=.items|ProcessItem" data-template="TodoItem" />
 </ul>
 ```
-
 
     ## Tips
 
