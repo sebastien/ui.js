@@ -5,6 +5,12 @@
       <div data-ui="Canvas" data-state="data.graph"></div>
     </div>
 
+    <template id="Anchor" data-body="anchor">
+      <svg id="anchor">
+          <circle out:cx=".x" out:cy=".y" r="5" fill="#00A0FFA0" />
+      </svg>
+    </template>
+
     <template id="Canvas">
       <svg width="100%" height="100%">
         <defs>
@@ -44,6 +50,10 @@
               </div>
             </foreignObject>
           </slot>
+        </g>
+        <g>
+          <slot out:content=".nodes">
+          <slot out:content=".anchors|Anchor" />
         </g>
       </svg>
       <script type="module">
@@ -134,12 +144,21 @@
 
     <script type="module">
       import ui from "../js/ui.js";
+      const rect = (x, y, width, height) => ({
+        x,
+        y,
+        width,
+        height,
+        anchors: [
+          { x: x + width / 2, y: y },
+          { x: x + width / 2, y: y + height },
+          { x: x, y: y + height / 2 },
+          { x: x + width, y: y + height / 2 },
+        ],
+      });
       ui(document, {
         graph: {
-          nodes: [
-            { x: 100, y: 100, width: 100, height: 100 },
-            { x: 100, y: 300, width: 75, height: 50 },
-          ],
+          nodes: [rect(100, 100, 100, 100), rect(100, 300, 75, 50)],
         },
       });
     </script>

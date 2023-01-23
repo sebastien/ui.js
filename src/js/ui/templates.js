@@ -287,20 +287,44 @@ export const template = (
 ) => {
   let views = [];
   // NOTE: We skip text nodes there
-  for (let _ of node.nodeName === "TEMPLATE"
-    ? node.content.children
-    : node.children) {
+  const root = node.nodeName.toLowerCase() === "template" ? node.content : node;
+  for (let _ of root.children) {
     switch (_.nodeName) {
       case "STYLE":
         break;
       case "SCRIPT":
         document.body.appendChild(_);
         break;
+    }
+  }
+
+  // If there is  `data-body` attribute, then we'll get a different node
+  // to source the children. This is important when using different namespaces,
+  // such as `svg` nodes, which need to be within an `svg` parent to
+  // implicitly get the SVG namespace (which can still be set explicitely
+  // through xmlns).
+  const bodyId = node.dataset.body;
+  let viewsParent = undefined;
+  if (bodyId) {
+    const bodyNode = root.getElementById(bodyId);
+    if (!bodyNode) {
+      onError(`template: Could not resolve data-body="${bodyId}"`, { node });
+    } else {
+      viewsParent = bodyNode;
+    }
+  } else {
+    viewsParent = root;
+  }
+  for (let _ of viewsParent?.children || []) {
+    switch (_.nodeName.toLowerCase()) {
+      case "style":
+      case "script":
+        break;
       default:
         views.push(_);
     }
-    console.groupEnd();
   }
+
   const res = new TemplateEffector(
     new Template(
       node,

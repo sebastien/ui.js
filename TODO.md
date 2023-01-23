@@ -26,11 +26,6 @@
 -   `[ ]` Do some baseline performance tests, in particular the
     performance of updating data structures.
 
-## Nice to haves
-
--   [ ] In a template, allow to skip the parent, for instance, if we
-    want a template with `svg` nodes in there, linters will complain.
-
 ## Challenges
 
 -   When using patch, differentiate between `update`, like
