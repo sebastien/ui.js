@@ -17,7 +17,7 @@ import { stylesheet } from "./css.js";
 // ## Directives
 
 const RE_DIRECTIVE = new RegExp(
-  /^((?<path>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
+  /^((?<input>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*(,(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
 );
 
 // -- topic:directives
@@ -49,10 +49,12 @@ const parseDirective = (text, defaultFormat = idem) => {
       directive: text,
     });
   }
-  const { path, source, format, event, stops } = match.groups;
-
+  const { input, source, format, event, stops } = match.groups;
+  let paths = input ? input.split(",").map((_) => parsePath(_)) : [];
   return {
-    path: parsePath(path),
+    // FIXME: `path` should be deprecated, and we should always test for `paths` instead.
+    path: paths[0],
+    paths: paths,
     source: parsePath(source),
     format: defaultFormat ? Formats[format] || defaultFormat : format,
     event: parsePath(event),
@@ -60,6 +62,8 @@ const parseDirective = (text, defaultFormat = idem) => {
   };
 };
 
+// DEBUG
+window.parseDirective = parseDirective;
 // --
 // ## Views
 
@@ -282,7 +286,7 @@ class Template {
 export const template = (
   node,
   name = node.getAttribute("id"),
-  rootName = undefined,
+  rootName = undefined, // FIXME We're not doing anything with that
   clone = true // TODO: We should probably always have that to false
 ) => {
   let views = [];

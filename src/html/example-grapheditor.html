@@ -53,7 +53,9 @@
         </g>
         <g>
           <slot out:content=".nodes">
-          <slot out:content=".anchors|Anchor" />
+          <g out:transform=".x,.y|translate">
+            <slot out:content=".anchors|Anchor" />
+          <g>
         </g>
       </svg>
       <script type="module">
@@ -150,10 +152,10 @@
         width,
         height,
         anchors: [
-          { x: x + width / 2, y: y },
-          { x: x + width / 2, y: y + height },
-          { x: x, y: y + height / 2 },
-          { x: x + width, y: y + height / 2 },
+          { x:  width / 2, y: 0 },
+          { x: width / 2, y:  height },
+          { x: 0, y:  height / 2 },
+          { x: width, y:  height / 2 },
         ],
       });
       ui(document, {

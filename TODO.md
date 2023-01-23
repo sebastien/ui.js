@@ -6,6 +6,8 @@
 
 ## Roadmap
 
+-   `[ ]` directive: allow for selectors like `.a,.b`
+
 -   `[ ]` Implement local state management, and define how it used for
     components. This should probably be done by using a State proxy that
     interfaces with the store and local values as well.
