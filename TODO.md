@@ -4,6 +4,12 @@
 -   **granular update**
 -   **direct loading**
 
+## Fixes
+
+-   `[ ]` Helloworld, doesn't work, `data-path` is empty, `data-id` is
+    empty
+-   `[ ]` parseDirective(`.`) doesn't work
+
 ## Roadmap
 
 -   `[ ]` directive: allow for selectors like `.a,.b`
@@ -27,6 +33,8 @@
 
 -   `[ ]` Do some baseline performance tests, in particular the
     performance of updating data structures.
+
+-   `[ ]` XML/XSLT Support
 
 ## Challenges
 

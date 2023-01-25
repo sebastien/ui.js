@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <div data-ui="Hello" data-state="'Hello, World!'"></div>
+    <template id="Hello">
+      UI.js says:
+      <pre><slot out:content=".messsage" /></pre>
+    </template>
+    <script type="module">
+      import ui from "../js/ui.js";
+      ui(document, { message: "Hello, world!" });
+    </script>
+  </body>
+</html>
