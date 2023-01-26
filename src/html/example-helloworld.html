@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <div data-ui="Hello" data-state="'Hello, World!'"></div>
+    <div data-ui="Hello"></div>
     <template id="Hello">
       UI.js says:
-      <pre><slot out:content=".messsage" /></pre>
+      <pre><slot out:content=".message" /></pre>
     </template>
     <script type="module">
       import ui from "../js/ui.js";

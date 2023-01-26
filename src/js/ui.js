@@ -56,13 +56,12 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
     // This will register the templates in `templates`
     templates.push(template(_));
   }
-  console.log("TEMPLATES", templates);
 
   // We render the components
   for (const node of scope.querySelectorAll("*[data-ui]")) {
     const { ui, state } = node.dataset;
     const template = Templates.get(ui);
-    const data = parseState(state, context);
+    const data = state ? parseState(state, context) : context;
     if (!template) {
       onError(`ui.render: Could not find template '{ui}'`, {
         node,
