@@ -19,16 +19,23 @@ browser.
 
 ## In a nutshell
 
+See [example](https://jsfiddle.net/sorryimfrench/kvwz48hq/5/)
+
 ``` html
 <!DOCTYPE html>
 <html><body>
-<div data-component="Hello" data-state="'Hello, World!'">
+<div data-ui="Hello"></div>
+
 <template id="Hello">
-UI.js says: <pre out:contents="." />
+  UI.js says:
+  <pre><slot out:content=".message" /></pre>
 </template>
-<script type="module">
-import ui from "https://jsdeliver.com/gh/sebastien/ui.js/src/js/ui.js";
-ui();
+
+<script type="module">                                               
+import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+ui(document, { message: "Hello, world!" });                                    
+</script>
+
 </body></html>
 ```
 
