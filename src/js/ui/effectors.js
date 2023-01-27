@@ -145,19 +145,27 @@ export class StyleEffector extends AttributeEffector {
 //  --
 // ## When Effector
 //
+class WhenEffectorState extends EffectorState {
+  constructor(effector, node, value, path) {
+    super(effector, node, value, path);
+    this.displayValue = node.style.display;
+  }
+
+  update(value = this.value) {
+    const v = this.effector.predicate ? this.effector.predicate(value) : value;
+    this.node.style.display = v ? this.displayValue : "none";
+    this.value = value;
+    return this;
+  }
+}
 export class WhenEffector extends Effector {
-  constructor(nodePath, dataPath, name, extractor = undefined) {
+  constructor(nodePath, dataPath, predicate = undefined) {
     super(nodePath, dataPath);
-    this.name = name;
-    this.extractor = extractor ? extractor : bool;
+    this.predicate = predicate;
   }
 
   apply(node, value, path = undefined) {
-    if (this.extractor(value)) {
-      node.style.display = "none";
-    } else {
-      node.style.display = null;
-    }
+    return new WhenEffectorState(this, node, value, path).update(value);
   }
 }
 

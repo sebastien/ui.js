@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JavaScript object instrospector example</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&family=Karla:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div data-ui="Introspector"></div>
+    <template id="Introspector">
+      <code when=".|type=null">null</code>
+      <code when=".|type=undefined">undefined</code>
+      <code when=".|type=list">[]</code>
+      <code when=".|type=object">{}</code>
+    </template>
+
+    <script type="module">
+      import ui from "../js/ui.js";
+      ui(document, {
+        examples: [
+          null,
+          undefined,
+          1.0,
+          "Hello, World",
+          [1, 2, 3, 4],
+          { a: 1, b: 2, c: 3 },
+          [
+            { a: 1, b: 2 },
+            { c: 3, d: 4 },
+          ],
+        ],
+      });
+    </script>
+  </body>
+</html>

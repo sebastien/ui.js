@@ -17,8 +17,23 @@ import { stylesheet } from "./css.js";
 // ## Directives
 
 const RE_DIRECTIVE = new RegExp(
-  /^((?<input>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*(,(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
+  /^((?<input>(\.?[A-Za-z0-9]*)(\.[A-Za-z0-9]+)*(,(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(=(?<value>.+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
 );
+
+const RE_NUMBER = /^\d+(\.\d+)?$/;
+export const parseValue = (value) => {
+  switch (value.at(0)) {
+    case '"':
+    case "'":
+    case "`":
+    case "{":
+    case "[":
+    case "(":
+      return eval(value);
+    default:
+      return RE_NUMBER.test(value) ? parseFloat(value) : value;
+  }
+};
 
 // -- topic:directives
 //
@@ -42,14 +57,14 @@ const RE_DIRECTIVE = new RegExp(
 // -- doc
 // Parses the directive defined by `text`, where the string
 // is like `data.path|formatter!event`.
-const parseDirective = (text, defaultFormat = idem) => {
+export const parseDirective = (text, defaultFormat = idem) => {
   const match = text.match(RE_DIRECTIVE);
   if (!match) {
     return onError(`parseDirective: directive cannot be parsed "${text}"`, {
       directive: text,
     });
   }
-  const { input, source, format, event, stops } = match.groups;
+  const { input, source, format, event, value, stops } = match.groups;
   let paths = input ? input.split(",").map((_) => parsePath(_)) : [];
   return {
     // FIXME: `path` should be deprecated, and we should always test for `paths` instead.
@@ -57,13 +72,12 @@ const parseDirective = (text, defaultFormat = idem) => {
     paths: paths,
     source: parsePath(source),
     format: defaultFormat ? Formats[format] || defaultFormat : format,
+    value: parseValue(value),
     event: parsePath(event),
     stops: stops && stops.length ? true : false,
   };
 };
 
-// DEBUG
-window.parseDirective = parseDirective;
 // --
 // ## Views
 
@@ -140,7 +154,7 @@ const view = (root, templateName = undefined) => {
   const attrs = {};
   for (const [match, attr] of iterAttributes(
     root,
-    /^(?<type>in|out|on|styled):(?<name>.+)$/
+    /^(?<type>in|out|on|when|styled):(?<name>.+)$/
   )) {
     const type = match.groups.type;
     const name = match.groups.name;
@@ -253,13 +267,36 @@ const view = (root, templateName = undefined) => {
     node.removeAttribute(attr.name);
   }
 
-  // // We take care of state change effectors
-  // // TODO: This won't work for nested templates
-  // for (const node of root.querySelectorAll("*[when]")) {
-  // 	const { path, format } = parseDirective(node.getAttribute("when"));
-  // 	effectors.push(new WhenEffector(nodePath(node, root), path, format));
-  // 	node.removeAttribute("when");
-  // }
+  for (const { name, attr } of attrs["when"] || []) {
+    console.log("WHEN", { name, attr });
+    const node = attr.ownerElement;
+    const value = parseValue(attr.value);
+    effectors.push(
+      new WhenEffector(nodePath(node, root), [name], (_) => _ === value)
+    );
+    node.removeAttribute(attr.name);
+  }
+
+  // We take care of state change effectors
+  // TODO: This won't work for nested templates
+  for (const node of iterSelector(root, "*[when]")) {
+    const value = node.getAttribute("when");
+    const directive = parseDirective(value);
+    const predicate = (_) => {
+      console.log(
+        "PREDICATE",
+        _,
+        directive,
+        "==",
+        directive.format(_) === directive.value
+      );
+      return directive.format(_) === directive.value;
+    };
+    effectors.push(
+      new WhenEffector(nodePath(node, root), directive.path, predicate)
+    );
+    node.removeAttribute("when");
+  }
 
   return new View(root, effectors);
 };

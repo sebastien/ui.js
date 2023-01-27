@@ -64,6 +64,15 @@ In the document:
 -   `template`
 -   `slot`
 
+# Features
+
+-   *Granular rendering*: an update to the data only triggers an update
+    to the specific components that represent the data. This is to be
+    put in contrast top VDOM-based renderes like React, where a change
+    in the data will likely lead to re-rendering more than necessary.
+    For applications where low latency is important (interactive
+    editors), having granular updates is a must.
+
 # References
 
 -   [DIY UI](https://observablehq.com/@sebastien/diy-ui),
