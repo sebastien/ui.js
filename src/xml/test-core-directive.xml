@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" media="screen" href="./uijs.xsl.xml"?>
+<Test>
+	<title>Directive support</title>
+	<Case>
+		const {parseDirective} = await import(`${path.js}/ui/templates.js`);
+		console.log(parseDirective("."))
+	</Case>
+</Test>

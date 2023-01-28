@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<Component>
+	<View>
+			<div>
+			</div>
+	</View>
+	<Model>
+	</Model>
+	<Controller>
+		<script type="javascript">
+			ui(document);
+		</script>
+	</Controller>
+</Component>
