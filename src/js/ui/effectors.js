@@ -462,6 +462,12 @@ export class TemplateEffector {
       for (let i in view.effectors) {
         const e = view.effectors[i];
         const effectorPath = composePaths(path || [], e.dataPath);
+        console.log("APPLY TEMPLATE EFFECTOR", {
+          dataPath: e.dataPath,
+          origin: path,
+          effectorPath,
+          value: pathData(e.dataPath, value, 0, effectorPath),
+        });
         states.push(
           e.apply(
             nodes[i], // node

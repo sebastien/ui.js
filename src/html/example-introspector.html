@@ -12,6 +12,12 @@
   <body>
     <div data-ui="Introspector"></div>
     <template id="Introspector">
+      <div>
+        <slot out:content=".">
+          <code>key:<slot out:content="@" /></code>
+        </slot>
+      </div>
+      <!--
       <code when=".|type=null">null</code>
       <code when=".|type=undefined">undefined</code>
       <code when=".|type=list">[]</code>
@@ -24,24 +30,23 @@
         </slot>
         }
       </code>
+      -->
     </template>
 
     <script type="module">
       import ui from "../js/ui.js";
-      ui(document, {
-        examples: [
-          null,
-          undefined,
-          1.0,
-          "Hello, World",
-          [1, 2, 3, 4],
-          { a: 1, b: 2, c: 3 },
-          [
-            { a: 1, b: 2 },
-            { c: 3, d: 4 },
-          ],
+      ui(document, [
+        null,
+        undefined,
+        1.0,
+        "Hello, World",
+        [1, 2, 3, 4],
+        { a: 1, b: 2, c: 3 },
+        [
+          { a: 1, b: 2 },
+          { c: 3, d: 4 },
         ],
-      });
+      ]);
     </script>
   </body>
 </html>

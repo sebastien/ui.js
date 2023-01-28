@@ -8,11 +8,14 @@
 
 -   `[ ]` Helloworld, doesn't work, `data-path` is empty, `data-id` is
     empty
--   `[ ]` parseDirective(`.`) doesn't work
+
+-   `[ ]` `<template><slot /></template>` doesn't work.
+
+-   `[ ]` `<slot>item</slot>` renders the value instead of item
 
 ## Roadmap
 
--   `[ ]` directive: allow for selectors like `.a,.b`
+-   `[ ]` directive: allow for selectors like `.a,.b` and `k=.a,b=.c`
 
 -   `[ ]` Implement local state management, and define how it used for
     components. This should probably be done by using a State proxy that
@@ -21,6 +24,12 @@
 -   `[ ]` Implement batching for many updates, for instance re-sorting a
     large array. Actually this can probably be done with a `set` that is
     smart and detects changes.
+
+-   `[ ] ` WhenEffectors: their contents seems to be applied
+    independently of the predicate, which is sub-optimal. This means
+    that a when should act a bit like a template and control the
+    subviews, unregistering them when not showing, and registering them
+    when visible.
 
 -   `[ ]` tokens: remove `bg=Blue.hovered` and make it `Blue.hovered.bg`
 
@@ -37,6 +46,10 @@
 -   `[ ]` XML/XSLT Support
 
 ## Challenges
+
+-   The application of path to values needs to be much clearer,
+    especially as we want to use multiple paths. This should also take
+    into consideration what happens in Template and When effectors.
 
 -   When using patch, differentiate between `update`, like
     `patch("nodes.1", {x:100,y:30})` and set, which sets the value.
