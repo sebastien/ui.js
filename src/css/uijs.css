@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+:root {
+	--palette-grey-20: #393930;
+	--palette-ivory-90: #fffef7;
+	--palette-gold-60: #fcd647;
+}
+
+:root {
+	--font-text: "Jost", sans-serif;
+	--font-text-lh: 1.25em;
+	--font-text-size: 1rem;
+
+	--font-heading: "Jost", sans-serif;
+	--font-heading-lh: 1.25em;
+	--font-heading-size: var(--font-size-4);
+
+	--font-code: "JetBrains", monospace;
+	--font-code-lh: 1.25em;
+	--font-code-size: var(--font-size-1);
+
+	--font-size-0: calc(9/14 * 100%);
+	--font-size-1: calc(12/14 * 100%);
+	--font-size-2: calc(14/14 * 100%);
+	--font-size-3: calc(16/14 * 100%);
+	--font-size-4: calc(18/14 * 100%);
+	--font-size-5: calc(22/14 * 100%);
+	--font-size-6: calc(26/14 * 100%);
+	--font-size-7: calc(32/14 * 100%);
+	--font-size-8: calc(42/14 * 100%);
+	--font-size-9: calc(48/14 * 100%);
+
+	--color-text: var(--palette-grey-20);
+	--color-background: var(--palette-ivory-90);
+
+	--pad-1: calc(16px * 1);
+	--pad-2: calc(16px * 2);
+	--pad-3: calc(16px * 3);
+	--pad-4: calc(16px * 4);
+}
+
+@layer reset, base, theme;
+
+@layer reset {
+
+	html,body,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,address,cite,code,del,dfn,em,img,ins,kbd,q,samp,small,strong,sub,sup,var,b,i,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,figcaption,figure,footer,header,hgroup,menu,nav,section,summary,time,mark,audio,video,button,input,select.textarea,label {
+		box-sizing: border-box;
+		margin:0px;
+		padding:0px;
+		border:0px solid transparent;
+		outline:0px solid transparent;
+		vertical-align:baseline;
+		list-style-type: none;
+		text-rendering:optimizeLegibility;
+	}
+
+		*[contenteditable] {
+			outline: 0px solid transparent
+		}
+
+		input, input:active, input:focus,
+		select, select:active, select:focus,
+		button, button:active, button:focus,
+		textarea, textarea:active, textarea:focus,
+		label, label:active, label:focus {
+				outline: 0px solid transparent
+		 }
+
+}
+
+@layer base {
+	body {
+		font-family: var(--font-text);
+		line-height: var(--font-text-lh);
+		font-size: var(--font-text-size);
+		color: var(--color-text);
+		accent-color: var(--color-accent);
+		background-color: var(--color-background);
+		padding: var(--pad-4);
+	}
+
+
+	code, pre {
+		font-family: var(--font-code);
+		font-size: var(--font-code-size);
+		line-height: var(--font-code-lh);
+	}
+
+	h1,h3,h3,h4,h5,h6 {
+		font-family: var(--font-heading);
+		font-size: var(--font-heading-size);
+		line-height: var(--font-heading-lh);
+		font-weight: 800;
+		margin-top: var(--pad-2);
+		margin-bottom: var(--pad-2);
+	}
+	h1 {
+		font-size: var(--font-size-8);
+	}
+	h2 {
+		font-size: var(--font-size-7);
+	}
+	h3 {
+		font-size: var(--font-size-6);
+	}
+	h4 {
+		font-size: var(--font-size-5);
+	}
+	h5 {
+		font-size: var(--font-size-4);
+	}
+	h6 {
+		font-size: var(--font-size-3);
+	}
+
+}

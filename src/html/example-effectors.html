@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="../css/uijs.css" rel="stylesheet" />
+    <title>Effectors example</title>
+  </head>
+  <body>
+    <h1>Effectors</h1>
+    <p>This exercises the effectors</p>
+    <div data-ui="Hello"></div>
+    <template id="Hello">
+      UI.js says:
+      <pre><slot out:content=".message" /></pre>
+    </template>
+    <script type="module">
+      import ui from "../js/ui.js";
+      ui(document, { message: "Hello, world!" });
+    </script>
+  </body>
+</html>
