@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" media="screen" href="./testing.xsl.xml"?>
+<Test>
+	<title>Path Parsing</title>
+	<Case>
+	<![CDATA[
+		const {parseSelector} = await import(`${path.js}/ui/selector.js`);
+		test(({expect})=>{
+			expect("Absolute path")
+				.assert(parseSelector("absolute"))
+				.assert(parseSelector("absolute.path"));
+			expect("Relative path")
+				.assert(parseSelector("."))
+				.assert(parseSelector(".relative"))
+				.assert(parseSelector(".relative.path"));
+			expect("State path")
+				.assert(parseSelector("@"))
+				.assert(parseSelector("@local"))
+				.assert(parseSelector("@local.state"))
+			expect("Keys")
+				.assert(parseSelector("a=a"))
+				.assert(parseSelector("key=@"))
+				.assert(parseSelector("name=.name"))
+				.assert(parseSelector("count=@count"))
+			expect("Formats")
+				.assert(parseSelector("absolute|text"))
+				.assert(parseSelector("absolute.path|text"))
+				.assert(parseSelector("@relative|text"))
+				.assert(parseSelector("@relative.path|text"))
+				.assert(parseSelector("key=@|text"))
+			expect("Inputs")
+				.assert(parseSelector("absolute,.,@,a=@count,b=@}|text"))
+
+		});
+	]]>
+	</Case>
+</Test>
