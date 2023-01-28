@@ -3,11 +3,22 @@
 <Test>
 	<title>Path Parsing</title>
 	<Case>
-		const {parsePath, composePaths} = await import(`${path.js}/ui/paths.js`);
+	<![CDATA[
+		const {pathData, parsePath, composePaths} = await import(`${path.js}/ui/paths.js`);
 		test(({expect})=>{
-			expect(parsePath("@"), ["@"]);
-			expect(parsePath("a.b.c"), ["a", "b", "c"]);
-			expect(composePaths(parsePath("a.b.c"), parsePath("@")), ["a", "b", "c"]);
+			expect()
+				.as("Parsing the  key symbol")
+				.same(parsePath("@"), ["@"]);
+			expect()
+				.as("Parsing an absolute path")
+				.same(parsePath("a.b.c"), ["a", "b", "c"]);
+			expect()
+				.as("Parsing composed paths")
+				.same(composePaths(parsePath("a.b.c"), parsePath("@")), ["a", "b", "c"]);
+			expect()
+				.as("Parsing composed paths")
+				.same(pathData(["@"], {a:0, b:1, c:2}, 0, ["test", "example"]));
 		});
+	]]>
 	</Case>
 </Test>

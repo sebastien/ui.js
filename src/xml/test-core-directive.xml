@@ -4,6 +4,10 @@
 	<title>Directive support</title>
 	<Case>
 		const {parseDirective} = await import(`${path.js}/ui/templates.js`);
-		console.log(parseDirective("."))
+
+		test(({expect})=>{
+
+		})
+
 	</Case>
 </Test>

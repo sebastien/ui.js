@@ -236,6 +236,7 @@ export class EventEffector extends Effector {
 class SlotEffectorState extends EffectorState {
   constructor(effector, node, value, path, items) {
     super(effector, node, value, path);
+    console.log("SLOT EFFECTOR STATE", this.path);
     this.items = items;
   }
 
@@ -307,11 +308,16 @@ export class SlotEffector extends Effector {
       typeof value !== "object" ||
       (Object.getPrototypeOf(value) !== RawObjectPrototype &&
         !(value instanceof Array));
-    console.log("APPLY EFFECTOR", { value, path, node, isAtom });
+    console.log("APPLY EFFECTOR", {
+      value,
+      path,
+      node,
+      isAtom,
+      dataPath: this.dataPath,
+    });
 
-    if (path[0] === "@key") {
-      debugger;
-    }
+    // FIXME: This should be moved to the slot effector. We also need
+    // to retrieve the key.
     const items = new Map();
     if (isEmpty) {
       // Nothing to do
@@ -343,7 +349,7 @@ export class SlotEffector extends Effector {
           this.createItem(
             node, // node
             value[k], // value
-            path ? [...path, k] : [k] // path // path // path // path
+            path ? [...path, k] : [k] // path
           )
         );
       }

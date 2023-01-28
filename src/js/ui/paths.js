@@ -26,13 +26,18 @@ export const pathNode = (path, root) =>
 
 // -- doc
 // Returns the value at the given `path` for the given `data`.
-export const pathData = (path, data, offset = 0) => {
+export const pathData = (path, data, offset = 0, origin) => {
   const n = path?.length || 0;
   while (offset < n) {
     const key = path[offset++];
     switch (key) {
       case "@":
         // We skip the '@' symbol.
+        return offset == 1
+          ? origin
+            ? origin.at(-1)
+            : undefined
+          : dataPath[offset - 1];
         break;
       case "":
         break;
