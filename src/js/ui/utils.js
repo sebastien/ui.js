@@ -1,8 +1,31 @@
 // --
 //  # Utilities
 
+export const RawObjectPrototype = Object.getPrototypeOf({});
+
 export const onError = (message, context) => {
   console.error(message, context);
+};
+export const type = (_) => {
+  const t = typeof _;
+  switch (_) {
+    case null:
+      return "null";
+    case undefined:
+      return "undefined";
+    default:
+      switch (t) {
+        case "number":
+        case "string":
+          return _;
+        default:
+          return _ instanceof Array
+            ? "array"
+            : Object.getPrototypeOf(_) === RawObjectPrototype
+            ? "map"
+            : "object";
+      }
+  }
 };
 
 // --
@@ -87,6 +110,13 @@ export const map = (v, f) => {
     return res;
   }
 };
+
+export const each = (v, f) => {
+  for (let k in v) {
+    f(v[k], k);
+  }
+};
+
 export const def = (...rest) => {
   for (let v of rest) {
     if (v !== undefined) {
@@ -94,17 +124,6 @@ export const def = (...rest) => {
     }
   }
 };
-
-export const type = (value) =>
-  value === undefined || value === null
-    ? null
-    : typeof value === "object"
-    ? value instanceof Array
-      ? "array"
-      : Object.getPrototypeOf(value) === Object
-      ? "map"
-      : "object"
-    : typeof value;
 
 // --
 // ## Math

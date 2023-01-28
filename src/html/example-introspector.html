@@ -15,7 +15,15 @@
       <code when=".|type=null">null</code>
       <code when=".|type=undefined">undefined</code>
       <code when=".|type=list">[]</code>
-      <code when=".|type=object">{}</code>
+      <code when=".|type=object"
+        >{
+        <slot out:content=".">
+          <span><slot out:content="@" /></span>:<span
+            ><slot out:content="."
+          /></span>
+        </slot>
+        }
+      </code>
     </template>
 
     <script type="module">

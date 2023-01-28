@@ -1,7 +1,7 @@
 import { composePaths, parsePath, pathNode, pathData } from "./paths.js";
 import { sub, unsub, pub } from "./pubsub.js";
 import { patch } from "./state.js";
-import { onError, numcode } from "./utils.js";
+import { RawObjectPrototype, onError, numcode } from "./utils.js";
 import { Formats, bool, idem } from "./formats.js";
 import { Templates } from "./templates.js";
 
@@ -243,11 +243,11 @@ class SlotEffectorState extends EffectorState {
     if (offset === 1) {
       const action = event.event;
       if (action == "Update") {
-        // NOTE: We don't ahve to do anything, the efefctor should already
+        // NOTE: We don't have to do anything, the effector should already
         // be subscribed.
       } else if (action === "Delete") {
         const effector = this.items.get(event.key);
-        // NOTE: The effector may be subsribed to already?
+        // NOTE: The effector may be subscribed to already?
         if (effector) {
           effector.unmount();
           effector.dispose();
@@ -305,7 +305,13 @@ export class SlotEffector extends Effector {
     const isAtom =
       isEmpty ||
       typeof value !== "object" ||
-      (!(value instanceof Array) && Object.getPrototypeOf(value) !== Object);
+      (Object.getPrototypeOf(value) !== RawObjectPrototype &&
+        !(value instanceof Array));
+    console.log("APPLY EFFECTOR", { value, path, node, isAtom });
+
+    if (path[0] === "@key") {
+      debugger;
+    }
     const items = new Map();
     if (isEmpty) {
       // Nothing to do

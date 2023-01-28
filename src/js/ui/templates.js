@@ -17,11 +17,14 @@ import { stylesheet } from "./css.js";
 // ## Directives
 
 const RE_DIRECTIVE = new RegExp(
-  /^((?<input>(\.?[A-Za-z0-9]*)(\.[A-Za-z0-9]+)*(,(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(=(?<value>.+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
+  /^((?<input>@|(\.?[A-Za-z0-9]*)(\.[A-Za-z0-9]+)*(,(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(=(?<value>.+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
 );
 
 const RE_NUMBER = /^\d+(\.\d+)?$/;
 export const parseValue = (value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
   switch (value.at(0)) {
     case '"':
     case "'":
@@ -280,21 +283,9 @@ const view = (root, templateName = undefined) => {
   // We take care of state change effectors
   // TODO: This won't work for nested templates
   for (const node of iterSelector(root, "*[when]")) {
-    const value = node.getAttribute("when");
-    const directive = parseDirective(value);
-    const predicate = (_) => {
-      console.log(
-        "PREDICATE",
-        _,
-        directive,
-        "==",
-        directive.format(_) === directive.value
-      );
-      return directive.format(_) === directive.value;
-    };
-    effectors.push(
-      new WhenEffector(nodePath(node, root), directive.path, predicate)
-    );
+    const { path, format, value } = parseDirective(node.getAttribute("when"));
+    const predicate = (_) => format(_) === value;
+    effectors.push(new WhenEffector(nodePath(node, root), path, predicate));
     node.removeAttribute("when");
   }
 
