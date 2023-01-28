@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:out="https://github.com/sebastien/ui.js"
+  xmlns:styled="https://github.com/sebastien/ui.js"
+>
+  <xsl:output method="html" encoding="UTF-8" indent="no"/>
+  <xsl:template match="/">
+    <html>
+      <head>
+        <!-- SEE <https://www.jsdelivr.com/package/npm/highlightjs> -->
+        <script src="https://unpkg.com/highlightjs@9.16.2/highlight.pack.js"></script>
+        <link href="https://unpkg.com/highlightjs@9.16.2/styles/atelier-seaside-dark.css" rel="stylesheet"></link>
+      </head>
+      <body>
+        <xsl:for-each select="/Test/title">
+          <h1><xsl:value-of select="." /></h1>
+        </xsl:for-each>
+        <template id="Test">
+          <table>
+            <tbody>
+                <slot out:contents=".assertions|Assertion" />
+            </tbody>
+          </table>
+        </template>
+        <template id="Assertion">
+          <tr>
+            <th>Assertion</th>
+            <td>OK</td>
+          </tr>
+        </template>
+        <xsl:for-each select="/Test/Case">
+          <section>
+                <pre><code data-language="javascript"><xsl:value-of select="." /></code></pre>
+                <script type="module">
+                  import {Tests, test } from "../js/ui/testing.js";
+                  const path={js:"../js"};
+                  <xsl:value-of select="." />
+                </script>
+          </section>
+        </xsl:for-each>
+        <script type="module">
+          import {Tests, test} from "../js/ui/testing.js";
+          import ui from "../js/ui.js";
+          ui(document, Tests)
+        </script>
+        <script>for (let node of document.querySelectorAll("code[data-language]")){
+          const res = hljs.highlight(node.dataset.language, node.innerText);
+          node.innerHTML = res.value;
+        };</script>
+      </body>
+    </html>
+  </xsl:template>
+</xsl:stylesheet>
