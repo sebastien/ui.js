@@ -21,7 +21,7 @@
 // ## Selector DSL
 //
 const KEY = "([a-zA-Z]+=)?";
-const PATH = "([@.]?[A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*";
+const PATH = "#|([@.]?([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*)";
 const FORMAT = "(\\|[A-Za-z-]+)?";
 const INPUT = `${KEY}${PATH}${FORMAT}`;
 const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(\\|(?<format>[A-Za-z-]+))?$`;
@@ -36,14 +36,19 @@ class SelectorInput {
   static LOCAL = 0;
   static RELATIVE = 1;
   static ABSOLUTE = 2;
+  static KEY = 3;
   constructor(path, format, key) {
-    this.type = path.startsWith("@")
-      ? SelectorInput.LOCAL
-      : path.startsWith(".")
-      ? SelectorInput.RELATIVE
-      : SelectorInput.ABSOLUTE;
+    const c = path.at(0);
+    this.type =
+      c === "@"
+        ? SelectorInput.LOCAL
+        : c === "."
+        ? SelectorInput.RELATIVE
+        : c === "#"
+        ? SelectorInput.KEY
+        : SelectorInput.ABSOLUTE;
     this.path = (
-      path.startsWith("@") || path.startsWith(".") ? path.substring(1) : path
+      this.type !== SelectorInput.ABSOLUTE ? path.substring(1) : path
     )
       .split(".")
       .filter((_) => _.length);
@@ -56,14 +61,22 @@ class SelectorInput {
   // and local `state`, where `value` is located at the given
   // `path`.
   apply(value, store, state, path = undefined) {
-    // TODO: Support key
-    const context =
+    if (this.type === SelectorInput.KEY) {
+      return path ? path.at(-1) : undefined;
+    }
+    let context =
       this.type === SelectorInput.ABSOLUTE
         ? store
         : this.type === SelectorInput.RELATIVE
         ? value
         : state;
-    return value;
+    for (let k of this.path) {
+      context = context[k];
+      if (context === undefined) {
+        return context;
+      }
+    }
+    return context;
   }
 }
 

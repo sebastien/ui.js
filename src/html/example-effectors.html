@@ -9,12 +9,18 @@
   <body>
     <header>
       <h1>Effectors</h1>
-      <p>This exercises the effectors</p>
+      <p>
+        This exercises the effectors, which are the primitives that render data
+        and support user interaction.
+      </p>
     </header>
 
     <section>
       <h3>Template Effectors</h3>
-
+      <p>
+        Template effectors compose chunks of HTML together, they're the basic
+        unit of HTML templates.
+      </p>
       <dl>
         <dt>Template with only text</dt>
         <dd>
@@ -58,12 +64,120 @@
     <section>
       <h3>Slot Effectors</h3>
 
+      <p>
+        Slot Effectors map one or more values to templates, they determine how
+        many templates are composed together based on the data.
+      </p>
       <dl>
-        <dt>Content effector <code>out:content</code></dt>
+        <dt>Single unformatted effector <code>out:content</code></dt>
         <dd>
-          <div data-ui="SlotContent" data-state="'Hello, world !'"></div>
+          <div data-ui="SlotContent" data-state="'Hello, world!'"></div>
           <template id="SlotContent">
-            <div><em>UI.js</em> says <slot out:content="." /></div>
+            <div><em>Hello, world!</em> ≣ <slot out:content="." /></div>
+          </template>
+        </dd>
+
+        <dt>
+          Single unformatted effector with path
+          <code>out:content=.message</code>
+        </dt>
+        <dd>
+          <div
+            data-ui="SlotContentPath"
+            data-state="{message:'Hello, world (using a path)!'}"
+          ></div>
+          <template id="SlotContentPath">
+            <div>
+              <em>Hello, world (using a path)!</em> ≣
+              <slot out:content=".message" />
+            </div>
+          </template>
+        </dd>
+
+        <dt>
+          Single inline effector with path
+          <code>out:content=.message</code>
+        </dt>
+        <dd>
+          <div
+            data-ui="SingleInline"
+            data-state="{message:'Hello, world (using a path)!'}"
+          ></div>
+          <template id="SingleInline">
+            <div>
+              <em>Not empty</em> ≣
+              <slot out:content=".message">Not empty</slot>
+            </div>
+          </template>
+        </dd>
+
+        <dt>
+          Multiple unformatted effector with
+          <code>out:content="."</code>
+        </dt>
+        <dd>
+          <div
+            data-ui="SlotContentMultiPath"
+            data-state="['A', 'B', 'C']"
+          ></div>
+          <template id="SlotContentMultiPath">
+            <div>
+              <code>ABC</code> ≣ <code><slot out:content="." /></code>
+            </div>
+          </template>
+        </dd>
+
+        <dt>
+          Multiple inline effector with
+          <code>out:content="."</code>
+        </dt>
+        <dd>
+          <div data-ui="MultipleInline" data-state="['A', 'B', 'C']"></div>
+          <template id="MultipleInline">
+            <div>
+              <code>XXX</code> ≣ <code><slot out:content=".">X</slot></code>
+            </div>
+          </template>
+        </dd>
+
+        <dt>
+          Multiple inline effector with key
+          <code>out:content="#"</code>
+        </dt>
+        <dd>
+          <div
+            data-ui="SlotContentMultiPathKey"
+            data-state="['A', 'B', 'C']"
+          ></div>
+          <template id="SlotContentMultiPathKey">
+            <div>
+              <code>012</code> ≣
+              <code
+                ><slot out:content="."><slot out:content="#"></slot></slot
+              ></code>
+            </div>
+          </template>
+        </dd>
+
+        <dt>
+          List of items, selecting keys <code>out:content="#"</code> and a
+          subpath <code>out:label</code>
+        </dt>
+
+        <dd>
+          <div
+            data-ui="SlotContentList"
+            data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}"
+          ></div>
+          <template id="SlotContentList">
+            <ul>
+              <slot out:content=".items">
+                <li>
+                  <slot out:content="#"></slot>
+                  <slot out:content=".label"></slot>
+                </li>
+              </slot>
+            </ul>
           </template>
         </dd>
       </dl>

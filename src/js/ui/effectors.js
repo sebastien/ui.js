@@ -10,12 +10,14 @@ import { Templates } from "./templates.js";
 //
 //
 
-class EffectorState {
-  constructor(effector, node, value, selector) {
+class Effect {
+  constructor(effector, node, value, global, local, path) {
     this.effector = effector;
     this.node = node;
     this.value = value;
-    this.selector = selector;
+    this.global = global;
+    this.local = local;
+    this.path = path;
     this.handler = this.onChange.bind(this);
     // TODO: Sub/Unsub should be passed through a context
     // sub(this.path, this.handler, false);
@@ -43,8 +45,15 @@ export class Effector {
     this.selector = selector;
   }
 
-  apply(node, value, path = undefined) {
-    onError("Effector.apply: no implementation defined", { node, value });
+  // --
+  // An effector is applied when the effect need to be instanciated
+  apply(node, value, global, local, path = undefined) {
+    onError("Effector.apply: no implementation defined", {
+      node,
+      value,
+      global,
+      local,
+    });
   }
 }
 
@@ -52,9 +61,9 @@ export class Effector {
 // ## Text Effector
 //
 
-class TextEffectorState extends EffectorState {
-  constructor(effector, node, value, path) {
-    super(effector, node, value, path);
+class TextEffect extends Effect {
+  constructor(effector, node, value, global, local, path) {
+    super(effector, node, value, global, local, path);
     this.textNode = document.createTextNode("");
   }
 
@@ -77,15 +86,15 @@ class TextEffectorState extends EffectorState {
 }
 
 class TextEffector extends Effector {
-  apply(node, value, path = undefined) {
-    return new TextEffectorState(this, node, value, path).update();
+  apply(node, value, global, local, path = undefined) {
+    return new TextEffect(this, node, value, global, local, path).update();
   }
 }
 
 // --
 // ## Attribute Effector
 
-class AttributeEffectorState extends EffectorState {
+class AttributeEffect extends Effect {
   update(value = this.value) {
     const formatter = this.effector.formatter;
     this.node.setAttribute(
@@ -105,7 +114,7 @@ export class AttributeEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
-    return new AttributeEffectorState(this, node, value, path).update();
+    return new AttributeEffect(this, node, value, path).update();
   }
 }
 
@@ -113,7 +122,7 @@ export class AttributeEffector extends Effector {
 // ## Value Effector
 //
 
-class ValueEffectorState extends EffectorState {
+class ValueEffect extends Effect {
   update(value = this.value) {
     const formatter = this.effector.formatter;
     this.node[this.effector.name] = formatter ? formatter(value) : value;
@@ -124,14 +133,14 @@ class ValueEffectorState extends EffectorState {
 
 export class ValueEffector extends AttributeEffector {
   apply(node, value, path = undefined) {
-    return new ValueEffectorState(this, node, value, path).update();
+    return new ValueEffect(this, node, value, path).update();
   }
 }
 
 // --
 // ## Style Effector
 //
-class StyleEffectorState extends EffectorState {
+class StyleEffect extends Effect {
   update(value = this.value) {
     const formatter = this.effector.formatter;
     Object.assign(this.node.style, formatter ? formatter(value) : value);
@@ -141,14 +150,14 @@ class StyleEffectorState extends EffectorState {
 }
 export class StyleEffector extends AttributeEffector {
   apply(node, value, path = undefined) {
-    return new StyleEffectorState(this, node, value, path).update(value);
+    return new StyleEffect(this, node, value, path).update(value);
   }
 }
 
 //  --
 // ## When Effector
 //
-class WhenEffectorState extends EffectorState {
+class WhenEffect extends Effect {
   constructor(effector, node, value, path) {
     super(effector, node, value, path);
     this.displayValue = node.style.display;
@@ -168,7 +177,7 @@ export class WhenEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
-    return new WhenEffectorState(this, node, value, path).update(value);
+    return new WhenEffect(this, node, value, path).update(value);
   }
 }
 
@@ -223,7 +232,7 @@ export class EventEffector extends Effector {
           path,
           event,
           // The internal state of each template effector is accessible globally.
-          state: TemplateEffectorState.All.get(id)?.state,
+          state: TemplateEffect.All.get(id)?.state,
         });
       }
       if (stops) {
@@ -239,11 +248,84 @@ export class EventEffector extends Effector {
 // --
 // ## Slot Effector
 //
-class SlotEffectorState extends EffectorState {
-  constructor(effector, node, value, path, items) {
-    super(effector, node, value, path);
-    console.log("SLOT EFFECTOR STATE", this.path);
+class SlotEffect extends Effect {
+  constructor(effector, node, value, global, local, path, items) {
+    super(effector, node, value, global, local, path);
     this.items = items;
+  }
+
+  create(value = this.value) {
+    const { node, global, local, path } = this;
+    const extracted = this.effector.selector.apply(value, global, local, path);
+
+    // NOTE: This may be moved directly in the SlotEffect constructor,
+    // but we leave it here for now.
+    const isEmpty = extracted === null || extracted === undefined;
+    const isAtom =
+      isEmpty ||
+      typeof extracted !== "object" ||
+      (Object.getPrototypeOf(extracted) !== RawObjectPrototype &&
+        !(extracted instanceof Array));
+    // FIXME: This should be moved to the slot effector. We also need
+    // to retrieve the key.
+    const items = new Map();
+    if (isEmpty) {
+      // Nothing to do
+    } else if (isAtom) {
+      items.set(
+        null,
+        this.createItem(
+          node, // node
+          extracted, // value
+          global,
+          local,
+          path ? path : [], // path
+          true // isEmpty
+        )
+      );
+    } else if (extracted instanceof Array) {
+      for (let k = 0; k < extracted.length; k++) {
+        items.set(
+          k,
+          this.createItem(
+            node, // node
+            extracted[k], // value
+            global,
+            local,
+            path ? [...path, k] : [k] // path
+          )
+        );
+      }
+    } else {
+      for (let k in extracted) {
+        items.set(
+          k,
+          this.createItem(
+            node, // node
+            extracted[k], // value
+            global,
+            local,
+            path ? [...path, k] : [k] // path
+          )
+        );
+      }
+    }
+    return this;
+  }
+
+  createItem(node, value, global, local, path, isEmpty = false) {
+    const root = document.createComment(
+      `slot:${isEmpty ? "null" : path.at(-1)}`
+    );
+    // We need to insert the node before as the template needs a parent
+    node.parentElement.insertBefore(root, node);
+    return this.effector.template.apply(
+      root, // node
+      value,
+      global,
+      local,
+      path
+    );
   }
 
   onChange(event, topic, offset) {
@@ -268,10 +350,7 @@ class SlotEffectorState extends EffectorState {
           // FIXME: That does not take into account the order
           this.items.set(
             event.key,
-            this.effector.createItem(this.node, event.value, [
-              ...this.path,
-              event.key,
-            ])
+            this.createItem(this.node, event.value, [...this.path, event.key])
           );
           return true;
         } else {
@@ -293,6 +372,9 @@ export class SlotEffector extends Effector {
       : new TextEffector(nodePath, selector);
   }
 
+  // -- doc
+  // The effector `template` is lazily resolved, as it may not have been
+  // defined at time of declaration.
   get template() {
     const res = this._template
       ? this._template
@@ -305,75 +387,8 @@ export class SlotEffector extends Effector {
     return res;
   }
 
-  apply(node, value, path = undefined) {
-    const extracted = this.selector.apply(value, path);
-    console.log("EXTRACTED VALUE", {
-      value,
-      selector: this.selector,
-      extracted,
-    });
-
-    // NOTE: This may be moved directly in the SlotEffectorState constructor,
-    // but we leave it here for now.
-    const isEmpty = value === null || value === undefined;
-    const isAtom =
-      isEmpty ||
-      typeof value !== "object" ||
-      (Object.getPrototypeOf(value) !== RawObjectPrototype &&
-        !(value instanceof Array));
-
-    // FIXME: This should be moved to the slot effector. We also need
-    // to retrieve the key.
-    const items = new Map();
-    if (isEmpty) {
-      // Nothing to do
-    } else if (isAtom) {
-      items.set(
-        null,
-        this.createItem(
-          node, // node
-          value, // value
-          path ? path : [], // path
-          true // isEmpty
-        )
-      );
-    } else if (value instanceof Array) {
-      for (let k = 0; k < value.length; k++) {
-        items.set(
-          k,
-          this.createItem(
-            node, // node
-            value[k], // value
-            path ? [...path, k] : [k] // path
-          )
-        );
-      }
-    } else {
-      for (let k in value) {
-        items.set(
-          k,
-          this.createItem(
-            node, // node
-            value[k], // value
-            path ? [...path, k] : [k] // path
-          )
-        );
-      }
-    }
-    return new SlotEffectorState(this, node, value, path, items);
-  }
-
-  createItem(node, value, path, isEmpty = false) {
-    const root = document.createComment(
-      `slot:${isEmpty ? "null" : path.at(-1)}`
-    );
-    // We need to insert the node before as the template needs a parent
-    node.parentElement.insertBefore(root, node);
-    return this.template.apply(
-      root, // node
-      value,
-      path
-    );
+  apply(node, value, global, local, path = undefined) {
+    return new SlotEffect(this, node, value, global, local, path).create();
   }
 }
 
@@ -381,7 +396,7 @@ export class SlotEffector extends Effector {
 // ## Template Effector
 //
 
-class TemplateEffectorState extends EffectorState {
+class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
   static All = new Map();
@@ -403,7 +418,7 @@ class TemplateEffectorState extends EffectorState {
     //       ? target[prop]
     //       : undefined,
     // });
-    TemplateEffectorState.All.set(id, this);
+    TemplateEffect.All.set(id, this);
   }
 
   // TODO: Should describe when/why this is used
@@ -455,7 +470,7 @@ export class TemplateEffector {
     this.rootName = rootName;
   }
 
-  apply(node, value, path = undefined) {
+  apply(node, value, global, local, path = undefined) {
     const views = [];
     const id = numcode(TemplateEffector.Counter++);
     // Creates nodes and corresponding effector states for each template
@@ -483,6 +498,8 @@ export class TemplateEffector {
           e.apply(
             nodes[i], // the node was extracted from the view just before
             value, // we pass the `value` as-is
+            global,
+            local,
             path // and the `path` as well
           )
         );
@@ -494,7 +511,7 @@ export class TemplateEffector {
         states,
       });
     }
-    return new TemplateEffectorState(this, node, value, path, views, id);
+    return new TemplateEffect(this, node, value, path, views, id);
   }
 }
 

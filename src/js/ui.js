@@ -73,7 +73,7 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
       const anchor = document.createComment(node.outerHTML);
       node.parentElement.replaceChild(anchor, node);
       // TODO: We should keep the returned state
-      components.push(template.apply(anchor, data, []));
+      components.push(template.apply(anchor, data, data, null, []));
     }
   }
 

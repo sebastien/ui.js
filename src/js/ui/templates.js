@@ -99,6 +99,23 @@ const iterSelector = function* (node, selector) {
   }
 };
 
+const isNodeEmpty = (node) => {
+  const n = node.childNodes.length;
+  for (let i = 0; i < n; i++) {
+    const child = node.childNodes[i];
+    switch (child.nodeType) {
+      case Node.TEXT_NODE:
+        if (!/^\s*$/.test(child.data)) {
+          return false;
+        }
+        break;
+      case Node.ELEMENT_NODE:
+        return false;
+    }
+  }
+  return true;
+};
+
 // --
 // ## Views
 //
@@ -173,22 +190,19 @@ const view = (root, templateName = undefined) => {
       (parentName === "SLOT" || parentName === "slot") &&
       name === "content"
     ) {
-      effectors.push(
-        new SlotEffector(
-          path,
-          selector,
-          selector.format
-            ? selector.format
-            : node.childNodes.length // The format is the template id
-            ? template(
-                node,
-                `${templateName || makeKey()}-${effectors.length}`,
-                templateName, // This is the parent name
-                false // No need to clone there
-              ).name
-            : null // No format and no children, it's going to be a text effector
-        )
-      );
+      const format = selector.format
+        ? selector.format
+        : isNodeEmpty(node)
+        ? null // An empty node means a null (text) formatter
+        : template(
+            // The format is the template id
+            node,
+            `${templateName || makeKey()}-${effectors.length}`,
+            templateName, // This is the parent name
+            false // No need to clone there
+          ).name;
+
+      effectors.push(new SlotEffector(path, selector, format));
       node.parentElement.replaceChild(
         // This is a placeholder, the contents  is not important.
         document.createComment(node.outerHTML),

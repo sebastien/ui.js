@@ -8,12 +8,14 @@
 }
 
 :root {
+	--text-max-width: 55ch;
+
 	--font-text: "Jost", sans-serif;
-	--font-text-lh: 1.25em;
+	--font-text-lh: 1.45em;
 	--font-text-size: 1rem;
 
 	--font-heading: "Jost", sans-serif;
-	--font-heading-lh: 1.25em;
+	--font-heading-lh: 1.45em;
 	--font-heading-size: var(--font-size-4);
 
 	--font-code: "JetBrains Mono", monospace;
@@ -81,6 +83,7 @@
 		accent-color: var(--color-accent);
 		background-color: var(--color-page-bg);
 		padding: var(--pad-4);
+		--line-height: var(--font-text-lh);
 	}
 
 
@@ -89,7 +92,7 @@
 		border-bottom: 1px solid var(--color-text);
 	}
 	p, li {
-		max-width: 45ch;
+		max-width: var(--text-max-width);;
 	}
 
 	code, pre {
@@ -106,7 +109,7 @@
 		font-weight: 600;
 		margin-top: var(--pad-2);
 		margin-bottom: var(--pad-0);
-		max-width: 45ch;
+		max-width: var(--text-max-width);;
 	}
 	h1 {
 		font-size: var(--font-size-8);
@@ -129,18 +132,17 @@
 	dt {
 		font-weight: bold;
 		margin-top: 1.25em;
-		max-width: 45ch;
+		max-width: var(--text-max-width);;
 	}
 	dd {
-		max-width: 45ch;
+		max-width: var(--text-max-width);;
 		margin-left: 0.5ch;
 		padding-left: 1.25em;
-		padding-top: 0.75em;
-		padding-bottom: 0.25em;
-		margin-bottom: 1.25em;
+		padding-top: 0.5em;
+		padding-bottom: 0.5em;
+		margin-bottom: var(--line-height);
 		border-left: 1px solid var(--color-text);
 	}
-
 }
 
 @layer theme {
