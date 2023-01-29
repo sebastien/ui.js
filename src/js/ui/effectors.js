@@ -29,6 +29,7 @@ class Effect {
 
   update(value = this.value) {}
 
+  mount() {}
   unmount() {}
 
   dispose() {
@@ -155,39 +156,6 @@ export class StyleEffector extends AttributeEffector {
 }
 
 //  --
-// ## When Effector
-//
-class WhenEffect extends Effect {
-  constructor(effector, node, value, global, local, path) {
-    super(effector, node, value, global, local, path);
-    this.displayValue = node.style.display;
-  }
-
-  update(value = this.value) {
-    const v = this.effector.selector.apply(
-      value,
-      this.global,
-      this.local,
-      this.path
-    );
-    const w = this.effector.predicate ? this.effector.predicate(v) : v;
-    this.node.style.display = w ? this.displayValue : "none";
-    this.value = value;
-    return this;
-  }
-}
-export class WhenEffector extends Effector {
-  constructor(nodePath, selector, predicate) {
-    super(nodePath, selector);
-    this.predicate = predicate;
-  }
-
-  apply(node, value, global, local, path = undefined) {
-    return new WhenEffect(this, node, value, global, local, path).update(value);
-  }
-}
-
-//  --
 // ## Event Effector
 //
 export class EventEffector extends Effector {
@@ -255,9 +223,8 @@ export class EventEffector extends Effector {
 // ## Slot Effector
 //
 class SlotEffect extends Effect {
-  constructor(effector, node, value, global, local, path, items) {
+  constructor(effector, node, value, global, local, path) {
     super(effector, node, value, global, local, path);
-    this.items = items;
   }
 
   create(value = this.value) {
@@ -373,9 +340,11 @@ export class SlotEffector extends Effector {
   constructor(nodePath, selector, templateName) {
     super(nodePath, selector);
     this.templateName = templateName;
-    this._template = templateName
+    this._template = !templateName
+      ? new TextEffector(nodePath, selector)
+      : typeof templateName === "string"
       ? undefined
-      : new TextEffector(nodePath, selector);
+      : templateName;
   }
 
   // -- doc
@@ -394,7 +363,71 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, value, global, local, path = undefined) {
+    console.log("APPLYNG SLOT EFFECT", {
+      node,
+      value,
+      path,
+      predicate: this.predicate,
+    });
     return new SlotEffect(this, node, value, global, local, path).create();
+  }
+}
+
+// --
+// ### When Effector
+
+class WhenEffect extends Effect {
+  constructor(effector, node, value, global, local, path) {
+    super(effector, node, value, global, local, path);
+    this.anchor = document.createComment(
+      `when:${this.effector.selector.toString()}`
+    );
+    node.appendChild(this.anchor, node);
+    this.displayValue = node.style.display;
+    this.state = null;
+  }
+
+  create(value = this.value) {
+    const { global, local, path } = this;
+    const extracted = this.effector.selector.apply(value, global, local, path);
+    return this.effector.predicate(extracted)
+      ? this.show(extracted)
+      : this.hide();
+  }
+
+  show(value) {
+    if (!this.state) {
+      this.state = this.effector.template.apply(
+        this.anchor,
+        value,
+        this.global,
+        this.local,
+        this.path
+      );
+    } else {
+      this.state.update(value);
+      this.state.mount();
+    }
+    this.node.style.display = this.displayValue;
+    return this;
+  }
+
+  hide() {
+    this.node.style.display = "none";
+    if (this.state) {
+      this.state.unmount();
+    }
+  }
+}
+
+export class WhenEffector extends SlotEffector {
+  constructor(nodePath, selector, templateName, predicate) {
+    super(nodePath, selector, templateName);
+    this.predicate = predicate;
+  }
+
+  apply(node, value, global, local, path = undefined) {
+    return new WhenEffect(this, node, value, global, local, path).create(value);
   }
 }
 

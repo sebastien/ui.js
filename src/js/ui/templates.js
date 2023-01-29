@@ -2,8 +2,8 @@ import { parseSelector } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
   SlotEffector,
-  EventEffector,
   WhenEffector,
+  EventEffector,
   StyleEffector,
   ValueEffector,
   AttributeEffector,
@@ -80,12 +80,43 @@ const parseWhenDirective = (text) => {
 // Processing templates requires walking through the nodes in the tree
 // and looking for special nodes.
 
+const isBoundaryNode = (node) => {
+  if (node && node.nodeType === Node.ELEMENT_NODE) {
+    const tagName = node?.parentNode?.tagName;
+    switch (tagName) {
+      case "TEMPLATE":
+      case "template":
+      case "SLOT":
+      case "slot":
+        return true;
+    }
+    // When effectors are also boundary nodes
+    if (node.hasAttribute("when")) {
+      return true;
+    }
+  } else {
+    return false;
+  }
+};
+
+// --
+// Returns the boundary node in this node's ancestors.
+const getBoundaryNode = (node) => {
+  while (true) {
+    if (!node.parentElement) {
+      return node;
+    }
+    if (isBoundaryNode((node = node.parentElement))) {
+      return node;
+    }
+  }
+};
+
 // --
 // We don't want to recurse through filters.
 const TreeWalkerFilter = {
   acceptNode: (node) => {
-    const tagName = node?.parentNode?.tagName;
-    return tagName === "SLOT" || tagName === "slot"
+    return isBoundaryNode(node)
       ? NodeFilter.FILTER_REJECT
       : NodeFilter.FILTER_ACCEPT;
   },
@@ -130,6 +161,8 @@ const iterAttributes = function* (node, regexp) {
 // -- doc
 // Iterates through the descendants of `node` (including itself), yielding
 // nodes that match the given `selector`.
+//
+// NOTE: This does not stop at boundary nodes (see  `isBoundaryNode`).
 const iterSelector = function* (node, selector) {
   if (node.nodeType === Node.ELEMENT_NODE) {
     if (node.matches(selector)) {
@@ -141,6 +174,8 @@ const iterSelector = function* (node, selector) {
   }
 };
 
+// -- doc
+// Tells if the node is empty, stripping text nodes that only have whitespace.
 const isNodeEmpty = (node) => {
   const n = node.childNodes.length;
   for (let i = 0; i < n; i++) {
@@ -174,6 +209,7 @@ class View {
 // creating corresponding effectors.
 const view = (root, templateName = undefined) => {
   const effectors = [];
+  console.group("VIEW", { root, templateName });
 
   // TODO: Query the styled variants
 
@@ -183,7 +219,7 @@ const view = (root, templateName = undefined) => {
   const attrs = {};
   for (const [match, attr] of iterAttributes(
     root,
-    /^(?<type>in|out|on|when|styled):(?<name>.+)$/
+    /^(?<type>in|out|on|styled):(?<name>.+)$/
   )) {
     const type = match.groups.type;
     const name = match.groups.name;
@@ -244,6 +280,7 @@ const view = (root, templateName = undefined) => {
             false // No need to clone there
           ).name;
 
+      // TODO: We should check for `when` as well.
       effectors.push(new SlotEffector(path, selector, format));
       node.parentElement.replaceChild(
         // This is a placeholder, the contents  is not important.
@@ -311,33 +348,50 @@ const view = (root, templateName = undefined) => {
   // --
   //
   // ### Conditional effectors
-  for (const { name, attr } of attrs["when"] || []) {
-    const node = attr.ownerElement;
-    const match = parseWhenDirective(attr.value);
-    if (!match) {
-      onError(`Could not parse 'when=${attr.value}' directive`, { node, attr });
-    } else {
-      effectors.push(
-        new WhenEffector(nodePath(node, root), match.selector, match.predicate)
-      );
-    }
-    node.removeAttribute(attr.name);
-  }
 
   // We take care of state change effectors
   // TODO: This won't work for nested templates
   for (const node of iterSelector(root, "*[when]")) {
-    const text = node.getAttribute("when");
-    const match = parseWhenDirective(text);
-    if (!match) {
-      onError(`Could not parse when directive '${text}'`, { node, when: text });
-    } else {
-      effectors.push(
-        new WhenEffector(nodePath(node, root), match.selector, match.predicate)
-      );
+    const boundary = getBoundaryNode(node);
+    if (boundary === root) {
+      const text = node.getAttribute("when");
+      const when = parseWhenDirective(text);
+      if (!when) {
+        onError(`Could not parse when directive '${text}'`, {
+          node,
+          when: text,
+        });
+      } else {
+        node.removeAttribute("when");
+        const frag = document.createDocumentFragment();
+        while (node.childNodes.length > 0) {
+          frag.appendChild(node.childNodes[0]);
+        }
+        const subtemplate = template(
+          frag,
+          `${makeKey()}-${effectors.length}`,
+          templateName, // This is the parent name
+          false // No need to clone there
+        );
+        effectors.push(
+          new WhenEffector(
+            nodePath(node, root),
+            when.selector,
+            subtemplate,
+            when.predicate
+          )
+        );
+        if (node.parentElement) {
+          node.parentElement.replaceChild(
+            // This is a placeholder, the contents  is not important.
+            document.createComment(node.outerHTML),
+            node
+          );
+        }
+      }
     }
-    node.removeAttribute("when");
   }
+  console.groupEnd();
 
   return new View(root, effectors);
 };
@@ -388,7 +442,7 @@ export const template = (
   // such as `svg` nodes, which need to be within an `svg` parent to
   // implicitly get the SVG namespace (which can still be set explicitely
   // through xmlns).
-  const bodyId = node.dataset.body;
+  const bodyId = node?.dataset?.body;
   let viewsParent = undefined;
   if (bodyId) {
     const bodyNode = root.getElementById(bodyId);

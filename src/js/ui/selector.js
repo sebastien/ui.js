@@ -33,10 +33,10 @@ const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
 const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 
 class SelectorInput {
-  static LOCAL = 0;
-  static RELATIVE = 1;
-  static ABSOLUTE = 2;
-  static KEY = 3;
+  static LOCAL = "@";
+  static RELATIVE = ".";
+  static ABSOLUTE = "";
+  static KEY = "#";
   constructor(path, format, key) {
     const c = path.at(0);
     this.type =
@@ -77,6 +77,12 @@ class SelectorInput {
       }
     }
     return context;
+  }
+
+  toString() {
+    const key = this.key ? `${this.key}=` : "";
+    const format = this.format ? `|${this.format}` : "";
+    return `${key}${this.type}${this.path.join(".")}${format}`;
   }
 }
 
@@ -137,6 +143,11 @@ class Selector {
         // ERROR
         break;
     }
+  }
+
+  toString() {
+    const event = this.event ? `!${this.event}${this.stops ? "." : ""}` : "";
+    return `${this.inputs.map((_) => _.toString()).join(",")}${event}`;
   }
 }
 
