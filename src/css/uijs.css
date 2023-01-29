@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cousine:wght@400;500;600;700&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
 
 :root {
 	--palette-grey-20: #393930;
 	--palette-grey-40: #595950;
+	--palette-grey-80: #999990;
 	--palette-ivory-90: #fffef7;
 	--palette-gold-60: #fcd647;
 }
@@ -11,16 +12,21 @@
 	--text-max-width: 55ch;
 
 	--font-text: "Jost", sans-serif;
-	--font-text-lh: 1.45em;
+	--font-text-line-height: 1.45em;
 	--font-text-size: 1rem;
 
 	--font-heading: "Jost", sans-serif;
-	--font-heading-lh: 1.45em;
+	--font-heading-line-height: 1.45em;
 	--font-heading-size: var(--font-size-4);
 
-	--font-code: "JetBrains Mono", monospace;
-	--font-code-lh: 1.25em;
+	--font-code: "Cousine", monospace;
+	--font-code-line-height: 1.25em;
 	--font-code-size: var(--font-size-1);
+
+	--font-control: "Jost", sans-serif;
+	--font-control-line-height: 1.45em;
+	--font-control-size: var(--font-size-2);
+
 
 	--font-size-0: calc(9/14 * 100%);
 	--font-size-1: calc(11/14 * 100%);
@@ -43,6 +49,13 @@
 	--pad-2: calc(16px * 2);
 	--pad-3: calc(16px * 3);
 	--pad-4: calc(16px * 4);
+
+
+	--control-bd: var(--color-text);
+	--control-bd-focused: var(--color-accent);
+	--control-bg: var(--palette-white-90);
+	--control-bg-focused: white;
+	--control-font: var(--palette-white-90);
 }
 
 @layer reset, base, theme;
@@ -77,13 +90,13 @@
 @layer base {
 	body {
 		font-family: var(--font-text);
-		line-height: var(--font-text-lh);
+		line-height: var(--font-text-line-height);
 		font-size: var(--font-text-size);
 		color: var(--color-text);
 		accent-color: var(--color-accent);
 		background-color: var(--color-page-bg);
 		padding: var(--pad-4);
-		--line-height: var(--font-text-lh);
+		--line-height: var(--font-text-line-height);
 	}
 
 
@@ -98,18 +111,18 @@
 	code, pre {
 		font-family: var(--font-code);
 		font-size: var(--font-code-size);
-		line-height: var(--font-code-lh);
+		line-height: var(--font-code-line-height);
 		color: var(--color-code);
 	}
 
 	h1,h2,h3,h4,h5,h6 {
 		font-family: var(--font-heading);
 		font-size: var(--font-heading-size);
-		line-height: var(--font-heading-lh);
+		line-height: var(--font-heading-line-height);
 		font-weight: 600;
 		margin-top: var(--pad-2);
 		margin-bottom: var(--pad-0);
-		max-width: var(--text-max-width);;
+		max-width: var(--text-max-width);
 	}
 	h1 {
 		font-size: var(--font-size-8);
@@ -158,5 +171,36 @@
 	header p {
 		font-size: var(--font-size-3);
 	}
+	p {
+		margin-bottom: var(--line-height);
+	}
+	p:last-child {
+		margin-bottom: 0px;
+	}
+	input,texteara {
+		border: 1px solid var(--control-bd);
+		background: var(--control-bg);
+		color: var(--control-txt);
+		font-family: var(--control-font);
+		font-size: var(--control-font-size);
+		line-height: var(--control-line-height);
+		padding: 4px 8px;
+		box-shadow: 0px 0px 0px transparent;
+		transition-property: box-shadow, top, left;
+		transition-duration: 0.15s;
+		position: relative;
+		top: 0px;
+		left: 0px;
+	}
+	input:hover,textarea:hover {
+		box-shadow: -2px 2px 0px var(--color-accent);
+	}
+	input:focus,textarea:focus,
+	input:active,textarea:active {
+		box-shadow: -4px 4px 0px var(--color-accent);
+		background-color: var(--control-bg-focused);
+		top: -2px;
+		left: 2px;
+		}
 }
 /* EOF */

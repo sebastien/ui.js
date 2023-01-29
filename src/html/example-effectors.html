@@ -15,6 +15,7 @@
       </p>
     </header>
 
+    <!--
     <section>
       <h3>Template Effectors</h3>
       <p>
@@ -183,6 +184,35 @@
       </dl>
     </section>
 
+    -->
+    <section>
+      <h3>Conditional Effectors</h3>
+
+      <p>
+        Conditional effectors (also called <code>WhenEffectors</code>) are used
+        to display a specific template when a condition is true.
+      </p>
+      <dl>
+        <dt>Simple Conditional <code>when=".step==1</code></dt>
+        <dd>
+          <p>
+            Note that here we want to avoid rendering all the branches, only the
+            active branch should get instantiated, this can be checked with the
+            inspector.
+          </p>
+          <div data-ui="ConditionalSimple" data-state="{edited:true}"></div>
+          <div data-ui="ConditionalSimple" data-state="{edited:false}"></div>
+          <template id="ConditionalSimple">
+            <div when=".edited==true">
+              <input type="text" placeholder="The value can be edited" />
+            </div>
+            <div when=".edited!=true">
+              <em>The value cannot be edited</em>
+            </div>
+          </template>
+        </dd>
+      </dl>
+    </section>
     <script type="module">
       import ui from "../js/ui.js";
       ui(document, { message: "Hello, world!" });

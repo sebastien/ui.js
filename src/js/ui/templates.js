@@ -9,7 +9,7 @@ import {
   AttributeEffector,
   TemplateEffector,
 } from "./effectors.js";
-import { Formats } from "./formats.js";
+import { Formats, idem } from "./formats.js";
 import { onError, makeKey } from "./utils.js";
 import { styled } from "./tokens.js";
 import { stylesheet } from "./css.js";
@@ -18,6 +18,16 @@ const RE_NUMBER = /^\d+(\.\d+)?$/;
 export const parseValue = (value) => {
   if (typeof value !== "string") {
     return value;
+  }
+  switch (value) {
+    case "true":
+      return true;
+    case "false":
+      return false;
+    case "null":
+      return null;
+    case "undefined":
+      return undefined;
   }
   switch (value.at(0)) {
     case '"':
@@ -29,6 +39,38 @@ export const parseValue = (value) => {
       return eval(value);
     default:
       return RE_NUMBER.test(value) ? parseFloat(value) : value;
+  }
+};
+
+const Comparators = {
+  "==": (a, b) => a == b,
+  "!=": (a, b) => a != b,
+  ">": (a, b) => a > b,
+  ">=": (a, b) => a >= b,
+  "<": (a, b) => a < b,
+  "<=": (a, b) => a <= b,
+};
+const parseWhenDirective = (text) => {
+  const match = text.match(
+    /^(?<selector>.+)(?<operator>==|!=|>|>=|<|<=)(?<value>.+)$/
+  );
+  if (!match) {
+    return null;
+  } else {
+    const { selector, value, operator } = match.groups;
+    const v = parseValue(value);
+    const f = Comparators[operator];
+    if (!f) {
+      onError(`Could not find comparator for '${operator}'`, {
+        directive: text,
+        groups: match.groups,
+      });
+      return null;
+    }
+    return {
+      selector: parseSelector(selector),
+      predicate: (_) => f(_, v),
+    };
   }
 };
 
@@ -271,21 +313,29 @@ const view = (root, templateName = undefined) => {
   // ### Conditional effectors
   for (const { name, attr } of attrs["when"] || []) {
     const node = attr.ownerElement;
-    const value = parseValue(attr.value);
-    console.log("TODO: WhenEffector");
-    // effectors.push(
-    //   new WhenEffector(nodePath(node, root), [name], (_) => _ === value)
-    // );
+    const match = parseWhenDirective(attr.value);
+    if (!match) {
+      onError(`Could not parse 'when=${attr.value}' directive`, { node, attr });
+    } else {
+      effectors.push(
+        new WhenEffector(nodePath(node, root), match.selector, match.predicate)
+      );
+    }
     node.removeAttribute(attr.name);
   }
 
   // We take care of state change effectors
   // TODO: This won't work for nested templates
   for (const node of iterSelector(root, "*[when]")) {
-    const selector = parseSelector(node.getAttribute("when"));
-    // const { path, format, value } = parseDirective(node.getAttribute("when"));
-    // const predicate = (_) => format(_) === value;
-    // effectors.push(new WhenEffector(nodePath(node, root), path, predicate));
+    const text = node.getAttribute("when");
+    const match = parseWhenDirective(text);
+    if (!match) {
+      onError(`Could not parse when directive '${text}'`, { node, when: text });
+    } else {
+      effectors.push(
+        new WhenEffector(nodePath(node, root), match.selector, match.predicate)
+      );
+    }
     node.removeAttribute("when");
   }
 

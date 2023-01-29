@@ -63,7 +63,7 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
     const template = Templates.get(ui);
     const data = state ? parseState(state, context) : context;
     if (!template) {
-      onError(`ui.render: Could not find template '{ui}'`, {
+      onError(`ui.render: Could not find template '${ui}'`, {
         node,
         ui,
       });

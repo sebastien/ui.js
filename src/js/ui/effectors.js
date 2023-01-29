@@ -158,26 +158,32 @@ export class StyleEffector extends AttributeEffector {
 // ## When Effector
 //
 class WhenEffect extends Effect {
-  constructor(effector, node, value, path) {
-    super(effector, node, value, path);
+  constructor(effector, node, value, global, local, path) {
+    super(effector, node, value, global, local, path);
     this.displayValue = node.style.display;
   }
 
   update(value = this.value) {
-    const v = this.effector.predicate ? this.effector.predicate(value) : value;
-    this.node.style.display = v ? this.displayValue : "none";
+    const v = this.effector.selector.apply(
+      value,
+      this.global,
+      this.local,
+      this.path
+    );
+    const w = this.effector.predicate ? this.effector.predicate(v) : v;
+    this.node.style.display = w ? this.displayValue : "none";
     this.value = value;
     return this;
   }
 }
 export class WhenEffector extends Effector {
-  constructor(nodePath, dataPath, predicate = undefined) {
-    super(nodePath, dataPath);
+  constructor(nodePath, selector, predicate) {
+    super(nodePath, selector);
     this.predicate = predicate;
   }
 
-  apply(node, value, path = undefined) {
-    return new WhenEffect(this, node, value, path).update(value);
+  apply(node, value, global, local, path = undefined) {
+    return new WhenEffect(this, node, value, global, local, path).update(value);
   }
 }
 
