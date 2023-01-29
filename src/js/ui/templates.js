@@ -1,4 +1,5 @@
-import { parsePath, nodePath } from "./paths.js";
+import { parseSelector } from "./selector.js";
+import { nodePath } from "./paths.js";
 import {
   SlotEffector,
   EventEffector,
@@ -8,17 +9,10 @@ import {
   AttributeEffector,
   TemplateEffector,
 } from "./effectors.js";
-import { Formats, idem } from "./formats.js";
+import { Formats } from "./formats.js";
 import { onError, makeKey } from "./utils.js";
 import { styled } from "./tokens.js";
 import { stylesheet } from "./css.js";
-
-// --
-// ## Directives
-
-const RE_DIRECTIVE = new RegExp(
-  /^((?<input>@|(\.?[A-Za-z0-9]*)(\.[A-Za-z0-9]+)*(,(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*)*)(:(?<source>(\.?[A-Za-z0-9]+)(\.[A-Za-z0-9]+)*))?)?(\|(?<format>[A-Za-z-]+))?(=(?<value>.+))?(!(?<event>[A-Za-z]+(\.[A-Za-z]+)*)(?<stops>\.)?)?$/
-);
 
 const RE_NUMBER = /^\d+(\.\d+)?$/;
 export const parseValue = (value) => {
@@ -38,51 +32,11 @@ export const parseValue = (value) => {
   }
 };
 
-// -- topic:directives
-//
-// ## Directives
-//
-// Directives are one-liners in a simple DSL that express selections,
-// transformation, events on updates on data.
-//
-// A directive can have the following components:
-//
-// - A **data selection**, in the form of  path like `todos.items` (absolute) or `.label` (relative), a
-//   special value such as `#key` (current key in the parent) or a combinatio of the above
-//   `[..selected,#key]`, '{count:..items.length,selected:.selected}'
-//
-// - A **data transformation**, prefixed by `|` and using dot-separated names, such as
-//   `.value|lowercase` or `.checked|not`, etc.
-//
-// - An *event*, prefixed by `!` such as `!.Added` or `Todo.Added`. When an event is suffixed by a `.`, it
-//   will stop propagagtino and prevent the default.
-
-// -- doc
-// Parses the directive defined by `text`, where the string
-// is like `data.path|formatter!event`.
-export const parseDirective = (text, defaultFormat = idem) => {
-  const match = text.match(RE_DIRECTIVE);
-  if (!match) {
-    return onError(`parseDirective: directive cannot be parsed "${text}"`, {
-      directive: text,
-    });
-  }
-  const { input, source, format, event, value, stops } = match.groups;
-  let paths = input ? input.split(",").map((_) => parsePath(_)) : [];
-  return {
-    // FIXME: `path` should be deprecated, and we should always test for `paths` instead.
-    path: paths[0],
-    paths: paths,
-    source: parsePath(source),
-    format: defaultFormat ? Formats[format] || defaultFormat : format,
-    value: parseValue(value),
-    event: parsePath(event),
-    stops: stops && stops.length ? true : false,
-  };
-};
-
 // --
-// ## Views
+// ## Tree Walking
+//
+// Processing templates requires walking through the nodes in the tree
+// and looking for special nodes.
 
 // --
 // We don't want to recurse through filters.
@@ -95,13 +49,18 @@ const TreeWalkerFilter = {
   },
 };
 
+// -- doc
+// Iterates through the attributes of the given `node` which
+// name matches `regexp`.
 const iterAttributesLike = function* (node, regexp) {
-  for (let i = 0; i < node.attributes.length; i++) {
-    const attr = node.attributes[i];
-    // NOTE: Not sure that would work for XHTML
-    const match = regexp.exec(attr.name);
-    if (match) {
-      yield [match, attr];
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    for (let i = 0; i < node.attributes.length; i++) {
+      const attr = node.attributes[i];
+      // NOTE: Not sure that would work for XHTML
+      const match = regexp.exec(attr.name);
+      if (match) {
+        yield [match, attr];
+      }
     }
   }
 };
@@ -126,21 +85,29 @@ const iterAttributes = function* (node, regexp) {
   }
 };
 
+// -- doc
+// Iterates through the descendants of `node` (including itself), yielding
+// nodes that match the given `selector`.
+const iterSelector = function* (node, selector) {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    if (node.matches(selector)) {
+      yield node;
+    }
+    for (const _ of node.querySelectorAll(selector)) {
+      yield _;
+    }
+  }
+};
+
+// --
+// ## Views
+//
 class View {
   constructor(root, effectors) {
     this.root = root;
     this.effectors = effectors;
   }
 }
-
-const iterSelector = function* (node, selector) {
-  if (node.matches(selector)) {
-    yield node;
-  }
-  for (const _ of node.querySelectorAll(selector)) {
-    yield _;
-  }
-};
 
 // -- doc
 // Creates a view from the given `root` node, looking for specific
@@ -164,7 +131,11 @@ const view = (root, templateName = undefined) => {
     (attrs[type] = attrs[type] || []).push({ name, attr });
   }
 
-  // We expand the style attributes
+  // --
+  // ### Styled attributes
+  //
+  // We expand the style attributes, which are then aggregated in the
+  // `styleRules` dict.
   const styledRules = {};
   for (const node of iterSelector(root, "*[styled]")) {
     const { rules, classes } = styled(node.getAttribute("styled"));
@@ -180,17 +151,23 @@ const view = (root, templateName = undefined) => {
     classes.forEach((_) => node.classList.add(_));
     node.removeAttribute("styled");
   }
+
+  // If we have more than one `styledRule`, then we declare a stylesheet.
   if (Object.keys(styledRules).length > 0) {
+    // NOTE: We should probably put that as part of the view and not
+    // necessarily create it right away.
     stylesheet(styledRules);
   }
 
+  // --
+  // ### `out:*` attributes
+  //
   // We take care of attribute/content/value effectors
   for (const { name, attr } of attrs["out"] || []) {
     const node = attr.ownerElement;
     const path = nodePath(node, root);
     const parentName = node.nodeName;
-    const directive = parseDirective(attr.value || `.${name}`, false);
-    const { format } = directive;
+    const selector = parseSelector(attr.value || `.${name}`, false);
     if (
       // In SVG, these nodes are lowercase.
       (parentName === "SLOT" || parentName === "slot") &&
@@ -198,40 +175,41 @@ const view = (root, templateName = undefined) => {
     ) {
       effectors.push(
         new SlotEffector(
-          nodePath(node, root),
-          directive.path,
-          format
-            ? format
-            : node.children.length
+          path,
+          selector,
+          selector.format
+            ? selector.format
+            : node.childNodes.length // The format is the template id
             ? template(
                 node,
                 `${templateName || makeKey()}-${effectors.length}`,
                 templateName, // This is the parent name
                 false // No need to clone there
               ).name
-            : null
+            : null // No format and no children, it's going to be a text effector
         )
       );
       node.parentElement.replaceChild(
-        // This is a placholder, the contents  is not important.
+        // This is a placeholder, the contents  is not important.
         document.createComment(node.outerHTML),
         node
       );
     } else {
-      effectors.push(
-        new (name === "style"
-          ? StyleEffector
-          : ((name === "value" || name === "disabled") &&
-              (parentName === "INPUT" || parentName === "SELECT")) ||
-            (name === "checked" && parentName === "INPUT")
-          ? ValueEffector
-          : AttributeEffector)(
-          path,
-          directive.path,
-          name,
-          typeof format === "string" ? Formats[format] : format
-        )
-      );
+      console.log("TODO: Style/Attribute/Value effectors");
+      // effectors.push(
+      //   new (name === "style"
+      //     ? StyleEffector
+      //     : ((name === "value" || name === "disabled") &&
+      //         (parentName === "INPUT" || parentName === "SELECT")) ||
+      //       (name === "checked" && parentName === "INPUT")
+      //     ? ValueEffector
+      //     : AttributeEffector)(
+      //     path,
+      //     directive.path,
+      //     name,
+      //     typeof format === "string" ? Formats[format] : format
+      //   )
+      // );
     }
     // We remove the attribute from the template as it is now processed
     node.removeAttribute(attr.name);
@@ -255,42 +233,53 @@ const view = (root, templateName = undefined) => {
   //   node.removeAttribute(attr.name);
   // }
 
+  // --
+  // ### Event effectors
+  //
   for (const { name, attr } of attrs["on"] || []) {
     const node = attr.ownerElement;
-    const directive = parseDirective(attr.value);
+    const selector = parseSelector(attr.value);
+    console.log("TODO: Event Effector");
     // TODO: Support "on:change=.checked:not"
-    effectors.push(
-      new EventEffector(
-        nodePath(node, root),
-        directive.path || [""],
-        name,
-        directive
-      )
-    );
+    // effectors.push(
+    //   new EventEffector(
+    //     nodePath(node, root),
+    //     directive.path || [""],
+    //     name,
+    //     directive
+    //   )
+    // );
     node.removeAttribute(attr.name);
   }
 
+  // --
+  //
+  // ### Conditional effectors
   for (const { name, attr } of attrs["when"] || []) {
-    console.log("WHEN", { name, attr });
     const node = attr.ownerElement;
     const value = parseValue(attr.value);
-    effectors.push(
-      new WhenEffector(nodePath(node, root), [name], (_) => _ === value)
-    );
+    console.log("TODO: WhenEffector");
+    // effectors.push(
+    //   new WhenEffector(nodePath(node, root), [name], (_) => _ === value)
+    // );
     node.removeAttribute(attr.name);
   }
 
   // We take care of state change effectors
   // TODO: This won't work for nested templates
   for (const node of iterSelector(root, "*[when]")) {
-    const { path, format, value } = parseDirective(node.getAttribute("when"));
-    const predicate = (_) => format(_) === value;
-    effectors.push(new WhenEffector(nodePath(node, root), path, predicate));
+    const selector = parseSelector(node.getAttribute("when"));
+    // const { path, format, value } = parseDirective(node.getAttribute("when"));
+    // const predicate = (_) => format(_) === value;
+    // effectors.push(new WhenEffector(nodePath(node, root), path, predicate));
     node.removeAttribute("when");
   }
 
   return new View(root, effectors);
 };
+
+// --
+// ## Templates
 
 // -- doc
 // Keeps track of all the defined templates, which can then
@@ -347,13 +336,21 @@ export const template = (
   } else {
     viewsParent = root;
   }
-  for (let _ of viewsParent?.children || []) {
-    switch (_.nodeName.toLowerCase()) {
-      case "style":
-      case "script":
+  for (let _ of viewsParent?.childNodes || []) {
+    switch (_.nodeType) {
+      case Node.TEXT_NODE:
+        views.push(_);
+        break;
+      case Node.ELEMENT_NODE:
+        switch (_.nodeName.toLowerCase()) {
+          case "style":
+          case "script":
+            break;
+          default:
+            views.push(_);
+        }
         break;
       default:
-        views.push(_);
     }
   }
 

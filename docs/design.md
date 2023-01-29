@@ -20,3 +20,14 @@ updates of the data, which then allows for granular rendering updates.
 Imagine a huge list of items, with PubSub it's easy to change just the
 one item that has changed, without having to re-render the whole list,
 like it would be the case with say, React.
+
+## 3-States Approach
+
+There is always three states/sources of data, each passed from parent to
+child:
+
+-   The current value: the main value worked on by the component.
+-   The global state: to allow for pub/sub across the rendering
+    hierarchy.
+-   The component state: to hold view-specific data, such as
+    derived/synthetic data, user-selections, etc.

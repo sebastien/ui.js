@@ -11,18 +11,17 @@ import { Templates } from "./templates.js";
 //
 
 class EffectorState {
-  constructor(effector, node, value, path) {
+  constructor(effector, node, value, selector) {
     this.effector = effector;
     this.node = node;
     this.value = value;
-    this.path = path;
+    this.selector = selector;
     this.handler = this.onChange.bind(this);
     // TODO: Sub/Unsub should be passed through a context
-    sub(this.path, this.handler, false);
+    // sub(this.path, this.handler, false);
   }
 
   onChange(event, topic, offset) {
-    const path = this.path;
     return this.update(event.value);
   }
 
@@ -31,14 +30,17 @@ class EffectorState {
   unmount() {}
 
   dispose() {
-    unsub(this.path, this.handler);
+    // unsub(this.path, this.handler);
   }
 }
 
 export class Effector {
-  constructor(nodePath, dataPath) {
+  // -- doc
+  // An effector targets the node at the given `nodePath` and selects data
+  // using the given `selector`.
+  constructor(nodePath, selector) {
     this.nodePath = nodePath;
-    this.dataPath = dataPath;
+    this.selector = selector;
   }
 
   apply(node, value, path = undefined) {
@@ -47,8 +49,9 @@ export class Effector {
 }
 
 // --
-// ## Attribute Effector
+// ## Text Effector
 //
+
 class TextEffectorState extends EffectorState {
   constructor(effector, node, value, path) {
     super(effector, node, value, path);
@@ -233,6 +236,9 @@ export class EventEffector extends Effector {
   }
 }
 
+// --
+// ## Slot Effector
+//
 class SlotEffectorState extends EffectorState {
   constructor(effector, node, value, path, items) {
     super(effector, node, value, path);
@@ -279,12 +285,12 @@ class SlotEffectorState extends EffectorState {
 // NOTE: I think the only thing that a slot effector has to do is
 // to detect add remove and relay these.
 export class SlotEffector extends Effector {
-  constructor(nodePath, dataPath, templateName) {
-    super(nodePath, dataPath);
+  constructor(nodePath, selector, templateName) {
+    super(nodePath, selector);
     this.templateName = templateName;
     this._template = templateName
       ? undefined
-      : new TextEffector(nodePath, dataPath);
+      : new TextEffector(nodePath, selector);
   }
 
   get template() {
@@ -300,6 +306,13 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, value, path = undefined) {
+    const extracted = this.selector.apply(value, path);
+    console.log("EXTRACTED VALUE", {
+      value,
+      selector: this.selector,
+      extracted,
+    });
+
     // NOTE: This may be moved directly in the SlotEffectorState constructor,
     // but we leave it here for now.
     const isEmpty = value === null || value === undefined;
@@ -308,13 +321,6 @@ export class SlotEffector extends Effector {
       typeof value !== "object" ||
       (Object.getPrototypeOf(value) !== RawObjectPrototype &&
         !(value instanceof Array));
-    console.log("APPLY EFFECTOR", {
-      value,
-      path,
-      node,
-      isAtom,
-      dataPath: this.dataPath,
-    });
 
     // FIXME: This should be moved to the slot effector. We also need
     // to retrieve the key.
@@ -371,34 +377,42 @@ export class SlotEffector extends Effector {
   }
 }
 
+// --
+// ## Template Effector
+//
+
 class TemplateEffectorState extends EffectorState {
+  // We keep a global map of all the template effector states, it's like
+  // the list of all components that were created.
   static All = new Map();
   constructor(effector, node, value, path, views, id) {
     super(effector, node, value, path);
     this.views = views;
     this.id = id;
-    this.data = {};
-    this.state = new Proxy(this.data, {
-      set: (target, prop, value) => {
-        target[prop] = value;
-        return value;
-      },
-      get: (target, prop, receiver) =>
-        prop === "update"
-          ? this.updateState.bind(this)
-          : prop in target
-          ? target[prop]
-          : undefined,
-    });
+    // NOTE: Not sure this is necessary
+    // this.data = {};
+    // this.state = new Proxy(this.data, {
+    //   set: (target, prop, value) => {
+    //     target[prop] = value;
+    //     return value;
+    //   },
+    //   get: (target, prop, receiver) =>
+    //     prop === "update"
+    //       ? this.updateState.bind(this)
+    //       : prop in target
+    //       ? target[prop]
+    //       : undefined,
+    // });
     TemplateEffectorState.All.set(id, this);
   }
 
-  updateState(items) {
-    for (let k in items) {
-      this.data[k] = items[k];
-    }
-    return items;
-  }
+  // TODO: Should describe when/why this is used
+  // updateState(items) {
+  //   for (let k in items) {
+  //     this.data[k] = items[k];
+  //   }
+  //   return items;
+  // }
 
   update(value) {
     const o = this.path.length;
@@ -450,29 +464,26 @@ export class TemplateEffector {
       const root = view.root.cloneNode(true);
       // We update the `data-template` and `data-path` attributes, which is
       // used by `EventEffectors` in particular to find the scope.
-      root.dataset["template"] = this.rootName || this.name;
-      root.dataset["path"] = path ? path.join(".") : "";
-      root.dataset["id"] = id;
+      if (root.nodeType === Node.ELEMENT_NODE) {
+        root.dataset["template"] = this.rootName || this.name;
+        root.dataset["path"] = path ? path.join(".") : "";
+        root.dataset["id"] = id;
+      }
+      // This mounts the view on the parent
       node.parentElement.insertBefore(root, node);
       const nodes = view.effectors.map((_) => {
         const n = pathNode(_.nodePath, root);
         return n;
       });
+      // Now we create instances of the children effectors.
       const states = [];
       for (let i in view.effectors) {
         const e = view.effectors[i];
-        const effectorPath = composePaths(path || [], e.dataPath);
-        console.log("APPLY TEMPLATE EFFECTOR", {
-          dataPath: e.dataPath,
-          origin: path,
-          effectorPath,
-          value: pathData(e.dataPath, value, 0, effectorPath),
-        });
         states.push(
           e.apply(
-            nodes[i], // node
-            pathData(e.dataPath, value), // value
-            effectorPath // path
+            nodes[i], // the node was extracted from the view just before
+            value, // we pass the `value` as-is
+            path // and the `path` as well
           )
         );
       }

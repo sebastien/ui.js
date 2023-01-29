@@ -1,3 +1,22 @@
+// -- topic:directives
+//
+// ## Directives
+//
+// Directives are one-liners in a simple DSL that express selections,
+// transformation, events on updates on data.
+//
+// A directive can have the following components:
+//
+// - A **data selection**, in the form of  path like `todos.items` (absolute) or `.label` (relative), a
+//   special value such as `#key` (current key in the parent) or a combinatio of the above
+//   `[..selected,#key]`, '{count:..items.length,selected:.selected}'
+//
+// - A **data transformation**, prefixed by `|` and using dot-separated names, such as
+//   `.value|lowercase` or `.checked|not`, etc.
+//
+// - An *event*, prefixed by `!` such as `!.Added` or `Todo.Added`. When an event is suffixed by a `.`, it
+//   will stop propagation and prevent the default.
+
 // --
 // ## Selector DSL
 //
@@ -13,6 +32,101 @@ const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
 const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
 const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 
+class SelectorInput {
+  static LOCAL = 0;
+  static RELATIVE = 1;
+  static ABSOLUTE = 2;
+  constructor(path, format, key) {
+    this.type = path.startsWith("@")
+      ? SelectorInput.LOCAL
+      : path.startsWith(".")
+      ? SelectorInput.RELATIVE
+      : SelectorInput.ABSOLUTE;
+    this.path = (
+      path.startsWith("@") || path.startsWith(".") ? path.substring(1) : path
+    )
+      .split(".")
+      .filter((_) => _.length);
+    this.format = format;
+    this.key = key;
+  }
+
+  // -- doc
+  // Applies this input to the local `value`, global `store`
+  // and local `state`, where `value` is located at the given
+  // `path`.
+  apply(value, store, state, path = undefined) {
+    // TODO: Support key
+    const context =
+      this.type === SelectorInput.ABSOLUTE
+        ? store
+        : this.type === SelectorInput.RELATIVE
+        ? value
+        : state;
+    return value;
+  }
+}
+
+// --
+// ## Selector
+//
+// Selectors represent a selection in the data, which can be either:
+//
+// - The current (local) value
+// - The global data store
+// - The component (local) state
+//
+class Selector {
+  static SINGLE = 0;
+  static LIST = 1;
+  static MAP = 2;
+  constructor(inputs, event, stops) {
+    this.inputs = inputs;
+    this.event = event;
+    this.stops = stops;
+    this.type = inputs.reduce(
+      (r, v) => (v.key ? Selector.MAP : r),
+      inputs.length > 1 ? Selector.LIST : Selector.SINGLE
+    );
+  }
+
+  // -- doc
+  // Applies this selector to the local `value`, global `store`
+  // and local `state`, where `value` is located at the given
+  // `path`.
+  apply(value, store, state, path = undefined) {
+    switch (this.type) {
+      case Selector.SINGLE:
+        return this.inputs[0].apply(value, store, state, path);
+      case Selector.LIST: {
+        const res = new Array(n);
+        const n = this.inputs.length;
+        for (let i = 0; i < n; i++) {
+          res[i] = this.inputs[i].apply(value, store, state, path);
+        }
+        return res;
+      }
+      case Selector.MAP: {
+        const res = {};
+        const n = this.inputs.length;
+        for (let i = 0; i < n; i++) {
+          const input = this.inputs[i];
+          res[input.key ? input.key : i] = input.apply(
+            value,
+            store,
+            state,
+            path
+          );
+        }
+        return res;
+      }
+      default:
+        // ERROR
+        break;
+    }
+  }
+}
+
 // -- doc
 // Parses the given selector and returns an `{inputs,event,stops}` structure.
 export const parseSelector = (text) => {
@@ -23,18 +137,9 @@ export const parseSelector = (text) => {
   const { event, stops } = match.groups;
   const inputs = match.groups["inputs"].split(",").map((_) => {
     const { key, path, format } = _.match(INPUT_FIELDS).groups;
-    return {
-      key,
-      path,
-      format,
-      type: path.startsWith("@")
-        ? "local"
-        : path.startsWith(".")
-        ? "relative"
-        : "absolute",
-    };
+    return new SelectorInput(path, format, key);
   });
-  return { inputs, event, stops };
+  return new Selector(inputs, event, stops);
 };
 
 // EOF

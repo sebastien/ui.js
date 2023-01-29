@@ -1,17 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-nz">
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="../css/uijs.css" rel="stylesheet" />
     <title>Effectors example</title>
   </head>
   <body>
-    <h1>Effectors</h1>
-    <p>This exercises the effectors</p>
-    <div data-ui="Hello"></div>
-    <template id="Hello">
-      UI.js says:
-      <pre><slot out:content=".message" /></pre>
-    </template>
+    <header>
+      <h1>Effectors</h1>
+      <p>This exercises the effectors</p>
+    </header>
+
+    <section>
+      <h3>Template Effectors</h3>
+
+      <dl>
+        <dt>Template with only text</dt>
+        <dd>
+          <pre><div data-ui="TemplateText"></div></pre>
+          <template id="TemplateText">
+            OK - This is a template with just text
+          </template>
+        </dd>
+        <dt>Template with HTML</dt>
+        <dd>
+          <div data-ui="TemplateHTML"></div>
+          <template id="TemplateHTML">
+            <div>This is a <code>TemplateEffector</code> in action</div>
+          </template>
+        </dd>
+        <dt>Template with <code>data-body</code></dt>
+        <dd>
+          <svg width="400px" height="200px" viewBox="0 0 800 400">
+            <rect
+              x="0"
+              y="0"
+              width="800"
+              height="400"
+              fill="#FFFFFF"
+              stroke="#000000A0"
+            />
+            <g data-ui="TemplateBody" />
+          </svg>
+          <template id="TemplateBody" data-body="svg-nested">
+            <svg>
+              <g id="svg-nested">
+                <circle cx="350" cy="200" r="150" fill="#ED0C2CE0" />
+                <circle cx="450" cy="200" r="150" fill="#FFFF00A0" />
+              </g>
+            </svg>
+          </template>
+        </dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Slot Effectors</h3>
+
+      <dl>
+        <dt>Content effector <code>out:content</code></dt>
+        <dd>
+          <div data-ui="SlotContent" data-state="'Hello, world !'"></div>
+          <template id="SlotContent">
+            <div><em>UI.js</em> says <slot out:content="." /></div>
+          </template>
+        </dd>
+      </dl>
+    </section>
+
     <script type="module">
       import ui from "../js/ui.js";
       ui(document, { message: "Hello, world!" });

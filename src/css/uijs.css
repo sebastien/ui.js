@@ -2,6 +2,7 @@
 
 :root {
 	--palette-grey-20: #393930;
+	--palette-grey-40: #595950;
 	--palette-ivory-90: #fffef7;
 	--palette-gold-60: #fcd647;
 }
@@ -15,12 +16,12 @@
 	--font-heading-lh: 1.25em;
 	--font-heading-size: var(--font-size-4);
 
-	--font-code: "JetBrains", monospace;
+	--font-code: "JetBrains Mono", monospace;
 	--font-code-lh: 1.25em;
 	--font-code-size: var(--font-size-1);
 
 	--font-size-0: calc(9/14 * 100%);
-	--font-size-1: calc(12/14 * 100%);
+	--font-size-1: calc(11/14 * 100%);
 	--font-size-2: calc(14/14 * 100%);
 	--font-size-3: calc(16/14 * 100%);
 	--font-size-4: calc(18/14 * 100%);
@@ -31,8 +32,11 @@
 	--font-size-9: calc(48/14 * 100%);
 
 	--color-text: var(--palette-grey-20);
-	--color-background: var(--palette-ivory-90);
+	--color-page-bg: var(--palette-ivory-90);
+	--color-code: var(--palette-grey-40);
+	--color-accent: var(--palette-gold-60);
 
+	--pad-0: calc(16px * 0.5);
 	--pad-1: calc(16px * 1);
 	--pad-2: calc(16px * 2);
 	--pad-3: calc(16px * 3);
@@ -75,24 +79,34 @@
 		font-size: var(--font-text-size);
 		color: var(--color-text);
 		accent-color: var(--color-accent);
-		background-color: var(--color-background);
+		background-color: var(--color-page-bg);
 		padding: var(--pad-4);
 	}
 
+
+	hr {
+		border: 0px solid transparent;
+		border-bottom: 1px solid var(--color-text);
+	}
+	p, li {
+		max-width: 45ch;
+	}
 
 	code, pre {
 		font-family: var(--font-code);
 		font-size: var(--font-code-size);
 		line-height: var(--font-code-lh);
+		color: var(--color-code);
 	}
 
-	h1,h3,h3,h4,h5,h6 {
+	h1,h2,h3,h4,h5,h6 {
 		font-family: var(--font-heading);
 		font-size: var(--font-heading-size);
 		line-height: var(--font-heading-lh);
-		font-weight: 800;
+		font-weight: 600;
 		margin-top: var(--pad-2);
-		margin-bottom: var(--pad-2);
+		margin-bottom: var(--pad-0);
+		max-width: 45ch;
 	}
 	h1 {
 		font-size: var(--font-size-8);
@@ -112,5 +126,35 @@
 	h6 {
 		font-size: var(--font-size-3);
 	}
+	dt {
+		font-weight: bold;
+		margin-top: 1.25em;
+		max-width: 45ch;
+	}
+	dd {
+		max-width: 45ch;
+		margin-left: 0.5ch;
+		padding-left: 1.25em;
+		padding-top: 0.75em;
+		padding-bottom: 0.25em;
+		margin-bottom: 1.25em;
+		border-left: 1px solid var(--color-text);
+	}
 
 }
+
+@layer theme {
+	header {
+		border-bottom: 1px solid var(--color-text);
+		padding-bottom: var(--pad-1);
+		margin-bottom: var(--pad-2);
+	}
+	header h1{
+		font-weight: 600;
+		text-shadow: -4px 4px 0px var(--color-accent);
+	}
+	header p {
+		font-size: var(--font-size-3);
+	}
+}
+/* EOF */
