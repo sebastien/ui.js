@@ -1,4 +1,4 @@
-import { parseSelector } from "./selector.js";
+import { parseSelector, parseInput, PATH, FORMAT, EVENT } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
   SlotEffector,
@@ -70,6 +70,24 @@ const parseWhenDirective = (text) => {
     return {
       selector: parseSelector(selector),
       predicate: (_) => f(_, v),
+    };
+  }
+};
+
+const RE_ON = new RegExp(
+  `^((?<dest>${PATH})=(?<source>${PATH}${FORMAT}))?${EVENT}$`
+);
+const parseOnDirective = (text) => {
+  const match = text.match(RE_ON);
+  if (!match) {
+    return null;
+  } else {
+    const { source, dest, event, stops } = match.groups;
+    return {
+      source: source ? parseInput(source) : null,
+      dest: dest ? parseInput(dest) : null,
+      event,
+      stops,
     };
   }
 };
@@ -209,7 +227,6 @@ class View {
 // creating corresponding effectors.
 const view = (root, templateName = undefined) => {
   const effectors = [];
-  console.group("VIEW", { root, templateName });
 
   // TODO: Query the styled variants
 
@@ -282,11 +299,13 @@ const view = (root, templateName = undefined) => {
 
       // TODO: We should check for `when` as well.
       effectors.push(new SlotEffector(path, selector, format));
-      node.parentElement.replaceChild(
-        // This is a placeholder, the contents  is not important.
-        document.createComment(node.outerHTML),
-        node
-      );
+      if (node.parentElement) {
+        node.parentElement.replaceChild(
+          // This is a placeholder, the contents  is not important.
+          document.createComment(node.outerHTML),
+          node
+        );
+      }
     } else {
       console.log("TODO: Style/Attribute/Value effectors");
       // effectors.push(
@@ -331,17 +350,25 @@ const view = (root, templateName = undefined) => {
   //
   for (const { name, attr } of attrs["on"] || []) {
     const node = attr.ownerElement;
-    const selector = parseSelector(attr.value);
-    console.log("TODO: Event Effector");
-    // TODO: Support "on:change=.checked:not"
-    // effectors.push(
-    //   new EventEffector(
-    //     nodePath(node, root),
-    //     directive.path || [""],
-    //     name,
-    //     directive
-    //   )
-    // );
+    const directive = parseOnDirective(attr.value);
+    if (!directive) {
+      onError(`Could not parse on directive '${attr.value}'`, {
+        name,
+        attr,
+        root,
+      });
+    } else {
+      console.log("TODO: Event Effector", { directive, text: attr.value });
+      // TODO: Support "on:change=.checked:not"
+      // effectors.push(
+      //   new EventEffector(
+      //     nodePath(node, root),
+      //     directive.path || [""],
+      //     name,
+      //     directive
+      //   )
+      // );
+    }
     node.removeAttribute(attr.name);
   }
 
@@ -391,7 +418,6 @@ const view = (root, templateName = undefined) => {
       }
     }
   }
-  console.groupEnd();
 
   return new View(root, effectors);
 };

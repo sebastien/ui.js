@@ -18,7 +18,7 @@
         <form on:submit="!Nil.">
           <input
             placeholder="New item label"
-            on:change=".label:.target.value"
+            on:change=".label=.target.value"
           />
           <button on:click="!Todo.Add">Add</button>
         </form>

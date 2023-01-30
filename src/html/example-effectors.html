@@ -3,6 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      @layers loading, reset, base, theme;
+      @layer loading {
+        body {
+        }
+      }
+    </style>
     <link href="../css/uijs.css" rel="stylesheet" />
     <title>Effectors example</title>
   </head>
@@ -26,9 +33,9 @@
         <dt>Template with only text</dt>
         <dd>
           <pre><div data-ui="TemplateText"></div></pre>
-          <template id="TemplateText">
-            OK - This is a template with just text
-          </template>
+          <template id="TemplateText"
+            >OK - This is a template with just text</template
+          >
         </dd>
         <dt>Template with HTML</dt>
         <dd>
@@ -92,6 +99,22 @@
               <em>Hello, world (using a path)!</em> ≣
               <slot out:content=".message" />
             </div>
+          </template>
+        </dd>
+
+        <dt>
+          Slot as a direct child
+        </dt>
+        <dd>
+        <p>This one is definitely an edge case.</p>
+          <div>Hello, World (direct child)</div>
+          <code>≣</code>
+          <div
+            data-ui="SlotDirectChild"
+            data-state="{message:'Hello, world (direct child)!'}"
+          ></div>
+          <template id="SlotDirectChild">
+             <slot out:content=".message" />
           </template>
         </dd>
 
@@ -184,7 +207,6 @@
       </dl>
     </section>
 
-    -->
     <section>
       <h3>Conditional Effectors</h3>
 
@@ -213,6 +235,33 @@
         </dd>
       </dl>
     </section>
+    -->
+
+    <section>
+      <h3>Event Effectors</h3>
+
+      <p>Event effectors are what gives you interaction.</p>
+      <dl>
+        <dt>Simple event effector</dt>
+        <dd>
+          <div
+            data-ui="SimpleEventEffector"
+            data-state="{value:undefined}"
+          ></div>
+          <template id="SimpleEventEffector">
+            <input
+              type="text"
+              placeholder="Type something in here…"
+              on:input=".value=.target.value"
+            />
+            <div>
+              <slot out:content=".value" />
+            </div>
+          </template>
+        </dd>
+      </dl>
+    </section>
+
     <script type="module">
       import ui from "../js/ui.js";
       ui(document, { message: "Hello, world!" });

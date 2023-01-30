@@ -20,16 +20,16 @@
 // --
 // ## Selector DSL
 //
-const KEY = "([a-zA-Z]+=)?";
-const PATH = "#|([@.]?([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*)";
-const FORMAT = "(\\|[A-Za-z-]+)?";
-const INPUT = `${KEY}${PATH}${FORMAT}`;
-const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(\\|(?<format>[A-Za-z-]+))?$`;
-const INPUTS = `${INPUT}(,${INPUT})*`;
+export const KEY = "([a-zA-Z]+=)?";
+export const PATH = "#|([@.]?([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*)";
+export const FORMAT = "(\\|[A-Za-z-]+)?";
+export const INPUT = `${KEY}${PATH}${FORMAT}`;
+export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(\\|(?<format>[A-Za-z-]+))?$`;
+export const INPUTS = `${INPUT}(,${INPUT})*`;
 
 // const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
-const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
-const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
+export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
+export const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
 const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 
 class SelectorInput {
@@ -151,6 +151,15 @@ class Selector {
   }
 }
 
+export const parseInput = (text) => {
+  const match = text.match(INPUT_FIELDS);
+  if (!match) {
+    return null;
+  }
+  const { key, path, format } = match.groups;
+  return new SelectorInput(path, format, key);
+};
+
 // -- doc
 // Parses the given selector and returns an `{inputs,event,stops}` structure.
 export const parseSelector = (text) => {
@@ -159,10 +168,7 @@ export const parseSelector = (text) => {
     return null;
   }
   const { event, stops } = match.groups;
-  const inputs = match.groups["inputs"].split(",").map((_) => {
-    const { key, path, format } = _.match(INPUT_FIELDS).groups;
-    return new SelectorInput(path, format, key);
-  });
+  const inputs = match.groups["inputs"].split(",").map((_) => parseInput(_));
   return new Selector(inputs, event, stops);
 };
 

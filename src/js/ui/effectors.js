@@ -179,10 +179,8 @@ export class EventEffector extends Effector {
   // -- doc
   // Creates a new `EventEffector` that  is triggered by the given `event`,
   // generating an event `triggers` (when defined), or
-  constructor(nodePath, dataPath, event, directive, stops = false) {
-    super(nodePath, dataPath);
-    this.event = event;
-    this.directive = directive;
+  constructor(nodePath, selector) {
+    super(nodePath, selector);
   }
 
   apply(node, value, path = undefined) {

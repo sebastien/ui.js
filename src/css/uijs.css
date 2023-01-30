@@ -58,7 +58,8 @@
 	--control-font: var(--palette-white-90);
 }
 
-@layer reset, base, theme;
+@layer loading, reset, base, theme;
+
 
 @layer reset {
 
@@ -203,4 +204,9 @@
 		left: 2px;
 		}
 }
+
+@layer loading {
+	body {opacity:1.0}
+}
+
 /* EOF */
