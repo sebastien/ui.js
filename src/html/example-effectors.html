@@ -246,17 +246,16 @@
         <dd>
           <div
             data-ui="SimpleEventEffector"
-            data-state="{value:undefined}"
+            data-state="{value:'Something'}"
           ></div>
           <template id="SimpleEventEffector">
             <input
               type="text"
               placeholder="Type something in here…"
+              out:value=".value"
               on:input=".value=.target.value"
             />
-            <div>
-              <slot out:content=".value" />
-            </div>
+            <div>You wrote <slot out:content=".value" /></div>
           </template>
         </dd>
       </dl>

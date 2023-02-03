@@ -1,5 +1,6 @@
 import { composePaths, parsePath, pathNode, pathData } from "./paths.js";
-import { sub, unsub, pub } from "./pubsub.js";
+import { Bus, sub, unsub, pub } from "./pubsub.js";
+import { CurrentValueSelector } from "./selector.js";
 import { patch } from "./state.js";
 import { RawObjectPrototype, onError, numcode } from "./utils.js";
 import { Formats, bool, idem } from "./formats.js";
@@ -14,26 +15,51 @@ class Effect {
   constructor(effector, node, value, global, local, path) {
     this.effector = effector;
     this.node = node;
-    this.value = value;
     this.global = global;
     this.local = local;
     this.path = path;
-    this.handler = this.onChange.bind(this);
-    // TODO: Sub/Unsub should be passed through a context
-    // sub(this.path, this.handler, false);
+
+    // We apply the selector in the current scope
+    if (!effector.selector) {
+      onError("Effect(): effector should have a selector", { effector });
+    }
+    this.selected = effector.selector.apply(
+      value,
+      global,
+      local,
+      path,
+      this.onChange.bind(this)
+    );
   }
 
-  onChange(event, topic, offset) {
-    return this.update(event.value);
+  bind(bus = Bus, path = this.path) {
+    this.selected.bind(bus, path);
+    return this;
   }
 
-  update(value = this.value) {}
+  unbind(bus = Bus, path = this.path) {
+    this.selected.unbind(bus, path);
+    return this;
+  }
+
+  onChange(...args) {
+    //event, topic, offset) {
+    console.log("EFFECT.onChange", { args });
+    // return this.update(event.value);
+  }
+
+  init(value) {
+    this.apply(this.selected.apply(value, this.global, this.local, this.path));
+    return this;
+  }
+
+  apply(value) {}
 
   mount() {}
   unmount() {}
 
   dispose() {
-    // unsub(this.path, this.handler);
+    this.selected.unbind(Bus, this.path);
   }
 }
 
@@ -44,6 +70,13 @@ export class Effector {
   constructor(nodePath, selector) {
     this.nodePath = nodePath;
     this.selector = selector;
+    if (!selector) {
+      onError("Effector(): Effector has no selector defined", {
+        selector,
+        nodePath,
+      });
+      debugger;
+    }
   }
 
   // --
@@ -68,19 +101,19 @@ class TextEffect extends Effect {
     this.textNode = document.createTextNode("");
   }
 
-  update(value = this.value) {
-    if (this.value !== value || !this.textNode.parentElement) {
-      this.textNode.data =
-        value === null || value === undefined
-          ? ""
-          : typeof value === "string"
-          ? value
-          : `${value}`;
-      if (!this.textNode.parentElement) {
-        this.node.parentElement.insertBefore(this.textNode, this.node);
-      }
+  apply(value) {
+    this.textNode.data =
+      value === null || value === undefined
+        ? ""
+        : typeof value === "string"
+        ? value
+        : `${value}`;
+    if (!this.textNode.parentElement) {
+      this.node.parentElement.insertBefore(this.textNode, this.node);
     }
+    return this;
   }
+
   unmount() {
     this.textNode.parentElement?.removeChild(this.textNode);
   }
@@ -88,7 +121,7 @@ class TextEffect extends Effect {
 
 class TextEffector extends Effector {
   apply(node, value, global, local, path = undefined) {
-    return new TextEffect(this, node, value, global, local, path).update();
+    return new TextEffect(this, node, value, global, local, path).init(value);
   }
 }
 
@@ -96,26 +129,22 @@ class TextEffector extends Effector {
 // ## Attribute Effector
 
 class AttributeEffect extends Effect {
-  update(value = this.value) {
-    const formatter = this.effector.formatter;
-    this.node.setAttribute(
-      this.effector.name,
-      formatter ? formatter(value) : value
-    );
-    this.value = value;
+  apply(value) {
+    this.node.setAttribute(this.effector.name, value);
     return this;
   }
 }
 
 export class AttributeEffector extends Effector {
-  constructor(nodePath, dataPath, name, formatter = undefined) {
-    super(nodePath, dataPath);
+  constructor(nodePath, selector, name) {
+    super(nodePath, selector);
     this.name = name;
-    this.formatter = formatter;
   }
 
-  apply(node, value, path = undefined) {
-    return new AttributeEffect(this, node, value, path).update();
+  apply(node, value, global, local, path = undefined) {
+    return new AttributeEffect(this, node, value, global, local, path).init(
+      value
+    );
   }
 }
 
@@ -124,17 +153,15 @@ export class AttributeEffector extends Effector {
 //
 
 class ValueEffect extends Effect {
-  update(value = this.value) {
-    const formatter = this.effector.formatter;
-    this.node[this.effector.name] = formatter ? formatter(value) : value;
-    this.value = value;
+  apply(value) {
+    this.node[this.effector.name] = value;
     return this;
   }
 }
 
 export class ValueEffector extends AttributeEffector {
-  apply(node, value, path = undefined) {
-    return new ValueEffect(this, node, value, path).update();
+  apply(node, value, global, local, path = undefined) {
+    return new ValueEffect(this, node, value, global, local, path).init(value);
   }
 }
 
@@ -142,23 +169,21 @@ export class ValueEffector extends AttributeEffector {
 // ## Style Effector
 //
 class StyleEffect extends Effect {
-  update(value = this.value) {
-    const formatter = this.effector.formatter;
-    Object.assign(this.node.style, formatter ? formatter(value) : value);
-    this.value = value;
+  apply(value) {
+    Object.assign(this.node.style, value);
     return this;
   }
 }
 export class StyleEffector extends AttributeEffector {
-  apply(node, value, path = undefined) {
-    return new StyleEffect(this, node, value, path).update(value);
+  apply(node, value, global, local, path = undefined) {
+    return new StyleEffect(this, node, value, local, global, path).init(value);
   }
 }
 
 //  --
 // ## Event Effector
 //
-export class EventEffector extends Effector {
+class EventEffect extends Effect {
   static Value(event) {
     // TODO: Should automatically extract data
     return event.target.value;
@@ -175,45 +200,75 @@ export class EventEffector extends Effector {
     }
     return [null, null];
   }
-
-  // -- doc
-  // Creates a new `EventEffector` that  is triggered by the given `event`,
-  // generating an event `triggers` (when defined), or
-  constructor(nodePath, selector) {
-    super(nodePath, selector);
-  }
-
-  apply(node, value, path = undefined) {
-    const directive = this.directive;
-    const { source, format, event: name, stops } = directive;
+  constructor(effector, node, value, global, local, path) {
+    super(effector, node, value, global, local, path);
+    const {
+      source,
+      destination,
+      event: triggers,
+      stops,
+    } = this.effector.directive;
     // TODO: For TodoItem, the path should be .items.0, etc
-    const handler = (event) => {
+    this.handler = (event) => {
+      const value = source ? source.apply(event) : EventEffect.Value(event);
       // If there is a path then we update this based on the value
-      if (path && path.length) {
-        patch(
-          path,
-          (Formats[format] || idem)(
-            source ? pathData(source, event) : EventEffector.Value(event)
-          )
-        );
+      if (destination) {
+        switch (destination.type) {
+          case "":
+            console.log("PATCH/1", destination.path, "=", value);
+            patch(destination.path, value);
+            break;
+          case ".":
+            console.log(
+              "PATCH/2",
+              composePaths(path, destination.path),
+              "=",
+              value
+            );
+            patch(composePaths(path, destination.path), value);
+            break;
+          default:
+            console.warn("Selector type not supported yet", { destination });
+            break;
+        }
       }
-      if (name?.length) {
+      if (triggers) {
         const { template, path, id } = EventEffector.FindScope(event.target);
-        pub(composePaths([template], name), {
-          name,
-          path,
-          event,
-          // The internal state of each template effector is accessible globally.
-          state: TemplateEffect.All.get(id)?.state,
-        });
+        console.log("FOUND", { template, path, id });
+        // const { template, path, id } = EventEffector.FindScope(event.target);
+        // pub(composePaths([template], name), {
+        //   name,
+        //   path,
+        //   event,
+        //   // The internal state of each template effector is accessible globally.
+        //   state: TemplateEffect.All.get(id)?.state,
+        // });
       }
       if (stops) {
         event.preventDefault();
         event.stopPropagation();
       }
     };
-    node.addEventListener(this.event, handler);
-    // TODO: Return state
+    node.addEventListener(this.effector.event, this.handler);
+  }
+
+  dispose() {
+    this.node.removeEventListener(this.effector.event, this.handler);
+  }
+}
+
+export class EventEffector extends Effector {
+  // -- doc
+  // Creates a new `EventEffector` that  is triggered by the given `event`,
+  // generating an event `triggers` (when defined), or
+  constructor(nodePath, event, directive) {
+    super(nodePath, directive.source);
+    this.directive = directive;
+    this.event = event;
+  }
+
+  apply(node, value, global, local, path = undefined) {
+    return new EventEffect(this, node, value, global, local, path);
   }
 }
 
@@ -225,18 +280,17 @@ class SlotEffect extends Effect {
     super(effector, node, value, global, local, path);
   }
 
-  create(value = this.value) {
+  apply(value = this.value) {
     const { node, global, local, path } = this;
-    const extracted = this.effector.selector.apply(value, global, local, path);
 
     // NOTE: This may be moved directly in the SlotEffect constructor,
     // but we leave it here for now.
-    const isEmpty = extracted === null || extracted === undefined;
+    const isEmpty = value === null || value === undefined;
     const isAtom =
       isEmpty ||
-      typeof extracted !== "object" ||
-      (Object.getPrototypeOf(extracted) !== RawObjectPrototype &&
-        !(extracted instanceof Array));
+      typeof value !== "object" ||
+      (Object.getPrototypeOf(value) !== RawObjectPrototype &&
+        !(value instanceof Array));
     // FIXME: This should be moved to the slot effector. We also need
     // to retrieve the key.
     const items = new Map();
@@ -247,20 +301,20 @@ class SlotEffect extends Effect {
         null,
         this.createItem(
           node, // node
-          extracted, // value
+          value, // value
           global,
           local,
           path ? path : [], // path
           true // isEmpty
         )
       );
-    } else if (extracted instanceof Array) {
-      for (let k = 0; k < extracted.length; k++) {
+    } else if (value instanceof Array) {
+      for (let k = 0; k < value.length; k++) {
         items.set(
           k,
           this.createItem(
             node, // node
-            extracted[k], // value
+            value[k], // value
             global,
             local,
             path ? [...path, k] : [k] // path
@@ -268,12 +322,12 @@ class SlotEffect extends Effect {
         );
       }
     } else {
-      for (let k in extracted) {
+      for (let k in value) {
         items.set(
           k,
           this.createItem(
             node, // node
-            extracted[k], // value
+            value[k], // value
             global,
             local,
             path ? [...path, k] : [k] // path
@@ -299,36 +353,40 @@ class SlotEffect extends Effect {
     );
   }
 
-  onChange(event, topic, offset) {
-    if (offset === 1) {
-      const action = event.event;
-      if (action == "Update") {
-        // NOTE: We don't have to do anything, the effector should already
-        // be subscribed.
-      } else if (action === "Delete") {
-        const effector = this.items.get(event.key);
-        // NOTE: The effector may be subscribed to already?
-        if (effector) {
-          effector.unmount();
-          effector.dispose();
-          this.items.delete(event.key);
-          return true;
-        } else {
-          return false;
-        }
-      } else if (action == "Create") {
-        if (!this.items.has(event.key)) {
-          // FIXME: That does not take into account the order
-          this.items.set(
-            event.key,
-            this.createItem(this.node, event.value, [...this.path, event.key])
-          );
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
+  // --
+  // ### Lifecycle
+  onChange(...args) {
+    //event, topic, offset) {
+    console.log("Slot.onChange", { args });
+    // if (offset === 1) {
+    //   const action = event.event;
+    //   if (action == "Update") {
+    //     // NOTE: We don't have to do anything, the effector should already
+    //     // be subscribed.
+    //   } else if (action === "Delete") {
+    //     const effector = this.items.get(event.key);
+    //     // NOTE: The effector may be subscribed to already?
+    //     if (effector) {
+    //       effector.unmount();
+    //       effector.dispose();
+    //       this.items.delete(event.key);
+    //       return true;
+    //     } else {
+    //       return false;
+    //     }
+    //   } else if (action == "Create") {
+    //     if (!this.items.has(event.key)) {
+    //       // FIXME: That does not take into account the order
+    //       this.items.set(
+    //         event.key,
+    //         this.createItem(this.node, event.value, [...this.path, event.key])
+    //       );
+    //       return true;
+    //     } else {
+    //       return false;
+    //     }
+    //   }
+    // }
   }
 }
 
@@ -339,7 +397,7 @@ export class SlotEffector extends Effector {
     super(nodePath, selector);
     this.templateName = templateName;
     this._template = !templateName
-      ? new TextEffector(nodePath, selector)
+      ? new TextEffector(nodePath, CurrentValueSelector) // Note: no selector as the slot already took care of it
       : typeof templateName === "string"
       ? undefined
       : templateName;
@@ -361,13 +419,7 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, value, global, local, path = undefined) {
-    console.log("APPLYNG SLOT EFFECT", {
-      node,
-      value,
-      path,
-      predicate: this.predicate,
-    });
-    return new SlotEffect(this, node, value, global, local, path).create();
+    return new SlotEffect(this, node, value, global, local, path).init(value);
   }
 }
 
@@ -495,13 +547,15 @@ class TemplateEffect extends Effect {
   }
 }
 
-export class TemplateEffector {
+export class TemplateEffector extends Effector {
   // -- doc
   // Counts the number of template effectors created, this is the used
   // to assign the `data-scope` attribute.
   static Counter = 0;
 
   constructor(template, rootName = undefined) {
+    // TODO: We may want path a different selector there.
+    super(null, CurrentValueSelector);
     this.template = template;
     this.name = template.name;
     this.rootName = rootName;

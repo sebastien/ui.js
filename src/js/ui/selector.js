@@ -1,3 +1,5 @@
+import { composePaths } from "./paths.js";
+
 // -- topic:directives
 //
 // ## Directives
@@ -32,6 +34,8 @@ export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
 export const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
 const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 
+// --
+// ## Selector Input
 class SelectorInput {
   static LOCAL = "@";
   static RELATIVE = ".";
@@ -76,6 +80,7 @@ class SelectorInput {
         return context;
       }
     }
+    // TODO: Apply format
     return context;
   }
 
@@ -86,6 +91,78 @@ class SelectorInput {
   }
 }
 
+// --
+// ## Selector State
+//
+// Selector states can manage a selection on a pub/sub bus and manage
+// and update to its data.
+class SelectorState {
+  constructor(selector, handler, value = undefined) {
+    this.selector = selector;
+    this.handler = handler;
+    this.value = undefined;
+    this.handlers = selector.inputs.map(
+      (_, i) =>
+        (...args) =>
+          this.onInputChange(_, i, ...args)
+    );
+  }
+
+  apply(value, global, local, path) {
+    // TODO: Should we detect changes and store a revision number?
+    this.value = this.selector.extract(value, global, local, path);
+    return this.value;
+  }
+
+  bind(bus, path) {
+    this.handlers.forEach((handler, i) => {
+      const input = this.selector.inputs[i];
+      switch (input.type) {
+        case "":
+          bus.sub(input.path, handler, false);
+          break;
+        case ".":
+          bus.sub(composePaths(path, input.path), handler, false);
+          break;
+        default:
+          console.warn(
+            `SelectorState: Input type not supported yet: ${input.type}`,
+            { input }
+          );
+        // TODO: Sub state changes
+      }
+    });
+    return this;
+  }
+
+  unbind(bus, path) {
+    this.handlers.forEach((handler, i) => {
+      const input = this.selector.inputs[i];
+      switch (input.type) {
+        case "":
+          bus.unsub(input.path, handler, false);
+          break;
+        case ".":
+          bus.unsub(composePaths(path, input.path), handler, false);
+          break;
+        default:
+          console.warn(
+            `SelectorState: Input type not supported yet: ${input.type}`,
+            { input }
+          );
+        // TODO: Sub state changes
+      }
+    });
+    return this;
+  }
+
+  onInputChange(input, index, ...args) {
+    console.log("INPUT CHANGE", { input, index, args });
+    // TODO: Should update the handler if there's a change
+  }
+
+  dispose() {}
+}
 // --
 // ## Selector
 //
@@ -110,30 +187,37 @@ class Selector {
   }
 
   // -- doc
-  // Applies this selector to the local `value`, global `store`
-  // and local `state`, where `value` is located at the given
-  // `path`.
-  apply(value, store, state, path = undefined) {
+  // Applies the selector at the givene value and location. This returns
+  // a selector state that can subscribe to value, transform them and
+  // notify of updates.
+  apply(value, store, state, path = undefined, handler = undefined) {
+    const datum = this.extract(value, store, state, path);
+    return new SelectorState(this, handler, datum);
+  }
+
+  // -- doc
+  // Extracts the data selected by this selector using  the local `value` (at the given `path`), global `store` and local `state`, where `value` is located at the given `path`. Path is needed as selectors can extract the key as well.
+  extract(value, global, local, path = undefined, state = undefined) {
     switch (this.type) {
       case Selector.SINGLE:
-        return this.inputs[0].apply(value, store, state, path);
+        return this.inputs[0].apply(value, global, local, path);
       case Selector.LIST: {
-        const res = new Array(n);
+        const res = state ? state : new Array(n);
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
-          res[i] = this.inputs[i].apply(value, store, state, path);
+          res[i] = this.inputs[i].apply(value, global, local, path);
         }
         return res;
       }
       case Selector.MAP: {
-        const res = {};
+        const res = state ? state : {};
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];
           res[input.key ? input.key : i] = input.apply(
             value,
-            store,
-            state,
+            global,
+            local,
             path
           );
         }
@@ -141,6 +225,9 @@ class Selector {
       }
       default:
         // ERROR
+        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+          type: this.type,
+        });
         break;
     }
   }
@@ -151,6 +238,11 @@ class Selector {
   }
 }
 
+// --
+// ## High Level API
+
+// --
+// Parse the given input, returning a `SelectorInput` structure.
 export const parseInput = (text) => {
   const match = text.match(INPUT_FIELDS);
   if (!match) {
@@ -172,4 +264,5 @@ export const parseSelector = (text) => {
   return new Selector(inputs, event, stops);
 };
 
+export const CurrentValueSelector = parseSelector(".");
 // EOF

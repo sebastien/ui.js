@@ -113,12 +113,10 @@ class PubSub {
   }
 }
 
-export const bus = new PubSub();
-export const pub = (topic, data) => bus.pub(topic, data);
+export const Bus = new PubSub();
+export const pub = (topic, data) => Bus.pub(topic, data);
 export const sub = (topic, handler, withLast) =>
-  bus.sub(topic, handler, withLast);
-export const unsub = (topic, handler) => bus.unsub(topic, handler);
+  Bus.sub(topic, handler, withLast);
+export const unsub = (topic, handler) => Bus.unsub(topic, handler);
 
-// DEBUG
-window.BUS = bus;
 // EOF

@@ -75,17 +75,17 @@ const parseWhenDirective = (text) => {
 };
 
 const RE_ON = new RegExp(
-  `^((?<dest>${PATH})=(?<source>${PATH}${FORMAT}))?${EVENT}$`
+  `^((?<destination>${PATH})=(?<source>${PATH}${FORMAT}))?${EVENT}$`
 );
 const parseOnDirective = (text) => {
   const match = text.match(RE_ON);
   if (!match) {
     return null;
   } else {
-    const { source, dest, event, stops } = match.groups;
+    const { source, destination, event, stops } = match.groups;
     return {
-      source: source ? parseInput(source) : null,
-      dest: dest ? parseInput(dest) : null,
+      source: source ? parseSelector(source) : null,
+      destination: destination ? parseInput(destination) : null,
       event,
       stops,
     };
@@ -307,21 +307,15 @@ const view = (root, templateName = undefined) => {
         );
       }
     } else {
-      console.log("TODO: Style/Attribute/Value effectors");
-      // effectors.push(
-      //   new (name === "style"
-      //     ? StyleEffector
-      //     : ((name === "value" || name === "disabled") &&
-      //         (parentName === "INPUT" || parentName === "SELECT")) ||
-      //       (name === "checked" && parentName === "INPUT")
-      //     ? ValueEffector
-      //     : AttributeEffector)(
-      //     path,
-      //     directive.path,
-      //     name,
-      //     typeof format === "string" ? Formats[format] : format
-      //   )
-      // );
+      effectors.push(
+        new (name === "style"
+          ? StyleEffector
+          : ((name === "value" || name === "disabled") &&
+              (parentName === "INPUT" || parentName === "SELECT")) ||
+            (name === "checked" && parentName === "INPUT")
+          ? ValueEffector
+          : AttributeEffector)(path, selector, name)
+      );
     }
     // We remove the attribute from the template as it is now processed
     node.removeAttribute(attr.name);
@@ -357,17 +351,14 @@ const view = (root, templateName = undefined) => {
         attr,
         root,
       });
+    } else if (!directive.source) {
+      onError(`Could not parse source selector on directive '${attr.value}'`, {
+        name,
+        attr,
+        root,
+      });
     } else {
-      console.log("TODO: Event Effector", { directive, text: attr.value });
-      // TODO: Support "on:change=.checked:not"
-      // effectors.push(
-      //   new EventEffector(
-      //     nodePath(node, root),
-      //     directive.path || [""],
-      //     name,
-      //     directive
-      //   )
-      // );
+      effectors.push(new EventEffector(nodePath(node, root), name, directive));
     }
     node.removeAttribute(attr.name);
   }
