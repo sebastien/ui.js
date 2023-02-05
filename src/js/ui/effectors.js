@@ -210,21 +210,14 @@ class EventEffect extends Effect {
     } = this.effector.directive;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
-      const value = source ? source.apply(event) : EventEffect.Value(event);
+      const value = source ? source.extract(event) : EventEffect.Value(event);
       // If there is a path then we update this based on the value
       if (destination) {
         switch (destination.type) {
           case "":
-            console.log("PATCH/1", destination.path, "=", value);
             patch(destination.path, value);
             break;
           case ".":
-            console.log(
-              "PATCH/2",
-              composePaths(path, destination.path),
-              "=",
-              value
-            );
             patch(composePaths(path, destination.path), value);
             break;
           default:

@@ -35,6 +35,7 @@ export class Topic {
   }
 
   pub(data, limit = -1) {
+    console.log(`Topic.pub at '${this.path.join(".")}'`, data);
     this.value = data;
     let topic = this;
     let offset = 0;
@@ -51,6 +52,7 @@ export class Topic {
   }
 
   sub(handler, withLast = true) {
+    console.log(`Topic.sub at '${this.path.join(".")}'`, handler);
     if (!this.handlers) {
       this.handlers = [];
     }
