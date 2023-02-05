@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-nz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      @layers loading, reset, base, theme;
+      @layer loading {
+        body {
+        }
+      }
+    </style>
+    <link href="../css/uijs.css" rel="stylesheet" />
+    <link href="../css/notebook.css" rel="stylesheet" />
+    <title>Notebook example</title>
+  </head>
+  <body>
+    <header>
+      <h1>Notebook</h1>
+      <p>This is an example of creating a Zim-like notebook.</p>
+    </header>
+
+    <div class="Notebook">
+      <header>
+        <h2>Home:sdasa ― Notebook</h2>
+      </header>
+      <main class="Sidebar">
+        <aside>
+          <div class="Row" data-size="1">Row</div>
+          <div class="Tree">
+            <div data-indent="0" data-state="open empty"><span>Home</span></div>
+            <div data-indent="0" data-state="closed" data-count="1">
+              <span>Journal</span>
+            </div>
+            <div data-indent="0" data-state="open selected" data-count="3">
+              <span>Test</span>
+            </div>
+            <div data-indent="1" data-state="empty"><span>Equations</span></div>
+            <div data-indent="1" data-state="empty"><span>Images</span></div>
+            <div data-indent="1" data-state="empty"><span>Tasklist</span></div>
+          </div>
+        </aside>
+        <hr />
+        <div class="Sandwich">
+          <header>
+            <div class="Row" data-size="1">
+              <ul class="Breadcrumbs">
+                <li><a href="#">Tasklist</a></li>
+                <li><a href="#">Images</a></li>
+                <li><a href="#">Equations</a></li>
+                <li><a href="#">10</a></li>
+                <li><a class="active" href="#">Home</a></li>
+              </ul>
+            </div>
+          </header>
+          <main class="Sandwich Document">
+            <header>
+              <a href="#"><h1>Home</h1></a>
+            </header>
+            <main>
+              <section>
+                This is an example of a Zim notebook. Zim looks like a simple
+                text editor, but with inline formatting.
+              </section>
+              <section>
+                So text can be <strong>bold</strong>, <em>italic</em> or
+                <mark>highlighted</mark>.
+              </section>
+              <section>
+                Zim supports links to other pages in the notebook and to
+                websites like
+                <a target="ext" href="http://zim-wiki.org"
+                  >http://zim-wiki.org</a
+                >.
+              </section>
+              <section>
+                You can use bullet lists list this
+                <ul>
+                  <li>First item</li>
+                  <li>Second item</li>
+                </ul>
+              </section>
+            </main>
+            <footer>Created Monday 06 February 2003.</footer>
+          </main>
+        </div>
+      </main>
+    </div>
+
+    <script type="module">
+      import ui from "../js/ui.js";
+      ui(document, { message: "Hello, world!" });
+    </script>
+  </body>
+</html>

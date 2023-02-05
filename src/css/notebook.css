@@ -1,0 +1,185 @@
+@layer loading, reset, base, theme;
+@layer base {
+	.Notebook {
+		border: 1px solid var(--control-bd);
+		display: flex;
+		flex-direction:  column;
+	}
+	.Notebook > header {
+		padding-bottom: 0px;
+		margin-bottom: 0px;
+		padding: 4px;
+		min-height: 2.25em;
+		border-bottom: 1px solid var(--control-bd);
+		justify-content: center;
+		align-items: center;
+		display: flex;
+	}
+	.Notebook > header > h2 {
+		margin: 0px;
+		line-height: 1.25em;
+		font-size: var(--font-size-2);
+
+	}
+	.Notebook > main {
+		flex-grow: 1;
+	}
+	.Document  > header {
+		padding: 8px;
+		border-bottom: 1px solid var(--color-page-bg-alt);
+	}
+	.Document  > main > section {
+		padding: 8px;
+		padding-top: 0.5em;
+		padding-bottom: 0.5em;
+	}
+	.Document  > footer {
+		font-size: var(--font-size-1);
+		padding: 4px 8px;
+		background-color: var(--color-page-bg-alt);
+	}
+	.Document  h1 {
+		font-size: var(--font-size-5);
+		margin: 0px;
+		padding: 0px;
+	}
+	.Document  ul {
+	}
+	.Document  ul > li{
+		list-style-type: disc;
+		margin-left: 1.5ch;
+	}
+
+	/* ## Row */
+	.Row {
+		display: flex;
+	}
+	.Row[data-size="1"] {
+		height: 2.25em;
+		background-color: var(--color-page-bg-alt);
+		padding: 6px;
+		align-items: center;
+	}
+	/* ## Stack */
+	.Stack {
+		display: flex;
+		flex-direction: column;
+	}
+	.Stack > .expand {
+		flex-grow: 1;
+	}
+	/* ## Sandwich */
+	.Sandwich {
+		display: flex;
+		flex-direction: column;
+	}
+	.Sandwich >  main {
+		flex-grow: 1;
+	}
+	/* ## Sidebar */
+	.Sidebar  {
+		display: flex;
+	}
+	.Sidebar > *  {
+		flex-grow: 1;
+	}
+	.Sidebar > aside {
+		flex-grow: 0;
+		flex-basis: 220px;
+	}
+	.Sidebar > hr {
+		margin: 0px;
+		flex-grow: 0;
+		flex-basis: 3px;
+		cursor: col-resize;
+		background-color: transparent;
+		border: 0px solid transparent;
+		border-left: 1px solid var(--control-bd);
+		border-right: 1px solid var(--control-bd);
+	}
+	/* ## Breadcrumbs */
+	.Breadcrumbs {
+		display: inline-flex;
+		white-space: nowrap;
+	}
+	.Breadcrumbs > li {
+		display: block;
+		margin: 0px;
+		padding: 0px;
+		font-size: 14px;
+	}
+	.Breadcrumbs > li > a {
+		color: inherit;
+		text-decoration: inherit;
+		padding: 4px 8px;
+		display: inline-block;
+		border: 1px solid var(--control-bd);
+		border-right: 0px solid var(--control-bd);
+		background-color: var(--color-page-bg);
+
+	}
+	.Breadcrumbs > li a.active {
+		background-color: var(--color-accent);
+		color: var(--color-accent-txt);
+
+	}
+	.Breadcrumbs > li:first-child > a{
+		border-top-left-radius: 4px;
+		border-bottom-left-radius: 4px;
+	}
+	.Breadcrumbs > li:last-child > a {
+		border-top-right-radius: 4px;
+		border-bottom-right-radius: 4px;
+		border-right: 1px solid var(--control-bd);
+	}
+
+	/* ## Tree */
+	.Tree > div {
+		padding: 4px 2px;
+		display: flex;
+		align-items: center;
+		user-select: none;
+		cursor: pointer;
+	}
+
+	.Tree > div[data-indent="1"] {
+		padding-left: 1em;
+	}
+	.Tree > div[data-indent="2"] {
+		padding-left: 2em;
+	}
+	.Tree > div > span {
+		display: inline-block;
+		padding: 0px 0.25em;
+		flex-grow: 1;
+	}
+	.Tree > div:before {
+		content: attr(data-count);
+		display: inline-block;
+		content:"▸";
+		flex-basis: 1em;
+		flex-grow: 0;
+		display: block;
+		width: 1.25em;
+		height: 1.25em;
+	}
+	.Tree > div[data-state~=empty]:before {
+		opacity: 0.0;
+	}
+	.Tree > div[data-state~=open]:before {
+		transform: rotate(90deg);
+	}
+	.Tree > div:after {
+		content: attr(data-count);
+		display: inline-block;
+		flex-basis: 1em;
+		opacity: 0.5;
+		flex-grow: 0;
+	}
+	.Tree > div[data-state~=selected] {
+		background-color: var(--color-accent);
+		color: var(--color-accent-txt);
+	}
+
+
+}
