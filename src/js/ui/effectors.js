@@ -2,7 +2,7 @@ import { composePaths, parsePath, pathNode, pathData } from "./paths.js";
 import { Bus, sub, unsub, pub } from "./pubsub.js";
 import { CurrentValueSelector } from "./selector.js";
 import { patch } from "./state.js";
-import { RawObjectPrototype, onError, numcode } from "./utils.js";
+import { isAtom, isEmpty, onError, numcode } from "./utils.js";
 import { Formats, bool, idem } from "./formats.js";
 import { Templates } from "./templates.js";
 
@@ -42,14 +42,13 @@ class Effect {
     return this;
   }
 
-  onChange(...args) {
-    //event, topic, offset) {
-    console.log("EFFECT.onChange", { args });
-    // return this.update(event.value);
+  onChange(value) {
+    this.apply(value);
   }
 
   init(value) {
     this.apply(this.selected.apply(value, this.global, this.local, this.path));
+    this.selected.bind(Bus, this.path);
     return this;
   }
 
@@ -271,64 +270,12 @@ export class EventEffector extends Effector {
 class SlotEffect extends Effect {
   constructor(effector, node, value, global, local, path) {
     super(effector, node, value, global, local, path);
+    this.previous = undefined;
+    this.items = undefined;
   }
 
   apply(value = this.value) {
-    const { node, global, local, path } = this;
-
-    // NOTE: This may be moved directly in the SlotEffect constructor,
-    // but we leave it here for now.
-    const isEmpty = value === null || value === undefined;
-    const isAtom =
-      isEmpty ||
-      typeof value !== "object" ||
-      (Object.getPrototypeOf(value) !== RawObjectPrototype &&
-        !(value instanceof Array));
-    // FIXME: This should be moved to the slot effector. We also need
-    // to retrieve the key.
-    const items = new Map();
-    if (isEmpty) {
-      // Nothing to do
-    } else if (isAtom) {
-      items.set(
-        null,
-        this.createItem(
-          node, // node
-          value, // value
-          global,
-          local,
-          path ? path : [], // path
-          true // isEmpty
-        )
-      );
-    } else if (value instanceof Array) {
-      for (let k = 0; k < value.length; k++) {
-        items.set(
-          k,
-          this.createItem(
-            node, // node
-            value[k], // value
-            global,
-            local,
-            path ? [...path, k] : [k] // path
-          )
-        );
-      }
-    } else {
-      for (let k in value) {
-        items.set(
-          k,
-          this.createItem(
-            node, // node
-            value[k], // value
-            global,
-            local,
-            path ? [...path, k] : [k] // path
-          )
-        );
-      }
-    }
-    return this;
+    return this.unify(value, this.previous);
   }
 
   createItem(node, value, global, local, path, isEmpty = false) {
@@ -348,38 +295,120 @@ class SlotEffect extends Effect {
 
   // --
   // ### Lifecycle
-  onChange(...args) {
-    //event, topic, offset) {
-    console.log("Slot.onChange", { args });
-    // if (offset === 1) {
-    //   const action = event.event;
-    //   if (action == "Update") {
-    //     // NOTE: We don't have to do anything, the effector should already
-    //     // be subscribed.
-    //   } else if (action === "Delete") {
-    //     const effector = this.items.get(event.key);
-    //     // NOTE: The effector may be subscribed to already?
-    //     if (effector) {
-    //       effector.unmount();
-    //       effector.dispose();
-    //       this.items.delete(event.key);
-    //       return true;
-    //     } else {
-    //       return false;
-    //     }
-    //   } else if (action == "Create") {
-    //     if (!this.items.has(event.key)) {
-    //       // FIXME: That does not take into account the order
-    //       this.items.set(
-    //         event.key,
-    //         this.createItem(this.node, event.value, [...this.path, event.key])
-    //       );
-    //       return true;
-    //     } else {
-    //       return false;
-    //     }
-    //   }
-    // }
+  onChange(value, event) {
+    // console.log("Slot.onChange", { value, previous: this.previous, event });
+    this.unify(value);
+  }
+
+  unify(current, previous = this.previous, path = this.path) {
+    const { node, global, local } = this;
+    const isCurrentEmpty = isEmpty(current);
+    const isPreviousEmpty = isEmpty(previous);
+    const isCurrentAtom = isAtom(current);
+
+    // FIXME: This should be moved to the slot effector. We also need
+    // to retrieve the key.
+    // ### Case: Empty
+    if (isCurrentEmpty) {
+      if (!isPreviousEmpty && this.items) {
+        for (let item of this.items.values()) {
+          item.unmount();
+          item.dispose();
+        }
+        this.item.clear();
+      } else {
+        // Nothing to do
+      }
+      // ### Case: Atom
+    } else if (isCurrentAtom) {
+      const items = this.items ? this.items : (this.items = new Map());
+      if (current !== previous) {
+        const item = items.get(null);
+        if (item) {
+          // Nothing to do, the item effectors will already be subscribed
+          // to the change.
+        } else {
+          items.set(
+            null,
+            this.createItem(
+              node, // node
+              current, // value
+              global,
+              local,
+              path ? path : [], // path
+              true // isEmpty
+            )
+          );
+        }
+      }
+      // ### Case: Array
+    } else if (current instanceof Array) {
+      const items = this.items ? this.items : (this.items = new Map());
+      for (let i in current) {
+        const item = items.get(i);
+        if (!item) {
+          items.set(
+            i,
+            this.createItem(
+              node, // node
+              current[i], // value
+              global,
+              local,
+              path ? [...path, i] : [i] // path
+            )
+          );
+        } else {
+          if (!previous || current[i] !== previous[i]) {
+            console.log("TODO Should update item", i);
+          }
+        }
+      }
+      // We cleanup any item that is not used anymore
+      if (previous) {
+        for (let i = current.length; i < (previous.length || 0); i++) {
+          const item = items.get(i);
+          if (item) {
+            item.unmount();
+            item.dispose();
+          }
+          items.delete(i);
+        }
+      }
+      // ### Case: Object
+    } else {
+      const items = this.items ? this.items : (this.items = new Map());
+      for (let k in current) {
+        const item = items.get(k);
+        if (!item) {
+          items.set(
+            k,
+            this.createItem(
+              node, // node
+              current[k], // value
+              global,
+              local,
+              path ? [...path, k] : [k] // path
+            )
+          );
+        } else {
+          if (!previous || current[k] !== previous[k]) {
+            console.log("TODO Should update item", k);
+          }
+        }
+      }
+      for (let k in previous) {
+        if (current[k] === undefined) {
+          const item = items.get(k);
+          if (item) {
+            item.unmount();
+            item.dispose();
+          }
+          this.items.delete(k);
+        }
+      }
+    }
+    this.previous = current;
+    return this;
   }
 }
 

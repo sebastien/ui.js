@@ -343,17 +343,17 @@
 }
 
 @layer theme {
-	/*
-	header {
+
+	body > header {
 		border-bottom: 1px solid var(--color-text);
 		padding-bottom: var(--pad-1);
 		margin-bottom: var(--pad-2);
 	}
-	header h1{
+	body > header h1{
 		font-weight: 600;
 		text-shadow: -4px 4px 0px var(--color-accent);
 	}
-	header p {
+	body > header p {
 		font-size: var(--font-size-3);
 	}
 	*/

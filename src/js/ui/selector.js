@@ -1,4 +1,5 @@
 import { composePaths } from "./paths.js";
+import { onError } from "./utils.js";
 
 // -- topic:directives
 //
@@ -156,9 +157,49 @@ class SelectorState {
     return this;
   }
 
-  onInputChange(input, index, ...args) {
-    console.log("INPUT CHANGE", { input, index, args });
-    // TODO: Should update the handler if there's a change
+  onInputChange(input, index, event, ...rest) {
+    let hasChanged = false;
+    switch (event.name) {
+      case "Update":
+        switch (this.selector.type) {
+          case Selector.SINGLE:
+            if ((hasChanged = this.value !== event.value)) {
+              this.value = event.value;
+            }
+            break;
+          case Selector.LIST:
+            {
+              const i = this.inputs[index];
+              if ((hasChanged = this.value[i] !== event.value)) {
+                this.value[i] = event.value;
+              }
+            }
+            break;
+          case Selector.MAP:
+            {
+              const k = this.inputs[index].key;
+              if ((hasChanged = this.value[k] !== event.value)) {
+                this.value[k] = event.value;
+              }
+            }
+            break;
+          default:
+            onError(
+              `SelectorState.onInputChange: Unsupported selector type '${this.selector.type}'`,
+              { selector: this.selector }
+            );
+            break;
+        }
+        break;
+      default:
+        onError(
+          `SelectorState.onInputChange: Unsupported event '${event.name}'`,
+          { event }
+        );
+    }
+    if (hasChanged) {
+      this.handler(this.value, event);
+    }
   }
 
   dispose() {}

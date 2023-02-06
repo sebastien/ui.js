@@ -2,6 +2,12 @@
 //  # Utilities
 
 export const RawObjectPrototype = Object.getPrototypeOf({});
+export const isEmpty = (value) => value === null || value === undefined;
+export const isAtom = (value) =>
+  isEmpty ||
+  typeof value !== "object" ||
+  (Object.getPrototypeOf(value) !== RawObjectPrototype &&
+    !(value instanceof Array));
 
 export const onError = (message, context) => {
   console.error(message, context);

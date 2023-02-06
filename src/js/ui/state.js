@@ -6,8 +6,8 @@ import { nextKey } from "./utils.js";
 // ## State Tree
 
 export class StateEvent {
-  constructor(event, value, previous, scope, key) {
-    this.event = event;
+  constructor(name, value, previous, scope, key) {
+    this.name = name;
     this.value = value;
     this.previous = previous;
     this.scope = scope;

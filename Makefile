@@ -3,10 +3,12 @@ SOURCES_ALL=$(wildcard src/*/*.* src/*/*/*.* src/*/*/*/*.*)
 RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%)
 DIST_ALL=$(patsubst src/js/%,dist/%,$(filter %.js,$(SOURCES_ALL)))
 
+use-bin=$1
+
 .PHONY: dist run stats
 
 run: $(RUN_ALL)
-	@env -C run python -m http.server $(PORT)
+	@$(call use-bin,env) -C run $(call use-bin,python) -m http.server $(PORT)
 
 dist: $(DIST_ALL)
 run/lib/%: src/%
@@ -16,7 +18,7 @@ run/lib/%: src/%
 dist/%: src/js/%
 	@mkdir -p "$(dir $@)"
 	echo "--- Compressing $< into $@"
-	terser --compress -- $< > $@
+	$(call use-bin,terser) --compress -- $< > $@
 
 stats: dist
 	@echo "Numbers of characters (source): $$(cat $(filter %.js,$(SOURCES_ALL)) | wc -c)"

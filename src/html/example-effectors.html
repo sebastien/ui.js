@@ -3,13 +3,6 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      @layers loading, reset, base, theme;
-      @layer loading {
-        body {
-        }
-      }
-    </style>
     <link href="../css/uijs.css" rel="stylesheet" />
     <title>Effectors example</title>
   </head>
@@ -22,7 +15,6 @@
       </p>
     </header>
 
-    <!--
     <section>
       <h3>Template Effectors</h3>
       <p>
@@ -102,11 +94,9 @@
           </template>
         </dd>
 
-        <dt>
-          Slot as a direct child
-        </dt>
+        <dt>Slot as a direct child</dt>
         <dd>
-        <p>This one is definitely an edge case.</p>
+          <p>This one is definitely an edge case.</p>
           <div>Hello, World (direct child)</div>
           <code>≣</code>
           <div
@@ -114,7 +104,7 @@
             data-state="{message:'Hello, world (direct child)!'}"
           ></div>
           <template id="SlotDirectChild">
-             <slot out:content=".message" />
+            <slot out:content=".message" />
           </template>
         </dd>
 
@@ -235,7 +225,6 @@
         </dd>
       </dl>
     </section>
-    -->
 
     <section>
       <h3>Event Effectors</h3>
