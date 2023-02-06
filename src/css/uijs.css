@@ -1,8 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Cousine:wght@400;500;600;700&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
 :root {
 	--palette-grey-20: #393930;
 	--palette-grey-40: #595950;
+	--palette-grey-60: #797970;
 	--palette-grey-80: #999990;
 	--palette-ivory-70: #efeee7;
 	--palette-ivory-90: #fffef7;
@@ -25,28 +27,37 @@
 	--font-code-size: var(--font-size-1);
 
 	--font-control: "Jost", sans-serif;
-	--font-control-line-height: 1.45em;
+	--font-control-line-height: 1.25em;
 	--font-control-size: var(--font-size-2);
 
+	--font-icon: "Material Symbols Outlined", sans-serif;
 
-	--font-size-0: calc(9/14 * 100%);
-	--font-size-1: calc(11/14 * 100%);
-	--font-size-2: calc(14/14 * 100%);
-	--font-size-3: calc(16/14 * 100%);
-	--font-size-4: calc(18/14 * 100%);
-	--font-size-5: calc(22/14 * 100%);
-	--font-size-6: calc(26/14 * 100%);
-	--font-size-7: calc(32/14 * 100%);
-	--font-size-8: calc(42/14 * 100%);
-	--font-size-9: calc(48/14 * 100%);
+
+	--font-size-0: calc(9/14  * 1rem);
+	--font-size-1: calc(12/14 * 1rem);
+	--font-size-1_5: calc(13/14 * 1rem);
+	--font-size-2: calc(14/14 * 1rem);
+	--font-size-3: calc(16/14 * 1rem);
+	--font-size-4: calc(18/14 * 1rem);
+	--font-size-5: calc(22/14 * 1rem);
+	--font-size-6: calc(26/14 * 1rem);
+	--font-size-7: calc(32/14 * 1rem);
+	--font-size-8: calc(42/14 * 1rem);
+	--font-size-9: calc(48/14 * 1rem);
 
 	/* FIXME: Should drop the color here */
 	--color-text: var(--palette-grey-20);
+	--color-text-alt: var(--palette-grey-80);
+	--color-icon: var(--palette-grey-60);
+	--color-bd: var(--palette-grey-80);
 	--color-page-bg: var(--palette-ivory-90);
 	--color-page-bg-alt: var(--palette-ivory-70);
 	--color-code: var(--palette-grey-40);
 	--color-accent: var(--palette-gold-60);
 	--color-accent-txt: var(--color-text);
+	--color-accent-bg-alt: #fcd64780;
+
+	--shadow-floating:  3px 3px 1px #00000020;
 
 	--pad-0: calc(16px * 0.5);
 	--pad-1: calc(16px * 1);
@@ -54,15 +65,21 @@
 	--pad-3: calc(16px * 3);
 	--pad-4: calc(16px * 4);
 
+	--z-popup: 50;
 
+	--control-bd-alt: var(--palette-grey-80);
 	--control-bd: var(--color-text);
 	--control-bd-focused: var(--color-accent);
+	--control-bd-hover: var(--color-accent-alt);
 	--control-bg: var(--palette-white-90);
 	--control-bg-focused: white;
+	--control-lh: 1.15em;
+	--control-bg-hover: var(--color-accent-bg-alt);
 	--control-font: var(--palette-white-90);
+	--control-text: var(--color-text);
 }
 
-@layer loading, reset, base, theme;
+@layer loading, reset, base, ui, theme;
 
 
 @layer reset {
@@ -104,6 +121,12 @@
 		--line-height: var(--font-text-line-height);
 	}
 
+	.icon {
+		font-size: 100%;
+		color: var(--color-icon);
+		font-family: var(--font-icon);
+		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+	}
 
 	hr {
 		border: 0px solid transparent;
@@ -163,28 +186,93 @@
 	}
 }
 
-@layer theme {
-	/*
-	header {
-		border-bottom: 1px solid var(--color-text);
-		padding-bottom: var(--pad-1);
-		margin-bottom: var(--pad-2);
+@layer ui {
+
+	.with-hover {
+		position: relative;
 	}
-	header h1{
-		font-weight: 600;
-		text-shadow: -4px 4px 0px var(--color-accent);
+	.with-hover > .on-hover {
+		visibility: hidden;
+		pointer-events: none;
+		opacity: 0.0;
+		transition-property: visibility, opacity;
+		transition-delay: 0.1;
 	}
-	header p {
-		font-size: var(--font-size-3);
+	.with-hover:hover > .on-hover {
+		top: 0px;
+		left: 0px;
+		visibility: visible;
+		display: block;
+		pointer-events: auto;
+		opacity: 1.0;
 	}
-	*/
-	p {
-		margin-bottom: var(--line-height);
+
+	menu {
+		display: block;
+		font-size: var(--font-size-1);
+		background-color: var(--color-page-bg);
+		border: 1px solid var(--control-bd-alt);
+		border-radius: 4px;
+		padding: 8px 0px;
+		text-align: left;
+		max-width: 260px;
+		line-height: var(--control-lh);
+		user-select: none;
 	}
-	p:last-child {
-		margin-bottom: 0px;
+	menu.popup {
+		box-shadow: var(--shadow-floating);
+		position: absolute;
+		z-index: var(--z-popup);
+		min-width: 200px;
+		max-height: 290px;
+		overflow-y: auto;
+		scrollbar-color: var(--color-accent);
+		scrollbar-width: thin;
 	}
-	input,texteara {
+	menu > hr {
+		border: 0px solid transparent;
+		background: transparent;
+		margin: 0px;
+		border-top: 1px solid var(--color-bd);
+	}
+	menu > hr:after {
+		content: attr(data-label);
+		display: block;
+		opacity: 0.75;
+		font-weight: 400;
+		font-size: var(--font-size-2);
+		line-height: 1em;
+		padding: 12px 8px 8px;
+
+	}
+	menu > li {
+		display: flex;
+		align-items: center;
+		padding: 6px 8px;
+		gap: 8px;
+		color: var(--control-text);
+		cursor: pointer;
+	}
+	menu > li:hover {
+		background-color: var(--control-bg-hover);
+	}
+
+	menu > li > .label {
+		display: block;
+		flex-grow: 1;
+		font-size: var(--font-size-1_5);
+		color:var(--color-text);
+	}
+
+	menu > li > .label > .detail {
+		display: block;
+		font-weight: 400;
+		font-size: var(--font-size-1);
+		color:var(--color-text-alt);
+	}
+
+	input,textarea {
+		line-height: var(--control-lh);
 		border: 1px solid var(--control-bd);
 		background: var(--control-bg);
 		color: var(--control-txt);
@@ -209,8 +297,73 @@
 		top: -2px;
 		left: 2px;
 		}
+	button {
+		display: inline-block;
+		min-width: 1.75em;
+		text-align: center;
+		border: 1px  solid var(--control-bd);
+		border-radius: 4px;
+		font-family: var(--font-control);
+		font-size: 12px;
+		padding: 4px 8px;
+		background-color: var(--color-page-bg);
+		color: var(--color-text);
+		cursor: pointer;
+		font-weight: 500;
+	}
+	button:hover {
+		background-color: var(--color-accent-bg-alt);
+	}
+	button.icon {
+		font-family: var(--font-icon);
+		font-size: var(--font-size-3);
+		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+		padding: 4px;
+	}
+	button.round {
+		min-width: unset;
+		width: 1.5em;
+		height: 1.5em;
+		padding: 0px;
+		box-sizing: border-box;
+		border-radius: 1.5em;
+		width: 1.5em;
+		height: 1.5em;
+		line-height: 1.25em;
+	}
+	button.small {
+		font-size: 10px;
+		padding: 2px 4px;
+	}
+	button.x-small {
+		font-size: 10px;
+		padding: 1px;
+		border-radius: 0px;
+	}
 }
 
+@layer theme {
+	/*
+	header {
+		border-bottom: 1px solid var(--color-text);
+		padding-bottom: var(--pad-1);
+		margin-bottom: var(--pad-2);
+	}
+	header h1{
+		font-weight: 600;
+		text-shadow: -4px 4px 0px var(--color-accent);
+	}
+	header p {
+		font-size: var(--font-size-3);
+	}
+	*/
+	p {
+		margin-bottom: var(--line-height);
+	}
+	p:last-child {
+		margin-bottom: 0px;
+	}
+}
 @layer loading {
 	body {opacity:1.0}
 }

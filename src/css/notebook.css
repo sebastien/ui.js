@@ -1,5 +1,5 @@
-@layer loading, reset, base, theme;
-@layer base {
+@layer loading, reset, base, ui, theme;
+@layer ui {
 	.Notebook {
 		border: 1px solid var(--control-bd);
 		display: flex;
@@ -32,6 +32,7 @@
 		padding: 8px;
 		padding-top: 0.5em;
 		padding-bottom: 0.5em;
+		word-break: break-all;
 	}
 	.Document  > footer {
 		font-size: var(--font-size-1);
@@ -42,8 +43,6 @@
 		font-size: var(--font-size-5);
 		margin: 0px;
 		padding: 0px;
-	}
-	.Document  ul {
 	}
 	.Document  ul > li{
 		list-style-type: disc;
@@ -97,6 +96,49 @@
 		border-left: 1px solid var(--control-bd);
 		border-right: 1px solid var(--control-bd);
 	}
+	/* ## Toolbar */
+	.Toolbar {
+		display: flex;
+		width: min-content;
+		padding: 4px;
+		gap: 0px;
+		margin: 3px;
+	}
+	.Toolbar > hr {
+		width: 0.px;
+		background: transparent;
+		border: 0px solid none;
+		height: 0px;
+	}
+	.Toolbar > button {
+		border-radius: 0px;
+		box-shadow: 3px 3px 1px #00000020;
+		border-right-width: 0px;
+	}
+	.Toolbar > button:first-child {
+		border-top-left-radius: 4px;
+		border-bottom-left-radius: 4px;
+	}
+	.Toolbar > button:last-child {
+		border-right-width: 1px;
+		border-top-right-radius: 4px;
+		border-bottom-right-radius: 4px;
+	}
+	/* ## BlockCreator */
+	.BlockCreator {
+		display: flex;
+		width: min-content;
+		align-items: center;
+	}
+	.BlockCreator:before,
+	.BlockCreator:after {
+		content:"";
+		display: block;
+		height: 1px;
+		width: 8px;
+		background-color: var(--color-bd);
+	}
+
 	/* ## Breadcrumbs */
 	.Breadcrumbs {
 		display: inline-flex;

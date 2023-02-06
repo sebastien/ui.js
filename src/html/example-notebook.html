@@ -26,7 +26,7 @@
       </header>
       <main class="Sidebar">
         <aside>
-          <div class="Row" data-size="1">Row</div>
+          <div class="Row" data-size="1"><input type="filter" placeholder="Search…" /></div>
           <div class="Tree">
             <div data-indent="0" data-state="open empty"><span>Home</span></div>
             <div data-indent="0" data-state="closed" data-count="1">
@@ -58,14 +58,21 @@
               <a href="#"><h1>Home</h1></a>
             </header>
             <main>
-              <section>
+              <section contenteditable>
                 This is an example of a Zim notebook. Zim looks like a simple
                 text editor, but with inline formatting.
               </section>
-              <section>
+              <section contenteditable>
                 So text can be <strong>bold</strong>, <em>italic</em> or
                 <mark>highlighted</mark>.
               </section>
+              <div class="Toolbar">
+                <button class="icon">format_bold</button>
+                <button class="icon">format_italic</button>
+                <hr />
+                <button class="icon">format_list_bulleted</button>
+                <button class="icon">checklist</button>
+              </div>
               <section>
                 Zim supports links to other pages in the notebook and to
                 websites like
@@ -73,11 +80,72 @@
                   >http://zim-wiki.org</a
                 >.
               </section>
+              <div class="BlockCreator">
+                <span class="with-hover">
+                  <button class="icon round">add</button>
+
+                  <menu class="popup on-hover">
+                    <li>
+                      <span class="label">JavaScript</span>
+                      <span class="icon">data_object</span>
+                    </li>
+                    <li>
+                      <span class="label">Markdown</span>
+                      <span class="icon">edit_note</span>
+                    </li>
+                    <hr data-label="Data" />
+                    <li>
+                      <span class="label"
+                        >File attachment
+                        <span class="detail">File attachment</span></span
+                      >
+                      <span class="icon">attach_file_add</span>
+                    </li>
+                    <li>
+                      <span class="label"
+                        >Fetch from URL
+                        <span class="detail"
+                          >Request a file or API via an HTTP request</span
+                        ></span
+                      >
+                      <span class="icon">hub</span>
+                    </li>
+                    <hr data-label="Tables" />
+                    <li>
+                      <span class="label"
+                        >Data table
+                        <span class="detail"
+                          >Filter and summarise tabular data</span
+                        ></span
+                      >
+                      <span class="icon">table_view</span>
+                    </li>
+                    <li>
+                      <span class="label"
+                        >JavaScript table
+                        <span class="detail"
+                          >Choose rows from a tabular dataset</span
+                        ></span
+                      >
+                      <span class="icon">table_viewjavascript</span>
+                    </li>
+                    <li>
+                      <span class="label"
+                        >Markdown table
+                        <span class="detail"
+                          >Content in rows and columns</span
+                        ></span
+                      >
+                      <span class="icon">table_viewview_headline</span>
+                    </li>
+                  </menu>
+                </button>
+              </div>
               <section>
-                You can use bullet lists list this
+                <p contenteditable>You can use bullet lists list this</p>
                 <ul>
-                  <li>First item</li>
-                  <li>Second item</li>
+                  <li contenteditable>First item</li>
+                  <li contenteditable>Second item</li>
                 </ul>
               </section>
             </main>
