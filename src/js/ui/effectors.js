@@ -451,12 +451,14 @@ export class SlotEffector extends Effector {
 class ConditionalEffect extends Effect {
   constructor(effector, node, value, global, local, path) {
     super(effector, node, value, global, local, path);
+    // The anchor will the element wher the contents will be re-inserted
     this.anchor = document.createComment(
       `when:${this.effector.selector.toString()}`
     );
-    // NOTE: We may want to always insert before
-    node.parentElement.replaceChild(this.anchor, node);
+    this.contentAnchor = document.createComment("when:@");
     this.displayValue = node?.style?.display;
+    this.node.appendChild(this.contentAnchor);
+    this.node.parentElement.replaceChild(this.anchor, node);
     this.state = null;
   }
 
@@ -468,14 +470,13 @@ class ConditionalEffect extends Effect {
       local,
       path
     );
-    return this.show(value);
     return this.effector.predicate(extracted) ? this.show(value) : this.hide();
   }
 
   show(value) {
     if (!this.state) {
       this.state = this.effector.template.apply(
-        this.anchor,
+        this.contentAnchor,
         value,
         this.global,
         this.local,
@@ -494,9 +495,11 @@ class ConditionalEffect extends Effect {
         value,
       });
     }
+
     if (!this.node.parentElement) {
       this.anchor.parentElement.insertBefore(this.node, this.anchor);
     }
+
     return this;
   }
 

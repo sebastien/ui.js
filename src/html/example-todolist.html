@@ -66,18 +66,28 @@
     <template id="TodoItem">
       <div class="TodoItem">
         <input
-          when=".edited"
           type="checkbox"
+          out:disabled=".edited|not|attr"
           out:checked=".checked|bool"
           on:change=".checked:.target.checked"
         />
         <input
-          when=".edited|not"
           type="text"
+          out:disabled=".edited|not|attr"
+          out:checked=".checked|bool"
           out:value=".label"
           on:change=".label:.target.value"
+          placeholder="Untitled note"
         />
-        <button class="square" on:click="!TodoItem.Remove">Remove</button>
+        <button class="square" when=".edited|not" on:click="!TodoItem.Edit">
+          Edit
+        </button>
+
+        <!--
+        <button class="square" when=".edited" on:click="!TodoItem.Remove">
+          Remove
+        </button>
+        -->
       </div>
     </template>
 

@@ -1,5 +1,6 @@
 import { composePaths } from "./paths.js";
 import { onError } from "./utils.js";
+import { Formats } from "./formats.js";
 
 // -- topic:directives
 //
@@ -27,7 +28,7 @@ export const KEY = "([a-zA-Z]+=)?";
 export const PATH = "#|([@.]?([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*)";
 export const FORMAT = "(\\|[A-Za-z-]+)?";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
-export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(\\|(?<format>[A-Za-z-]+))?$`;
+export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
 export const INPUTS = `${INPUT}(,${INPUT})*`;
 
 // const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
@@ -57,7 +58,18 @@ class SelectorInput {
     )
       .split(".")
       .filter((_) => _.length);
-    this.format = format;
+    this.format = format
+      ? format instanceof Function
+        ? format
+        : Formats[format]
+      : null;
+    if (this.format === undefined) {
+      onError(`SelectorInput: Format undefined '${format}'`, {
+        path,
+        format,
+        key,
+      });
+    }
     this.key = key;
   }
 
@@ -66,23 +78,26 @@ class SelectorInput {
   // and local `state`, where `value` is located at the given
   // `path`.
   apply(value, store, state, path = undefined) {
+    let res = undefined;
     if (this.type === SelectorInput.KEY) {
-      return path ? path.at(-1) : undefined;
-    }
-    let context =
-      this.type === SelectorInput.ABSOLUTE
-        ? store
-        : this.type === SelectorInput.RELATIVE
-        ? value
-        : state;
-    for (let k of this.path) {
-      context = context[k];
-      if (context === undefined) {
-        return context;
+      res = path ? path.at(-1) : undefined;
+    } else {
+      let context =
+        this.type === SelectorInput.ABSOLUTE
+          ? store
+          : this.type === SelectorInput.RELATIVE
+          ? value
+          : state;
+      for (let k of this.path) {
+        context = context[k];
+        if (context === undefined) {
+          break;
+        }
       }
+      res = context;
     }
-    // TODO: Apply format
-    return context;
+    const format = this.format;
+    return format ? format(res) : res;
   }
 
   toString() {
@@ -289,8 +304,31 @@ export const parseInput = (text) => {
   if (!match) {
     return null;
   }
-  const { key, path, format } = match.groups;
-  return new SelectorInput(path, format, key);
+  const { key, path, formats } = match.groups;
+  const formatters = (formats || "").split("|").reduce((r, v) => {
+    const f = Formats[v];
+    if (!v) {
+      return r;
+    } else if (f === undefined) {
+      onError(
+        `Could not find format ${v} in selector ${text}, pick one of ${Object.keys(
+          Formats
+        ).join(", ")}`
+      );
+      return r;
+    } else {
+      r.push(f);
+      return r;
+    }
+  }, []);
+  const formatter =
+    formatters.length === 0
+      ? null
+      : formatters.length === 1
+      ? formatters[0]
+      : (_) => formatters.reduce((r, v) => v(r), _);
+
+  return new SelectorInput(path, formatter, key);
 };
 
 // -- doc

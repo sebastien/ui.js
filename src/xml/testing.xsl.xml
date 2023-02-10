@@ -9,36 +9,46 @@
     <html>
       <head>
         <!-- SEE <https://www.jsdelivr.com/package/npm/highlightjs> -->
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="../css/uijs.css" rel="stylesheet" />
+        <link href="../css/testing.css" rel="stylesheet" />
+        <title>Test Case</title>
         <script src="https://unpkg.com/highlightjs@9.16.2/highlight.pack.js"></script>
         <link href="https://unpkg.com/highlightjs@9.16.2/styles/atelier-seaside-dark.css" rel="stylesheet"></link>
       </head>
       <body>
-        <xsl:for-each select="/Test/title">
-          <h1><xsl:value-of select="." /></h1>
-        </xsl:for-each>
-        <template id="Test">
-          <table>
-            <tbody>
-                <slot out:contents=".assertions|Assertion" />
-            </tbody>
-          </table>
-        </template>
-        <template id="Assertion">
-          <tr>
-            <th>Assertion</th>
-            <td>OK</td>
-          </tr>
-        </template>
-        <xsl:for-each select="/Test/Case">
-          <section>
-                <pre><code data-language="javascript"><xsl:value-of select="." /></code></pre>
-                <script type="module">
-                  import {Tests, test } from "../js/ui/testing.js";
-                  const path={js:"../js"};
-                  <xsl:value-of select="." />
-                </script>
-          </section>
-        </xsl:for-each>
+        <header>
+          <h1>Test Case</h1>
+        </header>
+        <div class="TestSuite">
+          <xsl:for-each select="/Test/title">
+            <h3><xsl:value-of select="." /></h3>
+          </xsl:for-each>
+          <template id="Test">
+            <table>
+              <tbody>
+                  <slot out:contents=".assertions|Assertion" />
+              </tbody>
+            </table>
+          </template>
+          <template id="Assertion">
+            <tr>
+              <th>Assertion</th>
+              <td>OK</td>
+            </tr>
+          </template>
+          <xsl:for-each select="/Test/Case">
+            <section class="TestCase">
+                  <pre><code data-language="javascript"><xsl:value-of select="." /></code></pre>
+                  <script type="module">
+                    import {Tests, test } from "../js/ui/testing.js";
+                    const path={js:"../js"};
+                    <xsl:value-of select="." />
+                  </script>
+            </section>
+          </xsl:for-each>
+        </div>
         <script type="module">
           import {Tests, test} from "../js/ui/testing.js";
           import ui from "../js/ui.js";
