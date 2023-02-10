@@ -1,0 +1,16 @@
+@layer loading, reset, base, ui, theme;
+@layer ui {
+	.TodoItem {
+		display: flex;
+		align-items:  center;
+		margin: 10px;
+		gap: 6px;
+	}
+
+	.TodoItem > input,
+	.TodoItem > button {
+		height: 32px;
+		box-sizing: border-box;
+	}
+
+}

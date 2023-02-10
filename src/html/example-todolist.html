@@ -77,11 +77,7 @@
           out:value=".label"
           on:change=".label:.target.value"
         />
-        <button on:click="!TodoItem.Remove">Remove</button>
-        <!--
-			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
-			<input when:-edited type="text" out:value=".label" on:change=".value!" />
-			-->
+        <button class="square" on:click="!TodoItem.Remove">Remove</button>
       </div>
     </template>
 
