@@ -1,4 +1,11 @@
-import { parseSelector, parseInput, PATH, FORMAT, EVENT } from "./selector.js";
+import {
+  parseSelector,
+  parseInput,
+  CurrentValueSelector,
+  PATH,
+  FORMAT,
+  EVENT,
+} from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
   SlotEffector,
@@ -10,7 +17,7 @@ import {
   TemplateEffector,
 } from "./effectors.js";
 import { Formats, idem } from "./formats.js";
-import { onError, makeKey } from "./utils.js";
+import { onError, makeKey, bool } from "./utils.js";
 import { styled } from "./tokens.js";
 import { stylesheet } from "./css.js";
 
@@ -52,14 +59,14 @@ const Comparators = {
 };
 const parseWhenDirective = (text) => {
   const match = text.match(
-    /^(?<selector>.+)(?<operator>==|!=|>|>=|<|<=)(?<value>.+)$/
+    /^(?<selector>.+)((?<operator>==|!=|>|>=|<|<=)(?<value>.+)?)?$/
   );
   if (!match) {
     return null;
   } else {
     const { selector, value, operator } = match.groups;
-    const v = parseValue(value);
-    const f = Comparators[operator];
+    const v = value ? parseValue(value) : undefined;
+    const f = operator ? Comparators[operator] : bool;
     if (!f) {
       onError(`Could not find comparator for '${operator}'`, {
         directive: text,
@@ -84,7 +91,7 @@ const parseOnDirective = (text) => {
   } else {
     const { source, destination, event, stops } = match.groups;
     return {
-      source: source ? parseSelector(source) : null,
+      source: source ? parseSelector(source) : CurrentValueSelector,
       destination: destination ? parseInput(destination) : null,
       event,
       stops,
@@ -371,17 +378,20 @@ const view = (root, templateName = undefined) => {
     const node = attr.ownerElement;
     const directive = parseOnDirective(attr.value);
     if (!directive) {
-      onError(`Could not parse on directive '${attr.value}'`, {
+      onError(`Could not parse on 'on:*' directive '${attr.value}'`, {
         name,
         attr,
         root,
       });
     } else if (!directive.source) {
-      onError(`Could not parse source selector on directive '${attr.value}'`, {
-        name,
-        attr,
-        root,
-      });
+      onError(
+        `Could not parse source selector on 'on:*' directive '${attr.value}'`,
+        {
+          name,
+          attr,
+          root,
+        }
+      );
     } else {
       effectors.push(new EventEffector(nodePath(node, root), name, directive));
     }

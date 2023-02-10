@@ -65,9 +65,8 @@
 
     <template id="TodoItem">
       <div class="TodoItem">
-        Item
-        <!--
-        <input when=".edited"
+        <input
+          when=".edited"
           type="checkbox"
           out:checked=".checked|bool"
           on:change=".checked:.target.checked"
@@ -79,7 +78,6 @@
           on:change=".label:.target.value"
         />
         <button on:click="!TodoItem.Remove">Remove</button>
-        -->
         <!--
 			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
 			<input when:-edited type="text" out:value=".label" on:change=".value!" />

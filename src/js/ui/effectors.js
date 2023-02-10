@@ -454,8 +454,11 @@ class ConditionalEffect extends Effect {
     this.anchor = document.createComment(
       `when:${this.effector.selector.toString()}`
     );
-    node.appendChild(this.anchor, node);
-    this.displayValue = node.style.display;
+    // NOTE: We may want to always insert before
+    node.nodeType !== Node.ELEMENT_NODE
+      ? node.parentElement.insertBefore(this.anchor, node)
+      : node.appendChild(this.anchor);
+    this.displayValue = node?.style?.display;
     this.state = null;
   }
 
@@ -484,12 +487,20 @@ class ConditionalEffect extends Effect {
       this.state.update(value);
       this.state.mount();
     }
-    this.node.style.display = this.displayValue;
+    if (this.node.style) {
+      this.node.style.display = this.displayValue;
+    } else {
+      // These may be other kind of nodes, probably not visible (ie, comments)
+    }
     return this;
   }
 
   hide() {
-    this.node.style.display = "none";
+    if (this.node.style) {
+      this.node.style.display = "none";
+    } else {
+      // These may be other kind of nodes, probably not visible (ie, comments)
+    }
     if (this.state) {
       this.state.unmount();
     }

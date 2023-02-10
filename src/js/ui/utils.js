@@ -9,6 +9,15 @@ export const isAtom = (value) =>
   (Object.getPrototypeOf(value) !== RawObjectPrototype &&
     !(value instanceof Array));
 
+export const bool = (value) =>
+  value === null ||
+  value === undefined ||
+  value === false ||
+  value === "" ||
+  (value instanceof Array && value.length === 0)
+    ? false
+    : true;
+
 export const onError = (message, context) => {
   console.error(message, context);
 };
