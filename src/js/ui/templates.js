@@ -2,7 +2,7 @@ import { parseSelector, parseInput, PATH, FORMAT, EVENT } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
   SlotEffector,
-  WhenEffector,
+  ConditionalEffector,
   EventEffector,
   StyleEffector,
   ValueEffector,
@@ -392,7 +392,7 @@ const view = (root, templateName = undefined) => {
           false // No need to clone there
         );
         effectors.push(
-          new WhenEffector(
+          new ConditionalEffector(
             nodePath(node, root),
             when.selector,
             subtemplate,

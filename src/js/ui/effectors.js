@@ -446,9 +446,9 @@ export class SlotEffector extends Effector {
 }
 
 // --
-// ### When Effector
+// ### Conditional Effector
 
-class WhenEffect extends Effect {
+class ConditionalEffect extends Effect {
   constructor(effector, node, value, global, local, path) {
     super(effector, node, value, global, local, path);
     this.anchor = document.createComment(
@@ -459,12 +459,16 @@ class WhenEffect extends Effect {
     this.state = null;
   }
 
-  create(value = this.value) {
+  apply(value = this.value) {
     const { global, local, path } = this;
-    const extracted = this.effector.selector.apply(value, global, local, path);
-    return this.effector.predicate(extracted)
-      ? this.show(extracted)
-      : this.hide();
+    const extracted = this.effector.selector.extract(
+      value,
+      global,
+      local,
+      path
+    );
+    // TODO: We should detect if there was a change
+    return this.effector.predicate(extracted) ? this.show(value) : this.hide();
   }
 
   show(value) {
@@ -492,14 +496,16 @@ class WhenEffect extends Effect {
   }
 }
 
-export class WhenEffector extends SlotEffector {
+export class ConditionalEffector extends SlotEffector {
   constructor(nodePath, selector, templateName, predicate) {
     super(nodePath, selector, templateName);
     this.predicate = predicate;
   }
 
   apply(node, value, global, local, path = undefined) {
-    return new WhenEffect(this, node, value, global, local, path).create(value);
+    return new ConditionalEffect(this, node, value, global, local, path).apply(
+      value
+    );
   }
 }
 

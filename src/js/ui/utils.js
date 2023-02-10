@@ -4,7 +4,7 @@
 export const RawObjectPrototype = Object.getPrototypeOf({});
 export const isEmpty = (value) => value === null || value === undefined;
 export const isAtom = (value) =>
-  isEmpty ||
+  isEmpty(value) ||
   typeof value !== "object" ||
   (Object.getPrototypeOf(value) !== RawObjectPrototype &&
     !(value instanceof Array));
