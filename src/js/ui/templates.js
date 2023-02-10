@@ -434,13 +434,6 @@ const view = (root, templateName = undefined) => {
             when.predicate
           )
         );
-        if (node.parentElement) {
-          node.parentElement.replaceChild(
-            // This is a placeholder, the contents  is not important.
-            document.createComment(node.outerHTML),
-            node
-          );
-        }
       }
     }
   }

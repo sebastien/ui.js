@@ -455,9 +455,7 @@ class ConditionalEffect extends Effect {
       `when:${this.effector.selector.toString()}`
     );
     // NOTE: We may want to always insert before
-    node.nodeType !== Node.ELEMENT_NODE
-      ? node.parentElement.insertBefore(this.anchor, node)
-      : node.appendChild(this.anchor);
+    node.parentElement.replaceChild(this.anchor, node);
     this.displayValue = node?.style?.display;
     this.state = null;
   }
@@ -470,7 +468,7 @@ class ConditionalEffect extends Effect {
       local,
       path
     );
-    // TODO: We should detect if there was a change
+    return this.show(value);
     return this.effector.predicate(extracted) ? this.show(value) : this.hide();
   }
 
@@ -491,6 +489,13 @@ class ConditionalEffect extends Effect {
       this.node.style.display = this.displayValue;
     } else {
       // These may be other kind of nodes, probably not visible (ie, comments)
+      console.warn("ConditionalEffector.show: Node has no style", {
+        node: this.node,
+        value,
+      });
+    }
+    if (!this.node.parentElement) {
+      this.anchor.parentElement.insertBefore(this.node, this.anchor);
     }
     return this;
   }
