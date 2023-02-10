@@ -100,6 +100,22 @@ class SelectorInput {
     return format ? format(res) : res;
   }
 
+  abspath(path = undefined) {
+    switch (this.type) {
+      case SelectorInput.KEY:
+        return path;
+      case SelectorInput.ABSOLUTE:
+        return this.path;
+      case SelectorInput.RELATIVE:
+        return path ? path.concat(this.path) : this.path;
+      default:
+        onError(`Unsupported selector input type: ${this.type}`, {
+          selectorInput: this,
+        });
+        return path;
+    }
+  }
+
   toString() {
     const key = this.key ? `${this.key}=` : "";
     const format = this.format ? `|${this.format}` : "";
@@ -113,10 +129,11 @@ class SelectorInput {
 // Selector states can manage a selection on a pub/sub bus and manage
 // and update to its data.
 class SelectorState {
-  constructor(selector, handler, value = undefined) {
+  constructor(selector, handler, value = undefined, path = undefined) {
     this.selector = selector;
     this.handler = handler;
     this.value = undefined;
+    this.path = path;
     this.handlers = selector.inputs.map(
       (_, i) =>
         (...args) =>
@@ -124,67 +141,56 @@ class SelectorState {
     );
   }
 
-  apply(value, global, local, path) {
+  extract(value, global, local, path) {
     // TODO: Should we detect changes and store a revision number?
     this.value = this.selector.extract(value, global, local, path);
     return this.value;
   }
 
-  bind(bus, path) {
+  abspath(path = this.path) {
+    return this.selector.abspath(path);
+  }
+
+  abspaths(path = this.path) {
+    return this.selector.abspaths(path);
+  }
+
+  bind(bus, path = this.path) {
     this.handlers.forEach((handler, i) => {
       const input = this.selector.inputs[i];
-      switch (input.type) {
-        case "":
-          bus.sub(input.path, handler, false);
-          break;
-        case ".":
-          bus.sub(composePaths(path, input.path), handler, false);
-          break;
-        default:
-          console.warn(
-            `SelectorState: Input type not supported yet: ${input.type}`,
-            { input }
-          );
-        // TODO: Sub state changes
-      }
+      bus.sub(input.abspath(path), handler, false);
     });
     return this;
   }
 
-  unbind(bus, path) {
+  unbind(bus, path = this.path) {
     this.handlers.forEach((handler, i) => {
       const input = this.selector.inputs[i];
-      switch (input.type) {
-        case "":
-          bus.unsub(input.path, handler, false);
-          break;
-        case ".":
-          bus.unsub(composePaths(path, input.path), handler, false);
-          break;
-        default:
-          console.warn(
-            `SelectorState: Input type not supported yet: ${input.type}`,
-            { input }
-          );
-        // TODO: Sub state changes
-      }
+      bus.unsub(input.abspath(path), handler, false);
     });
     return this;
   }
 
   onInputChange(input, index, event, ...rest) {
     let hasChanged = false;
+    const value = event.key === undefined ? event.value : event.scope;
     switch (event.name) {
       case "Update":
         switch (this.selector.type) {
           case Selector.SINGLE:
-            if ((hasChanged = this.value !== event.value)) {
-              this.value = event.value;
+            if (event.key === undefined) {
+              if ((hasChanged = value !== this.value)) {
+                this.value = value;
+              }
+            } else {
+              hasChanged = true;
+              this.value = value;
             }
             break;
           case Selector.LIST:
             {
               const i = this.inputs[index];
+              // FIXME: Difference between SCOPE and VALUE
               if ((hasChanged = this.value[i] !== event.value)) {
                 this.value[i] = event.value;
               }
@@ -193,6 +199,7 @@ class SelectorState {
           case Selector.MAP:
             {
               const k = this.inputs[index].key;
+              // FIXME: Difference between SCOPE and VALUE
               if ((hasChanged = this.value[k] !== event.value)) {
                 this.value[k] = event.value;
               }
@@ -248,7 +255,7 @@ class Selector {
   // notify of updates.
   apply(value, store, state, path = undefined, handler = undefined) {
     const datum = this.extract(value, store, state, path);
-    return new SelectorState(this, handler, datum);
+    return new SelectorState(this, handler, datum, path);
   }
 
   // -- doc
@@ -285,6 +292,54 @@ class Selector {
           type: this.type,
         });
         break;
+    }
+  }
+  abspath(path = undefined, state = undefined) {
+    switch (this.type) {
+      case Selector.SINGLE:
+        return this.inputs[0].abspath(path);
+      case Selector.LIST:
+      case Selector.MAP:
+        // ERROR
+        onError(`Selector.abspath: Unsupported selector type: ${this.type}`, {
+          type: this.type,
+        });
+        return state;
+      default:
+        // ERROR
+        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+          type: this.type,
+        });
+        return state;
+    }
+  }
+  abspaths(path = undefined, state = undefined) {
+    switch (this.type) {
+      case Selector.SINGLE:
+        return this.inputs[0].abspath(path);
+      case Selector.LIST: {
+        const n = this.inputs.length;
+        const res = state ? state : new Array(n);
+        for (let i = 0; i < n; i++) {
+          res[i] = this.inputs[i].abspath(path);
+        }
+        return res;
+      }
+      case Selector.MAP: {
+        const res = state ? state : {};
+        const n = this.inputs.length;
+        for (let i = 0; i < n; i++) {
+          const input = this.inputs[i];
+          res[input.key ? input.key : i] = input.abspath(path);
+        }
+        return res;
+      }
+      default:
+        // ERROR
+        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+          type: this.type,
+        });
+        return state;
     }
   }
 

@@ -39,8 +39,12 @@
       <script type="module">
         import { sub, patch, get } from "../js/ui.js";
 
-        sub("TodoItem.Remove", ({ scope, event, data }) => {
-          patch(scope, null);
+        sub("TodoItem.Remove", ({ path, event, data }) => {
+          patch(path, null);
+        });
+
+        sub("TodoItem.Edit", ({ path, event, data }) => {
+          patch(path, { edited: true });
         });
 
         sub("Todo.Add", ({ scope, event, data }) => {
@@ -69,18 +73,24 @@
           type="checkbox"
           out:disabled=".edited|not|attr"
           out:checked=".checked|bool"
-          on:change=".checked:.target.checked"
+          on:change=".checked=.target.checked"
         />
         <input
           type="text"
           out:disabled=".edited|not|attr"
           out:checked=".checked|bool"
           out:value=".label"
-          on:change=".label:.target.value"
+          on:change=".label=.target.value"
           placeholder="Untitled note"
         />
         <button class="square" when=".edited|not" on:click="!TodoItem.Edit">
           Edit
+        </button>
+        <button class="square" when=".edited" on:click="!TodoItem.Save">
+          Save
+        </button>
+        <button class="label" when=".edited" on:click="!TodoItem.Cancel">
+          Cancel
         </button>
 
         <!--

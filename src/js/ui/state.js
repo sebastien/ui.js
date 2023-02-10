@@ -67,12 +67,19 @@ export class StateTree {
 
   // -- doc
   // Patches the `value` at the given `path`.
-  patch(path = null, value = undefined) {
+  patch(path = null, value = undefined, clear = false) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
     if (p.length === 0) {
-      this.state = value;
+      const previous = this.state;
+      this.state = clear ? value : Object.assign(this.state, value);
+      pub(
+        [],
+        new StateEvent("Update", this.state, previous, this.state, undefined),
+        1 // We limit propagation to the current topic
+      );
     } else {
       const scope = this.scope(p);
+      // If key is null, then we generate a new one based on the data
       let key = p[p.length - 1];
       if (key === null) {
         key = nextKey(scope);
@@ -119,9 +126,9 @@ export class StateTree {
             while (scope.length < key) {
               scope.push(undefined);
             }
-            scope[key] = value;
+            scope[key] = clear ? value : Object.assign(scope[key], value);
           } else {
-            scope[key] = value;
+            scope[key] = clear ? value : Object.assign(scope[key], value);
           }
           pub(
             p,

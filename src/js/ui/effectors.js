@@ -30,6 +30,7 @@ class Effect {
       path,
       this.onChange.bind(this)
     );
+    this.abspath = this.selected.abspath(path);
   }
 
   bind(bus = Bus, path = this.path) {
@@ -43,16 +44,19 @@ class Effect {
   }
 
   onChange(value) {
+    console.log("Effect.onChange", value);
     this.apply(value);
   }
 
   init(value) {
-    this.apply(this.selected.apply(value, this.global, this.local, this.path));
+    this.apply(
+      this.selected.extract(value, this.global, this.local, this.path)
+    );
     this.selected.bind(Bus, this.path);
     return this;
   }
 
-  apply(value) {}
+  apply(value, abspath = this.abspath) {}
 
   mount() {}
   unmount() {}
@@ -209,6 +213,7 @@ class EventEffect extends Effect {
     } = this.effector.directive;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
+      console.log("EventEffector", { event }, "at", { path });
       const value = source ? source.extract(event) : EventEffect.Value(event);
       // If there is a path then we update this based on the value
       if (destination) {
@@ -225,16 +230,14 @@ class EventEffect extends Effect {
         }
       }
       if (triggers) {
-        const { template, path, id } = EventEffector.FindScope(event.target);
-        console.log("FOUND", { template, path, id });
-        // const { template, path, id } = EventEffector.FindScope(event.target);
-        // pub(composePaths([template], name), {
-        //   name,
-        //   path,
-        //   event,
-        //   // The internal state of each template effector is accessible globally.
-        //   state: TemplateEffect.All.get(id)?.state,
-        // });
+        const { template, path, id } = EventEffect.FindScope(event.target);
+        pub(composePaths([template], triggers), {
+          name: triggers,
+          path,
+          event,
+          // The internal state of each template effector is accessible globally.
+          state: TemplateEffect.All.get(id)?.state,
+        });
       }
       if (stops) {
         event.preventDefault();
@@ -274,8 +277,8 @@ class SlotEffect extends Effect {
     this.items = undefined;
   }
 
-  apply(value = this.value) {
-    return this.unify(value, this.previous);
+  apply(value = this.value, abspath = this.abspath) {
+    return this.unify(value, this.previous, abspath);
   }
 
   createItem(node, value, global, local, path, isEmpty = false) {
@@ -296,12 +299,14 @@ class SlotEffect extends Effect {
   // --
   // ### Lifecycle
   onChange(value, event) {
-    // console.log("Slot.onChange", { value, previous: this.previous, event });
+    console.log("Slot.onChange", { value, previous: this.previous, event });
     this.unify(value);
   }
 
-  unify(current, previous = this.previous, path = this.path) {
+  unify(current, previous = this.previous, abspath = this.abspath) {
+    // TODO: Abspath should really be just one path, like the root.
     const { node, global, local } = this;
+    console.log("SlotEffect.unify", { current, previous, abspath });
     const isCurrentEmpty = isEmpty(current);
     const isPreviousEmpty = isEmpty(previous);
     const isCurrentAtom = isAtom(current);
@@ -335,7 +340,7 @@ class SlotEffect extends Effect {
               current, // value
               global,
               local,
-              path ? path : [], // path
+              abspath ? abspath : [], // path
               true // isEmpty
             )
           );
@@ -354,7 +359,7 @@ class SlotEffect extends Effect {
               current[i], // value
               global,
               local,
-              path ? [...path, i] : [i] // path
+              abspath ? [...abspath, i] : [i] // path
             )
           );
         } else {
@@ -387,7 +392,7 @@ class SlotEffect extends Effect {
               current[k], // value
               global,
               local,
-              path ? [...path, k] : [k] // path
+              abspath ? [...abspath, k] : [k] // path
             )
           );
         } else {
@@ -590,7 +595,7 @@ class TemplateEffect extends Effect {
         state?.dispose();
       }
     }
-    TemplateEffector.All.delete(this.id, this);
+    TemplateEffect.All.delete(this.id, this);
   }
 }
 

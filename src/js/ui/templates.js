@@ -129,8 +129,9 @@ const isBoundaryNode = (node) => {
       case "slot":
         return true;
     }
-    // When effectors are also boundary nodes
-    if (node.hasAttribute("when")) {
+    // When effectors are also boundary nodes, so we stop at any
+    // of their children.
+    if (node.parentElement && node.parentElement.hasAttribute("when")) {
       return true;
     }
   } else {
@@ -420,6 +421,8 @@ const view = (root, templateName = undefined) => {
         while (node.childNodes.length > 0) {
           frag.appendChild(node.childNodes[0]);
         }
+        // TODO: If there is no sub-effectors, we should not bother
+        // with a template, it's a waste of resources.
         const subtemplate = template(
           frag,
           `${makeKey()}-${effectors.length}`,
