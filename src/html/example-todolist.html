@@ -1,7 +1,18 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="../css/uijs.css" rel="stylesheet" />
+    <link href="../css/example-todo.css" rel="stylesheet" />
+    <title>To-do List Example</title>
+  </head>
+
   <body>
-    <div id="placeholder" />
+    <header>
+      <h1>To-do List</h1>
+      <p>This is the classic to-do list example</p>
+    </header>
 
     <div
       data-ui="Todo"
@@ -9,12 +20,12 @@
     ></div>
 
     <template id="Todo">
-      <div>
+      <div class="Todo">
         <h3>Simple todo list</h3>
-
         <ul>
-          <slot name="items" out:content=".items|TodoItem" />
+          <slot name="items" out:content=".items@TodoItem" />
         </ul>
+        <!--
         <form on:submit="!Nil.">
           <input
             placeholder="New item label"
@@ -22,7 +33,9 @@
           />
           <button on:click="!Todo.Add">Add</button>
         </form>
+        -->
       </div>
+
       <script type="module">
         import { sub, patch, get } from "../js/ui.js";
 
@@ -51,9 +64,10 @@
     </template>
 
     <template id="TodoItem">
-      <div>
-        <input
-          when=".edited"
+      <div class="TodoItem">
+        Item
+        <!--
+        <input when=".edited"
           type="checkbox"
           out:checked=".checked|bool"
           on:change=".checked:.target.checked"
@@ -65,6 +79,7 @@
           on:change=".label:.target.value"
         />
         <button on:click="!TodoItem.Remove">Remove</button>
+        -->
         <!--
 			<input when:edited     type="checkbox" out:checked=".checked|bool" in:checked=".checkedDuplicate" />
 			<input when:-edited type="text" out:value=".label" on:change=".value!" />

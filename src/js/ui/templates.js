@@ -92,6 +92,20 @@ const parseOnDirective = (text) => {
   }
 };
 
+const RE_OUT = new RegExp(`^(?<selector>[^@]+)(@(?<template>[A-Za-z]+))?`);
+const parseOutDirective = (text) => {
+  const match = text.match(RE_OUT);
+  if (!match) {
+    return null;
+  } else {
+    const { selector, template } = match.groups;
+    return {
+      selector: selector ? parseSelector(selector) : null,
+      template,
+    };
+  }
+};
+
 // --
 // ## Tree Walking
 //
@@ -279,43 +293,54 @@ const view = (root, templateName = undefined) => {
     const node = attr.ownerElement;
     const path = nodePath(node, root);
     const parentName = node.nodeName;
-    const selector = parseSelector(attr.value || `.${name}`, false);
-    if (
-      // In SVG, these nodes are lowercase.
-      (parentName === "SLOT" || parentName === "slot") &&
-      name === "content"
-    ) {
-      const format = selector.format
-        ? selector.format
-        : isNodeEmpty(node)
-        ? null // An empty node means a null (text) formatter
-        : template(
-            // The format is the template id
-            node,
-            `${templateName || makeKey()}-${effectors.length}`,
-            templateName, // This is the parent name
-            false // No need to clone there
-          ).name;
+    const text = attr.value || `.${name}`;
+    const directive = parseOutDirective(text);
+    if (!directive) {
+      onError(`templates.view: Could not parse out directive ${text}`, {
+        text,
+        attr,
+      });
+    } else {
+      if (
+        // In SVG, these nodes are lowercase.
+        (parentName === "SLOT" || parentName === "slot") &&
+        name === "content"
+      ) {
+        const slotTemplate = directive.template
+          ? directive.template
+          : isNodeEmpty(node)
+          ? null // An empty node means a null (text) formatter
+          : template(
+              // The format is the template id
+              node,
+              `${templateName || makeKey()}-${effectors.length}`,
+              templateName, // This is the parent name
+              false // No need to clone there
+            ).name;
 
-      // TODO: We should check for `when` as well.
-      effectors.push(new SlotEffector(path, selector, format));
-      if (node.parentElement) {
-        node.parentElement.replaceChild(
-          // This is a placeholder, the contents  is not important.
-          document.createComment(node.outerHTML),
-          node
+        // TODO: We should check for `when` as well.
+        effectors.push(
+          new SlotEffector(path, directive.selector, slotTemplate)
+        );
+        if (node.parentElement) {
+          node.parentElement.replaceChild(
+            // This is a placeholder, the contents  is not important.
+            document.createComment(node.outerHTML),
+            node
+          );
+        }
+      } else {
+        // TODO: We should check for a template as well
+        effectors.push(
+          new (name === "style"
+            ? StyleEffector
+            : ((name === "value" || name === "disabled") &&
+                (parentName === "INPUT" || parentName === "SELECT")) ||
+              (name === "checked" && parentName === "INPUT")
+            ? ValueEffector
+            : AttributeEffector)(path, directive.selector, name)
         );
       }
-    } else {
-      effectors.push(
-        new (name === "style"
-          ? StyleEffector
-          : ((name === "value" || name === "disabled") &&
-              (parentName === "INPUT" || parentName === "SELECT")) ||
-            (name === "checked" && parentName === "INPUT")
-          ? ValueEffector
-          : AttributeEffector)(path, selector, name)
-      );
     }
     // We remove the attribute from the template as it is now processed
     node.removeAttribute(attr.name);
