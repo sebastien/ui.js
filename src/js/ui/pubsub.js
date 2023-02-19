@@ -52,7 +52,7 @@ export class Topic {
   }
 
   sub(handler, withLast = true) {
-    // console.log(`Topic.sub at '${this.path.join(".")}'`, handler);
+    console.log(`Topic.sub at '${this.path.join(".")}'`, handler);
     if (!this.handlers) {
       this.handlers = [];
     }

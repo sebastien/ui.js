@@ -39,6 +39,7 @@ import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
 import { patch, get } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
+import { parsePath } from "./ui/paths.js";
 import { onError } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
 
@@ -59,7 +60,7 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
 
   // We render the components
   for (const node of scope.querySelectorAll("*[data-ui]")) {
-    const { ui, state } = node.dataset;
+    const { ui, state, path } = node.dataset;
     const template = Templates.get(ui);
     const data = state ? parseState(state, context) : context;
     if (!template) {
@@ -73,7 +74,9 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
       const anchor = document.createComment(node.outerHTML);
       node.parentElement.replaceChild(anchor, node);
       // TODO: We should keep the returned state
-      components.push(template.apply(anchor, data, data, null, []));
+      components.push(
+        template.apply(anchor, data, data, null, parsePath(path))
+      );
     }
   }
 

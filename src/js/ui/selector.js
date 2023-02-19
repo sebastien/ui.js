@@ -77,7 +77,7 @@ class SelectorInput {
   // Applies this input to the local `value`, global `store`
   // and local `state`, where `value` is located at the given
   // `path`.
-  apply(value, store, state, path = undefined) {
+  extract(value, store, state, path = undefined) {
     let res = undefined;
     if (this.type === SelectorInput.KEY) {
       res = path ? path.at(-1) : undefined;
@@ -134,6 +134,7 @@ class SelectorState {
     this.handler = handler;
     this.value = undefined;
     this.path = path;
+    // Handlers are registered when an input's monitored path changes
     this.handlers = selector.inputs.map(
       (_, i) =>
         (...args) =>
@@ -156,6 +157,8 @@ class SelectorState {
   }
 
   bind(bus, path = this.path) {
+    // When we bind a selector state, each input will listen to its specific
+    // value listened to.
     this.handlers.forEach((handler, i) => {
       const input = this.selector.inputs[i];
       bus.sub(input.abspath(path), handler, false);
@@ -171,9 +174,16 @@ class SelectorState {
     return this;
   }
 
+  // -- doc
+  // `onInputChange` is triggered when the value at the path listened to by the input
+  // has changed. This means that the value in the event is already
   onInputChange(input, index, event, ...rest) {
     let hasChanged = false;
-    const value = event.key === undefined ? event.value : event.scope;
+    // NOTE: This used to be like that, but it doesn't make sense as the value here
+    // should be the value at the path the input is listening to.
+    // --
+    // const value = event.key === undefined ? event.value : event.scope;
+    const value = input.format ? input.format(event.value) : event.value;
     switch (event.name) {
       case "Update":
         switch (this.selector.type) {
@@ -190,9 +200,8 @@ class SelectorState {
           case Selector.LIST:
             {
               const i = this.inputs[index];
-              // FIXME: Difference between SCOPE and VALUE
-              if ((hasChanged = this.value[i] !== event.value)) {
-                this.value[i] = event.value;
+              if ((hasChanged = this.value[i] !== value)) {
+                this.value[i] = value;
               }
             }
             break;
@@ -200,8 +209,8 @@ class SelectorState {
             {
               const k = this.inputs[index].key;
               // FIXME: Difference between SCOPE and VALUE
-              if ((hasChanged = this.value[k] !== event.value)) {
-                this.value[k] = event.value;
+              if ((hasChanged = this.value[k] !== value)) {
+                this.value[k] = value;
               }
             }
             break;
@@ -219,6 +228,9 @@ class SelectorState {
           { event }
         );
     }
+    console.log("XXX OnInputChanged", { value, event, result: this.value });
+    // At the end, we want to notify of a change if any of the input extracted value
+    // has changed.
     if (hasChanged) {
       this.handler(this.value, event);
     }
@@ -263,12 +275,12 @@ class Selector {
   extract(value, global, local, path = undefined, state = undefined) {
     switch (this.type) {
       case Selector.SINGLE:
-        return this.inputs[0].apply(value, global, local, path);
+        return this.inputs[0].extract(value, global, local, path);
       case Selector.LIST: {
         const res = state ? state : new Array(n);
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
-          res[i] = this.inputs[i].apply(value, global, local, path);
+          res[i] = this.inputs[i].extract(value, global, local, path);
         }
         return res;
       }
@@ -277,7 +289,7 @@ class Selector {
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];
-          res[input.key ? input.key : i] = input.apply(
+          res[input.key ? input.key : i] = input.extract(
             value,
             global,
             local,

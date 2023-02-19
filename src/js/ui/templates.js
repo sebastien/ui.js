@@ -75,7 +75,7 @@ const parseWhenDirective = (text) => {
       return null;
     }
     return {
-      selector: parseSelector(selector),
+      selector: parseSelector(selector) || CurrentValueSelector,
       predicate: (_) => f(_, v),
     };
   }

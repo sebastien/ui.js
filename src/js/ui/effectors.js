@@ -18,6 +18,7 @@ class Effect {
     this.global = global;
     this.local = local;
     this.path = path;
+    this.previous = undefined;
 
     // We apply the selector in the current scope
     if (!effector.selector) {
@@ -43,20 +44,26 @@ class Effect {
     return this;
   }
 
-  onChange(value) {
-    console.log("Effect.onChange", value);
-    this.apply(value);
-  }
-
   init(value) {
-    this.apply(
-      this.selected.extract(value, this.global, this.local, this.path)
-    );
+    this.apply(value);
     this.selected.bind(Bus, this.path);
     return this;
   }
 
-  apply(value, abspath = this.abspath) {}
+  apply(value, abspath = this.abspath) {
+    return this.unify(
+      this.selected.extract(value, this.global, this.local, this.path),
+      this.previous,
+      abspath
+    );
+  }
+
+  unify(current, previous = this.previous, abspath = this.abspath) {
+    onError("Effect.unify not implemented", {
+      this: this,
+      parent: Object.getPrototypeOf(this),
+    });
+  }
 
   mount() {}
   unmount() {}
@@ -64,10 +71,21 @@ class Effect {
   dispose() {
     this.selected.unbind(Bus, this.path);
   }
+
+  onChange(value, event) {
+    const extracted = this.selected.extract(
+      value,
+      this.global,
+      this.local,
+      this.path
+    );
+    this.unify(extracted, this.previous, this.abspath);
+  }
 }
 
 export class Effector {
   // -- doc
+  //
   // An effector targets the node at the given `nodePath` and selects data
   // using the given `selector`.
   constructor(nodePath, selector) {
@@ -104,13 +122,15 @@ class TextEffect extends Effect {
     this.textNode = document.createTextNode("");
   }
 
-  apply(value) {
+  unify(value, previous = this.previous, abspath = this.abspath) {
+    console.log("UNIFY TEXT", { value, previous, abspath });
     this.textNode.data =
       value === null || value === undefined
         ? ""
         : typeof value === "string"
         ? value
         : `${value}`;
+    console.log("UNIFY TEXT===", this.textNode.data, this.textNode);
     if (!this.textNode.parentElement) {
       this.node.parentElement.insertBefore(this.textNode, this.node);
     }
@@ -132,7 +152,7 @@ class TextEffector extends Effector {
 // ## Attribute Effector
 
 class AttributeEffect extends Effect {
-  apply(value) {
+  unify(value, previous = this.previous, abspath = this.abspath) {
     this.node.setAttribute(this.effector.name, value);
     return this;
   }
@@ -156,7 +176,7 @@ export class AttributeEffector extends Effector {
 //
 
 class ValueEffect extends Effect {
-  apply(value) {
+  unify(value, previous = this.previous, abspath = this.abspath) {
     this.node[this.effector.name] = value;
     return this;
   }
@@ -172,7 +192,7 @@ export class ValueEffector extends AttributeEffector {
 // ## Style Effector
 //
 class StyleEffect extends Effect {
-  apply(value) {
+  unify(value, previous = this.previous, abspath = this.abspath) {
     Object.assign(this.node.style, value);
     return this;
   }
@@ -213,7 +233,6 @@ class EventEffect extends Effect {
     } = this.effector.directive;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
-      console.log("EventEffector", { event }, "at", { path });
       const value = source ? source.extract(event) : EventEffect.Value(event);
       // If there is a path then we update this based on the value
       if (destination) {
@@ -277,10 +296,6 @@ class SlotEffect extends Effect {
     this.items = undefined;
   }
 
-  apply(value = this.value, abspath = this.abspath) {
-    return this.unify(value, this.previous, abspath);
-  }
-
   createItem(node, value, global, local, path, isEmpty = false) {
     const root = document.createComment(
       `slot:${isEmpty ? "null" : path.at(-1)}`
@@ -298,15 +313,10 @@ class SlotEffect extends Effect {
 
   // --
   // ### Lifecycle
-  onChange(value, event) {
-    console.log("Slot.onChange", { value, previous: this.previous, event });
-    this.unify(value);
-  }
 
   unify(current, previous = this.previous, abspath = this.abspath) {
     // TODO: Abspath should really be just one path, like the root.
     const { node, global, local } = this;
-    console.log("SlotEffect.unify", { current, previous, abspath });
     const isCurrentEmpty = isEmpty(current);
     const isPreviousEmpty = isEmpty(previous);
     const isCurrentAtom = isAtom(current);
@@ -320,7 +330,7 @@ class SlotEffect extends Effect {
           item.unmount();
           item.dispose();
         }
-        this.item.clear();
+        this.items?.clear();
       } else {
         // Nothing to do
       }
@@ -467,7 +477,7 @@ class ConditionalEffect extends Effect {
     this.state = null;
   }
 
-  apply(value = this.value) {
+  unify(value, previous = this.previous, abspath = this.abspath) {
     const { global, local, path } = this;
     const extracted = this.effector.selector.extract(
       value,
@@ -488,6 +498,7 @@ class ConditionalEffect extends Effect {
         this.path
       );
     } else {
+      // TODO: Should probably be `unify`, but state here is a TemplateEffect.
       this.state.update(value);
       this.state.mount();
     }
@@ -570,6 +581,8 @@ class TemplateEffect extends Effect {
   //   return items;
   // }
 
+  // TODO: This is a specialized method of TemplateEffect, should probably
+  // be `unify` instead.
   update(value) {
     const o = this.path.length;
     if (value !== null && value !== undefined) {

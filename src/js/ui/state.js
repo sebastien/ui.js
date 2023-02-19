@@ -126,10 +126,11 @@ export class StateTree {
             while (scope.length < key) {
               scope.push(undefined);
             }
-            scope[key] = clear ? value : Object.assign(scope[key], value);
-          } else {
-            scope[key] = clear ? value : Object.assign(scope[key], value);
           }
+          scope[key] =
+            clear || typeof scope[key] !== "object"
+              ? value
+              : Object.assign(scope[key], value);
           pub(
             p,
             new StateEvent(
