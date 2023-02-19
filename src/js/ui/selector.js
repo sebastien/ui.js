@@ -38,6 +38,12 @@ const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 
 // --
 // ## Selector Input
+
+// -- doc
+// A selector input represents one specific selection in a selector,
+// which is a collection of inputs. Selector inputs can select from
+// the local state (`@` prefixed, like `@status`), or from the global state
+// either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
 class SelectorInput {
   static LOCAL = "@";
   static RELATIVE = ".";
@@ -74,7 +80,7 @@ class SelectorInput {
   }
 
   // -- doc
-  // Applies this input to the local `value`, global `store`
+  // Extracts the value for this input based on the local `value`, global `store`
   // and local `state`, where `value` is located at the given
   // `path`.
   extract(value, store, state, path = undefined) {
@@ -100,6 +106,8 @@ class SelectorInput {
     return format ? format(res) : res;
   }
 
+  // -- doc
+  // Return this absolute path for this selector based on the given basepath.
   abspath(path = undefined) {
     switch (this.type) {
       case SelectorInput.KEY:
@@ -126,8 +134,9 @@ class SelectorInput {
 // --
 // ## Selector State
 //
-// Selector states can manage a selection on a pub/sub bus and manage
-// and update to its data.
+// Selector states manage a spefic instance of a `Selector`, which
+// can be bound to pub/sub bus, and update itself (triggering its `handler`)
+// when the value change.
 class SelectorState {
   constructor(selector, handler, value = undefined, path = undefined) {
     this.selector = selector;
@@ -142,20 +151,30 @@ class SelectorState {
     );
   }
 
+  // -- doc
+  // Extracts the current value for this selector based on the current
+  // `value` at `path`, the `global` state and the `local` component state.
   extract(value, global, local, path) {
     // TODO: Should we detect changes and store a revision number?
-    this.value = this.selector.extract(value, global, local, path);
-    return this.value;
+    return (this.value = this.selector.extract(value, global, local, path));
   }
 
+  // -- doc
+  // Returns the absolute path of the selector, see `Selector.abspath`.
   abspath(path = this.path) {
     return this.selector.abspath(path);
   }
 
+  // -- doc
+  // Returns the list of all absolute path selected by the selector,
+  // see `Selector.abspaths`.
   abspaths(path = this.path) {
     return this.selector.abspaths(path);
   }
 
+  // -- doc
+  // Binds the selector state to the given PubSub bus at the given `path`. The
+  // selector state will be updated when one its inputs gets an updates.
   bind(bus, path = this.path) {
     // When we bind a selector state, each input will listen to its specific
     // value listened to.
@@ -174,6 +193,9 @@ class SelectorState {
     return this;
   }
 
+  // FIXME: This should capture the global and state scope to work,
+  // as extractors won't work otherwise.
+  //
   // -- doc
   // `onInputChange` is triggered when the value at the path listened to by the input
   // has changed. This means that the value in the event is already
@@ -228,7 +250,6 @@ class SelectorState {
           { event }
         );
     }
-    console.log("XXX OnInputChanged", { value, event, result: this.value });
     // At the end, we want to notify of a change if any of the input extracted value
     // has changed.
     if (hasChanged) {

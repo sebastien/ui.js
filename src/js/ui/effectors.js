@@ -46,7 +46,7 @@ class Effect {
 
   init(value) {
     this.apply(value);
-    this.selected.bind(Bus, this.path);
+    this.bind(Bus, this.path);
     return this;
   }
 
@@ -73,13 +73,8 @@ class Effect {
   }
 
   onChange(value, event) {
-    const extracted = this.selected.extract(
-      value,
-      this.global,
-      this.local,
-      this.path
-    );
-    this.unify(extracted, this.previous, this.abspath);
+    // The value is already extracted when `onChange` is called.
+    this.unify(value, this.previous, this.abspath);
   }
 }
 
@@ -123,14 +118,12 @@ class TextEffect extends Effect {
   }
 
   unify(value, previous = this.previous, abspath = this.abspath) {
-    console.log("UNIFY TEXT", { value, previous, abspath });
     this.textNode.data =
       value === null || value === undefined
         ? ""
         : typeof value === "string"
         ? value
         : `${value}`;
-    console.log("UNIFY TEXT===", this.textNode.data, this.textNode);
     if (!this.textNode.parentElement) {
       this.node.parentElement.insertBefore(this.textNode, this.node);
     }
