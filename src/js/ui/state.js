@@ -1,6 +1,6 @@
 import { parsePath } from "./paths.js";
 import { pub } from "./pubsub.js";
-import { nextKey } from "./utils.js";
+import { nextKey, copy } from "./utils.js";
 
 // --
 // ## State Tree
@@ -70,7 +70,7 @@ export class StateTree {
   patch(path = null, value = undefined, clear = false) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
     if (p.length === 0) {
-      const previous = this.state;
+      const previous = copy(this.state);
       this.state = clear ? value : Object.assign(this.state, value);
       pub(
         [],
@@ -100,7 +100,7 @@ export class StateTree {
             for (let i = key; i < n - 1; i++) {
               pub(
                 [...base, i],
-                new StateEvent("Update", scope[i], scope[i + 1], i),
+                new StateEvent("Update", scope[i], copy(scope[i + 1]), i),
                 1 // We limit propagation to the current topic
               );
             }
@@ -111,7 +111,7 @@ export class StateTree {
             );
           } else {
             // Or a dictionary
-            const previous = scope[key];
+            const previous = copy(scope[key]);
             delete scope[key];
             pub(
               p,
@@ -120,7 +120,7 @@ export class StateTree {
             );
           }
         } else {
-          const previous = scope[key];
+          const previous = copy(scope[key]);
           // The value is not removed, easy case
           if (scope instanceof Array) {
             while (scope.length < key) {
@@ -128,14 +128,14 @@ export class StateTree {
             }
           }
           scope[key] =
-            clear || typeof scope[key] !== "object"
+            clear || scope[key] == null || typeof scope[key] !== "object"
               ? value
               : Object.assign(scope[key], value);
           pub(
             p,
             new StateEvent(
               previous === undefined ? "Create" : "Update",
-              value,
+              scope[key],
               previous,
               scope,
               key

@@ -102,8 +102,8 @@ class PubSub {
       : this.topics;
   }
 
-  pub(topic, data) {
-    return this.get(topic).pub(data), this;
+  pub(topic, data, limit = undefined) {
+    return this.get(topic).pub(data, limit), this;
   }
 
   sub(topic, handler, withLast = true) {
@@ -116,7 +116,8 @@ class PubSub {
 }
 
 export const Bus = new PubSub();
-export const pub = (topic, data) => Bus.pub(topic, data);
+export const pub = (topic, data, limit = undefined) =>
+  Bus.pub(topic, data, limit);
 export const sub = (topic, handler, withLast) =>
   Bus.sub(topic, handler, withLast);
 export const unsub = (topic, handler) => Bus.unsub(topic, handler);

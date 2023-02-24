@@ -289,21 +289,6 @@ class SlotEffect extends Effect {
     this.items = undefined;
   }
 
-  createItem(node, value, global, local, path, isEmpty = false) {
-    const root = document.createComment(
-      `slot:${isEmpty ? "null" : path.at(-1)}`
-    );
-    // We need to insert the node before as the template needs a parent
-    node.parentElement.insertBefore(root, node);
-    return this.effector.template.apply(
-      root, // node
-      value,
-      global,
-      local,
-      path
-    );
-  }
-
   // --
   // ### Lifecycle
 
@@ -418,6 +403,23 @@ class SlotEffect extends Effect {
     this.previous = current;
     return this;
   }
+
+  // -- doc
+  // Creates a new item node in which the template can be rendered.
+  createItem(node, value, global, local, path, isEmpty = false) {
+    const root = document.createComment(
+      `slot:${isEmpty ? "null" : path.at(-1)}`
+    );
+    // We need to insert the node before as the template needs a parent
+    node.parentElement.insertBefore(root, node);
+    return this.effector.template.apply(
+      root, // node
+      value,
+      global,
+      local,
+      path
+    );
+  }
 }
 
 // NOTE: I think the only thing that a slot effector has to do is
@@ -459,7 +461,7 @@ export class SlotEffector extends Effector {
 class ConditionalEffect extends Effect {
   constructor(effector, node, value, global, local, path) {
     super(effector, node, value, global, local, path);
-    // The anchor will the element wher the contents will be re-inserted
+    // The anchor will the element where the contents will be re-inserted
     this.anchor = document.createComment(
       `when:${this.effector.selector.toString()}`
     );
@@ -471,14 +473,8 @@ class ConditionalEffect extends Effect {
   }
 
   unify(value, previous = this.previous, abspath = this.abspath) {
-    const { global, local, path } = this;
-    const extracted = this.effector.selector.extract(
-      value,
-      global,
-      local,
-      path
-    );
-    return this.effector.predicate(extracted) ? this.show(value) : this.hide();
+    console.log("XXX ConditionalEffect.unify", { value, previous });
+    return this.effector.predicate(value) ? this.show(value) : this.hide();
   }
 
   show(value) {
@@ -499,7 +495,7 @@ class ConditionalEffect extends Effect {
       this.node.style.display = this.displayValue;
     } else {
       // These may be other kind of nodes, probably not visible (ie, comments)
-      console.warn("ConditionalEffector.show: Node has no style", {
+      console.warn("ConditionalEffect.show: Node has no style", {
         node: this.node,
         value,
       });
@@ -531,7 +527,7 @@ export class ConditionalEffector extends SlotEffector {
   }
 
   apply(node, value, global, local, path = undefined) {
-    return new ConditionalEffect(this, node, value, global, local, path).apply(
+    return new ConditionalEffect(this, node, value, global, local, path).init(
       value
     );
   }

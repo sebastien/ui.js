@@ -94,6 +94,9 @@ class SelectorInput {
           : this.type === SelectorInput.RELATIVE
           ? value
           : state;
+      if (!context) {
+        onError("Context is undefined", { value, store, state, path });
+      }
       for (let k of this.path) {
         context = context[k];
         if (context === undefined) {
@@ -180,6 +183,7 @@ class SelectorState {
     // value listened to.
     this.handlers.forEach((handler, i) => {
       const input = this.selector.inputs[i];
+      console.log("XXX Selected.bind", input.abspath(path).join("."));
       bus.sub(input.abspath(path), handler, false);
     });
     return this;
@@ -199,13 +203,13 @@ class SelectorState {
   // -- doc
   // `onInputChange` is triggered when the value at the path listened to by the input
   // has changed. This means that the value in the event is already
-  onInputChange(input, index, event, ...rest) {
+  onInputChange(input, index, event, topic /*, limit*/) {
     let hasChanged = false;
     // NOTE: This used to be like that, but it doesn't make sense as the value here
     // should be the value at the path the input is listening to.
     // --
     // const value = event.key === undefined ? event.value : event.scope;
-    const value = input.format ? input.format(event.value) : event.value;
+    const value = input.format ? input.format(topic.value) : topic.value;
     switch (event.name) {
       case "Update":
         switch (this.selector.type) {

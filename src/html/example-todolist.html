@@ -69,6 +69,10 @@
 
     <template id="TodoItem">
       <div class="TodoItem">
+        <span when=".edited">edited</span>
+        <button class="square" on:click="!TodoItem.Edit">Edit</button>
+
+        <!--
         <input
           type="checkbox"
           out:disabled=".edited|not|attr"

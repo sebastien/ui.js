@@ -140,7 +140,15 @@ export const def = (...rest) => {
   }
 };
 
-// --
+export const copy = (value) =>
+  value === null
+    ? null
+    : typeof value === "object"
+    ? value instanceof Array
+      ? [...value]
+      : { ...value }
+    : value;
+
 // ## Math
 
 export const round = (number, factor = 1, bound = 1) => {
