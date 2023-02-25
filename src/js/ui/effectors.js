@@ -473,7 +473,11 @@ class ConditionalEffect extends Effect {
   }
 
   unify(value, previous = this.previous, abspath = this.abspath) {
-    return this.effector.predicate(value) ? this.show(value) : this.hide();
+    if (previous === undefined || value !== previous) {
+      this.effector.predicate(value) ? this.show(value) : this.hide();
+    }
+    this.previous = value;
+    return this;
   }
 
   show(value) {
@@ -588,6 +592,20 @@ class TemplateEffect extends Effect {
   unmount() {
     for (let view of this.views) {
       view.root?.parentElement?.removeChild(view.root);
+    }
+  }
+
+  mount() {
+    const n = this.views.length;
+    let previous = this.node;
+    for (let i = 0; i < n; i++) {
+      const root = this.views[i].root;
+      if (root) {
+        if (root.previousSibling !== previous) {
+          this.node.parentElement.insertBefore(root, this.node);
+        }
+        previous = root;
+      }
     }
   }
 

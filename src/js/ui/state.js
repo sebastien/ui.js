@@ -104,7 +104,7 @@ export class StateTree {
         // topic is then marked as undefined/removed.
         topic.walk((_) => {
           _.pub(undefined);
-        });
+        }, false);
         topic.pub(value);
     }
   }

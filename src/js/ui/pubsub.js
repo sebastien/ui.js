@@ -79,10 +79,10 @@ export class Topic {
     return this;
   }
 
-  walk(callback) {
-    if (callback(this) !== false) {
+  walk(callback, includeSelf = false) {
+    if (includeSelf === false || callback(this) !== false) {
       for (let v of this.children.values()) {
-        if (v.walk(callback) === false) {
+        if (v.walk(callback, true) === false) {
           return false;
         }
       }
@@ -91,7 +91,7 @@ export class Topic {
 
   list() {
     const res = [];
-    this.walk((_) => res.push(_));
+    this.walk((_) => res.push(_), false);
     return res;
   }
 }
