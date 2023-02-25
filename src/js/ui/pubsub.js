@@ -3,6 +3,8 @@
 
 const Empty = new Object();
 
+const asKey = (key) => (typeof key === "number" ? `${key}` : key);
+
 export class Topic {
   constructor(name, parent = null) {
     this.name = name;
@@ -19,16 +21,19 @@ export class Topic {
   }
 
   get(name, create = true) {
-    return name instanceof Array
-      ? name.reduce((r, v) => r.get(v), this)
-      : this.children.has(name)
-      ? this.children.get(name)
+    const key = asKey(name);
+    return key instanceof Array
+      ? key.reduce((r, v) => r.get(v), this)
+      : this.children.has(key)
+      ? this.children.get(key)
       : create
-      ? this.children.set(name, new Topic(name, this)).get(name)
+      ? this.children.set(key, new Topic(key, this)).get(key)
       : null;
   }
 
   move(ka, kb) {
+    ka = asKey(ka);
+    kb = asKey(kb);
     const a = this.children.get(ka);
     this.children.delete(ka);
     const b = this.children.get(kb);
@@ -36,7 +41,7 @@ export class Topic {
     return b;
   }
 
-  pub(data, limit = -1) {
+  pub(data, limit = 1) {
     // console.log(`Topic.pub at '${this.path.join(".")}'`, data);
     this.value = data;
     let topic = this;

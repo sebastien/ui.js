@@ -183,7 +183,6 @@ class SelectorState {
     // value listened to.
     this.handlers.forEach((handler, i) => {
       const input = this.selector.inputs[i];
-      console.log("XXX Selected.bind", input.abspath(path).join("."));
       bus.sub(input.abspath(path), handler, false);
     });
     return this;

@@ -572,11 +572,12 @@ class TemplateEffect extends Effect {
   // TODO: This is a specialized method of TemplateEffect, should probably
   // be `unify` instead.
   update(value) {
-    const o = this.path.length;
+    const o = this.path?.length || 0;
     if (value !== null && value !== undefined) {
       for (let view of this.views) {
         for (let state of view.states) {
           if (state) {
+            // This selects that data in value located at state.path starting at offset `o`
             state.update(pathData(state.path, value, o));
           }
         }

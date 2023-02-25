@@ -70,12 +70,12 @@ export class StateTree {
     const scopeTopic = this.bus.get(p.slice(0, -1), false);
     if (p.length === 0) {
       this.state = updated;
-      scopeTopic && scopeTopic.pub(updated);
+      this._pub(scopeTopic, updated);
     } else {
       scope[key] = updated;
       if (scopeTopic) {
         this._pub(scopeTopic.get(key, false), updated);
-        scopeTopic.pub(updated);
+        scopeTopic.pub(scope);
       }
     }
   }
@@ -90,7 +90,7 @@ export class StateTree {
       case "list":
       case "map":
         // Any child topic should be updated with the delta.
-        for (let [k, t] of topic.children.items()) {
+        for (let [k, t] of topic.children.entries()) {
           const v = value[k];
           // We force a pub on objects, as the key may have changed
           if (v !== t.value || typeof (v === "object")) {
@@ -102,7 +102,9 @@ export class StateTree {
       default:
         // This is a single value so that means any children
         // topic is then marked as undefined/removed.
-        topic.walk((_) => _.pub(undefined));
+        topic.walk((_) => {
+          _.pub(undefined);
+        });
         topic.pub(value);
     }
   }
