@@ -40,7 +40,7 @@ import { pub, sub, unsub } from "./ui/pubsub.js";
 import { patch, get } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
 import { parsePath } from "./ui/paths.js";
-import { onError } from "./ui/utils.js";
+import { onError, makeKey } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
 
 const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
@@ -70,13 +70,13 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
       });
     } else {
       // We instanciate the template onto the node
-      patch(null, data);
+      const dataPath = path ? parsePath(path) : ["@data", makeKey()];
+      data && patch(dataPath, data);
       const anchor = document.createComment(node.outerHTML);
       node.parentElement.replaceChild(anchor, node);
+      // TODO: We should pass the component number as well?
       // TODO: We should keep the returned state
-      components.push(
-        template.apply(anchor, data, data, null, parsePath(path))
-      );
+      components.push(template.apply(anchor, data, data, null, dataPath));
     }
   }
 

@@ -16,7 +16,6 @@ import {
   AttributeEffector,
   TemplateEffector,
 } from "./effectors.js";
-import { Formats, idem } from "./formats.js";
 import { onError, makeKey, bool } from "./utils.js";
 import { styled } from "./tokens.js";
 import { stylesheet } from "./css.js";
@@ -59,7 +58,7 @@ const Comparators = {
 };
 const parseWhenDirective = (text) => {
   const match = text.match(
-    /^(?<selector>.+)((?<operator>==|!=|>|>=|<|<=)(?<value>.+)?)?$/
+    /^(?<selector>[^=!<>]+)((?<operator>==|!=|>|>=|<|<=)(?<value>.+)?)?$/
   );
   if (!match) {
     return null;
@@ -74,6 +73,7 @@ const parseWhenDirective = (text) => {
       });
       return null;
     }
+
     return {
       selector: parseSelector(selector) || CurrentValueSelector,
       predicate: (_) => f(_, v),

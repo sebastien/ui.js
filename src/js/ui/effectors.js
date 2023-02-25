@@ -544,8 +544,8 @@ class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
   static All = new Map();
-  constructor(effector, node, value, path, views, id) {
-    super(effector, node, value, path);
+  constructor(effector, node, value, global, local, path, views, id) {
+    super(effector, node, value, global, local, path);
     this.views = views;
     this.id = id;
     // NOTE: Not sure this is necessary
@@ -674,7 +674,16 @@ export class TemplateEffector extends Effector {
         states,
       });
     }
-    return new TemplateEffect(this, node, value, path, views, id);
+    return new TemplateEffect(
+      this,
+      node,
+      value,
+      global,
+      local,
+      path,
+      views,
+      id
+    );
   }
 }
 

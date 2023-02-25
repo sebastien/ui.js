@@ -94,8 +94,11 @@ class SelectorInput {
           : this.type === SelectorInput.RELATIVE
           ? value
           : state;
-      if (!context) {
-        onError("Context is undefined", { value, store, state, path });
+      if (this.path.length && !context) {
+        onError(
+          `SelectorInput.extract: Context is undefined for input of type ${this.type}`,
+          { value, store, state, path, ["input.path"]: this.path }
+        );
       }
       for (let k of this.path) {
         context = context[k];
@@ -204,19 +207,10 @@ class SelectorState {
   // has changed. This means that the value in the event is already
   onInputChange(input, index, rawValue) {
     let hasChanged = false;
-    // NOTE: This used to be like that, but it doesn't make sense as the value here
-    // should be the value at the path the input is listening to.
-    // --
-    // const value = event.key === undefined ? event.value : event.scope;
     const value = input.format ? input.format(rawValue) : rawValue;
     switch (this.selector.type) {
       case Selector.SINGLE:
-        if (event.key === undefined) {
-          if ((hasChanged = value !== this.value)) {
-            this.value = value;
-          }
-        } else {
-          hasChanged = true;
+        if ((hasChanged = value !== this.value)) {
           this.value = value;
         }
         break;
@@ -247,7 +241,7 @@ class SelectorState {
     // At the end, we want to notify of a change if any of the input extracted value
     // has changed.
     if (hasChanged) {
-      this.handler(this.value, event);
+      this.handler(this.value);
     }
   }
 

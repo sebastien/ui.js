@@ -83,9 +83,10 @@
           out:disabled=".edited|not|attr"
           out:checked=".checked|bool"
           out:value=".label"
-          on:change=".label=.target.value"
+          when=".edited"
           placeholder="Untitled note"
         />
+        <span when=".edited|not"><slot content=".label" ></span>
         <button class="square" when=".edited|not" on:click="!TodoItem.Edit">
           Edit
         </button>
