@@ -1,23 +1,14 @@
 import { parsePath } from "./paths.js";
-import { pub } from "./pubsub.js";
-import { nextKey, copy } from "./utils.js";
+import { Bus } from "./pubsub.js";
+import { type } from "./utils.js";
 
 // --
 // ## State Tree
 
-export class StateEvent {
-  constructor(name, value, previous, scope, key) {
-    this.name = name;
-    this.value = value;
-    this.previous = previous;
-    this.scope = scope;
-    this.key = key;
-  }
-}
-
 export class StateTree {
   constructor() {
     this.state = {};
+    this.bus = Bus;
   }
 
   // -- doc
@@ -65,85 +56,87 @@ export class StateTree {
     return this.ensure(path, undefined, -1);
   }
 
-  // -- doc
-  // Patches the `value` at the given `path`.
+  put(path = null, value = undefined) {
+    return this.patch(path, value);
+  }
+
   patch(path = null, value = undefined, clear = false) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
+    const scope = p.length === 0 ? null : this.scope(p);
+    const key = p.at(-1);
+    const updated = clear
+      ? value
+      : this._apply(p.length === 0 ? this.state : scope[key], value);
+    const scopeTopic = this.bus.get(p.slice(0, -1), false);
     if (p.length === 0) {
-      const previous = copy(this.state);
-      this.state = clear ? value : Object.assign(this.state, value);
-      pub(
-        [],
-        new StateEvent("Update", this.state, previous, this.state, undefined),
-        1 // We limit propagation to the current topic
-      );
+      this.state = updated;
+      scopeTopic && scopeTopic.pub(updated);
     } else {
-      const scope = this.scope(p);
-      // If key is null, then we generate a new one based on the data
-      let key = p[p.length - 1];
-      if (key === null) {
-        key = nextKey(scope);
+      scope[key] = updated;
+      if (scopeTopic) {
+        this._pub(scopeTopic.get(key, false), updated);
+        scopeTopic.pub(updated);
       }
-      const base = p.slice(0, -1);
-      if (scope[key] !== value) {
-        // scope[key] may be undefined
-        if (value === null) {
-          // If the value is removed
-          if (scope instanceof Array) {
-            // We test for an Array
-            const n = scope.length;
-            const last = scope[n - 1];
-            scope.splice(key, 1);
-            // NOTE: This is not great as this will send as many events as there are
-            // next items, this is because all the indices have changed, and we need
-            // to update the topic tree.
-            for (let i = key; i < n - 1; i++) {
-              pub(
-                [...base, i],
-                new StateEvent("Update", scope[i], copy(scope[i + 1]), i),
-                1 // We limit propagation to the current topic
-              );
-            }
-            pub(
-              p,
-              new StateEvent("Delete", null, last, scope, n - 1),
-              1 // We limit propagation to the current topic
-            );
-          } else {
-            // Or a dictionary
-            const previous = copy(scope[key]);
-            delete scope[key];
-            pub(
-              p,
-              new StateEvent("Delete", null, previous, scope, key),
-              1 // We limit propagation to the current topic
-            );
+    }
+  }
+
+  // -- doc #internal
+  // Relays a change to a given topic
+  _pub(topic, value) {
+    if (!topic) {
+      return;
+    }
+    switch (type(value)) {
+      case "list":
+      case "map":
+        // Any child topic should be updated with the delta.
+        for (let [k, t] of topic.children.items()) {
+          const v = value[k];
+          // We force a pub on objects, as the key may have changed
+          if (v !== t.value || typeof (v === "object")) {
+            this._pub(t, v);
           }
-        } else {
-          const previous = copy(scope[key]);
-          // The value is not removed, easy case
-          if (scope instanceof Array) {
-            while (scope.length < key) {
-              scope.push(undefined);
-            }
-          }
-          scope[key] =
-            clear || scope[key] == null || typeof scope[key] !== "object"
-              ? value
-              : Object.assign(scope[key], value);
-          pub(
-            p,
-            new StateEvent(
-              previous === undefined ? "Create" : "Update",
-              scope[key],
-              previous,
-              scope,
-              key
-            ),
-            1 // We limit propagation to the current topic
-          );
         }
-      }
+        topic.pub(value);
+        break;
+      default:
+        // This is a single value so that means any children
+        // topic is then marked as undefined/removed.
+        topic.walk((_) => _.pub(undefined));
+        topic.pub(value);
+    }
+  }
+
+  // -- doc #internal
+  // Returns value applied with the given changes.
+  _apply(value, changes) {
+    if (changes === null) {
+      return null;
+    } else if (
+      value === undefined ||
+      value === null ||
+      type(changes) !== "map"
+    ) {
+      return changes;
+    }
+    switch (type(value)) {
+      case "list":
+        for (let k in changes) {
+          if (typeof k === "number") {
+            while (value.length < k) {
+              value.push(k);
+            }
+          }
+          value[k] = changes[k];
+        }
+        return value;
+      case "map":
+        for (let k in changes) {
+          value[k] = changes[k];
+        }
+        return value;
+      default:
+        return changes;
     }
   }
 }

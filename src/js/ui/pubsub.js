@@ -18,12 +18,14 @@ export class Topic {
         : [];
   }
 
-  get(name) {
+  get(name, create = true) {
     return name instanceof Array
       ? name.reduce((r, v) => r.get(v), this)
       : this.children.has(name)
       ? this.children.get(name)
-      : this.children.set(name, new Topic(name, this)).get(name);
+      : create
+      ? this.children.set(name, new Topic(name, this)).get(name)
+      : null;
   }
 
   move(ka, kb) {
@@ -35,7 +37,7 @@ export class Topic {
   }
 
   pub(data, limit = -1) {
-    console.log(`Topic.pub at '${this.path.join(".")}'`, data);
+    // console.log(`Topic.pub at '${this.path.join(".")}'`, data);
     this.value = data;
     let topic = this;
     let offset = 0;
@@ -52,7 +54,7 @@ export class Topic {
   }
 
   sub(handler, withLast = true) {
-    console.log(`Topic.sub at '${this.path.join(".")}'`, handler);
+    // console.log(`Topic.sub at '${this.path.join(".")}'`, handler);
     if (!this.handlers) {
       this.handlers = [];
     }
@@ -94,11 +96,14 @@ class PubSub {
     this.topics = new Topic();
   }
 
-  get(topic) {
+  get(topic, create = true) {
     return topic
       ? topic instanceof Topic
         ? topic
-        : this.topics.get(topic instanceof Array ? topic : topic.split("."))
+        : this.topics.get(
+            topic instanceof Array ? topic : topic.split("."),
+            create
+          )
       : this.topics;
   }
 

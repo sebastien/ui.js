@@ -473,7 +473,6 @@ class ConditionalEffect extends Effect {
   }
 
   unify(value, previous = this.previous, abspath = this.abspath) {
-    console.log("XXX ConditionalEffect.unify", { value, previous });
     return this.effector.predicate(value) ? this.show(value) : this.hide();
   }
 

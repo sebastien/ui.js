@@ -203,56 +203,46 @@ class SelectorState {
   // -- doc
   // `onInputChange` is triggered when the value at the path listened to by the input
   // has changed. This means that the value in the event is already
-  onInputChange(input, index, event, topic /*, limit*/) {
+  onInputChange(input, index, value) {
     let hasChanged = false;
     // NOTE: This used to be like that, but it doesn't make sense as the value here
     // should be the value at the path the input is listening to.
     // --
     // const value = event.key === undefined ? event.value : event.scope;
-    const value = input.format ? input.format(topic.value) : topic.value;
-    switch (event.name) {
-      case "Update":
-        switch (this.selector.type) {
-          case Selector.SINGLE:
-            if (event.key === undefined) {
-              if ((hasChanged = value !== this.value)) {
-                this.value = value;
-              }
-            } else {
-              hasChanged = true;
-              this.value = value;
-            }
-            break;
-          case Selector.LIST:
-            {
-              const i = this.inputs[index];
-              if ((hasChanged = this.value[i] !== value)) {
-                this.value[i] = value;
-              }
-            }
-            break;
-          case Selector.MAP:
-            {
-              const k = this.inputs[index].key;
-              // FIXME: Difference between SCOPE and VALUE
-              if ((hasChanged = this.value[k] !== value)) {
-                this.value[k] = value;
-              }
-            }
-            break;
-          default:
-            onError(
-              `SelectorState.onInputChange: Unsupported selector type '${this.selector.type}'`,
-              { selector: this.selector }
-            );
-            break;
+    switch (this.selector.type) {
+      case Selector.SINGLE:
+        if (event.key === undefined) {
+          if ((hasChanged = value !== this.value)) {
+            this.value = value;
+          }
+        } else {
+          hasChanged = true;
+          this.value = value;
+        }
+        break;
+      case Selector.LIST:
+        {
+          const i = this.inputs[index];
+          if ((hasChanged = this.value[i] !== value)) {
+            this.value[i] = value;
+          }
+        }
+        break;
+      case Selector.MAP:
+        {
+          const k = this.inputs[index].key;
+          // FIXME: Difference between SCOPE and VALUE
+          if ((hasChanged = this.value[k] !== value)) {
+            this.value[k] = value;
+          }
         }
         break;
       default:
         onError(
-          `SelectorState.onInputChange: Unsupported event '${event.name}'`,
-          { event }
+          `SelectorState.onInputChange: Unsupported selector type '${this.selector.type}'`,
+          { selector: this.selector }
         );
+        break;
     }
     // At the end, we want to notify of a change if any of the input extracted value
     // has changed.
