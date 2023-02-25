@@ -43,6 +43,9 @@
           patch(path, null);
         });
 
+        sub("TodoItem.Cancel", ({ path, event, data }) => {
+          patch(path, { edited: false });
+        });
         sub("TodoItem.Edit", ({ path, event, data }) => {
           patch(path, { edited: true });
         });
@@ -86,18 +89,15 @@
         <button class="square" when=".edited|not" on:click="!TodoItem.Edit">
           Edit
         </button>
-        <!--
         <button class="square" when=".edited" on:click="!TodoItem.Save">
           Save
         </button>
         <button class="label" when=".edited" on:click="!TodoItem.Cancel">
           Cancel
         </button>
-
         <button class="square" when=".edited" on:click="!TodoItem.Remove">
           Remove
         </button>
-        -->
       </div>
     </template>
 

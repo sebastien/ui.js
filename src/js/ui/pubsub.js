@@ -42,7 +42,7 @@ export class Topic {
   }
 
   pub(data, limit = 1) {
-    // console.log(`Topic.pub at '${this.path.join(".")}'`, data);
+    console.log(`Topic.pub at '${this.path.join(".")}'`, data);
     this.value = data;
     let topic = this;
     let offset = 0;

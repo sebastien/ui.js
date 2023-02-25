@@ -202,12 +202,13 @@ class SelectorState {
   // -- doc
   // `onInputChange` is triggered when the value at the path listened to by the input
   // has changed. This means that the value in the event is already
-  onInputChange(input, index, value) {
+  onInputChange(input, index, rawValue) {
     let hasChanged = false;
     // NOTE: This used to be like that, but it doesn't make sense as the value here
     // should be the value at the path the input is listening to.
     // --
     // const value = event.key === undefined ? event.value : event.scope;
+    const value = input.format ? input.format(rawValue) : rawValue;
     switch (this.selector.type) {
       case Selector.SINGLE:
         if (event.key === undefined) {

@@ -93,7 +93,7 @@ export class StateTree {
         for (let [k, t] of topic.children.entries()) {
           const v = value[k];
           // We force a pub on objects, as the key may have changed
-          if (v !== t.value || typeof (v === "object")) {
+          if (v !== t.value || typeof v === "object") {
             this._pub(t, v);
           }
         }
