@@ -37,7 +37,7 @@
 import { TemplateEffector } from "./ui/effectors.js";
 import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
-import { State, patch, get } from "./ui/state.js";
+import { State, patch, get, remove } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
 import { parsePath } from "./ui/paths.js";
 import { onError, makeKey } from "./ui/utils.js";
@@ -89,7 +89,7 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
 const on = (handlers) =>
   Object.entries(handlers).reduce((r, [k, v]) => ((r[k] = sub(k, v)), r), {});
 
-export { on, pub, sub, unsub, patch, get, tokens, stylesheet };
+export { on, pub, sub, unsub, patch, get, remove, tokens, stylesheet };
 export default ui;
 
 // EOF

@@ -56,6 +56,10 @@ export class StateTree {
     return this.ensure(path, undefined, -1);
   }
 
+  remove(path = null) {
+    return this.patch(path, undefined, true);
+  }
+
   put(path = null, value = undefined) {
     return this.patch(path, value);
   }
@@ -146,6 +150,7 @@ export class StateTree {
 export const State = new StateTree();
 
 export const get = (path) => State.get(path);
+export const remove = (path) => State.remove(path);
 export const patch = (path, data) => State.patch(path, data);
 
 // DEBUG
