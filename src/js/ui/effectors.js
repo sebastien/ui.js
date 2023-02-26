@@ -411,7 +411,15 @@ class SlotEffect extends Effect {
       `slot:${isEmpty ? "null" : path.at(-1)}`
     );
     // We need to insert the node before as the template needs a parent
-    node.parentElement.insertBefore(root, node);
+    if (!node.parentElement) {
+      onError("SlotEffect.createItem: node has no parent element", {
+        node,
+        value,
+        path,
+      });
+    } else {
+      node.parentElement.insertBefore(root, node);
+    }
     return this.effector.template.apply(
       root, // node
       value,
@@ -484,7 +492,7 @@ class ConditionalEffect extends Effect {
     if (!this.state) {
       this.state = this.effector.template.apply(
         this.contentAnchor,
-        value,
+        this.global.get(this.path), // We pass the resolved value at the given path
         this.global,
         this.local,
         this.path
