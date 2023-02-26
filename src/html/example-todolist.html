@@ -16,7 +16,8 @@
 
     <div
       data-ui="Todo"
-      data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}"
+      XXX-data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}"
+      data-state="{items:[{label:'Buy milk',checked:true}]}"
     ></div>
 
     <template id="Todo">
@@ -37,17 +38,22 @@
       </div>
 
       <script type="module">
-        import { sub, patch, get } from "../js/ui.js";
+        import { sub, patch, remove, get } from "../js/ui.js";
 
         sub("TodoItem.Remove", ({ path, event, data }) => {
-          patch(path, null);
+          remove(path);
         });
 
         sub("TodoItem.Cancel", ({ path, event, data }) => {
           patch(path, { edited: false });
         });
+
         sub("TodoItem.Edit", ({ path, event, data }) => {
-          patch(path, { edited: true });
+          patch(path, { edited: true, editedLabel:get([...path, "label"]) });
+        });
+
+        sub("TodoItem.Save", ({ path, event, data }) => {
+          patch(path, { edited: false, label:get([...path, "editedLabel"]) });
         });
 
         sub("Todo.Add", ({ scope, event, data }) => {
@@ -79,14 +85,15 @@
           on:change=".checked=.target.checked"
         />
         <input
+          when=".edited"
           type="text"
           out:disabled=".edited|not|attr"
           out:checked=".checked|bool"
-          out:value=".label"
-          when=".edited"
+          out:value=".editedLabel"
+          on:input=".editedLabel=.target.value"
           placeholder="Untitled note"
         />
-        <span when=".edited|not"><slot content=".label" ></span>
+        <span class="input" when=".edited|not"><slot out:content=".label" ></span>
         <button class="square" when=".edited|not" on:click="!TodoItem.Edit">
           Edit
         </button>

@@ -6,14 +6,17 @@
 
 ## Fixes
 
--   `[ ]` Helloworld, doesn't work, `data-path` is empty, `data-id` is
-    empty
-
--   `[ ]` `<template><slot /></template>` doesn't work.
-
--   `[ ]` `<slot>item</slot>` renders the value instead of item
+-   `[ ]` `<slot>` are copied into the output, they should not be there
+    in the rendered template.
 
 ## Roadmap
+
+-   `[ ]` state: Should pass the state store to components. All the
+    patch,sub,get, in handlers should be through the environment
+    (context,global,local,path).
+
+-   `[ ]` Event: have the ability to focus a given node, for instance
+    when you click on edit.
 
 -   `[ ]` directive: allow for selectors like `.a,.b` and `k=.a,b=.c`
 
