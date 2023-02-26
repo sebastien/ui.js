@@ -280,7 +280,10 @@ variations).
 		color:var(--color-text-alt);
 	}
 
-	input,textarea {
+	input[type=text],.input,textarea,.textarea {
+		display: "inline-block";
+		width:"min-content";
+		min-width:15ch;
 		line-height: var(--control-lh);
 		border: 1px solid var(--control-bd);
 		background: var(--control-bg);
@@ -296,17 +299,20 @@ variations).
 		top: 0px;
 		left: 0px;
 	}
-	input:hover,textarea:hover {
+	input:hover, textarea:hover,
+	.input:hover, .textarea:hover {
 		box-shadow: -2px 2px 0px var(--color-accent);
 	}
 	input:focus,textarea:focus,
-	input:active,textarea:active {
+	input:active,textarea:active,
+	.input:focus,.textarea:focus,
+	.input:active,.textarea:active {
 		box-shadow: -4px 4px 0px var(--color-accent);
 		background-color: var(--control-bg-focused);
 		top: -2px;
 		left: 2px;
-		}
-	button {
+	}
+	button,.button {
 		display: inline-block;
 		min-width: 1.75em;
 		position: relative;
@@ -326,34 +332,40 @@ variations).
 		transition-property: box-shadow, top, left;
 		transition-duration: 0.15s;
 	}
-	button:hover,
-	button:focus {
+	button:hover, button:focus,
+	.button:hover, .button:focus {
 		top: calc(-1 * var(--button-offset));
 		left: var(--button-offset);
 		box-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset)) 0px var(--color-accent);
 	}
-	button:hover {
+	button:hover,
+	.button:hover {
 		background-color: var(--color-accent-bg);
 	}
-	button:focus {
+	button:focus,
+	.button:focus {
 		outline: 3px solid var(--color-accent-alt);
 	}
-	button:active {
+	button:active,
+	.button:active {
 		box-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset)) 0px var(--color-accent);
 		outline: 2px solid var(--color-accent-alt);
 		top: 0px;
 		left: 0px;
 	}
-	button.icon {
+	button.icon,
+	.button.icon {
 		font-family: var(--font-icon);
 		font-size: var(--font-size-3);
 		font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
 		padding: 4px;
 	}
-	button.square {
+	button.square,
+	.button.square {
 		border-radius: 0em;
 	}
-	button.round {
+	button.round,
+	.button.round {
 		min-width: unset;
 		width: 1.5em;
 		height: 1.5em;
@@ -364,11 +376,37 @@ variations).
 		height: 1.5em;
 		line-height: 1.25em;
 	}
-	button.small {
+	button.label,
+	.button.label {
+		border: 0px solid transparent;
+		text-shadow: -1px 1px 0px var(--color-accent);
+		box-shadow: 0px 0px #FFFFFF00;
+		transition-property: text-shadow, top, left;
+	}
+	button.label:hover, button.label:focus,
+	.button.label:hover, .button.label:focus {
+		box-shadow: 0px 0px #FFFFFF00;
+		background-color: transparent;
+		text-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset)) 2px var(--color-accent);
+		outline: unset;
+	}
+	button.label:focus,
+	.button.label:focus {
+		text-decoration: underline dotted;
+	}
+	button.label:active,
+	.button.label:active {
+		background-color: transparent;
+		text-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset)) 2px var(--color-accent);
+		outline: unset;
+	}
+	button.small,
+	.button.small {
 		font-size: 10px;
 		padding: 2px 4px;
 	}
-	button.x-small {
+	button.x-small,
+	.button.x-small {
 		font-size: 10px;
 		padding: 1px;
 		border-radius: 0px;
