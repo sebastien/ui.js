@@ -5,32 +5,36 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&family=Karla:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&amp;family=Karla:wght@400;500;600;700;800&amp;display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
     <div data-ui="Introspector"></div>
+
     <template id="Introspector">
-      <div>
-        <slot out:content=".">
-          <code>key:<slot out:content="@" /></code>
-        </slot>
-      </div>
-      <!--
       <code when=".|type=null">null</code>
       <code when=".|type=undefined">undefined</code>
-      <code when=".|type=list">[]</code>
-      <code when=".|type=object"
+      <code when=".|type=array"
+        >[
+        <slot out:content=".">
+          <span><slot out:content="#" /></span>:<span
+            ><slot out:content=".@Introspector"
+          /></span>
+        </slot>
+
+        ]</code
+      >
+      <code when=".|type=map"
         >{
         <slot out:content=".">
-          <span><slot out:content="@" /></span>:<span
-            ><slot out:content="."
+          <span><slot out:content="#" /></span>:<span
+            ><slot out:content=".@Introspector"
           /></span>
         </slot>
         }
       </code>
-      -->
+      <code when=".|type=object">[OBJECT]</code>
     </template>
 
     <script type="module">

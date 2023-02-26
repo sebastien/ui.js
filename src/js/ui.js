@@ -72,7 +72,7 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
       // We instanciate the template onto the node
       const key = makeKey();
       const localPath = ["@local", key];
-      const dataPath = path ? parsePath(path) : ["@data", key];
+      const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
       data && patch(dataPath, data);
       const anchor = document.createComment(node.outerHTML);
       node.parentElement.replaceChild(anchor, node);
