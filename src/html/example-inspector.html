@@ -1,40 +1,59 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>JavaScript object instrospector example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&amp;family=Karla:wght@400;500;600;700;800&amp;display=swap"
       rel="stylesheet"
+
     />
+    <link href="../css/uijs.css" rel="stylesheet" />
+    <link href="../css/example-introspector.css" rel="stylesheet" />
   </head>
   <body>
     <div data-ui="Introspector"></div>
 
     <template id="Introspector">
-      <code when=".|type=null">null</code>
-      <code when=".|type=undefined">undefined</code>
-      <code when=".|type=array"
-        >[
+      <code class="symbol null" when=".|type=null">null</code>
+      <code class="symbol undefined" when=".|type=undefined">undefined</code>
+      <code class="literal string" when=".|type=string"
+        ><slot out:content="."
+      /></code>
+      <code class="literal number" when=".|type=number"
+        ><slot out:content="."
+      /></code>
+      <code class="value object" when=".|type=object">[OBJECT]</code>
+      <details class="composite array" when=".|type=array">
+        <summary>
+          <span class="type">Array</span>
+          <span class="count"><slot out:content=".|len"></span>
+        </summary>
+        <span class="content">
         <slot out:content=".">
-          <span><slot out:content="#" /></span>:<span
-            ><slot out:content=".@Introspector"
-          /></span>
+          <span class="item" out:title="#">
+            <slot out:content=".@Introspector" />
+          </span>
         </slot>
-
-        ]</code
-      >
-      <code when=".|type=map"
-        >{
+          </span>
+      </details>
+      <details class="composite map" when=".|type=map">
+        <summary>
+          <span class="type">Object</span>
+          <span class="count"><slot out:content=".|len"></span>
+        </summary>
+        <span class="content">
         <slot out:content=".">
-          <span><slot out:content="#" /></span>:<span
-            ><slot out:content=".@Introspector"
-          /></span>
+          <span class="item" out:title="#">
+            <span class="key"><slot out:content="#" /></span>
+            <span class="value"><slot out:content=".@Introspector" /></span>
+          </span>
         </slot>
-        }
-      </code>
-      <code when=".|type=object">[OBJECT]</code>
+          </span>
+      </details>
     </template>
 
     <script type="module">

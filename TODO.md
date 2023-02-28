@@ -7,7 +7,12 @@
 ## Changes
 
 -   `<slot out:content=".">` vs `<slot out:content=".*">`, basically
-    have the ability to be explicit about what we want to display.
+    have the ability to be explicit about what we want to display. If we
+    don't support that we won't be able to do
+    `<slot out:content=".*"><slot out:content=".|Introspector"/></slot>`
+
+-   `<slot out:match=".|type" ><div out:case="string"/></slot>` for
+    conditional exclusive slots.
 
 ## Fixes
 
@@ -15,6 +20,10 @@
     in the rendered template.
 
 ## Roadmap
+
+-   `[ ]` Implement support the "more..." in the introspector, which
+    implies storing local state, and transforming the input. It's a good
+    simple use case for getting state management working.
 
 -   `[ ]` `SlotEffector` needs to mount the nodes in order
 

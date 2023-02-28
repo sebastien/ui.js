@@ -32,7 +32,9 @@ export const type = (_) => {
       switch (t) {
         case "number":
         case "string":
-          return _;
+        case "boolean":
+        case "function":
+          return t;
         default:
           return _ instanceof Array
             ? "array"
@@ -40,6 +42,19 @@ export const type = (_) => {
             ? "map"
             : "object";
       }
+  }
+};
+
+export const len = (value) => {
+  switch (type(value)) {
+    case "array":
+      return value.length;
+    case "map":
+      return Object.keys(value).length;
+    case "object":
+      return value.length || 0;
+    default:
+      return 0;
   }
 };
 
