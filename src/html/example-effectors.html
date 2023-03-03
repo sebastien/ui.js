@@ -15,6 +15,7 @@
       </p>
     </header>
 
+    <!--
     <section>
       <h3>Template Effectors</h3>
       <p>
@@ -197,6 +198,8 @@
       </dl>
     </section>
 
+    -->
+
     <section>
       <h3>Conditional Effectors</h3>
 
@@ -205,6 +208,7 @@
         condition is true.
       </p>
       <dl>
+        <!--
         <dt>Simple Conditional <code>when=".step==1</code></dt>
         <dd>
           <p>
@@ -223,8 +227,57 @@
             </div>
           </template>
         </dd>
+        -->
+
+        <dt>Match case <code>slot x:match=".step"/do:case</code></dt>
+        <dd>
+          <p>
+            The equivalent of if/elif/else branches, except that here we only
+            work with a single value that we match against predicates. active
+            branch should get instantiated, this can be checked with the
+            inspector.
+          </p>
+          <ul>
+            <li>
+              <div
+                data-ui="ConditionalMatchCase"
+                data-state="{value:true}"
+              ></div>
+            </li>
+            <li>
+              <div
+                data-ui="ConditionalMatchCase"
+                data-state="{value:'Hello'}"
+              ></div>
+            </li>
+            <li>
+              <div
+                data-ui="ConditionalMatchCase"
+                data-state="{value:123}"
+              ></div>
+            </li>
+            <li>
+              <div data-ui="ConditionalMatchCase" data-state="{value:[]}"></div>
+            </li>
+            <li>
+              <div data-ui="ConditionalMatchCase" data-state="{value:{}}"></div>
+            </li>
+          </ul>
+          <template id="ConditionalMatchCase">
+            <slot do:match=".value|type">
+              type=
+              <span do:case="boolean">Boolean</span>
+              <span do:case="string">String</span>
+              <span do:case="number">Number</span>
+              <span do:case="array">Array</span>
+              <span do:case>Unknown</span>
+            </slot>
+          </template>
+        </dd>
       </dl>
     </section>
+
+    <!--
 
     <section>
       <h3>Event Effectors</h3>
@@ -263,12 +316,10 @@
             data-state="{label:'Not Edited',editedLabel:'Edited',edited:false}"
           ></div>
           <template id="ConditionalSlotEffector">
-            <!--
             <div>
               <span>label=Edited ≣</span>
               <span>label=<slot out:content=".editedLabel" /></span>
             </div>
-            -->
             <div>
               <span>label=Edited ≣</span>
               <span when=".edited|not"
@@ -280,6 +331,7 @@
       </dl>
     </section>
 
+    -->
     <script type="module">
       import ui from "../js/ui.js";
       ui(document, { message: "Hello, world!" });

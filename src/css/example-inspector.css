@@ -1,0 +1,67 @@
+@layer loading, reset, base, ui, theme;
+@layer ui {
+  .composite {
+    display: inline-block;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    padding: 2px;
+  }
+  .composite > .content > .item:after {
+    content: ",";
+  }
+
+  .composite:hover {
+    border-color: var(--color-accent);
+  }
+
+  .composite > summary {
+    display: inline-block;
+    cursor: pointer;
+    padding: 4px 6px;
+    user-select: none;
+  }
+
+  .composite > summary:before {
+    content: "▸";
+    display: inline-block;
+    position: relative;
+    transform: rotate(0deg);
+    transition-property: transform;
+    transform-origin: 50% 50%;
+    transition-duration: 0.25s;
+  }
+  .composite[open] > summary:before {
+    transform: rotate(90deg);
+  }
+
+  .composite > summary:hover {
+    background-color: var(--color-accent-bg);
+    border-radius: 4px;
+  }
+  .composite > summary > .count:before {
+    content: "(";
+  }
+  .composite > summary > .count:after {
+    content: ")";
+  }
+
+  .composite > .content > .item:last-child:after {
+    content: "";
+  }
+  .array > .content:before {
+    content: "[";
+  }
+  .array > .content:after {
+    content: "]";
+  }
+  .map > .content:before {
+    content: "{";
+  }
+
+  .map > .content:after {
+    content: "}";
+  }
+  .map > .content > .item > .key:after {
+    content: ":";
+  }
+}

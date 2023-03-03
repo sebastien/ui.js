@@ -9,7 +9,8 @@ import {
 import { nodePath } from "./paths.js";
 import {
   SlotEffector,
-  ConditionalEffector,
+  WhenEffector,
+  MatchEffector,
   EventEffector,
   StyleEffector,
   ValueEffector,
@@ -123,11 +124,16 @@ const isBoundaryNode = (node) => {
   if (node && node.nodeType === Node.ELEMENT_NODE) {
     const tagName = node?.parentNode?.tagName;
     switch (tagName) {
+      // SVG has lowercase node names, HTML has uppercase
       case "TEMPLATE":
       case "template":
       case "SLOT":
       case "slot":
         return true;
+    }
+    // x:case="..." nodes are also boundaries
+    if (node.hasAttribute("x:case")) {
+      return true;
     }
     // When effectors are also boundary nodes, so we stop at any
     // of their children.
@@ -258,7 +264,7 @@ const view = (root, templateName = undefined) => {
   const attrs = {};
   for (const [match, attr] of iterAttributes(
     root,
-    /^(?<type>in|out|on|styled):(?<name>.+)$/
+    /^(?<type>in|out|on|do|styled):(?<name>.+)$/
   )) {
     const type = match.groups.type;
     const name = match.groups.name;
@@ -291,6 +297,65 @@ const view = (root, templateName = undefined) => {
     // NOTE: We should probably put that as part of the view and not
     // necessarily create it right away.
     stylesheet(styledRules);
+  }
+
+  for (const { name, attr } of attrs["do"] || []) {
+    if (name === "match") {
+      const selector = parseSelector(attr.value);
+      if (!selector) {
+        onError(
+          `templates: Unable to parse selector '${attr.value}' in 'do:match: attribute`,
+          { attr }
+        );
+      } else {
+        const node = attr.ownerElement;
+        const branches = [];
+        const childNodes = [...node.childNodes];
+        node.removeAttribute("do:match");
+        for (let i = 0; i < childNodes.length; i++) {
+          const n = childNodes[i];
+          if (n.nodeType == Node.ELEMENT_NODE && n.hasAttribute("do:case")) {
+            // If the child  has a do:case, then it's a sub-template and
+            // we need to take it out.
+            const t = n.getAttribute("do:case");
+            const v = parseValue(t);
+            n.removeAttribute("do:case");
+            const subtemplate = template(
+              n,
+              `${makeKey()}-${effectors.length}`,
+              templateName, // This is the parent name
+              false // No need to clone there
+            );
+            const anchor = document.createComment(`⟢ ${t}`);
+            n.parentElement.replaceChild(anchor, n);
+            branches.push({
+              template: subtemplate,
+              value: v,
+              nodeIndex: i,
+            });
+          }
+        }
+        if (branches.length === 0) {
+          onError(
+            `templates: 'do:match=${attr.value}' node has no 'do:case' branch`,
+            { node: attr.ownerElement, branches }
+          );
+        } else {
+          const anchor = document.createComment(`⟣ ${selector.toString()}`);
+          node.parentElement?.replaceChild(anchor, node);
+          effectors.push(
+            new MatchEffector(nodePath(anchor, root), selector, branches)
+          );
+        }
+      }
+    } else {
+      onError(
+        `templates: Unsupported 'do:${name}' attribute, 'do:match' is supported`,
+        {
+          attr,
+        }
+      );
+    }
   }
 
   // --
@@ -333,7 +398,7 @@ const view = (root, templateName = undefined) => {
         if (node.parentElement) {
           node.parentElement.replaceChild(
             // This is a placeholder, the contents  is not important.
-            document.createComment(node.outerHTML),
+            document.createComment("❏l slot"),
             node
           );
         }
@@ -430,7 +495,7 @@ const view = (root, templateName = undefined) => {
           false // No need to clone there
         );
         effectors.push(
-          new ConditionalEffector(
+          new WhenEffector(
             nodePath(node, root),
             when.selector,
             subtemplate,

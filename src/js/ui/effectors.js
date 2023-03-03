@@ -466,7 +466,7 @@ export class SlotEffector extends Effector {
 // --
 // ### Conditional Effector
 
-class ConditionalEffect extends Effect {
+class WhenEffect extends Effect {
   constructor(effector, node, value, global, local, path) {
     super(effector, node, value, global, local, path);
     // The anchor will the element where the contents will be re-inserted
@@ -505,7 +505,7 @@ class ConditionalEffect extends Effect {
       this.node.style.display = this.displayValue;
     } else {
       // These may be other kind of nodes, probably not visible (ie, comments)
-      console.warn("ConditionalEffect.show: Node has no style", {
+      console.warn("WhenEffect.show: Node has no style", {
         node: this.node,
         value,
       });
@@ -530,16 +530,68 @@ class ConditionalEffect extends Effect {
   }
 }
 
-export class ConditionalEffector extends SlotEffector {
+export class WhenEffector extends SlotEffector {
   constructor(nodePath, selector, templateName, predicate) {
     super(nodePath, selector, templateName);
     this.predicate = predicate;
   }
 
   apply(node, value, global, local, path = undefined) {
-    return new ConditionalEffect(this, node, value, global, local, path).init(
-      value
-    );
+    return new WhenEffect(this, node, value, global, local, path).init(value);
+  }
+}
+
+class MatchEffect extends Effect {
+  constructor(effector, node, value, global, local, path) {
+    super(effector, node, value, global, local, path);
+    this.states = new Array(this.effector.length);
+    this.currentBranchIndex = undefined;
+  }
+
+  unify(value, previous = this.previous, abspath = this.abspath) {
+    this.previous = value;
+    const branches = this.effector.branches;
+    let index = undefined;
+    let branch = undefined;
+    for (let i in branches) {
+      branch = branches[i];
+      if (value === branch.value) {
+        index = i;
+        break;
+      }
+    }
+    const scope = this.global;
+    if (this.states[index] === undefined) {
+      // TODO: Scope should be the value at the given path
+      const node = this.node.childNodes[branch.nodeIndex];
+      this.states[index] = branch.template.apply(
+        node,
+        scope,
+        this.global,
+        this.local,
+        this.path
+      );
+    }
+    if (index !== this.currentBranchIndex) {
+      this.states[index].init(scope).mount();
+      const previousState = this.states[this.currentBranchIndex];
+      if (previousState) {
+        previousState.unmount();
+      }
+      this.currentBranchIndex = index;
+    }
+    return this;
+  }
+}
+
+export class MatchEffector extends Effector {
+  constructor(nodePath, selector, branches) {
+    super(nodePath, selector);
+    this.branches = branches;
+  }
+
+  apply(node, value, global, local, path = undefined) {
+    return new MatchEffect(this, node, value, global, local, path).init(value);
   }
 }
 

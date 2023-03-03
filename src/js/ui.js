@@ -74,7 +74,7 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
       const localPath = ["@local", key];
       const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
       data && patch(dataPath, data);
-      const anchor = document.createComment(node.outerHTML);
+      const anchor = document.createComment(`⚓ ${key}`);
       node.parentElement.replaceChild(anchor, node);
       // TODO: We should pass the component number as well?
       const local = get(localPath);

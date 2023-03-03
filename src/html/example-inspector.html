@@ -9,51 +9,52 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&amp;family=Karla:wght@400;500;600;700;800&amp;display=swap"
       rel="stylesheet"
-
     />
     <link href="../css/uijs.css" rel="stylesheet" />
-    <link href="../css/example-introspector.css" rel="stylesheet" />
+    <link href="../css/example-inspector.css" rel="stylesheet" />
   </head>
   <body>
     <div data-ui="Introspector"></div>
 
     <template id="Introspector">
-      <code class="symbol null" when=".|type=null">null</code>
-      <code class="symbol undefined" when=".|type=undefined">undefined</code>
-      <code class="literal string" when=".|type=string"
-        ><slot out:content="."
-      /></code>
-      <code class="literal number" when=".|type=number"
-        ><slot out:content="."
-      /></code>
-      <code class="value object" when=".|type=object">[OBJECT]</code>
-      <details class="composite array" when=".|type=array">
-        <summary>
-          <span class="type">Array</span>
-          <span class="count"><slot out:content=".|len"></span>
-        </summary>
-        <span class="content">
-        <slot out:content=".">
-          <span class="item" out:title="#">
-            <slot out:content=".@Introspector" />
+      <slot do:match=".|type">
+        <code do:case="null" class="symbol null">null</code>
+        <code do:case="undefined" class="symbol undefined">undefined</code>
+        <code do:case="string" class="literal string"
+          ><slot out:content="."
+        /></code>
+        <code do:case="number" class="literal number"
+          ><slot out:content="."
+        /></code>
+        <code do:case="object" class="value object">[OBJECT]</code>
+        <details do:case="array" class="composite array">
+          <summary>
+            <span class="type">Array</span>
+            <span class="count"><slot out:content=".|len" /></span>
+          </summary>
+          <span class="content">
+            <slot>
+              <span class="item" out:title="#">
+                <slot out:content=".@Introspector" />
+              </span>
+            </slot>
           </span>
-        </slot>
+        </details>
+        <details do:case="map" class="composite map">
+          <summary>
+            <span class="type">Object</span>
+            <span class="count"><slot out:content=".|len" /></span>
+          </summary>
+          <span class="content">
+            <slot out:content=".">
+              <span class="item" out:title="#">
+                <span class="key"><slot out:content="#" /></span>
+                <span class="value"><slot out:content=".@Introspector" /></span>
+              </span>
+            </slot>
           </span>
-      </details>
-      <details class="composite map" when=".|type=map">
-        <summary>
-          <span class="type">Object</span>
-          <span class="count"><slot out:content=".|len"></span>
-        </summary>
-        <span class="content">
-        <slot out:content=".">
-          <span class="item" out:title="#">
-            <span class="key"><slot out:content="#" /></span>
-            <span class="value"><slot out:content=".@Introspector" /></span>
-          </span>
-        </slot>
-          </span>
-      </details>
+        </details>
+      </slot>
     </template>
 
     <script type="module">

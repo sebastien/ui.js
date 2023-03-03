@@ -11,7 +11,7 @@
     don't support that we won't be able to do
     `<slot out:content=".*"><slot out:content=".|Introspector"/></slot>`
 
--   `<slot out:match=".|type" ><div out:case="string"/></slot>` for
+-   `[X]` `<slot do:match=".|type" ><div do:case="string"/></slot>` for
     conditional exclusive slots.
 
 ## Fixes
@@ -55,6 +55,9 @@
     performance of updating data structures.
 
 -   `[ ]` XML/XSLT Support
+
+-   `[ ]` SSR: ensure we can easily pickup rendered HTML without
+    replacing content.
 
 Done::
 
