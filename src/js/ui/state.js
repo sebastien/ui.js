@@ -7,14 +7,14 @@ import { type } from "./utils.js";
 
 export class StateTree {
   constructor() {
-    this.state = {};
+    this.global = {};
     this.bus = Bus;
   }
 
   // -- doc
   // Retrieves the value at the given `path`
   get(path) {
-    let res = this.state;
+    let res = this.global;
     for (let k of path instanceof Array ? path : path.split(".")) {
       if (!res) {
         return undefined;
@@ -28,7 +28,7 @@ export class StateTree {
   // Ensures there's a value at the given `path`, assigning the `defaultValue`
   // if not existing.
   ensure(path, defaultValue = undefined, limit = 0, offset = 0) {
-    let scope = this.state;
+    let scope = this.global;
     const p = path instanceof Array ? path : path.split(".");
     let i = 0 + offset;
     const j = p.length - 1 + limit;
@@ -70,10 +70,10 @@ export class StateTree {
     const key = p.at(-1);
     const updated = clear
       ? value
-      : this._apply(p.length === 0 ? this.state : scope[key], value);
+      : this._apply(p.length === 0 ? this.global : scope[key], value);
     const scopeTopic = this.bus.get(p.slice(0, -1), false);
     if (p.length === 0) {
-      this.state = updated;
+      this.global = updated;
       this._pub(scopeTopic, updated);
     } else {
       scope[key] = updated;

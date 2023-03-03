@@ -11,54 +11,55 @@ import { Templates } from "./templates.js";
 //
 //
 
+// -- doc
+// The `EffectScope` aggregates a selection in the global state store, of
+// both a current value and a local path to store component-level state.
+export class EffectScope {
+  constructor(state, path, localPath, value = undefined, local = undefined) {
+    this.state = state;
+    this.path = path;
+    this.localPath = localPath;
+    this.value = value === undefined ? state.get(path) : value;
+    this.local = local === undefined ? state.get(localPath) : local;
+  }
+}
+
 class Effect {
-  constructor(effector, node, value, global, local, path) {
+  constructor(effector, node, scope) {
     this.effector = effector;
     this.node = node;
-    this.global = global;
-    this.local = local;
-    this.path = path;
-    this.previous = undefined;
+    this.scope = scope;
+    this.value = undefined;
 
     // We apply the selector in the current scope
     if (!effector.selector) {
       onError("Effect(): effector should have a selector", { effector });
     }
-    this.selected = effector.selector.apply(
-      value,
-      global,
-      local,
-      path,
-      this.onChange.bind(this)
-    );
-    this.abspath = this.selected.abspath(path);
+    this.selected = effector.selector.apply(scope, this.onChange.bind(this));
+    this.abspath = this.selected.abspath;
   }
 
-  bind(bus = Bus, path = this.path) {
-    this.selected.bind(bus, path);
+  bind() {
+    this.selected.bind(this.scope);
     return this;
   }
 
-  unbind(bus = Bus, path = this.path) {
-    this.selected.unbind(bus, path);
+  unbind() {
+    this.selected.unbind(this.scope);
     return this;
   }
 
-  init(value) {
+  init(value = this.scope.value) {
     this.apply(value);
-    this.bind(Bus, this.path);
+    this.bind();
     return this;
   }
 
-  apply(value, abspath = this.abspath) {
-    return this.unify(
-      this.selected.extract(value, this.global, this.local, this.path),
-      this.previous,
-      abspath
-    );
+  apply(value) {
+    return this.unify(this.selected.extract(value), this.value);
   }
 
-  unify(current, previous = this.previous, abspath = this.abspath) {
+  unify(current, previous = this.value) {
     onError("Effect.unify not implemented", {
       this: this,
       parent: Object.getPrototypeOf(this),
@@ -69,12 +70,12 @@ class Effect {
   unmount() {}
 
   dispose() {
-    this.selected.unbind(Bus, this.path);
+    this.unbind();
   }
 
   onChange(value, event) {
     // The value is already extracted when `onChange` is called.
-    this.unify(value, this.previous, this.abspath);
+    this.unify(value, this.value);
   }
 }
 
@@ -91,18 +92,16 @@ export class Effector {
         selector,
         nodePath,
       });
-      debugger;
     }
   }
 
   // --
   // An effector is applied when the effect need to be instanciated
-  apply(node, value, global, local, path = undefined) {
+  apply(node, value, scope) {
     onError("Effector.apply: no implementation defined", {
       node,
       value,
-      global,
-      local,
+      scope,
     });
   }
 }
@@ -117,7 +116,7 @@ class TextEffect extends Effect {
     this.textNode = document.createTextNode("");
   }
 
-  unify(value, previous = this.previous, abspath = this.abspath) {
+  unify(value, previous = this.value) {
     this.textNode.data =
       value === null || value === undefined
         ? ""
@@ -136,8 +135,8 @@ class TextEffect extends Effect {
 }
 
 class TextEffector extends Effector {
-  apply(node, value, global, local, path = undefined) {
-    return new TextEffect(this, node, value, global, local, path).init(value);
+  apply(node, scope) {
+    return new TextEffect(this, node, scope).init();
   }
 }
 
@@ -145,7 +144,7 @@ class TextEffector extends Effector {
 // ## Attribute Effector
 
 class AttributeEffect extends Effect {
-  unify(value, previous = this.previous, abspath = this.abspath) {
+  unify(value, previous = this.value) {
     this.node.setAttribute(this.effector.name, value);
     return this;
   }
@@ -157,10 +156,8 @@ export class AttributeEffector extends Effector {
     this.name = name;
   }
 
-  apply(node, value, global, local, path = undefined) {
-    return new AttributeEffect(this, node, value, global, local, path).init(
-      value
-    );
+  apply(node, scope) {
+    return new AttributeEffect(this, node, scope).init();
   }
 }
 
@@ -169,15 +166,15 @@ export class AttributeEffector extends Effector {
 //
 
 class ValueEffect extends Effect {
-  unify(value, previous = this.previous, abspath = this.abspath) {
+  unify(value, previous = this.value) {
     this.node[this.effector.name] = value;
     return this;
   }
 }
 
 export class ValueEffector extends AttributeEffector {
-  apply(node, value, global, local, path = undefined) {
-    return new ValueEffect(this, node, value, global, local, path).init(value);
+  apply(node, scope) {
+    return new ValueEffect(this, node, scope).init();
   }
 }
 
@@ -185,14 +182,14 @@ export class ValueEffector extends AttributeEffector {
 // ## Style Effector
 //
 class StyleEffect extends Effect {
-  unify(value, previous = this.previous, abspath = this.abspath) {
+  unify(value, previous = this.value) {
     Object.assign(this.node.style, value);
     return this;
   }
 }
 export class StyleEffector extends AttributeEffector {
-  apply(node, value, global, local, path = undefined) {
-    return new StyleEffect(this, node, value, local, global, path).init(value);
+  apply(node, scope) {
+    return new StyleEffect(this, node, scope).init();
   }
 }
 
@@ -274,8 +271,8 @@ export class EventEffector extends Effector {
     this.event = event;
   }
 
-  apply(node, value, global, local, path = undefined) {
-    return new EventEffect(this, node, value, global, local, path);
+  apply(node, scope) {
+    return new EventEffect(this, node, scope);
   }
 }
 
@@ -283,18 +280,17 @@ export class EventEffector extends Effector {
 // ## Slot Effector
 //
 class SlotEffect extends Effect {
-  constructor(effector, node, value, global, local, path) {
-    super(effector, node, value, global, local, path);
-    this.previous = undefined;
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
     this.items = undefined;
   }
 
   // --
   // ### Lifecycle
 
-  unify(current, previous = this.previous, abspath = this.abspath) {
+  unify(current, previous = this.value) {
     // TODO: Abspath should really be just one path, like the root.
-    const { node, global, local } = this;
+    const { node, scope } = this;
     const isCurrentEmpty = isEmpty(current);
     const isPreviousEmpty = isEmpty(previous);
     const isCurrentAtom = isAtom(current);
@@ -325,10 +321,14 @@ class SlotEffect extends Effect {
             null,
             this.createItem(
               node, // node
-              current, // value
-              global,
-              local,
-              abspath ? abspath : [], // path
+              new EffectScope(
+                scope.state,
+                // FIXME: Not sure about abspath
+                this.abspath ? this.abspath : [],
+                scope.localPath,
+                current, // value
+                scope.local
+              ),
               true // isEmpty
             )
           );
@@ -344,10 +344,13 @@ class SlotEffect extends Effect {
             i,
             this.createItem(
               node, // node
-              current[i], // value
-              global,
-              local,
-              abspath ? [...abspath, i] : [i] // path
+              new EffectScope(
+                scope.state,
+                this.abspath ? [...this.abspath, i] : [i],
+                scope.localPath,
+                current[i], // value
+                scope.local
+              )
             )
           );
         } else {
@@ -377,10 +380,13 @@ class SlotEffect extends Effect {
             k,
             this.createItem(
               node, // node
-              current[k], // value
-              global,
-              local,
-              abspath ? [...abspath, k] : [k] // path
+              new EffectScope(
+                scope.state,
+                this.abspath ? [...this.abspath, k] : [k],
+                scope.localPath,
+                current[k], // value
+                scope.local
+              )
             )
           );
         } else {
@@ -400,32 +406,29 @@ class SlotEffect extends Effect {
         }
       }
     }
-    this.previous = current;
+    this.value = current;
     return this;
   }
 
   // -- doc
   // Creates a new item node in which the template can be rendered.
-  createItem(node, value, global, local, path, isEmpty = false) {
+  createItem(node, scope, isEmpty = false) {
     const root = document.createComment(
-      `slot:${isEmpty ? "null" : path.at(-1)}`
+      `slot:${isEmpty ? "null" : scope.path.at(-1)}`
     );
     // We need to insert the node before as the template needs a parent
     if (!node.parentElement) {
       onError("SlotEffect.createItem: node has no parent element", {
         node,
-        value,
-        path,
+        value: scope.value,
+        path: scope.path,
       });
     } else {
       node.parentElement.insertBefore(root, node);
     }
     return this.effector.template.apply(
       root, // node
-      value,
-      global,
-      local,
-      path
+      scope
     );
   }
 }
@@ -458,8 +461,8 @@ export class SlotEffector extends Effector {
     return res;
   }
 
-  apply(node, value, global, local, path = undefined) {
-    return new SlotEffect(this, node, value, global, local, path).init(value);
+  apply(node, scope) {
+    return new SlotEffect(this, node, scope).init();
   }
 }
 
@@ -467,8 +470,8 @@ export class SlotEffector extends Effector {
 // ### Conditional Effector
 
 class WhenEffect extends Effect {
-  constructor(effector, node, value, global, local, path) {
-    super(effector, node, value, global, local, path);
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
     // The anchor will the element where the contents will be re-inserted
     this.anchor = document.createComment(
       `when:${this.effector.selector.toString()}`
@@ -480,23 +483,17 @@ class WhenEffect extends Effect {
     this.state = null;
   }
 
-  unify(value, previous = this.previous, abspath = this.abspath) {
+  unify(value, previous = this.value) {
     if (previous === undefined || value !== previous) {
       this.effector.predicate(value) ? this.show(value) : this.hide();
     }
-    this.previous = value;
+    this.value = value;
     return this;
   }
 
   show(value) {
     if (!this.state) {
-      this.state = this.effector.template.apply(
-        this.contentAnchor,
-        this.global.get(this.path), // We pass the resolved value at the given path
-        this.global,
-        this.local,
-        this.path
-      );
+      this.state = this.effector.template.apply(this.contentAnchor, this.scope);
     } else {
       this.state.unify(value);
       this.state.mount();
@@ -536,20 +533,20 @@ export class WhenEffector extends SlotEffector {
     this.predicate = predicate;
   }
 
-  apply(node, value, global, local, path = undefined) {
-    return new WhenEffect(this, node, value, global, local, path).init(value);
+  apply(node, scope) {
+    return new WhenEffect(this, node, scope).init();
   }
 }
 
 class MatchEffect extends Effect {
-  constructor(effector, node, value, global, local, path) {
-    super(effector, node, value, global, local, path);
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
     this.states = new Array(this.effector.length);
     this.currentBranchIndex = undefined;
   }
 
-  unify(value, previous = this.previous, abspath = this.abspath) {
-    this.previous = value;
+  unify(value, previous = this.value) {
+    this.value = value;
     const branches = this.effector.branches;
     let index = undefined;
     let branch = undefined;
@@ -560,20 +557,13 @@ class MatchEffect extends Effect {
         break;
       }
     }
-    const scope = this.global;
     if (this.states[index] === undefined) {
       // TODO: Scope should be the value at the given path
       const node = this.node.childNodes[branch.nodeIndex];
-      this.states[index] = branch.template.apply(
-        node,
-        scope,
-        this.global,
-        this.local,
-        this.path
-      );
+      this.states[index] = branch.template.apply(node, this.scope);
     }
     if (index !== this.currentBranchIndex) {
-      this.states[index].init(scope).mount();
+      this.states[index].init().mount();
       const previousState = this.states[this.currentBranchIndex];
       if (previousState) {
         previousState.unmount();
@@ -590,8 +580,8 @@ export class MatchEffector extends Effector {
     this.branches = branches;
   }
 
-  apply(node, value, global, local, path = undefined) {
-    return new MatchEffect(this, node, value, global, local, path).init(value);
+  apply(node, scope) {
+    return new MatchEffect(this, node, scope).init();
   }
 }
 
@@ -603,8 +593,8 @@ class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
   static All = new Map();
-  constructor(effector, node, value, global, local, path, views, id) {
-    super(effector, node, value, global, local, path);
+  constructor(effector, node, scope, views, id) {
+    super(effector, node, scope);
     this.views = views;
     this.id = id;
     // NOTE: Not sure this is necessary
@@ -634,7 +624,7 @@ class TemplateEffect extends Effect {
 
   // TODO: This is a specialized method of TemplateEffect, should probably
   // be `unify` instead.
-  unify(value, previous = this.previous, abspath = this.abspath) {
+  unify(value, previous = this.value) {
     const o = this.path?.length || 0;
     if (value !== null && value !== undefined) {
       for (let view of this.views) {
@@ -692,7 +682,7 @@ export class TemplateEffector extends Effector {
     this.rootName = rootName;
   }
 
-  apply(node, value, global, local, path = undefined) {
+  apply(node, scope) {
     const views = [];
     const id = numcode(TemplateEffector.Counter++);
     // Creates nodes and corresponding effector states for each template
@@ -703,7 +693,7 @@ export class TemplateEffector extends Effector {
       // used by `EventEffectors` in particular to find the scope.
       if (root.nodeType === Node.ELEMENT_NODE) {
         root.dataset["template"] = this.rootName || this.name;
-        root.dataset["path"] = path ? path.join(".") : "";
+        root.dataset["path"] = scope.path ? scope.path.join(".") : "";
         root.dataset["id"] = id;
       }
       // This mounts the view on the parent
@@ -719,10 +709,7 @@ export class TemplateEffector extends Effector {
         states.push(
           e.apply(
             nodes[i], // the node was extracted from the view just before
-            value, // we pass the `value` as-is
-            global,
-            local,
-            path // and the `path` as well
+            scope
           )
         );
       }
@@ -733,16 +720,7 @@ export class TemplateEffector extends Effector {
         states,
       });
     }
-    return new TemplateEffect(
-      this,
-      node,
-      value,
-      global,
-      local,
-      path,
-      views,
-      id
-    );
+    return new TemplateEffect(this, node, scope, views, id);
   }
 }
 

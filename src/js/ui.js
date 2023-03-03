@@ -34,7 +34,7 @@
 //   state = undefined
 // ) => {};
 
-import { TemplateEffector } from "./ui/effectors.js";
+import { EffectScope, TemplateEffector } from "./ui/effectors.js";
 import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
 import { State, patch, get, remove } from "./ui/state.js";
@@ -79,7 +79,12 @@ export const ui = (scope = document, context = {}, styles = undefined) => {
       // TODO: We should pass the component number as well?
       const local = get(localPath);
       // TODO: We should keep the returned state
-      components.push(template.apply(anchor, data, State, local, dataPath));
+      components.push(
+        template.apply(
+          anchor,
+          new EffectScope(State, dataPath, localPath, data, local)
+        )
+      );
     }
   }
 
