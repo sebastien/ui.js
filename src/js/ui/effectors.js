@@ -24,6 +24,12 @@ export class EffectScope {
   }
 }
 
+class EventScope extends EffectScope {
+  constructor(scope, event) {
+    super(scope.state, scope.path, scope.localPath, event, scope.local);
+  }
+}
+
 class Effect {
   constructor(effector, node, scope) {
     this.effector = effector;
@@ -213,8 +219,8 @@ class EventEffect extends Effect {
     }
     return [null, null];
   }
-  constructor(effector, node, value, global, local, path) {
-    super(effector, node, value, global, local, path);
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
     const {
       source,
       destination,
@@ -223,7 +229,9 @@ class EventEffect extends Effect {
     } = this.effector.directive;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
-      const value = source ? source.extract(event) : EventEffect.Value(event);
+      const value = source
+        ? source.extract(new EventScope(this.scope, event))
+        : EventEffect.Value(event);
       // If there is a path then we update this based on the value
       if (destination) {
         switch (destination.type) {
@@ -231,7 +239,7 @@ class EventEffect extends Effect {
             patch(destination.path, value);
             break;
           case ".":
-            patch([...path, ...destination.path], value);
+            patch([...this.scope.path, ...destination.path], value);
             break;
           default:
             console.warn("Selector type not supported yet", { destination });
