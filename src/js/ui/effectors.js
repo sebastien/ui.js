@@ -6,6 +6,30 @@ import { isAtom, isEmpty, onError, numcode } from "./utils.js";
 import { Formats, bool, idem } from "./formats.js";
 import { Templates } from "./templates.js";
 
+class DOM {
+  static after(previous, node) {
+    switch (previous.nextSibling) {
+      case null:
+        previous.parentElement.appendChild(node);
+        return;
+      case node:
+        return;
+      default:
+        previous.parentElement.insertBefore(node, previous.nextSibling);
+    }
+  }
+  static mount(parent, node) {
+    switch (parent.nodeType) {
+      case Node.ELEMENT_NODE:
+        parent.appendChild(node);
+        break;
+      default:
+        // TODO: Should really be DOM.after, but it breaks the effectors test
+        // DOM.after(node, parent);
+        parent.parentElement.insertBefore(node, parent);
+    }
+  }
+}
 // --
 // ## Effectors
 //
@@ -76,6 +100,7 @@ class Effect {
   unmount() {}
 
   dispose() {
+    this.unmount();
     this.unbind();
   }
 
@@ -151,6 +176,7 @@ class TextEffector extends Effector {
 
 class AttributeEffect extends Effect {
   unify(value, previous = this.value) {
+    console.log("ATTRIBUTE", { value, previous });
     this.node.setAttribute(this.effector.name, value);
     return this;
   }
@@ -297,6 +323,8 @@ class SlotEffect extends Effect {
   // ### Lifecycle
 
   unify(current, previous = this.value) {
+    console.log("SLOT EFFECT", { current, previous });
+
     // TODO: Abspath should really be just one path, like the root.
     const { node, scope } = this;
     const isCurrentEmpty = isEmpty(current);
@@ -601,49 +629,74 @@ class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
   static All = new Map();
-  constructor(effector, node, scope, views, id) {
+  constructor(effector, node, scope) {
     super(effector, node, scope);
-    this.views = views;
-    this.id = id;
-    // NOTE: Not sure this is necessary
-    // this.data = {};
-    // this.state = new Proxy(this.data, {
-    //   set: (target, prop, value) => {
-    //     target[prop] = value;
-    //     return value;
-    //   },
-    //   get: (target, prop, receiver) =>
-    //     prop === "update"
-    //       ? this.updateState.bind(this)
-    //       : prop in target
-    //       ? target[prop]
-    //       : undefined,
-    // });
-    TemplateEffect.All.set(id, this);
+    this.id = numcode(TemplateEffector.Counter++);
+    this.views = [];
+    TemplateEffect.All.set(this.id, this);
   }
 
-  // TODO: Should describe when/why this is used
-  // updateState(items) {
-  //   for (let k in items) {
-  //     this.data[k] = items[k];
-  //   }
-  //   return items;
-  // }
-
-  // TODO: This is a specialized method of TemplateEffect, should probably
-  // be `unify` instead.
   unify(value, previous = this.value) {
-    const o = this.path?.length || 0;
-    if (value !== null && value !== undefined) {
-      for (let view of this.views) {
-        for (let state of view.states) {
-          if (state) {
-            // This selects that data in value located at state.path starting at offset `o`
-            state.unify(pathData(state.path, value, o));
+    const views = (this.views = []);
+    const template = this.effector.template;
+    // This should really be called only once, when the template is expanded.
+    if (views.length != template.views.length) {
+      // Creates nodes and corresponding effector states for each template
+      // views.
+      while (views.length < template.views.length) {
+        views.push(undefined);
+      }
+      for (let i in template.views) {
+        if (!views[i]) {
+          const view = template.views[i];
+          const root = view.root.cloneNode(true);
+          // We update the `data-template` and `data-path` attributes, which is
+          // used by `EventEffectors` in particular to find the scope.
+          if (root.nodeType === Node.ELEMENT_NODE) {
+            root.dataset["template"] =
+              this.effector.rootName || this.effector.name;
+            root.dataset["path"] = this.scope.path
+              ? this.scope.path.join(".")
+              : "";
+            root.dataset["id"] = this.id;
           }
+          // We do need to mount the node first, as the effectors may need
+          // the nodes to have a parent.
+          DOM.mount(this.node, root);
+          // This mounts the view on the parent
+          // Now we create instances of the children effectors.
+          const nodes = [];
+          const states = [];
+          for (let i in view.effectors) {
+            const effector = view.effectors[i];
+            const node = pathNode(effector.nodePath, root);
+            nodes.push(node);
+            states.push(effector.apply(node, this.scope));
+          }
+          // We add the view, which will be collected in the template effector.
+          views[i] = {
+            root,
+            nodes,
+            states,
+          };
         }
       }
+      this.mount();
     }
+  }
+
+  mount() {
+    super.mount();
+    // FIXME: This fucks up the effectors test, something is fishy with the nodes mounting.
+    // const n = this.views.length;
+    // let previous = this.node;
+    // for (let i = 0; i < n; i++) {
+    //   const node = this.views[i].root;
+    //   if (node) {
+    //     DOM.after(previous, node);
+    //     previous = node;
+    //   }
+    // }
   }
 
   unmount() {
@@ -652,26 +705,14 @@ class TemplateEffect extends Effect {
     }
   }
 
-  mount() {
-    const n = this.views.length;
-    let previous = this.node;
-    for (let i = 0; i < n; i++) {
-      const root = this.views[i].root;
-      if (root) {
-        if (root.previousSibling !== previous) {
-          this.node.parentElement.insertBefore(root, this.node);
-        }
-        previous = root;
-      }
-    }
-  }
-
   dispose() {
+    super.dispose();
     for (let view of this.views) {
       for (let state of view.states) {
         state?.dispose();
       }
     }
+    this.views = [];
     TemplateEffect.All.delete(this.id, this);
   }
 }
@@ -691,44 +732,7 @@ export class TemplateEffector extends Effector {
   }
 
   apply(node, scope) {
-    const views = [];
-    const id = numcode(TemplateEffector.Counter++);
-    // Creates nodes and corresponding effector states for each template
-    // views.
-    for (let view of this.template.views) {
-      const root = view.root.cloneNode(true);
-      // We update the `data-template` and `data-path` attributes, which is
-      // used by `EventEffectors` in particular to find the scope.
-      if (root.nodeType === Node.ELEMENT_NODE) {
-        root.dataset["template"] = this.rootName || this.name;
-        root.dataset["path"] = scope.path ? scope.path.join(".") : "";
-        root.dataset["id"] = id;
-      }
-      // This mounts the view on the parent
-      node.parentElement.insertBefore(root, node);
-      const nodes = view.effectors.map((_) => {
-        const n = pathNode(_.nodePath, root);
-        return n;
-      });
-      // Now we create instances of the children effectors.
-      const states = [];
-      for (let i in view.effectors) {
-        const e = view.effectors[i];
-        states.push(
-          e.apply(
-            nodes[i], // the node was extracted from the view just before
-            scope
-          )
-        );
-      }
-      // We add the view, which will be collected in the template effector.
-      views.push({
-        root,
-        nodes,
-        states,
-      });
-    }
-    return new TemplateEffect(this, node, scope, views, id);
+    return new TemplateEffect(this, node, scope).init();
   }
 }
 

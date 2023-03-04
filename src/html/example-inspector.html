@@ -14,7 +14,18 @@
     <link href="../css/example-inspector.css" rel="stylesheet" />
   </head>
   <body>
+    <!--
     <div data-ui="Introspector"></div>
+    -->
+    <div data-ui="TEST"></div>
+
+    <template id="TEST">
+      <span do:match=".|type">
+        <span do:case="array">
+          <slot out:count=".|len" />
+        </span>
+      </span>
+    </template>
 
     <template id="Introspector">
       <slot do:match=".|type">

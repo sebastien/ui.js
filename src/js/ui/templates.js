@@ -132,7 +132,7 @@ const isBoundaryNode = (node) => {
         return true;
     }
     // x:case="..." nodes are also boundaries
-    if (node.hasAttribute("x:case")) {
+    if (node.hasAttribute("do:case")) {
       return true;
     }
     // When effectors are also boundary nodes, so we stop at any
@@ -319,15 +319,17 @@ const view = (root, templateName = undefined) => {
             // we need to take it out.
             const t = n.getAttribute("do:case");
             const v = parseValue(t);
+            const anchor = document.createComment(`⟢  case:${t}`);
             n.removeAttribute("do:case");
+            n.parentElement.replaceChild(anchor, n);
+            const frag = document.createDocumentFragment();
+            frag.appendChild(n);
             const subtemplate = template(
-              n,
+              frag,
               `${makeKey()}-${effectors.length}`,
               templateName, // This is the parent name
               false // No need to clone there
             );
-            const anchor = document.createComment(`⟢ ${t}`);
-            n.parentElement.replaceChild(anchor, n);
             branches.push({
               template: subtemplate,
               value: v,
@@ -398,7 +400,7 @@ const view = (root, templateName = undefined) => {
         if (node.parentElement) {
           node.parentElement.replaceChild(
             // This is a placeholder, the contents  is not important.
-            document.createComment("❏l slot"),
+            document.createComment(`❏l slot:${text}`),
             node
           );
         }
