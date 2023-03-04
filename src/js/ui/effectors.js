@@ -25,8 +25,7 @@ class DOM {
         break;
       default:
         // TODO: Should really be DOM.after, but it breaks the effectors test
-        // DOM.after(node, parent);
-        parent.parentElement.insertBefore(node, parent);
+        DOM.after(parent, node);
     }
   }
 }
@@ -43,8 +42,17 @@ export class EffectScope {
     this.state = state;
     this.path = path;
     this.localPath = localPath;
-    this.value = value === undefined ? state.get(path) : value;
-    this.local = local === undefined ? state.get(localPath) : local;
+    this.value = value;
+    this.local = local;
+  }
+  derive(value) {
+    return new EffectScope(
+      this.state,
+      this.path,
+      this.localPath,
+      value,
+      this.local
+    );
   }
 }
 
@@ -176,7 +184,6 @@ class TextEffector extends Effector {
 
 class AttributeEffect extends Effect {
   unify(value, previous = this.value) {
-    console.log("ATTRIBUTE", { value, previous });
     this.node.setAttribute(this.effector.name, value);
     return this;
   }
@@ -268,7 +275,9 @@ class EventEffect extends Effect {
             patch([...this.scope.path, ...destination.path], value);
             break;
           default:
-            console.warn("Selector type not supported yet", { destination });
+            onError("effectors.EventEffect: Selector type not supported yet", {
+              destination,
+            });
             break;
         }
       }
@@ -312,8 +321,33 @@ export class EventEffector extends Effector {
 
 // --
 // ## Slot Effector
-//
-class SlotEffect extends Effect {
+
+class SingleSlotEffect extends Effect {
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
+    this.view = undefined;
+  }
+
+  unify(current, previous = this.value) {
+    if (!this.view) {
+      const node = document.createComment(
+        `⟥─⟤: slot:${this.scope.path.join(".")}`
+      );
+      DOM.after(this.node, node);
+      return this.effector.template
+        .apply(
+          node, // node
+          // NOTE: We may want to include the selector here?
+          this.scope.derive(current)
+        )
+        .init(current);
+    } else if (current !== previous) {
+      this.view.unify(current, previous);
+    }
+  }
+}
+
+class MappingSlotEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
     this.items = undefined;
@@ -323,8 +357,6 @@ class SlotEffect extends Effect {
   // ### Lifecycle
 
   unify(current, previous = this.value) {
-    console.log("SLOT EFFECT", { current, previous });
-
     // TODO: Abspath should really be just one path, like the root.
     const { node, scope } = this;
     const isCurrentEmpty = isEmpty(current);
@@ -391,7 +423,7 @@ class SlotEffect extends Effect {
           );
         } else {
           if (!previous || current[i] !== previous[i]) {
-            console.log("TODO Should update item", i);
+            onError("MappingSlotEffect: TODO Should update item", { i });
           }
         }
       }
@@ -427,7 +459,7 @@ class SlotEffect extends Effect {
           );
         } else {
           if (!previous || current[k] !== previous[k]) {
-            console.log("TODO Should update item", k);
+            onError("MappingSlotEffect: TODO Should update item", { k });
           }
         }
       }
@@ -450,11 +482,15 @@ class SlotEffect extends Effect {
   // Creates a new item node in which the template can be rendered.
   createItem(node, scope, isEmpty = false) {
     const root = document.createComment(
-      `slot:${isEmpty ? "null" : scope.path.at(-1)}`
+      isEmpty
+        ? `⟥─⟤: slot:${scope.path.join(".")}`
+        : `⟥-[${scope.path.at(-1)}]-⟤: slot:${scope.path
+            .slice(0, -1)
+            .join(".")}`
     );
     // We need to insert the node before as the template needs a parent
     if (!node.parentElement) {
-      onError("SlotEffect.createItem: node has no parent element", {
+      onError("MappingSlotEffect.createItem: node has no parent element", {
         node,
         value: scope.value,
         path: scope.path,
@@ -498,7 +534,11 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
-    return new SlotEffect(this, node, scope).init();
+    return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
+      this,
+      node,
+      scope
+    ).init();
   }
 }
 
@@ -538,7 +578,7 @@ class WhenEffect extends Effect {
       this.node.style.display = this.displayValue;
     } else {
       // These may be other kind of nodes, probably not visible (ie, comments)
-      console.warn("WhenEffect.show: Node has no style", {
+      onError("WhenEffect.show: Node has no style", {
         node: this.node,
         value,
       });
@@ -637,17 +677,16 @@ class TemplateEffect extends Effect {
   }
 
   unify(value, previous = this.value) {
-    const views = (this.views = []);
     const template = this.effector.template;
     // This should really be called only once, when the template is expanded.
-    if (views.length != template.views.length) {
+    if (this.views.length != template.views.length) {
       // Creates nodes and corresponding effector states for each template
       // views.
-      while (views.length < template.views.length) {
-        views.push(undefined);
+      while (this.views.length < template.views.length) {
+        this.views.push(undefined);
       }
       for (let i in template.views) {
-        if (!views[i]) {
+        if (!this.views[i]) {
           const view = template.views[i];
           const root = view.root.cloneNode(true);
           // We update the `data-template` and `data-path` attributes, which is
@@ -674,7 +713,7 @@ class TemplateEffect extends Effect {
             states.push(effector.apply(node, this.scope));
           }
           // We add the view, which will be collected in the template effector.
-          views[i] = {
+          this.views[i] = {
             root,
             nodes,
             states,

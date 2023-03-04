@@ -25,7 +25,7 @@ import { Formats } from "./formats.js";
 // ## Selector DSL
 //
 export const KEY = "([a-zA-Z]+=)?";
-export const PATH = "#|([@.]?([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*)";
+export const PATH = "#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?))";
 export const FORMAT = "(\\|[A-Za-z-]+)?";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
 export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
@@ -64,6 +64,10 @@ class SelectorInput {
     )
       .split(".")
       .filter((_) => _.length);
+    this.isMany = this.path.at(-1) === "*";
+    if (this.isMany) {
+      this.path.pop();
+    }
     this.format = format
       ? format instanceof Function
         ? format
@@ -258,6 +262,7 @@ class Selector {
     this.inputs = inputs;
     this.event = event;
     this.stops = stops;
+    this.isMany = inputs.length === 1 && inputs[0].isMany;
     this.type = inputs.reduce(
       (r, v) => (v.key ? Selector.MAP : r),
       inputs.length > 1 ? Selector.LIST : Selector.SINGLE
@@ -404,9 +409,23 @@ export const parseSelector = (text) => {
     return null;
   }
   const { event, stops } = match.groups;
-  const inputs = match.groups["inputs"].split(",").map((_) => parseInput(_));
+  const inputs = match.groups["inputs"].split(",").map((t, i) => {
+    const res = parseInput(t);
+    if (!res) {
+      onError(
+        `selector.parseSelector: Could not parse input ${i} "${t}" in "${text}"`,
+        {
+          input: t,
+          text,
+          match,
+        }
+      );
+    }
+    return res;
+  });
   return new Selector(inputs, event, stops);
 };
 
+window.parseSelector = parseSelector;
 export const CurrentValueSelector = parseSelector(".");
 // EOF

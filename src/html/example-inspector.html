@@ -14,23 +14,12 @@
     <link href="../css/example-inspector.css" rel="stylesheet" />
   </head>
   <body>
-    <!--
-    <div data-ui="Introspector"></div>
-    -->
-    <div data-ui="TEST"></div>
+    <div data-ui="Inspector"></div>
 
-    <template id="TEST">
-      <span do:match=".|type">
-        <span do:case="array">
-          <slot out:count=".|len" />
-        </span>
-      </span>
-    </template>
-
-    <template id="Introspector">
+    <template id="Inspector">
       <slot do:match=".|type">
-        <code do:case="null" class="symbol null">null</code>
-        <code do:case="undefined" class="symbol undefined">undefined</code>
+        <code do:case="'null'" class="symbol null">null</code>
+        <code do:case="'undefined'" class="symbol undefined">undefined</code>
         <code do:case="string" class="literal string"
           ><slot out:content="."
         /></code>
@@ -44,9 +33,9 @@
             <span class="count"><slot out:content=".|len" /></span>
           </summary>
           <span class="content">
-            <slot>
+            <slot out:content=".*">
               <span class="item" out:title="#">
-                <slot out:content=".@Introspector" />
+                <slot out:content=".@Inspector" />
               </span>
             </slot>
           </span>
@@ -54,13 +43,15 @@
         <details do:case="map" class="composite map">
           <summary>
             <span class="type">Object</span>
+            <!-- FIXME: Unless wrapped in span, this does not appear -->
+            <slot out:content=".|type" />
             <span class="count"><slot out:content=".|len" /></span>
           </summary>
           <span class="content">
-            <slot out:content=".">
+            <slot out:content=".*">
               <span class="item" out:title="#">
                 <span class="key"><slot out:content="#" /></span>
-                <span class="value"><slot out:content=".@Introspector" /></span>
+                <span class="value"><slot out:content=".@Inspector" /></span>
               </span>
             </slot>
           </span>

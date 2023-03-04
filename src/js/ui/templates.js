@@ -375,6 +375,14 @@ const view = (root, templateName = undefined) => {
         text,
         attr,
       });
+    } else if (!directive.selector) {
+      onError(
+        `templates.view: Cannot parse selector out of directive ${text}`,
+        {
+          text,
+          attr,
+        }
+      );
     } else {
       if (
         // In SVG, these nodes are lowercase.
@@ -400,7 +408,7 @@ const view = (root, templateName = undefined) => {
         if (node.parentElement) {
           node.parentElement.replaceChild(
             // This is a placeholder, the contents  is not important.
-            document.createComment(`❏l slot:${text}`),
+            document.createComment(`◉ slot:${text}`),
             node
           );
         }

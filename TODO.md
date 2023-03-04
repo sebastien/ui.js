@@ -4,28 +4,19 @@
 -   **granular update**
 -   **direct loading**
 
-## Changes
-
--   `<slot out:content=".">` vs `<slot out:content=".*">`, basically
-    have the ability to be explicit about what we want to display. If we
-    don't support that we won't be able to do
-    `<slot out:content=".*"><slot out:content=".|Introspector"/></slot>`
-
--   `[X]` `<slot do:match=".|type" ><div do:case="string"/></slot>` for
-    conditional exclusive slots.
-
 ## Fixes
 
+-   `[ ]` `SlotEffector` needs to mount the nodes in order
+
 -   `[ ]` `<slot>` are copied into the output, they should not be there
-    in the rendered template.
+    in the rendered template. Instead they should be replaced by comment
+    with a start/end.
 
 ## Roadmap
 
 -   `[ ]` Implement support the "more..." in the introspector, which
     implies storing local state, and transforming the input. It's a good
     simple use case for getting state management working.
-
--   `[ ]` `SlotEffector` needs to mount the nodes in order
 
 -   `[ ]` state: Should pass the state store to components. All the
     patch,sub,get, in handlers should be through the environment
@@ -61,13 +52,22 @@
 
 Done::
 
--   `[X]` directive: allow for selectors like `.a,.b` and `k=.a,b=.c`
+-   Single vs Multiple selections: `<slot out:content=".">` vs
+    `<slot out:content=".*">`, basically have the ability to be explicit
+    about what we want to display. If we don't support that we won't be
+    able to do
+    `<slot out:content=".*"><slot out:content=".|Introspector"/></slot>`
 
--   `[X] ` WhenEffectors: their contents seems to be applied
-    independently of the predicate, which is sub-optimal. This means
-    that a when should act a bit like a template and control the
-    subviews, unregistering them when not showing, and registering them
-    when visible.
+-   Match/case:
+    `<slot do:match=".|type" ><div do:case="string"/></slot>` for
+    conditional exclusive slots.
+
+-   Directives: allow for selectors like `.a,.b` and `k=.a,b=.c`
+
+-   `WhenEffectors`: their contents seems to be applied independently of
+    the predicate, which is sub-optimal. This means that a when should
+    act a bit like a template and control the subviews, unregistering
+    them when not showing, and registering them when visible.
 
 -   Challenge: The application of path to values needs to be much
     clearer, especially as we want to use multiple paths. This should
