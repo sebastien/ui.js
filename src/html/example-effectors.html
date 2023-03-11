@@ -15,6 +15,7 @@
       </p>
     </header>
 
+    <!--
     <section>
       <h3>Template Effectors</h3>
       <p>
@@ -143,13 +144,13 @@
 
         <dt>
           Multiple inline effector with
-          <code>out:content="."</code>
+          <code>out:content=".*"</code>
         </dt>
         <dd>
           <div data-ui="MultipleInline" data-state="['A', 'B', 'C']"></div>
           <template id="MultipleInline">
             <div>
-              <code>XXX</code> ≣ <code><slot out:content=".">X</slot></code>
+              <code>XXX</code> ≣ <code><slot out:content=".*">X</slot></code>
             </div>
           </template>
         </dd>
@@ -167,7 +168,7 @@
             <div>
               <code>012</code> ≣
               <code
-                ><slot out:content="."><slot out:content="#"></slot></slot
+                ><slot out:content=".*"><slot out:content="#"></slot></slot
               ></code>
             </div>
           </template>
@@ -185,7 +186,7 @@
           ></div>
           <template id="SlotContentList">
             <ul>
-              <slot out:content=".items">
+              <slot out:content=".items.*">
                 <li>
                   <slot out:content="#"></slot>
                   <slot out:content=".label"></slot>
@@ -212,8 +213,17 @@
             active branch should get instantiated, this can be checked with the
             inspector.
           </p>
-          <div data-ui="ConditionalSimple" data-state="{edited:true}"></div>
-          <div data-ui="ConditionalSimple" data-state="{edited:false}"></div>
+          <ul>
+            <li>
+              <div data-ui="ConditionalSimple" data-state="{edited:true}"></div>
+            </li>
+            <li>
+              <div
+                data-ui="ConditionalSimple"
+                data-state="{edited:false}"
+              ></div>
+            </li>
+          </ul>
           <template id="ConditionalSimple">
             <div when=".edited==true">
               <input type="text" placeholder="The value can be edited" />
@@ -234,27 +244,32 @@
           </p>
           <ul>
             <li>
+              <code>type= Boolean</code> ≣
               <div
                 data-ui="ConditionalMatchCase"
                 data-state="{value:true}"
               ></div>
             </li>
             <li>
+              <code>type= String</code> ≣
               <div
                 data-ui="ConditionalMatchCase"
                 data-state="{value:'Hello'}"
               ></div>
             </li>
             <li>
+              <code>type= Number</code> ≣
               <div
                 data-ui="ConditionalMatchCase"
                 data-state="{value:123}"
               ></div>
             </li>
             <li>
+              <code>type= Array</code> ≣
               <div data-ui="ConditionalMatchCase" data-state="{value:[]}"></div>
             </li>
             <li>
+              <code>type= Unknown</code> ≣
               <div data-ui="ConditionalMatchCase" data-state="{value:{}}"></div>
             </li>
           </ul>
@@ -296,6 +311,7 @@
         </dd>
       </dl>
     </section>
+        -->
 
     <section>
       <h3>Combined Effectors</h3>

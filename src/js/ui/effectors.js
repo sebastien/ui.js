@@ -1,5 +1,4 @@
 import { composePaths, parsePath, pathNode, pathData } from "./paths.js";
-import { Bus, sub, unsub, pub } from "./pubsub.js";
 import { CurrentValueSelector } from "./selector.js";
 import { patch } from "./state.js";
 import { isAtom, isEmpty, onError, numcode } from "./utils.js";
@@ -44,15 +43,6 @@ export class EffectScope {
     this.localPath = localPath;
     this.value = value;
     this.local = local;
-  }
-  derive(value) {
-    return new EffectScope(
-      this.state,
-      this.path,
-      this.localPath,
-      value,
-      this.local
-    );
   }
 }
 
@@ -150,8 +140,8 @@ export class Effector {
 //
 
 class TextEffect extends Effect {
-  constructor(effector, node, value, global, local, path) {
-    super(effector, node, value, global, local, path);
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
     this.textNode = document.createTextNode("");
   }
 
@@ -174,6 +164,9 @@ class TextEffect extends Effect {
 }
 
 class TextEffector extends Effector {
+  constructor(nodePath, selector) {
+    super(nodePath, selector);
+  }
   apply(node, scope) {
     return new TextEffect(this, node, scope).init();
   }
@@ -283,7 +276,8 @@ class EventEffect extends Effect {
       }
       if (triggers) {
         const { template, path, id } = EventEffect.FindScope(event.target);
-        pub(composePaths([template], triggers), {
+        // FIXME: Not sure this is correct
+        this.scope.state.bus.pub(composePaths([template], triggers), {
           name: triggers,
           path,
           event,
@@ -330,17 +324,25 @@ class SingleSlotEffect extends Effect {
 
   unify(current, previous = this.value) {
     if (!this.view) {
+      const scope = this.scope;
       const node = document.createComment(
         `⟥─⟤: slot:${this.scope.path.join(".")}`
       );
       DOM.after(this.node, node);
-      return this.effector.template
+      this.view = this.effector.template
         .apply(
           node, // node
           // NOTE: We may want to include the selector here?
-          this.scope.derive(current)
+          new EffectScope(
+            scope.state,
+            this.abspath,
+            scope.localPath,
+            current,
+            scope.local
+          )
         )
         .init(current);
+      return this.view;
     } else if (current !== previous) {
       this.view.unify(current, previous);
     }
@@ -534,11 +536,14 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
+    const value = this.selector.extract(scope);
     return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
       this,
       node,
+      // NOTE: Changing the scope here would distort the value, as we're
+      // passing the same selector, so the scope should not change.
       scope
-    ).init();
+    ).init(value);
   }
 }
 
