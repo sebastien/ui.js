@@ -155,6 +155,7 @@ class SelectorState {
     this.handler = handler;
     this.value = undefined;
     this.abspath = this.selector.abspath(scope);
+    this.alwaysChange = false;
     // Handlers are registered when an input's monitored path changes
     this.handlers = selector.inputs.map(
       (_, i) =>
@@ -204,19 +205,21 @@ class SelectorState {
   // `onInputChange` is triggered when the value at the path listened to by the input
   // has changed. This means that the value in the event is already
   onInputChange(input, index, rawValue) {
-    let hasChanged = false;
+    let hasChanged = this.alwaysChange;
     const value = input.format ? input.format(rawValue) : rawValue;
     switch (this.selector.type) {
       case Selector.SINGLE:
-        if ((hasChanged = value !== this.value)) {
+        if (value !== this.value) {
           this.value = value;
+          hasChanged = true;
         }
         break;
       case Selector.LIST:
         {
           const i = this.inputs[index];
-          if ((hasChanged = this.value[i] !== value)) {
+          if (this.value[i] !== value) {
             this.value[i] = value;
+            hasChanged = true;
           }
         }
         break;
@@ -224,8 +227,9 @@ class SelectorState {
         {
           const k = this.inputs[index].key;
           // FIXME: Difference between SCOPE and VALUE
-          if ((hasChanged = this.value[k] !== value)) {
+          if (this.value[k] !== value) {
             this.value[k] = value;
+            hasChanged = true;
           }
         }
         break;

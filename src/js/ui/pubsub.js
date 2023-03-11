@@ -1,9 +1,10 @@
+import { Empty } from "./utils.js";
+
 // --
 // ## Pub/Sub
 
-export const Empty = new Object();
-
-const asKey = (key) => (typeof key === "number" ? `${key}` : key);
+// const asKey = (key) => (typeof key === "number" ? `${key}` : key);
+const asKey = (key) => key;
 
 export class Topic {
   constructor(name, parent = null) {
@@ -23,7 +24,7 @@ export class Topic {
   get(name, create = true) {
     const key = asKey(name);
     return key instanceof Array
-      ? key.reduce((r, v) => r.get(v), this)
+      ? key.reduce((r, v) => (r ? r.get(v, create) : null), this)
       : this.children.has(key)
       ? this.children.get(key)
       : create
@@ -140,7 +141,8 @@ class PubSub {
   }
 
   unsub(topic, handler) {
-    return this.get(topic).unsub(handler), this;
+    const t = this.get(topic, false);
+    return t && t.unsub(handler), this;
   }
 }
 

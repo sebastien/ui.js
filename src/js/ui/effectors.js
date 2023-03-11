@@ -1,8 +1,7 @@
-import { composePaths, parsePath, pathNode, pathData } from "./paths.js";
+import { composePaths, parsePath, pathNode } from "./paths.js";
 import { CurrentValueSelector } from "./selector.js";
 import { patch } from "./state.js";
-import { isAtom, isEmpty, onError, numcode } from "./utils.js";
-import { Formats, bool, idem } from "./formats.js";
+import { Empty, isAtom, isEmpty, onError, numcode } from "./utils.js";
 import { Templates } from "./templates.js";
 
 class DOM {
@@ -152,7 +151,7 @@ class TextEffect extends Effect {
 
   unify(value, previous = this.value) {
     this.textNode.data =
-      value === null || value === undefined
+      value === Empty || value === null || value === undefined
         ? ""
         : typeof value === "string"
         ? value
@@ -205,7 +204,7 @@ export class AttributeEffector extends Effector {
 
 class ValueEffect extends Effect {
   unify(value, previous = this.value) {
-    this.node[this.effector.name] = value;
+    this.node[this.effector.name] = value === Empty ? null : value;
     return this;
   }
 }
@@ -221,7 +220,10 @@ export class ValueEffector extends AttributeEffector {
 //
 class StyleEffect extends Effect {
   unify(value, previous = this.value) {
-    Object.assign(this.node.style, value);
+    // FIXME: Not sure it should be assign... should probably set the whole thing and remove the ones not set
+    value === Empty
+      ? (this.node.style = null)
+      : Object.assign(this.node.style(value));
     return this;
   }
 }
@@ -358,6 +360,8 @@ class SingleSlotEffect extends Effect {
 class MappingSlotEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
+    // We always go through a change
+    this.selected.alwaysChange = true;
     this.items = undefined;
   }
 
@@ -413,7 +417,7 @@ class MappingSlotEffect extends Effect {
       // ### Case: Array
     } else if (current instanceof Array) {
       const items = this.items ? this.items : (this.items = new Map());
-      for (let i in current) {
+      for (let i = 0; i < current.length; i++) {
         const item = items.get(i);
         if (!item) {
           items.set(
@@ -436,15 +440,13 @@ class MappingSlotEffect extends Effect {
         }
       }
       // We cleanup any item that is not used anymore
-      if (previous) {
-        for (let i = current.length; i < (previous.length || 0); i++) {
-          const item = items.get(i);
-          if (item) {
-            item.unmount();
-            item.dispose();
-          }
-          items.delete(i);
-        }
+      let j = current.length;
+      let item = null;
+      while ((item = items.get(j))) {
+        item.unmount();
+        item.dispose();
+        items.delete(j);
+        j++;
       }
       // ### Case: Object
     } else {
@@ -471,7 +473,7 @@ class MappingSlotEffect extends Effect {
           }
         }
       }
-      for (let k in previous) {
+      for (let k of items.keys()) {
         if (current[k] === undefined) {
           const item = items.get(k);
           if (item) {

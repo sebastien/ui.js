@@ -105,10 +105,13 @@ export class StateTree {
       return;
     }
     // All the children are deleted
+    const parent = topic.parent;
     topic.walk((_) => {
       _.del();
     }, false);
     topic.del();
+    // We need to update the parent as well as there was a change
+    parent.pub(parent.value);
   }
 
   // -- doc #internal

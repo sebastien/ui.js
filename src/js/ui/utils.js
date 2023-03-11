@@ -1,8 +1,11 @@
 // --
 //  # Utilities
 
+export const Empty = Symbol("Empty");
 export const RawObjectPrototype = Object.getPrototypeOf({});
-export const isEmpty = (value) => value === null || value === undefined;
+// FIXME: Should be isNothing
+export const isEmpty = (value) =>
+  value === null || value === undefined || value === Empty;
 export const isAtom = (value) =>
   isEmpty(value) ||
   typeof value !== "object" ||
