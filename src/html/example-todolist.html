@@ -11,30 +11,29 @@
   <body>
     <header>
       <h1>To-do List</h1>
-      <p>This is the classic to-do list example</p>
+      <p>This is the classic to-do list example, it's not designed for usability but instead to show the 
+      different features for rendering content (multiple, conditional/modal, events, etc).</p>
     </header>
 
     <div
       data-ui="Todo"
-      XXX-data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}"
-      data-state="{items:[{label:'Buy milk',checked:true}]}"
+      data-state="{items:[{label:'Buy milk',checked:true},{label:'Buy cheese',checked:false}]}"
     ></div>
 
     <template id="Todo">
       <div class="Todo">
         <h3>Simple todo list</h3>
         <ul>
-          <slot name="items" out:content=".items@TodoItem" />
+          <slot name="items" out:content=".items.*@TodoItem" />
         </ul>
-        <!--
         <form on:submit="!Nil.">
           <input
+            type="text"
             placeholder="New item label"
             on:change=".label=.target.value"
           />
-          <button on:click="!Todo.Add">Add</button>
+          <button class="square" on:click="!Todo.Add">Add</button>
         </form>
-        -->
       </div>
 
       <script type="module">
@@ -100,11 +99,11 @@
         <button class="square" when=".edited" on:click="!TodoItem.Save">
           Save
         </button>
-        <button class="label" when=".edited" on:click="!TodoItem.Cancel">
-          Cancel
-        </button>
         <button class="square" when=".edited" on:click="!TodoItem.Remove">
           Remove
+        </button>
+        <button class="label" when=".edited" on:click="!TodoItem.Cancel">
+          Cancel
         </button>
       </div>
     </template>

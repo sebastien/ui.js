@@ -1,7 +1,7 @@
 // --
 // ## Pub/Sub
 
-const Empty = new Object();
+export const Empty = new Object();
 
 const asKey = (key) => (typeof key === "number" ? `${key}` : key);
 
@@ -56,6 +56,25 @@ export class Topic {
       topic = topic.parent;
       offset += 1;
     }
+  }
+
+  del(limit = 1) {
+    console.log(`Topic.del at '${this.path.join(".")}'`);
+    let topic = this;
+    let offset = 0;
+    while (topic && (limit === -1 || offset < limit)) {
+      if (topic.handlers) {
+        for (let handler of topic.handlers) {
+          // TODO: We should stop propagation
+          handler(Empty, topic, offset);
+        }
+      }
+      topic = topic.parent;
+      offset += 1;
+    }
+    this.parent.children.delete(this.name, this);
+    this.parent = null;
+    return this;
   }
 
   sub(handler, withLast = true) {

@@ -67,21 +67,48 @@ export class StateTree {
   patch(path = null, value = undefined, clear = false) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
     const scope = p.length === 0 ? null : this.scope(p);
-    const key = p.at(-1);
-    const updated = clear
-      ? value
-      : this._apply(p.length === 0 ? this.global : scope[key], value);
     const scopeTopic = this.bus.get(p.slice(0, -1), false);
-    if (p.length === 0) {
-      this.global = updated;
-      this._pub(scopeTopic, updated);
+    const key = p.at(-1);
+    if (
+      clear &&
+      value === undefined &&
+      p.length &&
+      scope instanceof Array &&
+      typeof key === "number"
+    ) {
+      // We're removing an item of an array, so we need to update all the following items
+      scope.splice(key, 1);
+      const n = scope.length;
+      for (let i = n; i >= key; i--) {
+        i === n
+          ? this._del(scopeTopic.get(i, false))
+          : this._pub(scopeTopic.get(i, false), scope[i]);
+      }
     } else {
-      scope[key] = updated;
-      if (scopeTopic) {
-        this._pub(scopeTopic.get(key, false), updated);
-        scopeTopic.pub(scope);
+      const updated = clear
+        ? value
+        : this._apply(p.length === 0 ? this.global : scope[key], value);
+      if (p.length === 0) {
+        this.global = updated;
+        this._pub(scopeTopic, updated);
+      } else {
+        scope[key] = updated;
+        if (scopeTopic) {
+          this._pub(scopeTopic.get(key, false), updated);
+          scopeTopic.pub(scope);
+        }
       }
     }
+  }
+  _del(topic) {
+    if (!topic) {
+      return;
+    }
+    // All the children are deleted
+    topic.walk((_) => {
+      _.del();
+    }, false);
+    topic.del();
   }
 
   // -- doc #internal
@@ -107,7 +134,7 @@ export class StateTree {
         // This is a single value so that means any children
         // topic is then marked as undefined/removed.
         topic.walk((_) => {
-          _.pub(undefined);
+          _.del();
         }, false);
         topic.pub(value);
     }
