@@ -51,6 +51,8 @@ export const parseValue = (value) => {
 
 const Comparators = {
   "=": (a, b) => a == b,
+  // TODO: We should probably only accept one?
+  "==": (a, b) => a == b,
   "!=": (a, b) => a != b,
   ">": (a, b) => a > b,
   ">=": (a, b) => a >= b,
@@ -59,7 +61,7 @@ const Comparators = {
 };
 const parseWhenDirective = (text) => {
   const match = text.match(
-    /^(?<selector>[^=!<>]+)((?<operator>=|!=|>|>=|<|<=)(?<value>.+)?)?$/
+    /^(?<selector>[^=!<>]+)((?<operator>==?|!=|>|>=|<|<=)(?<value>.+)?)?$/
   );
   if (!match) {
     return null;
