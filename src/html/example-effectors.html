@@ -15,7 +15,6 @@
       </p>
     </header>
 
-    <!--
     <section>
       <h3>Template Effectors</h3>
       <p>
@@ -311,7 +310,6 @@
         </dd>
       </dl>
     </section>
-        -->
 
     <section>
       <h3>Combined Effectors</h3>
@@ -326,14 +324,20 @@
           ></div>
           <template id="ConditionalSlotEffector">
             <div>
-              <span>label=Edited ≣</span>
-              <span>label=<slot out:content=".editedLabel" /></span>
+              <span>label[0]=Edited ≣</span>
+              <span>label[0]=<slot out:content=".editedLabel" /></span>
             </div>
             <div>
-              <span>label=Edited ≣</span>
-              <span when=".edited|not"
-                >label=<slot out:content=".editedLabel"
-              /></span>
+              <span>label[1]=Edited ≣</span>
+              <span when=".edited|not">
+                label[1]=<slot out:content=".editedLabel" />
+              </span>
+            </div>
+            <div>
+              <span>label[2]=Edited ≣</span>
+              <span when=".edited|not">
+                <span> label[2]=<slot out:content=".editedLabel" /> </span>
+              </span>
             </div>
           </template>
         </dd>

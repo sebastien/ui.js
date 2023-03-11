@@ -6,15 +6,15 @@
 // array of indices from `children`.
 export const nodePath = (node, root = undefined) => {
   const path = [];
-  while (node && node != root && node.parentElement) {
-    const children = node.parentElement.childNodes;
+  while (node && node != root && node.parentNode) {
+    const children = node.parentNode.childNodes;
     for (let i = 0; i < children.length; i++) {
       if (children[i] === node) {
         path.push(i);
         break;
       }
     }
-    node = node.parentElement;
+    node = node.parentNode;
   }
   return path.reverse(), path;
 };

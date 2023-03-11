@@ -257,6 +257,8 @@ class View {
 // creating corresponding effectors.
 const view = (root, templateName = undefined) => {
   const effectors = [];
+  // Some transforms may change the root, for instance if it's a <slot> root>
+  let viewRoot = root;
 
   // TODO: Query the styled variants
 
@@ -323,7 +325,7 @@ const view = (root, templateName = undefined) => {
             const v = parseValue(t);
             const anchor = document.createComment(`⟢  case:${t}`);
             n.removeAttribute("do:case");
-            n.parentElement.replaceChild(anchor, n);
+            n.parentNode.replaceChild(anchor, n);
             const frag = document.createDocumentFragment();
             frag.appendChild(n);
             const subtemplate = template(
@@ -346,7 +348,7 @@ const view = (root, templateName = undefined) => {
           );
         } else {
           const anchor = document.createComment(`⟣ ${selector.toString()}`);
-          node.parentElement?.replaceChild(anchor, node);
+          node.parentNode?.replaceChild(anchor, node);
           effectors.push(
             new MatchEffector(nodePath(anchor, root), selector, branches)
           );
@@ -407,10 +409,16 @@ const view = (root, templateName = undefined) => {
         effectors.push(
           new SlotEffector(path, directive.selector, slotTemplate)
         );
-        if (node.parentElement) {
-          node.parentElement.replaceChild(
+        const replacement = document.createComment(`◉ slot:${text}`);
+        // It is possible that the root is a <slot>, in which case we need
+        // to update the reference.
+        if (node === root) {
+          viewRoot = replacement;
+        }
+        if (node.parentNode) {
+          node.parentNode.replaceChild(
             // This is a placeholder, the contents  is not important.
-            document.createComment(`◉ slot:${text}`),
+            replacement,
             node
           );
         }
@@ -430,24 +438,6 @@ const view = (root, templateName = undefined) => {
     // We remove the attribute from the template as it is now processed
     node.removeAttribute(attr.name);
   }
-
-  // We take care of slots
-  // for (const _ of root.querySelectorAll("slot")) {
-  //   const [dataPath, templateName] = parseDirective(
-  //     _.getAttribute("out:contents"),
-  //     false
-  //   );
-  //   effectors.push(new SlotEffector(nodePath(_, root), dataPath, templateName));
-  //   _.parentElement.replaceChild(document.createComment(_.outerHTML), _);
-  //   _.removeAttribute("out:contents");
-  // }
-
-  // TODO: We should implement int
-  // for (const { name, attr } of attrs["in"] || []) {
-  //   const node = attr.ownerElement;
-  //   console.log("TODO: ATTR:IN", { name });
-  //   node.removeAttribute(attr.name);
-  // }
 
   // --
   // ### Event effectors
@@ -518,7 +508,7 @@ const view = (root, templateName = undefined) => {
     }
   }
 
-  return new View(root, effectors);
+  return new View(viewRoot, effectors);
 };
 
 // --

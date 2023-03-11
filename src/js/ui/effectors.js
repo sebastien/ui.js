@@ -9,23 +9,28 @@ class DOM {
   static after(previous, node) {
     switch (previous.nextSibling) {
       case null:
-        previous.parentElement.appendChild(node);
+        previous.parentNode && previous.parentNode.appendChild(node);
         return;
       case node:
         return;
       default:
-        previous.parentElement.insertBefore(node, previous.nextSibling);
+        previous.parentNode &&
+          previous.parentNode.insertBefore(node, previous.nextSibling);
     }
   }
   static mount(parent, node) {
     switch (parent.nodeType) {
       case Node.ELEMENT_NODE:
-        parent.appendChild(node);
+        node.parentNode !== parent && parent.appendChild(node);
         break;
       default:
         // TODO: Should really be DOM.after, but it breaks the effectors test
         DOM.after(parent, node);
     }
+  }
+  static unmount(node) {
+    node.parentNode?.removeChild(node);
+    return node;
   }
 }
 // --
@@ -152,14 +157,15 @@ class TextEffect extends Effect {
         : typeof value === "string"
         ? value
         : `${value}`;
-    if (!this.textNode.parentElement) {
-      this.node.parentElement.insertBefore(this.textNode, this.node);
+    if (!this.textNode.parentNode) {
+      DOM.mount(this.node, this.textNode);
     }
     return this;
   }
 
   unmount() {
-    this.textNode.parentElement?.removeChild(this.textNode);
+    // TODO: Should use DOM.mount
+    DOM.unmount(this.textNode);
   }
 }
 
@@ -491,14 +497,15 @@ class MappingSlotEffect extends Effect {
             .join(".")}`
     );
     // We need to insert the node before as the template needs a parent
-    if (!node.parentElement) {
+    if (!node.parentNode) {
       onError("MappingSlotEffect.createItem: node has no parent element", {
         node,
         value: scope.value,
         path: scope.path,
       });
     } else {
-      node.parentElement.insertBefore(root, node);
+      // TODO: Should use DOM.after
+      node.parentNode.insertBefore(root, node);
     }
     return this.effector.template.apply(
       root, // node
@@ -553,14 +560,20 @@ export class SlotEffector extends Effector {
 class WhenEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
+    // FIXME: Not sure the anchor is necessary
     // The anchor will the element where the contents will be re-inserted
     this.anchor = document.createComment(
       `when:${this.effector.selector.toString()}`
     );
-    this.contentAnchor = document.createComment("when:@");
+    this.contentAnchor = document.createComment(
+      `⚓ when:${this.abspath.join(".")}`
+    );
     this.displayValue = node?.style?.display;
     this.node.appendChild(this.contentAnchor);
-    this.node.parentElement.replaceChild(this.anchor, node);
+    // FIXME: Not sure why this is necessary. We should not change the node
+    // here as it will cause problem in other effeects, as this will in effect
+    // replace the root node of the view.
+    // this.node.parentNode.replaceChild(this.anchor, node);
     this.state = null;
   }
 
@@ -589,8 +602,8 @@ class WhenEffect extends Effect {
       });
     }
 
-    if (!this.node.parentElement) {
-      this.anchor.parentElement.insertBefore(this.node, this.anchor);
+    if (!this.node.parentNode) {
+      DOM.mount(this.anchor, this.node);
     }
 
     return this;
@@ -690,7 +703,7 @@ class TemplateEffect extends Effect {
       while (this.views.length < template.views.length) {
         this.views.push(undefined);
       }
-      for (let i in template.views) {
+      for (let i = 0; i < template.views.length; i++) {
         if (!this.views[i]) {
           const view = template.views[i];
           const root = view.root.cloneNode(true);
@@ -706,16 +719,25 @@ class TemplateEffect extends Effect {
           }
           // We do need to mount the node first, as the effectors may need
           // the nodes to have a parent.
-          DOM.mount(this.node, root);
           // This mounts the view on the parent
           // Now we create instances of the children effectors.
           const nodes = [];
           const states = [];
+          DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
+          if (!root.parentNode) {
+            onError(
+              "TemplateEffect: view root node should always have a prent",
+              { i, root, view }
+            );
+          }
           for (let i in view.effectors) {
             const effector = view.effectors[i];
             const node = pathNode(effector.nodePath, root);
-            nodes.push(node);
-            states.push(effector.apply(node, this.scope));
+            const effect = effector.apply(node, this.scope);
+            states.push(effect);
+            // NOTE: We do that as the effect MAY (but probably should not)
+            // manipulate the given node.
+            nodes.push(effect.node);
           }
           // We add the view, which will be collected in the template effector.
           this.views[i] = {
@@ -731,21 +753,20 @@ class TemplateEffect extends Effect {
 
   mount() {
     super.mount();
-    // FIXME: This fucks up the effectors test, something is fishy with the nodes mounting.
-    // const n = this.views.length;
-    // let previous = this.node;
-    // for (let i = 0; i < n; i++) {
-    //   const node = this.views[i].root;
-    //   if (node) {
-    //     DOM.after(previous, node);
-    //     previous = node;
-    //   }
-    // }
+    const n = this.views.length;
+    let previous = this.node;
+    for (let i = 0; i < n; i++) {
+      const node = this.views[i].root;
+      if (node) {
+        DOM.after(previous, node);
+        previous = node;
+      }
+    }
   }
 
   unmount() {
     for (let view of this.views) {
-      view.root?.parentElement?.removeChild(view.root);
+      view.root?.parentNode?.removeChild(view.root);
     }
   }
 
