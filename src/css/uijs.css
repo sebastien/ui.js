@@ -58,6 +58,7 @@ variations).
   --color-page-bg-alt: var(--palette-ivory-70);
   --color-code: var(--palette-grey-40);
   --color-accent: var(--palette-gold-60);
+  /* FIXME: What is that alt */
   --color-accent-alt: #fcd64780;
   --color-accent-txt: var(--color-text);
   --color-accent-bg: var(--palette-gold-60);
@@ -86,8 +87,6 @@ variations).
 
   --button-offset: 2px;
 }
-
-@layer loading, reset, base, ui, theme;
 
 @layer reset {
   html,
