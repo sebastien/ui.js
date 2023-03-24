@@ -34,7 +34,7 @@
 //   state = undefined
 // ) => {};
 
-import { EffectScope, TemplateEffector } from "./ui/effectors.js";
+import { EffectScope } from "./ui/effectors.js";
 import { Templates, template } from "./ui/templates.js";
 import { pub, sub, unsub } from "./ui/pubsub.js";
 import { State, patch, get, remove } from "./ui/state.js";
@@ -45,50 +45,76 @@ import tokens from "./ui/tokens.js";
 
 const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
 
-export const ui = (scope = document, context = {}, styles = undefined) => {
+const createUI = (node, context) => {
+  // We render the components
+  const { ui, state, path } = node.dataset;
+  const template = Templates.get(ui);
+  const data = state ? parseState(state, context) : context;
+  if (!template) {
+    onError(`ui.render: Could not find template '${ui}'`, {
+      node,
+      ui,
+    });
+    return null;
+  } else {
+    // We instanciate the template onto the node
+    const key = makeKey();
+    const localPath = ["@local", key];
+    const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
+    data && patch(dataPath, data);
+    const anchor = document.createComment(`⚓ ${key}`);
+    node.parentElement.replaceChild(anchor, node);
+    // TODO: We should pass the component number as well?
+    const local = get(localPath);
+    // TODO: We should keep the returned state
+    return template.apply(
+      anchor,
+      new EffectScope(State, dataPath, localPath, data, local)
+    );
+  }
+};
+
+const expandTemplates = (node) => {
+  const promises = [];
   const templates = [];
-  const components = [];
+  for (let tmpl of node.querySelectorAll("template")) {
+    // This will register the templates in `templates`
+    const src = tmpl.dataset.src;
+    if (src) {
+      promises.push(
+        fetch(src)
+          .then((_) => _.text())
+          .then((_) => {
+            const doc = domParser.parseFromString(_, "text/html");
+            doc.querySelectorAll("template").forEach((_) => {
+              templates.push(template(_));
+            });
+          })
+      );
+    } else {
+      templates.push(template(tmpl));
+    }
+    tmpl.parentElement.removeChild(tmpl);
+  }
+  return Promise.all(promises).then(() => templates);
+};
+
+const domParser = new DOMParser();
+export const ui = (scope = document, context = {}, styles = undefined) => {
   const style = undefined;
 
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
 
-  for (let _ of document.querySelectorAll("template")) {
-    // This will register the templates in `templates`
-    templates.push(template(_));
-  }
-
-  // We render the components
-  for (const node of scope.querySelectorAll("*[data-ui]")) {
-    const { ui, state, path } = node.dataset;
-    const template = Templates.get(ui);
-    const data = state ? parseState(state, context) : context;
-    if (!template) {
-      onError(`ui.render: Could not find template '${ui}'`, {
-        node,
-        ui,
-      });
-    } else {
-      // We instanciate the template onto the node
-      const key = makeKey();
-      const localPath = ["@local", key];
-      const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
-      data && patch(dataPath, data);
-      const anchor = document.createComment(`⚓ ${key}`);
-      node.parentElement.replaceChild(anchor, node);
-      // TODO: We should pass the component number as well?
-      const local = get(localPath);
-      // TODO: We should keep the returned state
-      components.push(
-        template.apply(
-          anchor,
-          new EffectScope(State, dataPath, localPath, data, local)
-        )
-      );
+  return expandTemplates(document).then((templates) => {
+    const components = [];
+    for (const node of scope.querySelectorAll("*[data-ui]")) {
+      const ui = createUI(node, context);
+      ui && components.push(ui);
     }
-  }
 
-  return { templates, components, style };
+    return { templates, components, style };
+  });
 };
 
 const on = (handlers) =>
