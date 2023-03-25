@@ -78,6 +78,20 @@ const expandTemplates = (node) => {
   const promises = [];
   const templates = [];
   const stylesheets = [];
+  const scripts = [];
+  const extractNodes = (scope) =>
+    [
+      ["style", stylesheets],
+      ["STYLE", stylesheets],
+      ["script", scripts],
+      ["SCRIPT", scripts],
+    ].forEach(([name, collection]) => {
+      scope.querySelectorAll(name).forEach((_) => {
+        collection.push(_);
+        _.parentElement.removeChild(_);
+      });
+    });
+
   for (let tmpl of node.querySelectorAll("template")) {
     // This will register the templates in `templates`
     const src = tmpl.dataset.src;
@@ -86,18 +100,20 @@ const expandTemplates = (node) => {
         fetch(src)
           .then((_) => _.text())
           .then((_) => {
-            // could be text/html
-            const doc = domParser.parseFromString(_, "application/xhtml+xml");
-            doc.querySelectorAll("style").forEach((_) => {
-              stylesheets.push(_);
-              _.parentElement.removeChild(_);
-            });
+            const format =
+              _.indexOf("http://www.w3.org/1999/xhtml") === -1
+                ? "text/html"
+                : "application/xhtml+xml";
+            const doc = domParser.parseFromString(_, format);
+            extractNodes(doc);
             doc.querySelectorAll("template").forEach((_) => {
+              extractNodes(_.content);
               templates.push(template(_));
             });
           })
       );
     } else {
+      extractNodes(tmpl.content);
       templates.push(template(tmpl));
     }
     tmpl.parentElement.removeChild(tmpl);
@@ -105,7 +121,23 @@ const expandTemplates = (node) => {
   return Promise.all(promises).then(() => ({
     templates,
     stylesheets,
+    scripts,
   }));
+};
+
+const loadModule = async (text) => {
+  const blob = new Blob([text], { type: "text/javascript" });
+  const url = URL.createObjectURL(blob);
+  // Dynamically import and execute the module
+  try {
+    const module = await import(url);
+    return module;
+  } catch (error) {
+    onError("[ui] Unable to dynamically import JavaScript module:", error);
+  } finally {
+    // Clean up the URL to release the memory
+    URL.revokeObjectURL(url);
+  }
 };
 
 const domParser = new DOMParser();
@@ -119,16 +151,23 @@ export const ui = async (
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
 
-  return expandTemplates(document).then(({ templates, stylesheets }) => {
-    const components = [];
-    stylesheets.forEach((_) => document.head.appendChild(_));
-    for (const node of scope.querySelectorAll("*[data-ui]")) {
-      const ui = createUI(node, context);
-      ui && components.push(ui);
-    }
+  return expandTemplates(document).then(
+    ({ templates, stylesheets, scripts }) => {
+      const components = [];
+      scripts.forEach((_) => {
+        // NOTE: Adding a script node doesn't quite work. We could do
+        // it in SSR, though.
+        loadModule(_.innerText);
+      });
+      stylesheets.forEach((_) => document.body.appendChild(_));
+      for (const node of scope.querySelectorAll("*[data-ui]")) {
+        const ui = createUI(node, context);
+        ui && components.push(ui);
+      }
 
-    return { templates, components, stylesheets, style };
-  });
+      return { templates, components, stylesheets, style };
+    }
+  );
 };
 
 const on = (handlers) =>
