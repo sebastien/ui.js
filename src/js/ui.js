@@ -77,6 +77,7 @@ const createUI = (node, context) => {
 const expandTemplates = (node) => {
   const promises = [];
   const templates = [];
+  const stylesheets = [];
   for (let tmpl of node.querySelectorAll("template")) {
     // This will register the templates in `templates`
     const src = tmpl.dataset.src;
@@ -85,7 +86,12 @@ const expandTemplates = (node) => {
         fetch(src)
           .then((_) => _.text())
           .then((_) => {
-            const doc = domParser.parseFromString(_, "text/html");
+            // could be text/html
+            const doc = domParser.parseFromString(_, "application/xhtml+xml");
+            doc.querySelectorAll("style").forEach((_) => {
+              stylesheets.push(_);
+              _.parentElement.removeChild(_);
+            });
             doc.querySelectorAll("template").forEach((_) => {
               templates.push(template(_));
             });
@@ -96,24 +102,32 @@ const expandTemplates = (node) => {
     }
     tmpl.parentElement.removeChild(tmpl);
   }
-  return Promise.all(promises).then(() => templates);
+  return Promise.all(promises).then(() => ({
+    templates,
+    stylesheets,
+  }));
 };
 
 const domParser = new DOMParser();
-export const ui = (scope = document, context = {}, styles = undefined) => {
+export const ui = async (
+  scope = document,
+  context = {},
+  styles = undefined
+) => {
   const style = undefined;
 
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
 
-  return expandTemplates(document).then((templates) => {
+  return expandTemplates(document).then(({ templates, stylesheets }) => {
     const components = [];
+    stylesheets.forEach((_) => document.head.appendChild(_));
     for (const node of scope.querySelectorAll("*[data-ui]")) {
       const ui = createUI(node, context);
       ui && components.push(ui);
     }
 
-    return { templates, components, style };
+    return { templates, components, stylesheets, style };
   });
 };
 
