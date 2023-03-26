@@ -14,6 +14,8 @@
 
 ## Roadmap
 
+-   `[ ]` refs for templates.
+
 -   `[ ]` Implement support the "more..." in the introspector, which
     implies storing local state, and transforming the input. It's a good
     simple use case for getting state management working.

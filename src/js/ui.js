@@ -66,11 +66,11 @@ const createUI = (node, context) => {
     node.parentElement.replaceChild(anchor, node);
     // TODO: We should pass the component number as well?
     const local = get(localPath);
+    const scope = new EffectScope(State, dataPath, localPath, data, local);
     // TODO: We should keep the returned state
-    return template.apply(
-      anchor,
-      new EffectScope(State, dataPath, localPath, data, local)
-    );
+    const effector = template.apply(anchor, scope);
+    pub([template.name, "Create"], { node, context, anchor, scope, effector });
+    return effector;
   }
 };
 

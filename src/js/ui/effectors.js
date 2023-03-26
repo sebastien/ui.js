@@ -289,6 +289,7 @@ class EventEffect extends Effect {
           name: triggers,
           path,
           event,
+          scope,
           // The internal state of each template effector is accessible globally.
           state: TemplateEffect.All.get(id)?.state,
         });
@@ -751,6 +752,18 @@ class TemplateEffect extends Effect {
       }
       this.mount();
     }
+  }
+
+  query(query) {
+    const res = [];
+    for (let view of this.views) {
+      if (view?.root?.querySelectorAll) {
+        for (let node of view.root.querySelectorAll(query)) {
+          res.push(node);
+        }
+      }
+    }
+    return res;
   }
 
   mount() {
