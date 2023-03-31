@@ -12,13 +12,19 @@ export class Topic {
     this.parent = parent;
     this.children = new Map();
     this.handlers = undefined;
-    this.value = Empty;
+    this.values = [];
+    this.capacity = 1;
     this.path =
       name !== "" && name !== null && name !== undefined
         ? parent
           ? [...parent.path, name]
           : [name]
         : [];
+  }
+
+  get value() {
+    const n = this.values.length;
+    return n === 0 ? Empty : this.values.at(-1);
   }
 
   get(name, create = true) {
@@ -42,21 +48,38 @@ export class Topic {
     return b;
   }
 
-  pub(data, limit = 1) {
+  // TODO: Arguably, it may be easier to always have an  array, and limit it
+  // using the capacity.
+  pub(data, limit = 1, capacity = undefined) {
     console.log(`Topic.pub at '${this.path.join(".")}'`, data);
-    this.value = data;
+    // We let the publisher decide of the capacity of the topic. This may change
+    // the data retention on the topic.
+    if (capacity !== undefined) {
+      this.capacity = capacity;
+    }
+    if (this.capacity >= 0 && this.values.length >= this.capacity - 1) {
+      this.values.splice(0, this.values.length + 1 - this.capacity);
+    }
+    this.values.push(data);
+    // This is the dispatching algorithm, that supports handlers consuming
+    // values.
     let topic = this;
     let offset = 0;
+    let count = 0;
     while (topic && (limit === -1 || offset < limit)) {
       if (topic.handlers) {
         for (let handler of topic.handlers) {
-          // TODO: We should stop propagation
-          handler(data, topic, offset);
+          if (handler(data, topic, offset) === false) {
+            return count++;
+          } else {
+            count++;
+          }
         }
       }
       topic = topic.parent;
       offset += 1;
     }
+    return count;
   }
 
   del(limit = 1) {
@@ -78,13 +101,44 @@ export class Topic {
     return this;
   }
 
-  sub(handler, withLast = true) {
-    // console.log(`Topic.sub at '${this.path.join(".")}'`, handler);
+  // Consumes a value off the list of values
+  consume() {
+    if (this.values.length) {
+      return this.values.shift();
+    } else {
+      return Empty;
+    }
+  }
+  flush() {
+    const v = this.values;
+    this.values = [];
+    return v;
+  }
+
+  sub(handler, withLast = 1) {
+    const values = [...this.values];
+    console.log(`Topic.sub at '${this.path.join(".")}'`, handler, {
+      values,
+      value: this.value,
+      withLast,
+    });
     if (!this.handlers) {
       this.handlers = [];
     }
     this.handlers.push(handler);
-    withLast && this.value !== Empty && handler(this.value);
+    // If the current value is not empty, and the handler requests with last n
+    if (this.value !== Empty && withLast !== 0) {
+      if (this.capacity === 1) {
+        handler(this.value, this);
+      } else {
+        const n = this.values.length;
+        for (let i = Math.max(0, n - withLast); i < n; i++) {
+          if (handler(this.values[i], this) === false) {
+            break;
+          }
+        }
+      }
+    }
     return this;
   }
 
@@ -116,7 +170,7 @@ export class Topic {
   }
 }
 
-class PubSub {
+export class PubSub {
   constructor() {
     this.topics = new Topic();
   }
@@ -132,8 +186,8 @@ class PubSub {
       : this.topics;
   }
 
-  pub(topic, data, limit = undefined) {
-    return this.get(topic).pub(data, limit), this;
+  pub(topic, data, limit = undefined, capacity = undefined) {
+    return this.get(topic).pub(data, limit, capacity), this;
   }
 
   sub(topic, handler, withLast = true) {
@@ -146,11 +200,12 @@ class PubSub {
   }
 }
 
-export const Bus = new PubSub();
-export const pub = (topic, data, limit = undefined) =>
-  Bus.pub(topic, data, limit);
-export const sub = (topic, handler, withLast) =>
-  Bus.sub(topic, handler, withLast);
-export const unsub = (topic, handler) => Bus.unsub(topic, handler);
-
+export const bus = () => {
+  const bus = new PubSub();
+  const pub = (topic, data, limit = undefined) => bus.pub(topic, data, limit);
+  const topic = (topic) => bus.get(topic);
+  const sub = (topic, handler, withLast) => bus.sub(topic, handler, withLast);
+  const unsub = (topic, handler) => bus.unsub(topic, handler);
+  return { bus, pub, sub, unsub, topic };
+};
 // EOF

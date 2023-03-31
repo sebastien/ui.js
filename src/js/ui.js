@@ -36,14 +36,20 @@
 
 import { EffectScope } from "./ui/effectors.js";
 import { Templates, template } from "./ui/templates.js";
-import { pub, sub, unsub } from "./ui/pubsub.js";
-import { State, patch, get, remove } from "./ui/state.js";
+import { PubSub } from "./ui/pubsub.js";
+import { StateTree } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
 import { parsePath } from "./ui/paths.js";
 import { onError, makeKey } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
 
 const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
+
+// The StateBus manages the state tree, while the event bus is where
+// components do their event wiring.
+export const StateBus = new PubSub();
+export const EventBus = new PubSub();
+export const State = new StateTree(StateBus);
 
 const createUI = (node, context) => {
   // We render the components
@@ -61,7 +67,7 @@ const createUI = (node, context) => {
     const key = makeKey();
     const localPath = ["@local", key];
     const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
-    data && patch(dataPath, data);
+    data && State.patch(dataPath, data);
     const anchor = document.createComment(`⚓ ${key}`);
     node.parentElement.replaceChild(anchor, node);
     // TODO: We should pass the component number as well?
@@ -69,7 +75,13 @@ const createUI = (node, context) => {
     const scope = new EffectScope(State, dataPath, localPath, data, local);
     // TODO: We should keep the returned state
     const effector = template.apply(anchor, scope);
-    pub([template.name, "Create"], { node, context, anchor, scope, effector });
+    EventBus.pub(
+      [template.name, "Create"],
+      { node, context, anchor, scope, effector },
+      undefined,
+      // We publish with no limit in history, as consumers will flush
+      -1
+    );
     return effector;
   }
 };
@@ -86,10 +98,14 @@ const expandTemplates = (node) => {
       ["script", scripts],
       ["SCRIPT", scripts],
     ].forEach(([name, collection]) => {
-      scope.querySelectorAll(name).forEach((_) => {
-        collection.push(_);
-        _.parentElement.removeChild(_);
-      });
+      if (!scope?.querySelectorAll) {
+        console.warn("[uijs] Could not expand template of scope", scope);
+      } else {
+        scope.querySelectorAll(name).forEach((_) => {
+          collection.push(_);
+          _.parentElement.removeChild(_);
+        });
+      }
     });
 
   for (let tmpl of node.querySelectorAll("template")) {
@@ -108,6 +124,12 @@ const expandTemplates = (node) => {
             extractNodes(doc);
             doc.querySelectorAll("template").forEach((_) => {
               extractNodes(_.content);
+              templates.push(template(_));
+            });
+            // We support .template for dynamically loaded chunks, which supports
+            // preview.
+            doc.querySelectorAll(".template").forEach((_) => {
+              extractNodes(_);
               templates.push(template(_));
             });
           })
@@ -160,9 +182,13 @@ export const ui = async (
         loadModule(_.innerText);
       });
       stylesheets.forEach((_) => document.body.appendChild(_));
-      for (const node of scope.querySelectorAll("*[data-ui]")) {
-        const ui = createUI(node, context);
-        ui && components.push(ui);
+      if (!scope?.querySelectorAll) {
+        console.warn("[uijs] Could not expand template of scope", scope);
+      } else {
+        for (const node of scope.querySelectorAll("*[data-ui]")) {
+          const ui = createUI(node, context);
+          ui && components.push(ui);
+        }
       }
 
       return { templates, components, stylesheets, style };
@@ -171,9 +197,19 @@ export const ui = async (
 };
 
 const on = (handlers) =>
-  Object.entries(handlers).reduce((r, [k, v]) => ((r[k] = sub(k, v)), r), {});
+  Object.entries(handlers).reduce(
+    (r, [k, v]) => ((r[k] = EventBus.sub(k, v)), r),
+    {}
+  );
 
-export { on, pub, sub, unsub, patch, get, remove, tokens, stylesheet };
+const patch = (...args) => State.patch(...args);
+const get = (...args) => State.get(...args);
+const remove = (...args) => State.remove(...args);
+
+// DEBUG
+window.UI = { State, EventBus, StateBus };
+
+export { on, patch, get, remove, tokens, stylesheet };
 export default ui;
 
 // EOF

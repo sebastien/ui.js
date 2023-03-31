@@ -23,6 +23,17 @@ Imagine a huge list of items, with PubSub it's easy to change just the
 one item that has changed, without having to re-render the whole list,
 like it would be the case with say, React.
 
+The PubSub bus can be used both in the regular Pub/Sub model, but also
+as a way to manage queues. A publisher can set to accumulate value, and
+a subscriber can consume values, which will prevent the value from being
+accessed by another handler.
+
+-   A channel can be used as a queue (accumulating values). For
+    instance, when a component is created, its Create events are
+    triggered, but the script may not yet be loaded at the point the
+    event is fired. In this case the events will be accumulated and
+    flushed.
+
 ## 3-States Approach
 
 There are always three states/sources of data, each passed from parent

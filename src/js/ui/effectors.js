@@ -1,6 +1,5 @@
 import { composePaths, parsePath, pathNode } from "./paths.js";
 import { CurrentValueSelector } from "./selector.js";
-import { patch } from "./state.js";
 import { Empty, isAtom, isEmpty, onError, numcode } from "./utils.js";
 import { Templates } from "./templates.js";
 
@@ -47,6 +46,9 @@ export class EffectScope {
     this.localPath = localPath;
     this.value = value;
     this.local = local;
+  }
+  patch(...args) {
+    return this.state.patch(...args), this;
   }
 }
 
@@ -270,10 +272,10 @@ class EventEffect extends Effect {
       if (destination) {
         switch (destination.type) {
           case "":
-            patch(destination.path, value);
+            this.scope.patch(destination.path, value);
             break;
           case ".":
-            patch([...this.scope.path, ...destination.path], value);
+            this.scope.patch([...this.scope.path, ...destination.path], value);
             break;
           default:
             onError("effectors.EventEffect: Selector type not supported yet", {

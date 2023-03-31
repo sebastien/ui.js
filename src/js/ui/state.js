@@ -1,14 +1,14 @@
 import { parsePath } from "./paths.js";
-import { Bus } from "./pubsub.js";
+import { PubSub } from "./pubsub.js";
 import { type } from "./utils.js";
 
 // --
 // ## State Tree
 
 export class StateTree {
-  constructor() {
+  constructor(bus = new PubSub()) {
     this.global = {};
-    this.bus = Bus;
+    this.bus = bus;
   }
 
   // -- doc
@@ -85,6 +85,9 @@ export class StateTree {
           : this._pub(scopeTopic.get(i, false), scope[i]);
       }
     } else {
+      // FIXME: Not sure if this works, it seems that this would trigger
+      // a pub if we pass an empty value as an object, or an object with the
+      // same values. We should detect changes I think.
       const updated = clear
         ? value
         : this._apply(p.length === 0 ? this.global : scope[key], value);
@@ -177,12 +180,11 @@ export class StateTree {
   }
 }
 
-export const State = new StateTree();
-
-export const get = (path) => State.get(path);
-export const remove = (path) => State.remove(path);
-export const patch = (path, data) => State.patch(path, data);
-
-// DEBUG
-window.STATE = State;
+export const state = () => {
+  const state = new StateTree();
+  const get = (path) => state.get(path);
+  const remove = (path) => state.remove(path);
+  const patch = (path, data) => state.patch(path, data);
+  return { state, get, remove, patch };
+};
 // EOF
