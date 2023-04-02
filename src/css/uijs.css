@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cousine:wght@400;500;600;700&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 
 :root {
@@ -29,7 +29,7 @@ variations).
 
   --font-code: "Cousine", monospace;
   --font-code-line-height: 1.25em;
-  --font-code-size: var(--font-size-1);
+  --font-code-size: calc(10.5 / 14 * 1rem);
 
   --font-control: "Jost", sans-serif;
   --font-control-line-height: 1.25em;
@@ -66,6 +66,17 @@ variations).
 
   --color-lightest: #ffffff;
   --color-darkest: #222222;
+
+  --darker-0: #22222205;
+  --darker-1: #22222220;
+  --darker-2: #22222240;
+  --darker-3: #22222250;
+  --darker-4: #22222270;
+  --darker-5: #22222290;
+  --darker-6: #222222a0;
+  --darker-7: #222222b0;
+  --darker-8: #222222d0;
+  --darker-9: #222222f0;
 
   --shadow-floating: 3px 3px 1px #00000020;
 
@@ -362,8 +373,19 @@ variations).
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
+
   .fit-w {
     width: 100%;
+    max-width: 100%;
+  }
+
+  .cont {
+    position: relative;
+  }
+
+  .fit-h {
+    height: 100%;
+    max-height: 100%;
   }
 
   /**
@@ -477,6 +499,7 @@ variations).
   .button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
     min-width: 1.75em;
     position: relative;
@@ -515,6 +538,11 @@ variations).
   .button:hover {
     background-color: var(--color-accent-bg);
   }
+  button.selected,
+  .button.selected {
+    background-color: var(--color-accent-bg);
+  }
+
   button.default:hover,
   .button.default:hover {
     text-shadow: 1px 1px 0px var(--color-lightest);
@@ -595,8 +623,6 @@ variations).
     border-radius: 0px;
   }
   .select {
-    border: 1px solid var(--color-bd);
-    padding: 4px;
   }
   .select > button,
   .select > .button,
