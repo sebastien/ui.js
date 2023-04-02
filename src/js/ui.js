@@ -72,16 +72,16 @@ const createUI = (node, context) => {
     node.parentElement.replaceChild(anchor, node);
     // TODO: We should pass the component number as well?
     const local = get(localPath);
-    const scope = new EffectScope(State, dataPath, localPath, data, local);
+    const scope = new EffectScope(
+      State,
+      dataPath,
+      localPath,
+      data,
+      local,
+      EventBus
+    );
     // TODO: We should keep the returned state
     const effector = template.apply(anchor, scope);
-    EventBus.pub(
-      [template.name, "Create"],
-      { node, context, anchor, scope, effector },
-      undefined,
-      // We publish with no limit in history, as consumers will flush
-      -1
-    );
     return effector;
   }
 };
@@ -197,10 +197,11 @@ export const ui = async (
 };
 
 const on = (handlers) =>
-  Object.entries(handlers).reduce(
-    (r, [k, v]) => ((r[k] = EventBus.sub(k, v)), r),
-    {}
-  );
+  Object.entries(handlers).reduce((r, [k, v]) => {
+    r[k] = EventBus.sub(k, v);
+    console.log("SUB", k, v);
+    return r;
+  }, {});
 
 const patch = (...args) => State.patch(...args);
 const get = (...args) => State.get(...args);

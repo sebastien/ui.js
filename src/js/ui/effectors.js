@@ -40,12 +40,20 @@ class DOM {
 // The `EffectScope` aggregates a selection in the global state store, of
 // both a current value and a local path to store component-level state.
 export class EffectScope {
-  constructor(state, path, localPath, value = undefined, local = undefined) {
+  constructor(
+    state,
+    path,
+    localPath,
+    value = undefined,
+    local = undefined,
+    eventBus = undefined
+  ) {
     this.state = state;
     this.path = path;
     this.localPath = localPath;
     this.value = value;
     this.local = local;
+    this.eventBus = eventBus;
   }
   patch(...args) {
     return this.state.patch(...args), this;
@@ -54,7 +62,14 @@ export class EffectScope {
 
 class EventScope extends EffectScope {
   constructor(scope, event) {
-    super(scope.state, scope.path, scope.localPath, event, scope.local);
+    super(
+      scope.state,
+      scope.path,
+      scope.localPath,
+      event,
+      scope.local,
+      scope.eventBus
+    );
   }
 }
 
@@ -350,7 +365,8 @@ class SingleSlotEffect extends Effect {
             this.abspath,
             scope.localPath,
             current,
-            scope.local
+            scope.local,
+            scope.eventBus
           )
         )
         .init(current);
@@ -411,7 +427,8 @@ class MappingSlotEffect extends Effect {
                 this.abspath ? this.abspath : [],
                 scope.localPath,
                 current, // value
-                scope.local
+                scope.local,
+                scope.eventBus
               ),
               true // isEmpty
             )
@@ -433,7 +450,8 @@ class MappingSlotEffect extends Effect {
                 this.abspath ? [...this.abspath, i] : [i],
                 scope.localPath,
                 current[i], // value
-                scope.local
+                scope.local,
+                scope.eventBus
               )
             )
           );
@@ -467,7 +485,8 @@ class MappingSlotEffect extends Effect {
                 this.abspath ? [...this.abspath, k] : [k],
                 scope.localPath,
                 current[k], // value
-                scope.local
+                scope.local,
+                scope.eventBus
               )
             )
           );
@@ -759,8 +778,12 @@ class TemplateEffect extends Effect {
   query(query) {
     const res = [];
     for (let view of this.views) {
-      if (view?.root?.querySelectorAll) {
-        for (let node of view.root.querySelectorAll(query)) {
+      const root = view.root;
+      if (root.matches && root.matches(query)) {
+        res.push(root);
+      }
+      if (root?.querySelectorAll) {
+        for (let node of root.querySelectorAll(query)) {
           res.push(node);
         }
       }
@@ -779,12 +802,24 @@ class TemplateEffect extends Effect {
         previous = node;
       }
     }
+    this.scope.eventBus.pub(
+      [this.effector.template.name, "Mount"],
+      { scope: this.scope, effect: this, node: this.node },
+      undefined,
+      -1
+    );
   }
 
   unmount() {
     for (let view of this.views) {
       view.root?.parentNode?.removeChild(view.root);
     }
+    this.scope.eventBus.pub(
+      [this.effector.template.name, "Unmount"],
+      { scope: this.scope, effect: this, node: this.node },
+      undefined,
+      -1
+    );
   }
 
   dispose() {
@@ -796,6 +831,12 @@ class TemplateEffect extends Effect {
     }
     this.views = [];
     TemplateEffect.All.delete(this.id, this);
+    this.scope.eventBus.pub(
+      [this.effector.template.name, "Dispose"],
+      this.scope,
+      undefined,
+      -1
+    );
   }
 }
 

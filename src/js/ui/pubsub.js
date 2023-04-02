@@ -83,7 +83,7 @@ export class Topic {
   }
 
   del(limit = 1) {
-    console.log(`Topic.del at '${this.path.join(".")}'`);
+    // console.log(`Topic.del at '${this.path.join(".")}'`);
     let topic = this;
     let offset = 0;
     while (topic && (limit === -1 || offset < limit)) {
