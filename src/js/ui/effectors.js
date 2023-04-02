@@ -65,10 +65,11 @@ class Effect {
     this.scope = scope;
     this.value = undefined;
 
-    // We apply the selector in the current scope
-    if (!effector.selector) {
+    // We perform some checks
+    !node && onError("Effect(): effector should have a node", { node });
+    !effector.selector &&
       onError("Effect(): effector should have a selector", { effector });
-    }
+
     this.selected = effector.selector.apply(scope, this.onChange.bind(this));
     this.abspath = this.selected.abspath;
   }
@@ -712,6 +713,7 @@ class TemplateEffect extends Effect {
         if (!this.views[i]) {
           const view = template.views[i];
           const root = view.root.cloneNode(true);
+          const nodes = view.effectors.map((_) => pathNode(_.nodePath, root));
           // We update the `data-template` and `data-path` attributes, which is
           // used by `EventEffectors` in particular to find the scope.
           if (root.nodeType === Node.ELEMENT_NODE) {
@@ -726,7 +728,6 @@ class TemplateEffect extends Effect {
           // the nodes to have a parent.
           // This mounts the view on the parent
           // Now we create instances of the children effectors.
-          const nodes = [];
           const states = [];
           DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
           if (!root.parentNode) {
@@ -737,12 +738,11 @@ class TemplateEffect extends Effect {
           }
           for (let i in view.effectors) {
             const effector = view.effectors[i];
-            const node = pathNode(effector.nodePath, root);
+            const node = nodes[i];
+            !node &&
+              onError("Effector does not have a node", { node, i, effector });
             const effect = effector.apply(node, this.scope);
             states.push(effect);
-            // NOTE: We do that as the effect MAY (but probably should not)
-            // manipulate the given node.
-            nodes.push(effect.node);
           }
           // We add the view, which will be collected in the template effector.
           this.views[i] = {
