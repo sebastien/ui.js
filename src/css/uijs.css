@@ -306,6 +306,9 @@ variations).
   .gap {
     gap: var(--pad-1);
   }
+  .pos-rel {
+    position: relative;
+  }
   .bd {
     border: 1px solid var(--color-bd);
   }
@@ -321,7 +324,6 @@ variations).
   .bd-l {
     border-left: 1px solid var(--color-bd);
   }
-
   .row {
     display: flex;
     align-items: center;
@@ -345,14 +347,15 @@ variations).
   .with-hover {
     position: relative;
   }
-  .with-hover > .on-hover {
+  .with-hover .on-hover {
     visibility: hidden;
     pointer-events: none;
     opacity: 0;
     transition-property: visibility, opacity;
     transition-delay: 0.1;
   }
-  .with-hover:hover > .on-hover {
+  .with-hover:hover .on-hover,
+  .with-hover .on-hover:hover {
     top: 0px;
     left: 0px;
     visibility: visible;
@@ -611,6 +614,7 @@ variations).
       2px var(--color-accent);
     outline: unset;
   }
+
   button.small,
   .button.small {
     font-size: 10px;
