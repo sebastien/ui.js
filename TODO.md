@@ -14,7 +14,12 @@
 
 ## Roadmap
 
--   `[ ]` refs for templates.
+-   `[ ]` Define a component API, currently the state and ui is
+    decomposed across scope and effect, which makes it a bit
+    impractical.
+
+-   `[ ]` refs for templates. Refs should be populated in the local
+    state.
 
 -   `[ ]` Implement support the "more..." in the introspector, which
     implies storing local state, and transforming the input. It's a good
