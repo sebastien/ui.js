@@ -21,8 +21,8 @@ export const bool = (value) =>
     ? false
     : true;
 
-export const onError = (message, context) => {
-  console.error(message, context);
+export const onError = (message, ...context) => {
+  console.error(message, ...context);
 };
 export const type = (_) => {
   const t = typeof _;

@@ -303,7 +303,7 @@ class EventEffect extends Effect {
       if (triggers) {
         const { template, path, id } = EventEffect.FindScope(event.target);
         // FIXME: Not sure this is correct
-        this.scope.state.bus.pub(composePaths([template], triggers), {
+        this.scope.eventBus.pub(composePaths([template], triggers), {
           name: triggers,
           path,
           event,
@@ -677,9 +677,9 @@ class MatchEffect extends Effect {
       }
     }
     if (this.states[index] === undefined) {
-      // TODO: Scope should be the value at the given path
-      const node = this.node.childNodes[branch.nodeIndex];
-      this.states[index] = branch.template.apply(node, this.scope);
+      // We apply the template effector at the match effect node, which
+      // should be a comment node.
+      this.states[index] = branch.template.apply(this.node, this.scope);
     }
     if (index !== this.currentBranchIndex) {
       this.states[index].init().mount();

@@ -155,7 +155,11 @@ const loadModule = async (text) => {
     const module = await import(url);
     return module;
   } catch (error) {
-    onError("[ui] Unable to dynamically import JavaScript module:", error);
+    onError(
+      "[ui] Unable to dynamically import JavaScript module:",
+      error,
+      text
+    );
   } finally {
     // Clean up the URL to release the memory
     URL.revokeObjectURL(url);
@@ -199,7 +203,6 @@ export const ui = async (
 const on = (handlers) =>
   Object.entries(handlers).reduce((r, [k, v]) => {
     r[k] = EventBus.sub(k, v);
-    console.log("SUB", k, v);
     return r;
   }, {});
 
