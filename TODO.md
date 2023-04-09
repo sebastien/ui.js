@@ -24,22 +24,20 @@
     decomposed across scope and effect, which makes it a bit
     impractical.
 
--   `[ ]` refs for templates. Refs should be populated in the local
-    state.
-
--   `[ ]` Implement support the "more..." in the introspector, which
+-   `[ ]` Implement support for the "more..." in the introspector, which
     implies storing local state, and transforming the input. It's a good
     simple use case for getting state management working.
 
 -   `[ ]` state: Should pass the state store to components. All the
     patch,sub,get, in handlers should be through the environment
-    (context,global,local,path).
+    (context,global,local,path). This will likely imply a refactoring of
+    EffectScope.
 
 -   `[ ]` Event: have the ability to focus a given node, for instance
     when you click on edit.
 
 -   `[ ]` Implement local state management, and define how it used for
-    components. This should probably be done by using a State proxy that
+    components. This could probably be done by using a State proxy that
     interfaces with the store and local values as well.
 
 -   `[ ]` Implement batching for many updates, for instance re-sorting a
@@ -58,12 +56,19 @@
 -   `[ ]` Do some baseline performance tests, in particular the
     performance of updating data structures.
 
--   `[ ]` XML/XSLT Support
+-   `[ ]` XML/XSLT Support, would be nice to have automatic component
+    insancitation, like `<Split>` expands to `<div data-ui=Split>…`
 
 -   `[ ]` SSR: ensure we can easily pickup rendered HTML without
     replacing content.
 
+-   `[ ]` Partial/Resume: allow some part of the computation to be done
+    on the server, and then expanded and resumed on the client.t
+
 Done::
+
+-   Nodes can have `ref=NAME` and will be bound to the local scope upon
+    application of the template.
 
 -   Single vs Multiple selections: `<slot out:content=".">` vs
     `<slot out:content=".*">`, basically have the ability to be explicit
