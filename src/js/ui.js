@@ -40,7 +40,7 @@ import { PubSub } from "./ui/pubsub.js";
 import { StateTree } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
 import { parsePath } from "./ui/paths.js";
-import { onError, makeKey } from "./ui/utils.js";
+import { onWarning, onError, makeKey } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
 
 const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
@@ -51,6 +51,9 @@ export const StateBus = new PubSub();
 export const EventBus = new PubSub();
 export const State = new StateTree(StateBus);
 
+// --
+// Takes a DOM node that typically has `data-ui` attribute and expands it
+// by applying a template.
 const createUI = (node, context) => {
   // We render the components
   const { ui, state, path } = node.dataset;
@@ -63,15 +66,37 @@ const createUI = (node, context) => {
     });
     return null;
   } else {
-    // We instanciate the template onto the node
+    // We instantiate the template onto the node
     const key = makeKey();
     const localPath = ["@local", key];
     const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
     data && State.patch(dataPath, data);
     const anchor = document.createComment(`⚓ ${key}`);
     node.parentElement.replaceChild(anchor, node);
+
+    // We build the `slots` map that contains the list of slots
+    // that will be populates.
+    const slots = {};
+    let hasSlots = false;
+    for (const _ of node.querySelectorAll("*[slot]")) {
+      const n = _.getAttribute("slot") || "children";
+      const l = slots[n];
+      if (!l) {
+        slots[n] = _;
+      } else if (l instanceof Array) {
+        l.push(_);
+      } else {
+        slots[n] = [l, _];
+      }
+      _.parentElement.removeChild(_);
+      hasSlots = true;
+    }
+
     // TODO: We should pass the component number as well?
     const local = get(localPath);
+    if (hasSlots) {
+      patch(localPath, slots);
+    }
     const scope = new EffectScope(
       State,
       dataPath,
@@ -86,6 +111,10 @@ const createUI = (node, context) => {
   }
 };
 
+// --
+// Parses the given template node and extracts templates, stylesheets and nodes
+// which are then registered as an available template.
+const domParser = new DOMParser();
 const expandTemplates = (node) => {
   const promises = [];
   const templates = [];
@@ -102,8 +131,11 @@ const expandTemplates = (node) => {
         console.warn("[uijs] Could not expand template of scope", scope);
       } else {
         scope.querySelectorAll(name).forEach((_) => {
-          collection.push(_);
-          _.parentElement.removeChild(_);
+          // Nodes marked as `data-skip` are skipped.
+          if (!_.getAttribute("data-skip")) {
+            collection.push(_);
+            _.parentElement.removeChild(_);
+          }
         });
       }
     });
@@ -147,8 +179,10 @@ const expandTemplates = (node) => {
   }));
 };
 
-const loadModule = async (text) => {
-  const blob = new Blob([text], { type: "text/javascript" });
+// --
+// Loads the given JavaScript `source` as a  module.
+const loadModule = async (source) => {
+  const blob = new Blob([source], { type: "text/javascript" });
   const url = URL.createObjectURL(blob);
   // Dynamically import and execute the module
   try {
@@ -156,9 +190,9 @@ const loadModule = async (text) => {
     return module;
   } catch (error) {
     onError(
-      "[ui] Unable to dynamically import JavaScript module:",
+      "[loadModule] Unable to dynamically import JavaScript module:",
       error,
-      text
+      source
     );
   } finally {
     // Clean up the URL to release the memory
@@ -166,7 +200,6 @@ const loadModule = async (text) => {
   }
 };
 
-const domParser = new DOMParser();
 export const ui = async (
   scope = document,
   context = {},
@@ -187,7 +220,7 @@ export const ui = async (
       });
       stylesheets.forEach((_) => document.body.appendChild(_));
       if (!scope?.querySelectorAll) {
-        console.warn("[uijs] Could not expand template of scope", scope);
+        onWarning("Could not expand template of scope", scope);
       } else {
         for (const node of scope.querySelectorAll("*[data-ui]")) {
           const ui = createUI(node, context);
@@ -211,7 +244,7 @@ const get = (...args) => State.get(...args);
 const remove = (...args) => State.remove(...args);
 
 // DEBUG
-window.UI = { State, EventBus, StateBus };
+// window.UI = { State, EventBus, StateBus };
 
 export { on, patch, get, remove, tokens, stylesheet };
 export default ui;

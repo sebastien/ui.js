@@ -33,7 +33,6 @@ Shared space:
 Component-local:
 
 -   `@items`: absolute
--   `@.name`: relative to the current path
 
 Special:
 

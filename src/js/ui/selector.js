@@ -12,7 +12,7 @@ import { Formats } from "./formats.js";
 // A directive can have the following components:
 //
 // - A **data selection**, in the form of  path like `todos.items` (absolute) or `.label` (relative), a
-//   special value such as `#key` (current key in the parent) or a combinatio of the above
+//   special value such as `#key` (current key in the parent) or a combination of the above
 //   `[..selected,#key]`, '{count:..items.length,selected:.selected}'
 //
 // - A **data transformation**, prefixed by `|` and using dot-separated names, such as
@@ -25,6 +25,8 @@ import { Formats } from "./formats.js";
 // ## Selector DSL
 //
 export const KEY = "([a-zA-Z]+=)?";
+//
+// FIXME: We can't have both local and relative
 export const PATH = "#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?))";
 export const FORMAT = "(\\|[A-Za-z-]+)?";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
@@ -96,6 +98,8 @@ class SelectorInput {
       let context =
         this.type === SelectorInput.ABSOLUTE
           ? scope.state.global
+          : this.type === SelectorInput.LOCAL
+          ? scope.local
           : this.type === SelectorInput.RELATIVE
           ? value
           : state;
@@ -124,14 +128,17 @@ class SelectorInput {
       case SelectorInput.KEY:
         return scope.path;
       case SelectorInput.ABSOLUTE:
+        // FIXME: Is it? Shouldn't this be this.path?
         return scope.path;
       case SelectorInput.RELATIVE:
         return scope.path ? scope.path.concat(this.path) : this.path;
+      case SelectorInput.LOCAL:
+        return scope.localPath.concat(this.path);
       default:
         onError(`Unsupported selector input type: ${this.type}`, {
           selectorInput: this,
+          scope,
         });
-        return scope.path;
     }
   }
 

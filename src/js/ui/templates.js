@@ -5,6 +5,7 @@ import {
   PATH,
   FORMAT,
   EVENT,
+  INPUTS,
 } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
@@ -102,7 +103,7 @@ const parseOnDirective = (text) => {
   }
 };
 
-const RE_OUT = new RegExp(`^(?<selector>[^@]+)(@(?<template>[A-Za-z]+))?`);
+const RE_OUT = new RegExp(`^(?<selector>${INPUTS})(@(?<template>[A-Za-z]+))?$`);
 const parseOutDirective = (text) => {
   const match = text.match(RE_OUT);
   if (!match) {
@@ -375,13 +376,13 @@ const view = (root, templateName = undefined) => {
     const text = attr.value || `.${name}`;
     const directive = parseOutDirective(text);
     if (!directive) {
-      onError(`templates.view: Could not parse out directive ${text}`, {
+      onError(`templates.view: Could not parse 'out:' directive "${text}"`, {
         text,
         attr,
       });
     } else if (!directive.selector) {
       onError(
-        `templates.view: Cannot parse selector out of directive ${text}`,
+        `templates.view: Cannot parse selector 'out:' of directive "${text}"`,
         {
           text,
           attr,

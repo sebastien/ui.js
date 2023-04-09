@@ -39,6 +39,12 @@ class DOM {
 // -- doc
 // The `EffectScope` aggregates a selection in the global state store, of
 // both a current value and a local path to store component-level state.
+// FIXME: This should be reworked, what we need is:
+// - State store
+// - Local root path
+// - Event Bus
+// - State Bus
+// - `local` and `value` as cached (ie, we don't need to retrieve them)
 export class EffectScope {
   constructor(
     state,
@@ -52,8 +58,21 @@ export class EffectScope {
     this.path = path;
     this.localPath = localPath;
     this.value = value;
-    this.local = local;
+    // FIXME: This should go
+    this._local = local;
     this.eventBus = eventBus;
+  }
+
+  // TODO: Use that API instead
+  // get global() {
+  //   return this.state.global;
+  // }
+
+  get local() {
+    if (this._local === undefined) {
+      this._local = this.state.get(this.localPath);
+    }
+    return this._local;
   }
   patch(...args) {
     return this.state.patch(...args), this;
@@ -161,21 +180,38 @@ export class Effector {
 // ## Text Effector
 //
 
-class TextEffect extends Effect {
+class ContentEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
     this.textNode = document.createTextNode("");
+    this.contentNode = undefined;
   }
 
   unify(value, previous = this.value) {
-    this.textNode.data =
-      value === Empty || value === null || value === undefined
-        ? ""
-        : typeof value === "string"
-        ? value
-        : `${value}`;
+    if (value instanceof Node) {
+      if (
+        this.contentNode &&
+        value !== this.contentNode &&
+        this.contentNode.parentElement
+      ) {
+        this.contentNode.parentElement.replaceChild(value, this.contentNode);
+      }
+      this.contentNode = value;
+      this.textNode.data = "";
+    } else {
+      this.contentNode = undefined;
+      this.textNode.data =
+        value === Empty || value === null || value === undefined
+          ? ""
+          : typeof value === "string"
+          ? value
+          : `${value}`;
+    }
     if (!this.textNode.parentNode) {
       DOM.mount(this.node, this.textNode);
+    }
+    if (this.contentNode && !this.contentNode.parentNode) {
+      DOM.mount(this.node, this.contentNode);
     }
     return this;
   }
@@ -186,12 +222,12 @@ class TextEffect extends Effect {
   }
 }
 
-class TextEffector extends Effector {
+class ContentEffector extends Effector {
   constructor(nodePath, selector) {
     super(nodePath, selector);
   }
   apply(node, scope) {
-    return new TextEffect(this, node, scope).init();
+    return new ContentEffect(this, node, scope).init();
   }
 }
 
@@ -546,7 +582,7 @@ export class SlotEffector extends Effector {
     super(nodePath, selector);
     this.templateName = templateName;
     this._template = !templateName
-      ? new TextEffector(nodePath, CurrentValueSelector) // Note: no selector as the slot already took care of it
+      ? new ContentEffector(nodePath, CurrentValueSelector) // Note: no selector as the slot already took care of it
       : typeof templateName === "string"
       ? undefined
       : templateName;

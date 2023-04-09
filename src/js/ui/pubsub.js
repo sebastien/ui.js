@@ -51,7 +51,8 @@ export class Topic {
   // TODO: Arguably, it may be easier to always have an  array, and limit it
   // using the capacity.
   pub(data, limit = 1, capacity = undefined) {
-    console.log(`Topic.pub at '${this.path.join(".")}'`, data);
+    // DEBUG
+    // console.log(`Topic.pub at '${this.path.join(".")}'`, data);
     // We let the publisher decide of the capacity of the topic. This may change
     // the data retention on the topic.
     if (capacity !== undefined) {
@@ -83,6 +84,7 @@ export class Topic {
   }
 
   del(limit = 1) {
+    // DEBUG
     // console.log(`Topic.del at '${this.path.join(".")}'`);
     let topic = this;
     let offset = 0;
@@ -116,12 +118,12 @@ export class Topic {
   }
 
   sub(handler, withLast = 1) {
-    const values = [...this.values];
-    console.log(`Topic.sub at '${this.path.join(".")}'`, handler, {
-      values,
-      value: this.value,
-      withLast,
-    });
+    // DEBUG
+    // console.log(`Topic.sub at '${this.path.join(".")}'`, handler, {
+    //   values:[...this.values],
+    //   value: this.value,
+    //   withLast,
+    // });
     if (!this.handlers) {
       this.handlers = [];
     }

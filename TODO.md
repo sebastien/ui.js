@@ -14,6 +14,12 @@
 
 ## Roadmap
 
+-   `[ ]` support for `ref:XXX` in templates and `slot=SLOT` in applying
+    templates, populating these in the local state. This also means that
+    an effector should support nodes as values to mount them. We should
+    also make sure that we can pass more complex components, not just
+    static HTML trees.
+
 -   `[ ]` Define a component API, currently the state and ui is
     decomposed across scope and effect, which makes it a bit
     impractical.

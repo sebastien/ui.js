@@ -21,8 +21,11 @@ export const bool = (value) =>
     ? false
     : true;
 
+export const onWarning = (message, ...context) => {
+  console.warn("[uijs]", message, ...context);
+};
 export const onError = (message, ...context) => {
-  console.error(message, ...context);
+  console.error("[uijs]", message, ...context);
 };
 export const type = (_) => {
   const t = typeof _;
