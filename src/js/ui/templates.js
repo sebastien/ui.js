@@ -246,8 +246,9 @@ const isNodeEmpty = (node) => {
 // ## Views
 //
 class View {
-  constructor(root, effectors) {
+  constructor(root, refs, effectors) {
     this.root = root;
+    this.refs = refs;
     this.effectors = effectors;
   }
 }
@@ -509,7 +510,15 @@ const view = (root, templateName = undefined) => {
     }
   }
 
-  return new View(viewRoot, effectors);
+  // --
+  // Refs
+  const refs = new Map();
+  for (const node of iterSelector(root, "*[ref]")) {
+    refs.set(node.getAttribute("ref").split("."), nodePath(node, root));
+    node.removeAttribute("ref");
+  }
+
+  return new View(viewRoot, refs, effectors);
 };
 
 // --
@@ -522,6 +531,8 @@ const view = (root, templateName = undefined) => {
 
 export const Templates = new Map();
 
+// FIXME: I'm not sure we need to keep that class, as it seems that it's
+// actually the template effector
 class Template {
   constructor(root, views, name = undefined) {
     this.name = name;

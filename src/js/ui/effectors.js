@@ -1,6 +1,6 @@
 import { composePaths, parsePath, pathNode } from "./paths.js";
 import { CurrentValueSelector } from "./selector.js";
-import { Empty, isAtom, isEmpty, onError, numcode } from "./utils.js";
+import { Empty, isAtom, isEmpty, onError, numcode, assign } from "./utils.js";
 import { Templates } from "./templates.js";
 
 class DOM {
@@ -779,6 +779,19 @@ class TemplateEffect extends Effect {
               : "";
             root.dataset["id"] = this.id;
           }
+          // We extract refs from the view and register them as corresponding
+          // entries in the local state. We need to do this first, as effectors
+          // may use specific refs.
+          const refs = {};
+          let hasRefs = false;
+          for (const [k, p] of view.refs.entries()) {
+            const n = pathNode(p, root);
+            assign(refs, k, n);
+            hasRefs = true;
+          }
+          if (hasRefs) {
+            this.scope.patch(this.scope.localPath, refs);
+          }
           // We do need to mount the node first, as the effectors may need
           // the nodes to have a parent.
           // This mounts the view on the parent
@@ -787,7 +800,7 @@ class TemplateEffect extends Effect {
           DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
           if (!root.parentNode) {
             onError(
-              "TemplateEffect: view root node should always have a prent",
+              "TemplateEffect: view root node should always have a parent",
               { i, root, view }
             );
           }
@@ -799,9 +812,11 @@ class TemplateEffect extends Effect {
             const effect = effector.apply(node, this.scope);
             states.push(effect);
           }
+
           // We add the view, which will be collected in the template effector.
           this.views[i] = {
             root,
+            refs,
             nodes,
             states,
           };
