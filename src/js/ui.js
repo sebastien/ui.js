@@ -189,8 +189,10 @@ const loadModule = async (source) => {
     const module = await import(url);
     return module;
   } catch (error) {
+    // NOTE: If the script imports modules relatively to its HTML file, this
+    // won't work as it won't resolve.
     onError(
-      "[loadModule] Unable to dynamically import JavaScript module:",
+      "loadModule: Unable to dynamically import JavaScript module:",
       error,
       source
     );
@@ -216,7 +218,19 @@ export const ui = async (
       scripts.forEach((_) => {
         // NOTE: Adding a script node doesn't quite work. We could do
         // it in SSR, though.
-        loadModule(_.innerText);
+        const type = _.getAttribute("type");
+        switch (type) {
+          case "importmap":
+            break;
+          case "javascript":
+          case "module":
+          case undefined:
+            loadModule(_.innerText);
+            break;
+          default:
+            onWarning(`Unsupported script type in template: ${type}`);
+            break;
+        }
       });
       stylesheets.forEach((_) => document.body.appendChild(_));
       if (!scope?.querySelectorAll) {

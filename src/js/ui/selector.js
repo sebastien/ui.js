@@ -27,7 +27,8 @@ import { Formats } from "./formats.js";
 export const KEY = "([a-zA-Z]+=)?";
 //
 // FIXME: We can't have both local and relative
-export const PATH = "#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?))";
+export const PATH =
+  "(#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
 export const FORMAT = "(\\|[A-Za-z-]+)?";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
 export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
@@ -38,6 +39,24 @@ export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
 export const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
 const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 
+export const commonPath = (paths) => {
+  let i = 0;
+  let n = paths.reduce(
+    (r, _, i) => (i === 0 ? _.length : Math.min(_.length, r)),
+    0
+  );
+  const op = paths[0];
+  while (i < n) {
+    for (const cp of paths) {
+      if (cp[i] !== op[i]) {
+        return cp.slice(0, i);
+      }
+    }
+    i++;
+  }
+  return op.slice(0, n);
+};
+
 // --
 // ## Selector Input
 
@@ -46,7 +65,7 @@ const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 // which is a collection of inputs. Selector inputs can select from
 // the local state (`@` prefixed, like `@status`), or from the global state
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
-class SelectorInput {
+export class SelectorInput {
   static LOCAL = "@";
   static RELATIVE = ".";
   static ABSOLUTE = "";
@@ -128,8 +147,7 @@ class SelectorInput {
       case SelectorInput.KEY:
         return scope.path;
       case SelectorInput.ABSOLUTE:
-        // FIXME: Is it? Shouldn't this be this.path?
-        return scope.path;
+        return this.path;
       case SelectorInput.RELATIVE:
         return scope.path ? scope.path.concat(this.path) : this.path;
       case SelectorInput.LOCAL:
@@ -155,7 +173,7 @@ class SelectorInput {
 // Selector states manage a spefic instance of a `Selector`, which
 // can be bound to pub/sub bus, and update itself (triggering its `handler`)
 // when the value change.
-class SelectorState {
+export class SelectorState {
   constructor(selector, scope, handler) {
     this.selector = selector;
     this.scope = scope;
@@ -181,7 +199,8 @@ class SelectorState {
   // `value` at `path`, the `global` state and the `local` component state.
   extract() {
     // TODO: Should we detect changes and store a revision number?
-    return (this.value = this.selector.extract(this.scope));
+    this.value = this.selector.extract(this.scope);
+    return this.value;
   }
 
   // -- doc
@@ -223,7 +242,7 @@ class SelectorState {
         break;
       case Selector.LIST:
         {
-          const i = this.inputs[index];
+          const i = this.selector.inputs[index];
           if (this.value[i] !== value) {
             this.value[i] = value;
             hasChanged = true;
@@ -232,7 +251,7 @@ class SelectorState {
         break;
       case Selector.MAP:
         {
-          const k = this.inputs[index].key;
+          const k = this.selector.inputs[index].key;
           // FIXME: Difference between SCOPE and VALUE
           if (this.value[k] !== value) {
             this.value[k] = value;
@@ -265,10 +284,10 @@ class SelectorState {
 // - The global data store
 // - The component (local) state
 //
-class Selector {
-  static SINGLE = 0;
-  static LIST = 1;
-  static MAP = 2;
+export class Selector {
+  static SINGLE = "V";
+  static LIST = "L";
+  static MAP = "M";
   constructor(inputs, event, stops) {
     this.inputs = inputs;
     this.event = event;
@@ -281,7 +300,7 @@ class Selector {
   }
 
   // -- doc
-  // Applies the selector at the givene value and location. This returns
+  // Applies the selector at the given value and location. This returns
   // a selector state that can subscribe to value, transform them and
   // notify of updates.
   apply(scope, handler) {
@@ -296,8 +315,8 @@ class Selector {
       case Selector.SINGLE:
         return this.inputs[0].extract(scope);
       case Selector.LIST: {
-        const res = state ? state : new Array(n);
         const n = this.inputs.length;
+        const res = state ? state : new Array(n);
         for (let i = 0; i < n; i++) {
           res[i] = this.inputs[i].extract(scope);
         }
@@ -320,23 +339,19 @@ class Selector {
         break;
     }
   }
-  abspath(scope, state = undefined) {
+  abspath(scope) {
     switch (this.type) {
       case Selector.SINGLE:
         return this.inputs[0].abspath(scope);
       case Selector.LIST:
       case Selector.MAP:
-        // ERROR
-        onError(`Selector.abspath: Unsupported selector type: ${this.type}`, {
-          type: this.type,
-        });
-        return state;
+        return commonPath(this.inputs.map((_) => _.abspath(scope)));
       default:
         // ERROR
-        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+        onError(`Selector.extract: Unknown selector type: ${this.type}`, {
           type: this.type,
         });
-        return state;
+        return null;
     }
   }
   abspaths(scope, state = undefined) {

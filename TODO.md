@@ -14,6 +14,9 @@
 
 ## Roadmap
 
+-   `[ ]` Change the slot template formatting to something different, as
+    `@` clashes with local.
+
 -   `[ ]` support for `ref:XXX` in templates and `slot=SLOT` in applying
     templates, populating these in the local state. This also means that
     an effector should support nodes as values to mount them. We should
