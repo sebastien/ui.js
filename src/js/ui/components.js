@@ -76,7 +76,14 @@ export const createComponent = (node, context, templates = Templates) => {
   const anchor = document.createComment(`⚓ ${ui}:${id}`);
   node.parentElement.replaceChild(anchor, node);
 
-  return new Component(id, anchor, template, context, path, extractSlots(node));
+  return new Component(
+    id,
+    anchor,
+    template,
+    context,
+    path ? path.split(".") : undefined,
+    extractSlots(node)
+  );
 };
 
 // EOF
