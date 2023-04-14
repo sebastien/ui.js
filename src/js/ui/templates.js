@@ -151,14 +151,10 @@ const isBoundaryNode = (node) => {
 // --
 // Returns the boundary node in this node's ancestors.
 const getBoundaryNode = (node) => {
-  while (true) {
-    if (!node.parentElement) {
-      return node;
-    }
-    if (isBoundaryNode((node = node.parentElement))) {
-      return node;
-    }
+  while (node.parentElement && !isBoundaryNode(node.parentElement)) {
+    node = node.parentElement;
   }
+  return node;
 };
 
 // --
@@ -330,10 +326,9 @@ const view = (root, templateName = undefined) => {
             n.parentNode.replaceChild(anchor, n);
             const frag = document.createDocumentFragment();
             frag.appendChild(n);
-            const subtemplate = template(
+            const subtemplate = createTemplate(
               frag,
               `${makeKey()}-${effectors.length}`,
-              templateName, // This is the parent name
               false // No need to clone there
             );
             branches.push({
@@ -399,11 +394,10 @@ const view = (root, templateName = undefined) => {
           ? directive.template
           : isNodeEmpty(node)
           ? null // An empty node means a null (text) formatter
-          : template(
+          : createTemplate(
               // The format is the template id
               node,
               `${templateName || makeKey()}-${effectors.length}`,
-              templateName, // This is the parent name
               false // No need to clone there
             ).name;
 
@@ -492,10 +486,9 @@ const view = (root, templateName = undefined) => {
         }
         // TODO: If there is no sub-effectors, we should not bother
         // with a template, it's a waste of resources.
-        const subtemplate = template(
+        const subtemplate = createTemplate(
           frag,
           `${makeKey()}-${effectors.length}`,
-          templateName, // This is the parent name
           false // No need to clone there
         );
         effectors.push(
@@ -545,11 +538,11 @@ class Template {
 // Parses the given `node` and its descendants as a template definition. The
 // `parentName` is useful for nested templates where the actual root/component
 // template is different.
-export const template = (
+export const createTemplate = (
   node,
   name = node.getAttribute("id"),
-  rootName = undefined, // FIXME We're not doing anything with that
-  clone = true // TODO: We should probably always have that to false
+  clone = true, // TODO: We should probably always have that to false
+  templates = Templates
 ) => {
   let views = [];
   // NOTE: We skip text nodes there
@@ -607,7 +600,7 @@ export const template = (
     )
   );
   if (name) {
-    Templates.set(name, res);
+    templates.set(name, res);
   }
   return res;
 };

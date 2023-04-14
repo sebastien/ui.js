@@ -6,8 +6,8 @@ import { type } from "./utils.js";
 // ## State Tree
 
 export class StateTree {
-  constructor(bus = new PubSub()) {
-    this.global = {};
+  constructor(global = {}, bus = new PubSub()) {
+    this.global = global;
     this.bus = bus;
   }
 
@@ -177,6 +177,17 @@ export class StateTree {
       default:
         return changes;
     }
+  }
+}
+
+// --
+// The `StateContext` wraps a state tree (which itself wraps a global object and
+// a pubsub bus for notifications) and a separate `events` PubSub bus. The
+// context encapsulates the space in which the components operate.
+export class StateContext {
+  constructor(data = {}, events = new PubSub()) {
+    this.state = data instanceof StateTree ? data : new StateTree(data);
+    this.events = events;
   }
 }
 
