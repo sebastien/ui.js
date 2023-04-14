@@ -54,8 +54,8 @@ variations).
   --color-text-alt: var(--palette-grey-80);
   --color-icon: var(--palette-grey-60);
   --color-bd: var(--palette-grey-80);
-  --color-page-bg: var(--palette-ivory-90);
-  --color-page-bg-alt: var(--palette-ivory-70);
+  --page-bg: var(--palette-ivory-90);
+  --page-bg-alt: var(--palette-ivory-70);
   --color-code: var(--palette-grey-40);
   --color-accent: var(--palette-gold-60);
   /* FIXME: What is that alt */
@@ -63,6 +63,9 @@ variations).
   --color-accent-txt: var(--color-text);
   --color-accent-bg: var(--palette-gold-60);
   --color-accent-bg-alt: #fcd64780;
+
+  --color-error-bg: #e8633a;
+  --color-error-bg-alt: #e8633a80;
 
   --color-lightest: #ffffff;
   --color-darkest: #222222;
@@ -217,7 +220,7 @@ variations).
     font-size: var(--font-text-size);
     color: var(--color-text);
     accent-color: var(--color-accent);
-    background-color: var(--color-page-bg);
+    background-color: var(--page-bg);
     padding: var(--pad-4);
     --line-height: var(--font-text-line-height);
   }
@@ -238,8 +241,7 @@ variations).
     border: 0px solid transparent;
     border-bottom: 1px solid var(--color-text);
   }
-  p,
-  li {
+  p {
     max-width: var(--text-max-width);
   }
 
@@ -309,6 +311,17 @@ variations).
   .pos-rel {
     position: relative;
   }
+  .pos-abs {
+    position: absolute;
+  }
+  .pos-lr {
+    bottom: 0px;
+    right: 0px;
+  }
+  .fit-w {
+    box-sizing: border-box;
+    width: 100%;
+  }
   .bd {
     border: 1px solid var(--color-bd);
   }
@@ -351,17 +364,20 @@ variations).
     visibility: hidden;
     pointer-events: none;
     opacity: 0;
-    transition-property: visibility, opacity;
-    transition-delay: 0.1;
+    transition-property: opacity;
+    transition-delay: 0.1s;
+    transition-duration: 0.25s;
   }
   .with-hover:hover .on-hover,
   .with-hover .on-hover:hover {
-    top: 0px;
-    left: 0px;
     visibility: visible;
-    display: block;
     pointer-events: auto;
     opacity: 1;
+  }
+
+  .editable[data-placeholder]:before {
+    content: attr(data-placeholder);
+    opacity: 0.75;
   }
 
   /**
@@ -397,7 +413,7 @@ variations).
   menu {
     display: block;
     font-size: var(--font-size-1);
-    background-color: var(--color-page-bg);
+    background-color: var(--page-bg);
     border: 1px solid var(--control-bd-alt);
     border-radius: 4px;
     padding: 8px 0px;
@@ -498,6 +514,26 @@ variations).
     top: -2px;
     left: 2px;
   }
+
+  input.transparent[type="text"],
+  input.transparent[type="text"]:active,
+  input.transparent[type="text"]:focus,
+  input.transparent[type="text"]:hover,
+  textarea.transparent,
+  textarea.transparent:active,
+  textarea.transparent:focus,
+  textarea.transparent:hover,
+  .textarea.transparent,
+  .textarea.transparent:active,
+  .textarea.transparent:focus,
+  .textarea.transparent:hover {
+    background-color: transparent;
+    border: 0px solid transparent;
+    box-shadow: unset;
+    top: unset;
+    left: unset;
+  }
+
   button,
   .button {
     display: inline-flex;
@@ -512,7 +548,7 @@ variations).
     font-family: var(--font-control);
     font-size: 12px;
     padding: 4px 8px;
-    background-color: var(--color-page-bg);
+    background-color: var(--page-bg);
     box-shadow: -2px 2px 0px var(--color-accent);
     color: var(--color-text);
     cursor: pointer;
@@ -643,10 +679,15 @@ variations).
   }
 
   .pill {
+    display: inline-flex;
+    align-items: center;
     border-radius: 0.5em;
     padding-left: 1ch;
     padding-right: 1ch;
     background-color: var(--color-accent-bg-alt);
+  }
+  .pill.error {
+    background-color: var(--color-error-bg-alt);
   }
 }
 
