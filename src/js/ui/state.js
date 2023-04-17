@@ -61,7 +61,7 @@ export class StateTree {
   }
 
   put(path = null, value = undefined) {
-    return this.patch(path, value);
+    return this.patch(path, value, true);
   }
 
   patch(path = null, value = undefined, clear = false) {
@@ -180,22 +180,4 @@ export class StateTree {
   }
 }
 
-// --
-// The `StateContext` wraps a state tree (which itself wraps a global object and
-// a pubsub bus for notifications) and a separate `events` PubSub bus. The
-// context encapsulates the space in which the components operate.
-export class StateContext {
-  constructor(data = {}, events = new PubSub()) {
-    this.state = data instanceof StateTree ? data : new StateTree(data);
-    this.events = events;
-  }
-}
-
-export const state = () => {
-  const state = new StateTree();
-  const get = (path) => state.get(path);
-  const remove = (path) => state.remove(path);
-  const patch = (path, data) => state.patch(path, data);
-  return { state, get, remove, patch };
-};
 // EOF
