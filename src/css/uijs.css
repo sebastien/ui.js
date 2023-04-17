@@ -49,6 +49,9 @@ variations).
   --font-size-8: calc(42 / 14 * 1rem);
   --font-size-9: calc(48 / 14 * 1rem);
 
+  /* NOTE: Used with controls */
+  --opacity-dimmed: 0.65;
+
   /* FIXME: Should drop the color here */
   --color-text: var(--palette-grey-20);
   --color-text-alt: var(--palette-grey-80);
@@ -622,6 +625,15 @@ variations).
     height: 1.5em;
     line-height: 1.25em;
   }
+
+  button.pill,
+  .button.pill {
+    border-width: 0px;
+    padding-right: 0.75em;
+    padding-left: 0.75em;
+    border-radius: 2em;
+  }
+
   button.label,
   .button.label {
     border: 0px solid transparent;
@@ -662,6 +674,20 @@ variations).
     padding: 1px;
     border-radius: 0px;
   }
+  button.noborder,
+  .button.noborder {
+    border-width: 0px;
+    box-shadow: 0px 0px 0px transparent;
+  }
+  button.dimmed,
+  .button.dimmed {
+    opacity: var(--opacity-dimmed);
+  }
+  button.dimmed:hover,
+  .button.dimmed:hover {
+    opacity: 1;
+  }
+
   .select {
   }
   .select > button,
@@ -718,4 +744,18 @@ variations).
   }
 }
 
+/* --
+ * ## Debugging
+ *
+ * A collection of classes that can be used for debugging. They
+ * are defined as `UPPERCASE` for readability.
+ */
+@layer debug {
+  /* -- 
+   * Removes the element.
+  */
+  .REMOVED {
+    display: none !important;
+  }
+}
 /* EOF */
