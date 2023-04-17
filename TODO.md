@@ -8,14 +8,19 @@
 
 -   `[ ]` `SlotEffector` needs to mount the nodes in order
 
+-   `[ ]` Measure the initial rendering of data, especially with nested
+    content, it seems to be too many times.
+
 -   `[ ]` `<slot>` are copied into the output, they should not be there
     in the rendered template. Instead they should be replaced by comment
     with a start/end.
 
+-   `[ ]` `<slot><slot /><slot /></slot>` seems to create problems
+
 ## Roadmap
 
--   `[ ]` Change the slot template formatting to something different, as
-    `@` clashes with local.
+-   `[ ]` Support for dynamic tag creation. For instance, if we want to
+    have a tag be an `li` instead of `div`.
 
 -   `[ ]` support for `ref:XXX` in templates and `slot=SLOT` in applying
     templates, populating these in the local state. This also means that
@@ -69,6 +74,9 @@
     on the server, and then expanded and resumed on the client.t
 
 Done::
+
+-   `@` changed to `:` in `out:content=".:SomeComponent"` as the `@`
+    clashed with local state selectors.
 
 -   Nodes can have `ref=NAME` and will be bound to the local scope upon
     application of the template.

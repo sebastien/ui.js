@@ -1,11 +1,11 @@
 ## Effectors
 
-### Content (`out:{conent,*}`)
+### Content (`out:{content,*}`)
 
 -   Expand value: `<slot out:content="SELECTOR" />` to replace the slot
     with the string-representation of the selected value(s).
 
--   Apply template: `<slot out:content="SELECTOR@TEMPLATE" />` to apply
+-   Apply template: `<slot out:content="SELECTOR:TEMPLATE" />` to apply
     the `TEMPLATE` with the selected value(s)
 
 -   Inline template: `<slot out:content="SELECTOR">TEMPLATE</slot>` to
