@@ -22,7 +22,17 @@ import { onError, makeKey, bool } from "./utils.js";
 import { styled } from "./tokens.js";
 import { stylesheet } from "./css.js";
 
+// --
+// ## Templates
+//
+// This defines how HTML/XML template definitions are translated into
+// a tree of effectors.
+
 const RE_NUMBER = /^\d+(\.\d+)?$/;
+// -- doc
+// `parseValue` parses a text value into its JavaScript representation. Note
+// that this function uses `eval()` and is not safe to use with foreign
+// code.
 export const parseValue = (value) => {
   if (typeof value !== "string") {
     return value;
@@ -44,6 +54,7 @@ export const parseValue = (value) => {
     case "{":
     case "[":
     case "(":
+      // SEC: This is subject to injection.
       return eval(value);
     default:
       return RE_NUMBER.test(value) ? parseFloat(value) : value;
@@ -60,6 +71,9 @@ const Comparators = {
   "<": (a, b) => a < b,
   "<=": (a, b) => a <= b,
 };
+
+// --
+// Parses a `when=TEXT` directive.
 const parseWhenDirective = (text) => {
   const match = text.match(
     /^(?<selector>[^=!<>]+)((?<operator>==?|!=|>|>=|<|<=)(?<value>.+)?)?$/
@@ -103,7 +117,7 @@ const parseOnDirective = (text) => {
   }
 };
 
-const RE_OUT = new RegExp(`^(?<selector>${INPUTS})(@(?<template>[A-Za-z]+))?$`);
+const RE_OUT = new RegExp(`^(?<selector>${INPUTS})(:(?<template>[A-Za-z]+))?$`);
 const parseOutDirective = (text) => {
   const match = text.match(RE_OUT);
   if (!match) {
@@ -328,7 +342,9 @@ const view = (root, templateName = undefined) => {
             frag.appendChild(n);
             const subtemplate = createTemplate(
               frag,
-              `${makeKey()}-${effectors.length}`,
+              // FIXME: I'm not sure why we're making a key here, we should probably
+              // use the name of the parent template
+              `T${templateName || makeKey()}-E${effectors.length}`,
               false // No need to clone there
             );
             branches.push({
@@ -390,14 +406,16 @@ const view = (root, templateName = undefined) => {
         (parentName === "SLOT" || parentName === "slot") &&
         name === "content"
       ) {
-        const slotTemplate = directive.template
+        const slotTemplate = node.dataset.ui
+          ? node.dataset.ui
+          : directive.template
           ? directive.template
           : isNodeEmpty(node)
           ? null // An empty node means a null (text) formatter
           : createTemplate(
               // The format is the template id
               node,
-              `${templateName || makeKey()}-${effectors.length}`,
+              `T${templateName || makeKey()}-E${effectors.length}`,
               false // No need to clone there
             ).name;
 
@@ -488,7 +506,7 @@ const view = (root, templateName = undefined) => {
         // with a template, it's a waste of resources.
         const subtemplate = createTemplate(
           frag,
-          `${makeKey()}-${effectors.length}`,
+          `T${templateName || makeKey()}-E${effectors.length}`,
           false // No need to clone there
         );
         effectors.push(
