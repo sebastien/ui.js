@@ -74,8 +74,15 @@ export class EffectScope {
     }
     return this._local;
   }
+
   patch(...args) {
     return this.state.patch(...args), this;
+  }
+
+  toString() {
+    return `<EffectScope path=${this.path.join(
+      "."
+    )} local=${this.localPath.join(".")}>`;
   }
 }
 
@@ -309,12 +316,8 @@ class EventEffect extends Effect {
   }
   constructor(effector, node, scope) {
     super(effector, node, scope);
-    const {
-      source,
-      destination,
-      event: triggers,
-      stops,
-    } = this.effector.directive;
+    const { source, destination, stops } = this.effector.directive;
+    const eventPath = this.effector.eventPath;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
       const value = source
@@ -336,17 +339,22 @@ class EventEffect extends Effect {
             break;
         }
       }
-      if (triggers) {
-        const { template, path, id } = EventEffect.FindScope(event.target);
-        // FIXME: Not sure this is correct
-        this.scope.eventBus.pub(composePaths([template], triggers), {
-          name: triggers,
-          path,
+      if (eventPath) {
+        // FIXME: Not sure we need that, the scope could capture the template
+        // as well.
+        const { template, id } = EventEffect.FindScope(event.target);
+        const data = {
+          name: eventPath.join(""),
           event,
           scope,
-          // The internal state of each template effector is accessible globally.
-          state: TemplateEffect.All.get(id)?.state,
-        });
+        };
+        // This is a relative event, which then may have local registered handlers
+        if (eventPath[0] == "") {
+          this.scope.state.put(["@local", id, ...eventPath.slice(1)], data);
+        } else {
+          // TODO: Arguably, we could be using the state tree with events to publish that
+          this.scope.eventBus.pub(composePaths([template], eventPath), data);
+        }
       }
       if (stops) {
         event.preventDefault();
@@ -368,6 +376,7 @@ export class EventEffector extends Effector {
   constructor(nodePath, event, directive) {
     super(nodePath, directive.source);
     this.directive = directive;
+    this.eventPath = directive.event ? directive.event.split(".") : null;
     this.event = event;
   }
 
@@ -747,12 +756,11 @@ export class MatchEffector extends Effector {
 class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
-  static All = new Map();
   constructor(effector, node, scope) {
     super(effector, node, scope);
-    this.id = numcode(TemplateEffector.Counter++);
+    // The id of a template is expected to be its local path root.
+    this.id = scope.localPath.at(-1);
     this.views = [];
-    TemplateEffect.All.set(this.id, this);
   }
 
   unify(value, previous = this.value) {
@@ -881,7 +889,6 @@ class TemplateEffect extends Effect {
       }
     }
     this.views = [];
-    TemplateEffect.All.delete(this.id, this);
     this.scope.eventBus.pub(
       [this.effector.template.name, "Dispose"],
       this.scope,
