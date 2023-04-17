@@ -34,8 +34,11 @@
 //   state = undefined
 // ) => {};
 
-import { StateContext } from "./ui/state.js";
-import { createComponent } from "./ui/components.js";
+import {
+  ComponentsContext,
+  createComponent,
+  controller,
+} from "./ui/components.js";
 import { loadTemplates, loadModule } from "./ui/loading.js";
 import { stylesheet } from "./ui/css.js";
 import { onWarning } from "./ui/utils.js";
@@ -47,7 +50,8 @@ import tokens from "./ui/tokens.js";
 // This is the main function used to instanciate a set of components in a context.
 export const ui = async (scope = document, data = {}, styles = undefined) => {
   const style = undefined;
-  const context = data instanceof StateContext ? data : new StateContext(data);
+  const context =
+    data instanceof ComponentsContext ? data : new ComponentsContext(data);
 
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
@@ -80,15 +84,11 @@ export const ui = async (scope = document, data = {}, styles = undefined) => {
         c && components.push(c);
       }
     }
-
-    return { templates, components, stylesheets, style };
+    return { templates, components, stylesheets, style, context };
   });
 };
 
-// DEBUG
-// window.UI = { State, EventBus, StateBus };
-
-export { tokens, stylesheet };
+export { tokens, stylesheet, controller };
 export default ui;
 
 // EOF
