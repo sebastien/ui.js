@@ -384,7 +384,7 @@ const view = (root, templateName = undefined) => {
   for (const { name, attr } of attrs["out"] || []) {
     const node = attr.ownerElement;
     const path = nodePath(node, root);
-    const parentName = node.nodeName;
+    const nodeName = node.nodeName;
     const text = attr.value || `.${name}`;
     const directive = parseOutDirective(text);
     if (!directive) {
@@ -401,9 +401,10 @@ const view = (root, templateName = undefined) => {
         }
       );
     } else {
+      /// If we're here, we have a working directive. We see if we have a slot.
       if (
         // In SVG, these nodes are lowercase.
-        (parentName === "SLOT" || parentName === "slot") &&
+        (nodeName === "SLOT" || nodeName === "slot") &&
         name === "content"
       ) {
         const slotTemplate = node.dataset.ui
@@ -418,10 +419,30 @@ const view = (root, templateName = undefined) => {
               `T${templateName || makeKey()}-E${effectors.length}`,
               false // No need to clone there
             ).name;
+        const handlers = node.getAttributeNames().reduce((r, v) => {
+          if (v.startsWith("on:")) {
+            const d = parseOnDirective(node.getAttribute(v));
+            if (d) {
+              r = r || {};
+              // NOTE: For now we only support relaying the event to the
+              // other event, so the hanlder is basically the path at which we relay.
+              r[`${v.at(3).toUpperCase()}${v.substring(4)}`] =
+                d.event.split(".");
+            }
+          }
+          return r;
+        }, null);
+
+        // TODO: If we're embedding another component, we should probably create
+        // a template... or maybe what we should do is define templates that
+        // create a new local context or not.
 
         // TODO: We should check for `when` as well.
         effectors.push(
-          new SlotEffector(path, directive.selector, slotTemplate)
+          new SlotEffector(path, directive.selector, slotTemplate, handlers, [
+            "",
+            makeKey(),
+          ])
         );
         const replacement = document.createComment(`◉ slot:${text}`);
         // It is possible that the root is a <slot>, in which case we need
@@ -442,8 +463,8 @@ const view = (root, templateName = undefined) => {
           new (name === "style"
             ? StyleEffector
             : ((name === "value" || name === "disabled") &&
-                (parentName === "INPUT" || parentName === "SELECT")) ||
-              (name === "checked" && parentName === "INPUT")
+                (nodeName === "INPUT" || nodeName === "SELECT")) ||
+              (name === "checked" && nodeName === "INPUT")
             ? ValueEffector
             : AttributeEffector)(path, directive.selector, name)
         );
@@ -458,24 +479,30 @@ const view = (root, templateName = undefined) => {
   //
   for (const { name, attr } of attrs["on"] || []) {
     const node = attr.ownerElement;
-    const directive = parseOnDirective(attr.value);
-    if (!directive) {
-      onError(`Could not parse on 'on:*' directive '${attr.value}'`, {
-        name,
-        attr,
-        root,
-      });
-    } else if (!directive.source) {
-      onError(
-        `Could not parse source selector on 'on:*' directive '${attr.value}'`,
-        {
+    // A `<slot out:XXX>` node  may have `on:XXX` attribtues as well, in which
+    // case they've already been processed at that point.
+    if (node && node.parentNode) {
+      const directive = parseOnDirective(attr.value);
+      if (!directive) {
+        onError(`Could not parse on 'on:*' directive '${attr.value}'`, {
           name,
           attr,
           root,
-        }
-      );
-    } else {
-      effectors.push(new EventEffector(nodePath(node, root), name, directive));
+        });
+      } else if (!directive.source) {
+        onError(
+          `Could not parse source selector on 'on:*' directive '${attr.value}'`,
+          {
+            name,
+            attr,
+            root,
+          }
+        );
+      } else {
+        effectors.push(
+          new EventEffector(nodePath(node, root), name, directive)
+        );
+      }
     }
     node.removeAttribute(attr.name);
   }
@@ -554,7 +581,7 @@ class Template {
 
 // -- doc
 // Parses the given `node` and its descendants as a template definition. The
-// `parentName` is useful for nested templates where the actual root/component
+// `name` is useful for nested templates where the actual root/component
 // template is different.
 export const createTemplate = (
   node,

@@ -100,8 +100,6 @@ export class ComponentsContext {
   }
 }
 
-export const Context = new ComponentsContext();
-
 // --
 // The `Component` class encapsulates an anchor node, a template effector,
 // and state context
@@ -153,11 +151,7 @@ const extractSlots = (node) => {
 // --
 // Takes a DOM node that typically has `data-ui` attribute and looks
 // by applying a template.
-export const createComponent = (
-  node,
-  context = Context,
-  templates = Templates
-) => {
+export const createComponent = (node, context, templates = Templates) => {
   // --
   // We retrieve the following attributes:
   // - `data-ui`
