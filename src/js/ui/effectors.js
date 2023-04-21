@@ -63,6 +63,16 @@ export class EffectScope {
     this.eventBus = eventBus;
   }
 
+  copy() {
+    return new EffectScope(
+      this.state,
+      this.path,
+      this.localPath,
+      this.value,
+      undefined,
+      this.eventBus
+    );
+  }
   // TODO: Use that API instead
   // get global() {
   //   return this.state.global;
@@ -340,9 +350,9 @@ class EventEffect extends Effect {
         }
       }
       if (eventPath) {
-        // FIXME: Not sure we need that, the scope could capture the template
-        // as well.
-        const { template, id } = EventEffect.FindScope(event.target);
+        // FIXME: We should probably be able to know the template name from
+        // the scope.
+        const { template } = EventEffect.FindScope(event.target);
         const data = {
           name: eventPath.join(""),
           event,
@@ -350,7 +360,10 @@ class EventEffect extends Effect {
         };
         // This is a relative event, which then may have local registered handlers
         if (eventPath[0] == "") {
-          this.scope.state.put(["@local", id, ...eventPath.slice(1)], data);
+          this.scope.state.put(
+            [...scope.localPath, ...eventPath.slice(1)],
+            data
+          );
         } else {
           // TODO: Arguably, we could be using the state tree with events to publish that
           this.scope.eventBus.pub(composePaths([template], eventPath), data);
@@ -388,9 +401,42 @@ export class EventEffector extends Effector {
 // --
 // ## Slot Effector
 
-class SingleSlotEffect extends Effect {
-  constructor(effector, node, scope) {
+class SlotEffect extends Effect {
+  constructor(effector, node, scope, parentLocalPath) {
     super(effector, node, scope);
+    this.handlers = {};
+    this.parentLocalPath = parentLocalPath;
+  }
+  bind() {
+    super.bind();
+    const scope = this.scope;
+    const handlers = this.effector.handlers;
+    const parentLocalPath = this.parentLocalPath;
+    if (handlers) {
+      for (const k in handlers) {
+        const targetPath = composePaths(parentLocalPath, handlers[k]);
+        // We relay the event from the subscribed path to the parent path.
+        const h = (event) => {
+          scope.state.put(targetPath, event);
+        };
+        this.handlers[k] = h;
+        scope.state.sub([...scope.localPath, k], h);
+      }
+    }
+  }
+  unbind() {
+    const res = super.unbind();
+    const scope = this.scope;
+    for (const k in this.handlers) {
+      const p = [...scope.localPath, k];
+      scope.state.sub(p, this.handlers[k]);
+    }
+    return res;
+  }
+}
+class SingleSlotEffect extends SlotEffect {
+  constructor(effector, node, scope, parentLocalPath) {
+    super(effector, node, scope, parentLocalPath);
     this.view = undefined;
   }
 
@@ -422,9 +468,9 @@ class SingleSlotEffect extends Effect {
   }
 }
 
-class MappingSlotEffect extends Effect {
-  constructor(effector, node, scope) {
-    super(effector, node, scope);
+class MappingSlotEffect extends SlotEffect {
+  constructor(effector, node, scope, parentLocalPath) {
+    super(effector, node, scope, parentLocalPath);
     // We always go through a change
     this.selected.alwaysChange = true;
     this.items = undefined;
@@ -587,8 +633,15 @@ class MappingSlotEffect extends Effect {
 // NOTE: I think the only thing that a slot effector has to do is
 // to detect add remove and relay these.
 export class SlotEffector extends Effector {
-  constructor(nodePath, selector, templateName) {
+  constructor(nodePath, selector, templateName, handlers, localPath = null) {
     super(nodePath, selector);
+    // The handlers map event names to the path at which the incoming
+    // events should be stored/relayed.
+    this.handlers = handlers;
+    // `localPath` can be used to change the local scope of the slot. This
+    // is useful when a Template is used, and that template corresponds
+    // to a component. This ensures the component has a separate space.
+    this.localPath = localPath;
     this.templateName = templateName;
     this._template = !templateName
       ? new ContentEffector(nodePath, CurrentValueSelector) // Note: no selector as the slot already took care of it
@@ -613,13 +666,25 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
+    // We keep track of the parent local path, as the scope may be changed
+    // and we need to be able to relay data/events from one local scope
+    // to the other.
+    const parentLocalPath = scope.localPath;
+    // In the case the effector has a localPath, we derive the scope and
+    // change the local path. This allows to create a new context in which
+    // the effector state is stored.
+    if (this.localPath) {
+      scope = scope.copy();
+      scope.localPath = composePaths(scope.localPath, this.localPath);
+    }
     const value = this.selector.extract(scope);
     return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
       this,
       node,
       // NOTE: Changing the scope here would distort the value, as we're
       // passing the same selector, so the scope should not change.
-      scope
+      scope,
+      parentLocalPath
     ).init(value);
   }
 }
@@ -913,6 +978,7 @@ export class TemplateEffector extends Effector {
   }
 
   apply(node, scope) {
+    // TODO: We should probably create a new scope?
     return new TemplateEffect(this, node, scope).init();
   }
 }
