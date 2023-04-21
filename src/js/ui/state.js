@@ -11,6 +11,16 @@ export class StateTree {
     this.bus = bus;
   }
 
+  sub(path, handler) {
+    this.bus.sub(path, handler);
+    return this;
+  }
+
+  unsub(path, handler) {
+    this.bus.unsub(path, handler);
+    return this;
+  }
+
   // -- doc
   // Retrieves the value at the given `path`
   get(path) {
@@ -62,6 +72,18 @@ export class StateTree {
 
   put(path = null, value = undefined) {
     return this.patch(path, value, true);
+  }
+  append(path = null, value = undefined) {
+    const parent = this.get(path);
+    if (parent) {
+      if (parent instanceof Array) {
+        return this.put([...path, parent.length], value);
+      } else {
+        throw new Error("Not Implemented Yet");
+      }
+    } else {
+      return this.put(path, [value]);
+    }
   }
 
   patch(path = null, value = undefined, clear = false) {
