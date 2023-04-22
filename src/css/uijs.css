@@ -95,6 +95,7 @@ variations).
   --pad-4: calc(var(--pad) * 4);
 
   --z-popup: 50;
+  --z-overlay: 20;
 
   --control-bd-alt: var(--palette-grey-80);
   --control-bd: var(--color-text);
@@ -347,7 +348,7 @@ variations).
   .row.right {
     justify-content: flex-end;
   }
-  .row > .grow {
+  .grow {
     flex-grow: 1;
   }
   .stack {
@@ -356,6 +357,39 @@ variations).
   }
   .stack > .grow {
     flex-grow: 1;
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .fit-w {
+    width: 100%;
+    max-width: 100%;
+  }
+  .cont {
+    position: relative;
+  }
+  .fit-h {
+    height: 100%;
+    max-height: 100%;
+  }
+  .scroll-h {
+    overflow-y: scroll;
+  }
+  .full-h {
+    min-height: 100vh;
+  }
+
+  .dimmed {
+    opacity: 0.65;
+  }
+
+  .small {
+    font-size: 0.85rem;
   }
 }
 
@@ -381,33 +415,6 @@ variations).
   .editable[data-placeholder]:before {
     content: attr(data-placeholder);
     opacity: 0.75;
-  }
-
-  /**
-   * Layout
-   */
-  .stack {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .fit-w {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .cont {
-    position: relative;
-  }
-
-  .fit-h {
-    height: 100%;
-    max-height: 100%;
   }
 
   /**

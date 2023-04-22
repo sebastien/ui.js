@@ -821,10 +821,13 @@ export class MatchEffector extends Effector {
 class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
-  constructor(effector, node, scope) {
+  constructor(effector, node, scope, attributes) {
     super(effector, node, scope);
     // The id of a template is expected to be its local path root.
     this.id = scope.localPath.at(-1);
+    // Attributes can be passed and will be added to each view node. Typically
+    // these would be class attributes from a top-level component instance.
+    this.attributes = attributes;
     this.views = [];
   }
 
@@ -842,9 +845,21 @@ class TemplateEffect extends Effect {
           const view = template.views[i];
           const root = view.root.cloneNode(true);
           const nodes = view.effectors.map((_) => pathNode(_.nodePath, root));
+
           // We update the `data-template` and `data-path` attributes, which is
           // used by `EventEffectors` in particular to find the scope.
           if (root.nodeType === Node.ELEMENT_NODE) {
+            // If the effect has attributes registered, we defined them.
+            if (this.attributes) {
+              for (const [k, v] of this.attributes.entries()) {
+                if (k === "class") {
+                  const w = root.getAttribute("class");
+                  root.setAttribute(k, w ? `${w} ${v}` : v);
+                } else if (!root.hasAttribute(k)) {
+                  root.setAttribute(k, v);
+                }
+              }
+            }
             root.dataset["template"] =
               this.effector.rootName || this.effector.name;
             root.dataset["path"] = this.scope.path
@@ -977,9 +992,9 @@ export class TemplateEffector extends Effector {
     this.rootName = rootName;
   }
 
-  apply(node, scope) {
+  apply(node, scope, attributes) {
     // TODO: We should probably create a new scope?
-    return new TemplateEffect(this, node, scope).init();
+    return new TemplateEffect(this, node, scope, attributes).init();
   }
 }
 

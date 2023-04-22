@@ -104,7 +104,7 @@ export class ComponentsContext {
 // The `Component` class encapsulates an anchor node, a template effector,
 // and state context
 export class Component {
-  constructor(id, anchor, template, context, path, slots) {
+  constructor(id, anchor, template, context, path, slots, attributes) {
     this.id = id;
     this.anchor = anchor;
     this.template = template;
@@ -121,7 +121,7 @@ export class Component {
       context.state.get(localPath),
       context.events
     );
-    this.effect = template.apply(this.anchor, this.scope);
+    this.effect = template.apply(this.anchor, this.scope, attributes);
   }
 }
 
@@ -172,6 +172,12 @@ export const createComponent = (node, context, templates = Templates) => {
   // We create an anchor component, and replace the node with the anchor.
   const id = makeKey();
   const anchor = document.createComment(`⚓ ${ui}:${id}`);
+  const attributes = [...node.attributes].reduce((r, v) => {
+    if (!v.name.startsWith("data-")) {
+      r.set(v.name, v.value);
+    }
+    return r;
+  }, new Map());
   node.parentElement.replaceChild(anchor, node);
 
   return new Component(
@@ -180,7 +186,8 @@ export const createComponent = (node, context, templates = Templates) => {
     template,
     context,
     path ? path.split(".") : undefined,
-    extractSlots(node)
+    extractSlots(node),
+    attributes
   );
 };
 

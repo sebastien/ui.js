@@ -87,22 +87,29 @@ const extractNodes = (node, stylesheets = [], scripts = []) => {
 // --
 // Looks for `template` nodes in the given `node`, dynamically loading their
 // definition if a `data-src=URI` is present.
-export const loadTemplates = async (node) => {
+export const loadTemplates = async (
+  node,
+  // We support both `template` and `.templates`.
+  selectors = ["template", ".template"],
+  remove = true
+) => {
   const promises = [];
   const templates = [];
   const stylesheets = [];
   const scripts = [];
 
-  for (let tmpl of node.querySelectorAll("template")) {
-    // This will register the templates in `templates`
-    const src = tmpl.dataset.src;
-    if (src) {
-      promises.push();
-    } else {
-      extractNodes(tmpl.content);
-      templates.push(createTemplate(tmpl));
+  for (const selector of selectors) {
+    for (let tmpl of node.querySelectorAll(selector)) {
+      // This will register the templates in `templates`
+      const src = tmpl.dataset.src;
+      if (src) {
+        promises.push();
+      } else {
+        extractNodes(tmpl.content ? tmpl.content : tmpl);
+        templates.push(createTemplate(tmpl));
+      }
+      remove && tmpl.parentElement.removeChild(tmpl);
     }
-    tmpl.parentElement.removeChild(tmpl);
   }
   return Promise.all(promises).then(() => ({
     templates,

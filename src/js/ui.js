@@ -56,8 +56,6 @@ export const ui = async (scope = document, data = {}, styles = undefined) => {
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
 
-  // DEBUG
-  window.CONTEXT = context;
   return loadTemplates(document).then(({ templates, stylesheets, scripts }) => {
     const components = [];
     scripts.forEach((_) => {

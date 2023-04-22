@@ -42,7 +42,6 @@ class NetworkState {
   }
 
   onInputChange(index, value) {
-    console.log("ON CELL INPUT CHANGE", { index, value });
     // FIXME: We should do something with the value
     this.trigger(index);
     // TODO: We should publish a cycle here
