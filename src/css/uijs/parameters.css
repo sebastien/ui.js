@@ -1,0 +1,99 @@
+/* --
+I feel that the creation of the variables/tokens should be assisted with
+JavaScript, so that variants can be easily created (faded version, OKLab
+variations).
+ */
+:root {
+  --text-max-width: 55ch;
+
+  --font-text: "Jost", sans-serif;
+  --font-text-line-height: 1.45em;
+  --font-text-size: 1rem;
+
+  --font-heading: "Jost", sans-serif;
+  --font-heading-line-height: 1.45em;
+  --font-heading-size: var(--font-size-4);
+
+  --font-code: "Cousine", monospace;
+  --font-code-line-height: 1.25em;
+  --font-code-size: calc(10.5 / 14 * 1rem);
+
+  --font-control: "Jost", sans-serif;
+  --font-control-line-height: 1.25em;
+  --font-control-size: var(--font-size-2);
+
+  --font-icon: "Material Symbols Outlined", sans-serif;
+
+  --font-size-0: calc(9 / 14 * 1rem);
+  --font-size-1: calc(12 / 14 * 1rem);
+  --font-size-1_5: calc(13 / 14 * 1rem);
+  --font-size-2: calc(14 / 14 * 1rem);
+  --font-size-3: calc(16 / 14 * 1rem);
+  --font-size-4: calc(18 / 14 * 1rem);
+  --font-size-5: calc(22 / 14 * 1rem);
+  --font-size-6: calc(26 / 14 * 1rem);
+  --font-size-7: calc(32 / 14 * 1rem);
+  --font-size-8: calc(42 / 14 * 1rem);
+  --font-size-9: calc(48 / 14 * 1rem);
+
+  /* NOTE: Used with controls */
+  --opacity-dimmed: 0.65;
+
+  /* FIXME: Should drop the color here */
+  --color-text: var(--palette-grey-20);
+  --color-text-alt: var(--palette-grey-80);
+  --color-icon: var(--palette-grey-60);
+  --color-bd: var(--palette-grey-80);
+  --page-bg: var(--palette-ivory-90);
+  --page-bg-alt: var(--palette-ivory-70);
+  --color-code: var(--palette-grey-40);
+  --color-accent: var(--palette-gold-60);
+  /* FIXME: What is that alt */
+  --color-accent-alt: #fcd64780;
+  --color-accent-txt: var(--color-text);
+  --color-accent-bg: var(--palette-gold-60);
+  --color-accent-bg-alt: #fcd64780;
+
+  --color-error-bg: #e8633a;
+  --color-error-bg-alt: #e8633a80;
+
+  --color-lightest: #ffffff;
+  --color-darkest: #222222;
+
+  --darker-0: #22222205;
+  --darker-1: #22222220;
+  --darker-2: #22222240;
+  --darker-3: #22222250;
+  --darker-4: #22222270;
+  --darker-5: #22222290;
+  --darker-6: #222222a0;
+  --darker-7: #222222b0;
+  --darker-8: #222222d0;
+  --darker-9: #222222f0;
+
+  --shadow-floating: 3px 3px 1px #00000020;
+
+  /* Units */
+  --pad: 16px;
+  --pad-0: calc(var(--pad) * 0.5);
+  --pad-1: calc(var(--pad) * 1);
+  --pad-2: calc(var(--pad) * 2);
+  --pad-3: calc(var(--pad) * 3);
+  --pad-4: calc(var(--pad) * 4);
+
+  --z-popup: 50;
+  --z-overlay: 20;
+
+  --control-bd-alt: var(--palette-grey-80);
+  --control-bd: var(--color-text);
+  --control-bd-focused: var(--color-accent);
+  --control-bd-hover: var(--color-accent-alt);
+  --control-bg: var(--palette-white-90);
+  --control-bg-focused: white;
+  --control-lh: 1.15em;
+  --control-bg-hover: var(--color-accent-bg-alt);
+  --control-font: var(--palette-white-90);
+  --control-text: var(--color-text);
+
+  --button-offset: 2px;
+}

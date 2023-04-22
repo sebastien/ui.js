@@ -1,0 +1,330 @@
+@layer ui {
+  .with-hover {
+    position: relative;
+  }
+  .with-hover .on-hover {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition-property: opacity;
+    transition-delay: 0.1s;
+    transition-duration: 0.25s;
+  }
+  .with-hover:hover .on-hover,
+  .with-hover .on-hover:hover {
+    visibility: visible;
+    pointer-events: auto;
+    opacity: 1;
+  }
+
+  .editable[data-placeholder]:before {
+    content: attr(data-placeholder);
+    opacity: 0.75;
+  }
+
+  /**
+   * Component
+   */
+  menu {
+    display: block;
+    font-size: var(--font-size-1);
+    background-color: var(--page-bg);
+    border: 1px solid var(--control-bd-alt);
+    border-radius: 4px;
+    padding: 8px 0px;
+    text-align: left;
+    max-width: 260px;
+    line-height: var(--control-lh);
+    user-select: none;
+  }
+  menu.popup {
+    box-shadow: var(--shadow-floating);
+    position: absolute;
+    z-index: var(--z-popup);
+    min-width: 200px;
+    max-height: 290px;
+    overflow-y: auto;
+    scrollbar-color: var(--color-accent);
+    scrollbar-width: thin;
+  }
+  menu > hr {
+    border: 0px solid transparent;
+    background: transparent;
+    margin: 0px;
+    border-top: 1px solid var(--color-bd);
+  }
+  menu > hr:after {
+    content: attr(data-label);
+    display: block;
+    opacity: 0.75;
+    font-weight: 400;
+    font-size: var(--font-size-2);
+    line-height: 1em;
+    padding: 12px 8px 8px;
+  }
+  menu > li {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    gap: 8px;
+    color: var(--control-text);
+    cursor: pointer;
+  }
+  menu > li:hover {
+    background-color: var(--control-bg-hover);
+  }
+
+  menu > li > .label {
+    display: block;
+    flex-grow: 1;
+    font-size: var(--font-size-1_5);
+    color: var(--color-text);
+  }
+
+  menu > li > .label > .detail {
+    display: block;
+    font-weight: 400;
+    font-size: var(--font-size-1);
+    color: var(--color-text-alt);
+  }
+
+  input[type="text"],
+  .input,
+  textarea,
+  .textarea {
+    display: "inline-block";
+    width: "min-content";
+    min-width: 15ch;
+    line-height: var(--control-lh);
+    border: 1px solid var(--control-bd);
+    background: var(--control-bg);
+    color: var(--control-txt);
+    font-family: var(--control-font);
+    font-size: var(--control-font-size);
+    line-height: var(--control-line-height);
+    padding: 4px 8px;
+    box-shadow: 0px 0px 0px transparent;
+    transition-property: box-shadow, top, left;
+    transition-duration: 0.15s;
+    position: relative;
+    top: 0px;
+    left: 0px;
+  }
+  input:hover,
+  textarea:hover,
+  .input:hover,
+  .textarea:hover {
+    box-shadow: -2px 2px 0px var(--color-accent);
+  }
+  input:focus,
+  textarea:focus,
+  input:active,
+  textarea:active,
+  .input:focus,
+  .textarea:focus,
+  .input:active,
+  .textarea:active {
+    box-shadow: -4px 4px 0px var(--color-accent);
+    background-color: var(--control-bg-focused);
+    top: -2px;
+    left: 2px;
+  }
+
+  input.transparent[type="text"],
+  input.transparent[type="text"]:active,
+  input.transparent[type="text"]:focus,
+  input.transparent[type="text"]:hover,
+  textarea.transparent,
+  textarea.transparent:active,
+  textarea.transparent:focus,
+  textarea.transparent:hover,
+  .textarea.transparent,
+  .textarea.transparent:active,
+  .textarea.transparent:focus,
+  .textarea.transparent:hover {
+    background-color: transparent;
+    border: 0px solid transparent;
+    box-shadow: unset;
+    top: unset;
+    left: unset;
+  }
+
+  button,
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 1.75em;
+    position: relative;
+    text-align: center;
+    border: 1px solid var(--control-bd);
+    border-radius: 4px;
+    font-family: var(--font-control);
+    font-size: 12px;
+    padding: 4px 8px;
+    background-color: var(--page-bg);
+    box-shadow: -2px 2px 0px var(--color-accent);
+    color: var(--color-text);
+    cursor: pointer;
+    font-weight: 500;
+    top: 0px;
+    left: 0px;
+    transition-property: box-shadow, text-shadow, background-color, border-color,
+      color, top, left;
+    transition-duration: 0.15s;
+  }
+  button.default,
+  .button.default {
+    font-weight: bold;
+  }
+
+  button:hover,
+  button:focus,
+  .button:hover,
+  .button:focus {
+    top: calc(-1 * var(--button-offset));
+    left: var(--button-offset);
+    box-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
+      0px var(--color-accent);
+  }
+  button:hover,
+  .button:hover {
+    background-color: var(--color-accent-bg);
+  }
+  button.selected,
+  .button.selected {
+    background-color: var(--color-accent-bg);
+  }
+
+  button.default:hover,
+  .button.default:hover {
+    text-shadow: 1px 1px 0px var(--color-lightest);
+  }
+
+  button:focus,
+  .button:focus {
+    outline: 3px solid var(--color-accent-alt);
+  }
+  button:active,
+  .button:active {
+    box-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
+      0px var(--color-accent);
+    outline: 2px solid var(--color-accent-alt);
+    top: 0px;
+    left: 0px;
+  }
+  button.icon,
+  .button.icon {
+    font-family: var(--font-icon);
+    font-size: var(--font-size-3);
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+    padding: 4px;
+  }
+  button.square,
+  .button.square {
+    border-radius: 0em;
+  }
+  button.round,
+  .button.round {
+    min-width: unset;
+    width: 1.5em;
+    height: 1.5em;
+    padding: 0px;
+    box-sizing: border-box;
+    border-radius: 1.5em;
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.25em;
+  }
+
+  button.pill,
+  .button.pill {
+    border-width: 0px;
+    padding-right: 0.75em;
+    padding-left: 0.75em;
+    border-radius: 2em;
+  }
+
+  button.label,
+  .button.label {
+    border: 0px solid transparent;
+    text-shadow: -1px 1px 0px var(--color-accent);
+    box-shadow: 0px 0px #ffffff00;
+    transition-property: text-shadow, top, left;
+  }
+  button.label:hover,
+  button.label:focus,
+  .button.label:hover,
+  .button.label:focus {
+    box-shadow: 0px 0px #ffffff00;
+    background-color: transparent;
+    text-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
+      2px var(--color-accent);
+    outline: unset;
+  }
+  button.label:focus,
+  .button.label:focus {
+    text-decoration: underline dotted;
+  }
+  button.label:active,
+  .button.label:active {
+    background-color: transparent;
+    text-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
+      2px var(--color-accent);
+    outline: unset;
+  }
+
+  button.small,
+  .button.small {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  button.x-small,
+  .button.x-small {
+    font-size: 10px;
+    padding: 1px;
+    border-radius: 0px;
+  }
+  button.noborder,
+  .button.noborder {
+    border-width: 0px;
+    box-shadow: 0px 0px 0px transparent;
+  }
+  button.dimmed,
+  .button.dimmed {
+    opacity: var(--opacity-dimmed);
+  }
+  button.dimmed:hover,
+  .button.dimmed:hover {
+    opacity: 1;
+  }
+
+  .select {
+  }
+  .select > button,
+  .select > .button,
+  .select > button:hover,
+  .select > button:focus,
+  .select > .button:hover,
+  .select > .button:focus {
+    text-shadow: unset;
+    box-shadow: unset;
+    left: unset;
+    top: unset;
+    border: 0px solid transparent;
+    margin-right: 2px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5em;
+    padding-left: 1ch;
+    padding-right: 1ch;
+    background-color: var(--color-accent-bg-alt);
+  }
+  .pill.error {
+    background-color: var(--color-error-bg-alt);
+  }
+}

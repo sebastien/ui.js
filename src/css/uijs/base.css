@@ -1,0 +1,95 @@
+/* --
+# Base module
+
+This defines base typographic settings.
+*/
+
+@layer base {
+  body {
+    font-family: var(--font-text);
+    line-height: var(--font-text-line-height);
+    font-size: var(--font-text-size);
+    color: var(--color-text);
+    accent-color: var(--color-accent);
+    background-color: var(--page-bg);
+    padding: var(--pad-4);
+    --line-height: var(--font-text-line-height);
+  }
+
+  .icon {
+    font-size: 100%;
+    color: var(--color-icon);
+    font-family: var(--font-icon);
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+  }
+
+  button > .icon,
+  .button > .icon {
+    font-size: 150%;
+  }
+
+  hr {
+    border: 0px solid transparent;
+    border-bottom: 1px solid var(--color-text);
+  }
+
+  p {
+    max-width: var(--text-max-width);
+  }
+
+  code,
+  pre {
+    font-family: var(--font-code);
+    font-size: var(--font-code-size);
+    line-height: var(--font-code-line-height);
+    color: var(--color-code);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-size: var(--font-heading-size);
+    line-height: var(--font-heading-line-height);
+    font-weight: 600;
+    margin-top: var(--pad-2);
+    margin-bottom: var(--pad-0);
+    max-width: var(--text-max-width);
+  }
+  h1 {
+    font-size: var(--font-size-8);
+  }
+  h2 {
+    font-size: var(--font-size-7);
+  }
+  h3 {
+    font-size: var(--font-size-6);
+  }
+  h4 {
+    font-size: var(--font-size-5);
+  }
+  h5 {
+    font-size: var(--font-size-4);
+  }
+  h6 {
+    font-size: var(--font-size-3);
+  }
+  dt {
+    font-weight: bold;
+    margin-top: 1.25em;
+    max-width: var(--text-max-width);
+  }
+  dd {
+    max-width: var(--text-max-width);
+    margin-left: 0.5ch;
+    padding-left: 1.25em;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+    margin-bottom: var(--line-height);
+    border-left: 1px solid var(--color-text);
+  }
+}
+/* EOF */

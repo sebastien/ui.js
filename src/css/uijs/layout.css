@@ -1,0 +1,93 @@
+@layer layout {
+  .pad {
+    padding: var(--pad-1);
+  }
+  .gap {
+    gap: var(--pad-1);
+  }
+  .pos-rel {
+    position: relative;
+  }
+  .pos-abs {
+    position: absolute;
+  }
+  .pos-lr {
+    bottom: 0px;
+    right: 0px;
+  }
+  .fit-w {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .bd {
+    border: 1px solid var(--color-bd);
+  }
+  .bd-t {
+    border-top: 1px solid var(--color-bd);
+  }
+  .bd-b {
+    border-bottom: 1px solid var(--color-bd);
+  }
+  .bd-r {
+    border-right: 1px solid var(--color-bd);
+  }
+  .bd-l {
+    border-left: 1px solid var(--color-bd);
+  }
+  .row {
+    display: flex;
+    align-items: center;
+  }
+  .row.right {
+    justify-content: flex-end;
+  }
+  .grow {
+    flex-grow: 1;
+  }
+  .list-h {
+    display: inline-block;
+  }
+  .list-h > .item {
+    margin: var(--pad-0);
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+  .stack > .grow {
+    flex-grow: 1;
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .fit-w {
+    width: 100%;
+    max-width: 100%;
+  }
+  .cont {
+    position: relative;
+  }
+  .fit-h {
+    height: 100%;
+    max-height: 100%;
+  }
+  .scroll-h {
+    overflow-y: scroll;
+  }
+  .full-h {
+    min-height: 100vh;
+  }
+
+  .dimmed {
+    opacity: 0.65;
+  }
+
+  .small {
+    font-size: 0.85rem;
+  }
+}
