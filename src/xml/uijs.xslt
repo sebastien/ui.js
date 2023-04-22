@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs" xmlns:out="https://github.com/sebastien/uijs" xmlns:s="https://github.com/sebastien/uijs" xmlns:x="https://github.com/sebastien/uijs" version="1.0">
+<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:do="https://github.com/sebastien/uijs"  xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs" xmlns:out="https://github.com/sebastien/uijs" xmlns:s="https://github.com/sebastien/uijs" xmlns:x="https://github.com/sebastien/uijs" version="1.0">
 	<xsl:import href="uijs/css.xslt"/>
 	<xsl:import href="uijs/source.xslt"/>
 	<xsl:import href="uijs/tree.xslt"/>
@@ -76,6 +76,12 @@
 			<body>
 				<xsl:for-each select="//ui:Component">
 					<h2>Component: <xsl:value-of select="./@name"/></h2>
+					<xsl:if test="//*[starts-with(name(),'x:')]">
+						<section>
+						Uses
+						<ul class="list-h"><xsl:for-each select="//*[starts-with(name(),'x:')]"><li class="item pill"><a href="{local-name()}.xml"><xsl:value-of select="local-name()"/></a></li></xsl:for-each></ul>
+					</section>
+					</xsl:if>
 					<section>
 						<div class="documentation" id="documentation">
 							<pre style="display:none;">
@@ -98,7 +104,7 @@
 					</section>
 					<section>
 						<h3>Preview</h3>
-						<div class="Preview">
+						<div id="Preview" class="Preview">
 							<div data-path="data">
 								<xsl:attribute name="data-ui">
 									<xsl:value-of select="@name"/>
@@ -106,83 +112,117 @@
 							</div>
 						</div>
 					</section>
+					<xsl:if test="ui:Data/*|ui:Data/text()">
+						<section>
+							<h3>Data</h3>
+							<pre>
+								<code id="data" data-language="javascript"/>
+							</pre>
+						</section>
+					</xsl:if>
 					<section>
 						<h3>View</h3>
 						<div class="Tree">
 							<xsl:apply-templates select="./ui:View/*" mode="tree"/>
 						</div>
-						<h4>Style</h4>
-						<pre>
-							<xsl:apply-templates select="./ui:Style/*" mode="css"/>
-						</pre>
-						<h4>Selectors</h4>
-						<ul>
-							<xsl:for-each select="./ui:View//@*">
-								<li>
-									<xsl:choose>
-										<xsl:when test="starts-with(name(), 'out:content')">
-											<code class="pill">
-												<xsl:value-of select="name()"/>
-											</code>
-											<code>
-												<xsl:value-of select="."/>
-											</code>
-										</xsl:when>
-										<xsl:otherwise>
-											<code class="pill">
-												<xsl:value-of select="name()"/>
-											</code>
-											<code>
-												<xsl:value-of select="."/>
-											</code>
-										</xsl:otherwise>
-									</xsl:choose>
-								</li>
-							</xsl:for-each>
-						</ul>
-					</section>
-					<section>
-						<h3>Controller</h3>
-						<xsl:for-each select="./ui:Controller">
+						<xsl:if test="ui:Style/*">
+							<h4>Style</h4>
 							<pre>
-								<code data-language="javascript">
-									<xsl:value-of select="."/>
-								</code>
+								<xsl:apply-templates select="./ui:Style/*" mode="css"/>
 							</pre>
-							<script type="module">
-								<xsl:value-of select="."/>
-							</script>
-						</xsl:for-each>
+							<style>
+								<xsl:apply-templates select="./ui:Style/*" mode="css"/>
+							</style>
+						</xsl:if>
+						<xsl:if test="ui:View//@*">
+							<h4>Selectors</h4>
+							<ul>
+								<xsl:for-each select="./ui:View//@*">
+									<li>
+										<xsl:choose>
+											<xsl:when test="starts-with(name(), 'out:content')">
+												<code class="pill">
+													<xsl:value-of select="name()"/>
+												</code>
+												<code>
+													<xsl:value-of select="."/>
+												</code>
+											</xsl:when>
+											<xsl:otherwise>
+												<code class="pill">
+													<xsl:value-of select="name()"/>
+												</code>
+												<code>
+													<xsl:value-of select="."/>
+												</code>
+											</xsl:otherwise>
+										</xsl:choose>
+									</li>
+								</xsl:for-each>
+							</ul>
+						</xsl:if>
 					</section>
-					<section>
-						<h3>Data</h3>
-						<pre>
-							<code id="data" data-language="javascript"/>
-						</pre>
-					</section>
-					<div>
-						<div class="template">
+					<xsl:if test="ui:Controller/*|ui:Controller/text()">
+						<section>
+							<h3>Controller</h3>
+							<xsl:for-each select="./ui:Controller">
+								<pre>
+									<code data-language="javascript">
+										<xsl:value-of select="."/>
+									</code>
+								</pre>
+								<script type="module">
+									<xsl:value-of select="."/>
+								</script>
+							</xsl:for-each>
+						</section>
+					</xsl:if>
+
+					<div id="Template">
+						<div class="template" data-keep="true">
 							<xsl:attribute name="id">
 								<xsl:value-of select="@name"/>
 							</xsl:attribute>
 							<xsl:for-each select="ui:View">
-								<xsl:for-each select="*|text()">
-									<xsl:apply-templates select="." mode="copy"/>
-								</xsl:for-each>
+								<xsl:apply-templates select="*|text()" mode="copy"/>
 							</xsl:for-each>
 						</div>
 					</div>
 				</xsl:for-each>
+				<!--
+				We load implicitly referenced components and instanciante
+				the component, using the data sample defined in the document.
+				-->
 				<script type="module" data-skip="true">
+					<xsl:text><![CDATA[
 					import {ui} from "@ui.js";
+					import {loadXMLTemplates} from "@ui/loading.js";
+
+					// We populate the data
 					const data={};
+					]]></xsl:text>
 					<xsl:for-each select="//ui:Data">
 						Object.assign(data, (<xsl:value-of select="."/>));
 					</xsl:for-each>
+					<xsl:text><![CDATA[
 					document.getElementById("data").innerText = JSON.stringify(data);
-					ui(document, {data});
+					// We load the imported components as XML templates.
+					loadXMLTemplates([...new Set([
+					]]></xsl:text>
+					<xsl:for-each select="//*[starts-with(name(),'x:')]"><xsl:if test="position()!=1">,</xsl:if>
+						"./<xsl:value-of select="local-name()"/>.xml"
+					</xsl:for-each>
+					<xsl:text><![CDATA[
+					])]).then((templates)=>{
+						// And finally we render the nodes
+						ui(document, {data});
+					});
+					]]></xsl:text>
 				</script>
-				<script type="module" data-skip="true"><![CDATA[
+				<!--
+				Formats the JavaScript code examples to be nicer.
+				-->
+				<script type="module" data-skip="true">
 					import jsBeautify from 'https://esm.run/js-beautify';
 					for (let node of document.querySelectorAll("code[data-language]")){
 						const raw=node.innerText;
@@ -190,7 +230,7 @@
 						const res = hljs.highlight(node.dataset.language, fmt);
 						node.innerHTML = res.value;
 					}
-				]]></script>
+				</script>
 			</body>
 		</html>
 	</xsl:template>

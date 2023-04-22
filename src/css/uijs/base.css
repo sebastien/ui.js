@@ -91,5 +91,36 @@ This defines base typographic settings.
     margin-bottom: var(--line-height);
     border-left: 1px solid var(--color-text);
   }
+
+  .typography p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .typography ul,
+  .typography ol {
+    padding-left: var(--pad-2);
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+  }
+
+  .typography li > p:first-child {
+    margin-top: 0em;
+  }
+  .typography li > p:last-child {
+    margin-bottom: 0em;
+  }
+
+  .typography ul > li {
+    list-style-type: bullet;
+  }
+
+  .typography ol > li {
+    list-style-type: number;
+  }
+
+  .typography li {
+    padding-left: 0.25em;
+  }
 }
 /* EOF */

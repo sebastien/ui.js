@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs" xmlns:out="https://github.com/sebastien/uijs" xmlns:s="https://github.com/sebastien/uijs" xmlns:x="https://github.com/sebastien/uijs" version="1.0">
+<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:do="https://github.com/sebastien/uijs"  xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs" xmlns:out="https://github.com/sebastien/uijs" xmlns:s="https://github.com/sebastien/uijs" xmlns:x="https://github.com/sebastien/uijs" version="1.0">
 	<xsl:output method="html" indent="no" encoding="UTF-8"/>
 	<!--
 
@@ -38,6 +38,9 @@
 				<ul class="children">
 					<xsl:for-each select="./text()|./*">
 						<li class="child">
+							<xsl:if test="self::text()">
+								<xsl:attribute name="class">child text</xsl:attribute>
+							</xsl:if>
 							<xsl:apply-templates select="." mode="tree"/>
 						</li>
 					</xsl:for-each>

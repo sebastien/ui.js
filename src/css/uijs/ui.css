@@ -1,4 +1,7 @@
 @layer ui {
+  .template {
+    display: none;
+  }
   .with-hover {
     position: relative;
   }
