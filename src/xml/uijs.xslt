@@ -5,6 +5,7 @@
 	<xsl:import href="uijs/tree.xslt"/>
 	<xsl:import href="uijs/copy.xslt"/>
 	<xsl:output method="html" indent="no" encoding="UTF-8"/>
+	<xsl:strip-space elements="*" />
 	<!--
 	# UI.js Component Stylesheet
 
@@ -125,13 +126,17 @@
 						<div class="Tree">
 							<xsl:apply-templates select="./ui:View/*" mode="tree"/>
 						</div>
-						<xsl:if test="ui:Style/*">
+						<xsl:if test="*">
 							<h4>Style</h4>
 							<pre>
-								<xsl:apply-templates select="./ui:Style/*" mode="css"/>
+							<xsl:for-each select="//*[starts-with(name(),'s:')]">
+								<xsl:apply-templates mode="css"/>
+							</xsl:for-each>
 							</pre>
 							<style>
-								<xsl:apply-templates select="./ui:Style/*" mode="css"/>
+							<xsl:for-each select="//*[starts-with(name(),'s:')]">
+								<xsl:apply-templates mode="css"/>
+							</xsl:for-each>
 							</style>
 						</xsl:if>
 						<xsl:if test="ui:View//@*">

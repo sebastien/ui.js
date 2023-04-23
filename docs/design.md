@@ -15,6 +15,32 @@ more and provide a less repetitive experience. With its XSLT stylesheet,
 UIjs components can be written as compact document, covering
 documentation, view, model, controller and styling.
 
+Here are some benefits of using XML directly:
+
+- Inline style components that are automatically converted to CSS
+  classes and definitions. This means that style and views can be
+  defined inline (if you want to), and that naming can be kept semantic
+  and local to the component.
+
+  ``` xml
+  <s:FancyList border="1px wavy pink" as="ul">
+  <s:item color="orange" as="li">Orange item</s:item>
+  <s/:FancyList>
+  ```
+
+  will create
+
+  ``` css
+  .FancyList {border:1px wavy pink;}
+  .FancyList-item {color: orange;}
+  ```
+
+  and
+
+  ``` html
+  <ul class="FancyList"><li class="FancyList-item">Orange item</li></ul>
+  ```
+
 ## Use of `data-{template,id,path,state}` attributes
 
 *UI.js* stores important data as HTML attributes, as opposed to, say
