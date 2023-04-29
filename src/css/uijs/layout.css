@@ -1,4 +1,7 @@
 @layer layout {
+  .nowrap {
+    white-space: nowrap;
+  }
   .pad {
     padding: var(--pad-1);
   }

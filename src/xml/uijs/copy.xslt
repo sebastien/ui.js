@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:do="https://github.com/sebastien/uijs" xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs" xmlns:out="https://github.com/sebastien/uijs" xmlns:s="https://github.com/sebastien/uijs" xmlns:x="https://github.com/sebastien/uijs" version="1.0">
+<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:do="https://github.com/sebastien/uijs#do"  xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0">
 	<xsl:output method="html" indent="no" encoding="UTF-8"/>
 	<!--
 ## HTML Copy
@@ -33,7 +33,7 @@
 							<xsl:value-of select="@class"/>
 						</xsl:if>
 					</xsl:attribute>
-					<xsl:for-each select="@*[name() != 'class' and name() != 'as']">
+					<xsl:for-each select="@*[starts-with(name(),'data-') or name() = 'id' or name() = 'value' or name() = 'disabled' or name() = 'title' or name() = 'alt' or name() = 'lang']">
 						<xsl:attribute name="{name()}">
 							<xsl:value-of select="."/>
 						</xsl:attribute>
