@@ -96,9 +96,10 @@ export const loadXML = async (uri, remove = true) =>
           d.innerHTML = `<span ${n.nodeValue}>_</span>`;
           const href = d.firstChild.getAttribute("href");
           // We fetch the XSLT stylesheet and transform the XML document with it.
-          return loadXSLT(new URL(href, url).href).then(
-            (xslt) => xslt.transformToFragment(xmlDoc, document).firstChild
-          );
+          return loadXSLT(new URL(href, url).href).then((xslt) => {
+            // There may be more than one node
+            return xslt.transformToFragment(xmlDoc, document);
+          });
         }
       });
 
@@ -198,21 +199,27 @@ export const loadTemplates = async (
   scripts = []
 ) => {
   const promises = [];
-
+  const roots =
+    node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
+    node.nodeType === Node.DOCUMENT_NODE
+      ? [...node.childNodes].filter((_) => _.nodeType === Node.ELEMENT_NODE)
+      : [node];
   for (const selector of selectors) {
-    for (let tmpl of node.querySelectorAll(selector)) {
-      // This will register the templates in `templates`
-      const src = tmpl.dataset.src;
-      if (src) {
-        promises.push();
-      } else {
-        extractNodes(
-          tmpl.content ? tmpl.content : tmpl,
-          remove && !tmpl.dataset.keep
-        );
-        templates.push(createTemplate(tmpl));
+    for (const n of roots) {
+      for (const tmpl of n.querySelectorAll(selector)) {
+        // This will register the templates in `templates`
+        const src = tmpl.dataset.src;
+        if (src) {
+          promises.push();
+        } else {
+          extractNodes(
+            tmpl.content ? tmpl.content : tmpl,
+            remove && !tmpl.dataset.keep
+          );
+          templates.push(createTemplate(tmpl));
+        }
+        remove && !tmpl.dataset.keep && tmpl.parentElement.removeChild(tmpl);
       }
-      remove && !tmpl.dataset.keep && tmpl.parentElement.removeChild(tmpl);
     }
   }
   return Promise.all(promises).then(() => ({
