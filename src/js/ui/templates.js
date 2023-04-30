@@ -222,7 +222,7 @@ const iterAttributes = function* (node, regexp) {
 // nodes that match the given `selector`.
 //
 // NOTE: This does not stop at boundary nodes (see  `isBoundaryNode`).
-const iterSelector = function* (node, selector) {
+export const iterSelector = function* (node, selector) {
   if (node.nodeType === Node.ELEMENT_NODE) {
     if (node.matches(selector)) {
       yield node;
@@ -425,7 +425,7 @@ const view = (root, templateName = undefined) => {
             if (d) {
               r = r || {};
               // NOTE: For now we only support relaying the event to the
-              // other event, so the hanlder is basically the path at which we relay.
+              // other event, so the handler is basically the path at which we relay.
               r[`${v.at(3).toUpperCase()}${v.substring(4)}`] =
                 d.event.split(".");
             }
@@ -441,7 +441,7 @@ const view = (root, templateName = undefined) => {
         effectors.push(
           new SlotEffector(path, directive.selector, slotTemplate, handlers, [
             "",
-            makeKey(),
+            node.dataset.id || makeKey(),
           ])
         );
         const replacement = document.createComment(`◉ slot:${text}`);

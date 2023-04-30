@@ -29,7 +29,7 @@ export const KEY = "([a-zA-Z]+=)?";
 // FIXME: We can't have both local and relative
 export const PATH =
   "(#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
-export const FORMAT = "(\\|[A-Za-z-]+)?";
+export const FORMAT = "(\\|[A-Za-z-]+)*";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
 export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
 export const INPUTS = `${INPUT}(,${INPUT})*`;
@@ -123,16 +123,15 @@ export class SelectorInput {
           : this.type === SelectorInput.RELATIVE
           ? value
           : state;
-      if (this.path.length && !context) {
-        onError(
-          `SelectorInput.extract: Context is undefined for input of type ${this.type}`,
-          { value, scope, state, path, ["input.path"]: this.path }
-        );
-      }
-      for (let k of this.path) {
-        context = context[k];
-        if (context === undefined) {
-          break;
+      // NOTE: We used to throw a warning when the context was undefined,
+      // but it does happen that there's no data, and that should not be
+      // an issue.
+      if (this.path.length && context !== undefined) {
+        for (let k of this.path) {
+          context = context[k];
+          if (context === undefined) {
+            break;
+          }
         }
       }
       res = context;

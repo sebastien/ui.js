@@ -1,6 +1,6 @@
 import { composePaths, parsePath, pathNode } from "./paths.js";
 import { CurrentValueSelector } from "./selector.js";
-import { Empty, isAtom, isEmpty, onError, numcode, assign } from "./utils.js";
+import { Empty, isAtom, isEmpty, onError, assign } from "./utils.js";
 import { Templates } from "./templates.js";
 
 class DOM {
@@ -253,7 +253,11 @@ class ContentEffector extends Effector {
 
 class AttributeEffect extends Effect {
   unify(value, previous = this.value) {
-    this.node.setAttribute(this.effector.name, value);
+    if (value === Empty) {
+      this.node.removeAttribute(this.effector.name);
+    } else {
+      this.node.setAttribute(this.effector.name, value);
+    }
     return this;
   }
 }
@@ -448,7 +452,7 @@ class SingleSlotEffect extends SlotEffect {
       );
       DOM.after(this.node, node);
       this.view = this.effector.template
-        .apply(
+        ?.apply(
           node, // node
           // NOTE: We may want to include the selector here?
           new EffectScope(
@@ -460,7 +464,7 @@ class SingleSlotEffect extends SlotEffect {
             scope.eventBus
           )
         )
-        .init(current);
+        ?.init(current);
       return this.view;
     } else if (current !== previous) {
       this.view.unify(current, previous);

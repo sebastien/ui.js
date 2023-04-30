@@ -1,4 +1,4 @@
-import { createTemplate } from "./templates.js";
+import { createTemplate, iterSelector } from "./templates.js";
 import { onWarning, onError } from "./utils.js";
 
 // --
@@ -81,6 +81,12 @@ export const loadXML = async (uri, remove = true) =>
         // This extracts the xml-stylesheet from the processing instruction.
         // int the XML document, if it's there.
         const url = new URL(uri, window.location.href).href;
+        if (!xmlDoc) {
+          return onError("Could not load XML document, it may be malformed.", {
+            xmlDoc,
+            url,
+          });
+        }
         const n = xmlDoc.firstChild;
         if (!n) {
           return onError("XML document is empty", { xmlDoc, url });
@@ -180,9 +186,19 @@ export const loadXMLTemplates = async (url) => {
   const templates = [];
   const stylesheets = [];
   const scripts = [];
-  sources.map((_) =>
-    loadTemplates(_, undefined, false, templates, stylesheets, scripts)
-  );
+  sources.forEach((_) => {
+    loadTemplates(_, undefined, false, templates, stylesheets, scripts);
+    // The expectation is the XSLT-rendered XML files will have their scripts
+    // and styles defined as `data-template=true`.
+    for (const node of [..._.childNodes]) {
+      for (const child of iterSelector(node, "script[data-template='true']")) {
+        scripts.push(child);
+      }
+      for (const child of iterSelector(node, "style[data-template='true']")) {
+        stylesheets.push(child);
+      }
+    }
+  });
   return { templates, stylesheets, scripts };
 };
 
@@ -199,11 +215,12 @@ export const loadTemplates = async (
   scripts = []
 ) => {
   const promises = [];
-  const roots =
-    node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
-    node.nodeType === Node.DOCUMENT_NODE
-      ? [...node.childNodes].filter((_) => _.nodeType === Node.ELEMENT_NODE)
-      : [node];
+  const roots = !node
+    ? []
+    : node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
+      node.nodeType === Node.DOCUMENT_NODE
+    ? [...node.childNodes].filter((_) => _.nodeType === Node.ELEMENT_NODE)
+    : [node];
   for (const selector of selectors) {
     for (const n of roots) {
       for (const tmpl of n.querySelectorAll(selector)) {
@@ -214,6 +231,8 @@ export const loadTemplates = async (
         } else {
           extractNodes(
             tmpl.content ? tmpl.content : tmpl,
+            stylesheets,
+            scripts,
             remove && !tmpl.dataset.keep
           );
           templates.push(createTemplate(tmpl));
