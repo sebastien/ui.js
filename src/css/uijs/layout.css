@@ -1,27 +1,10 @@
 @layer layout {
-  .nowrap {
-    white-space: nowrap;
-  }
-  .pad {
-    padding: var(--pad-1);
-  }
-  .gap {
-    gap: var(--pad-1);
-  }
-  .pos-rel {
-    position: relative;
-  }
-  .pos-abs {
-    position: absolute;
-  }
-  .pos-lr {
-    bottom: 0px;
-    right: 0px;
-  }
-  .fit-w {
-    box-sizing: border-box;
-    width: 100%;
-  }
+  /**
+	* ## Presentation & Formatting 
+	*/
+  /**
+    * `bd` and its `-{t,r,b,l}` variants sets a border on the element.
+	*/
   .bd {
     border: 1px solid var(--color-bd);
   }
@@ -37,54 +20,6 @@
   .bd-l {
     border-left: 1px solid var(--color-bd);
   }
-  .row {
-    display: flex;
-    align-items: center;
-  }
-  .row.right {
-    justify-content: flex-end;
-  }
-  .grow {
-    flex-grow: 1;
-  }
-  .list-h {
-    display: inline-block;
-  }
-  .list-h > .item {
-    margin: var(--pad-0);
-  }
-  .stack {
-    display: flex;
-    flex-direction: column;
-  }
-  .stack > .grow {
-    flex-grow: 1;
-  }
-  .stack {
-    display: flex;
-    flex-direction: column;
-  }
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .fit-w {
-    width: 100%;
-    max-width: 100%;
-  }
-  .cont {
-    position: relative;
-  }
-  .fit-h {
-    height: 100%;
-    max-height: 100%;
-  }
-  .scroll-h {
-    overflow-y: scroll;
-  }
-  .full-h {
-    min-height: 100vh;
-  }
 
   .dimmed {
     opacity: 0.65;
@@ -92,6 +27,111 @@
 
   .small {
     font-size: 0.85rem;
+  }
+  /**
+	* ## Content formatting
+	*/
+  .nowrap {
+    white-space: nowrap;
+  }
+  .pad {
+    padding: var(--pad-1);
+  }
+  .gap {
+    gap: var(--pad-1);
+  }
+  /**
+   * ## Box Model
+*/
+  .pos-rel {
+    position: relative;
+  }
+  .pos-abs {
+    position: absolute;
+  }
+  .pos-lr {
+    bottom: 0px;
+    right: 0px;
+  }
+  .scroll-h {
+    overflow-y: scroll;
+  }
+
+  /**
+	* ## Layout
+	*/
+  /**
+   * `fit` ensures that the content fits the parent, expanding both
+   * its width and height. `fit-w` and `fit-`h` are variants that only
+   * do this for the width and height.
+	*/
+  .fit {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .fit-w {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+  .fit-h {
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 100%;
+  }
+  /**
+   * `fit-screen` fits (covers) the whole screen, and also sets  the position
+   * to `fixed'.
+   */
+  .fit-screen {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+
+  .columns {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+  }
+
+  .row.right {
+    justify-content: flex-end;
+  }
+
+  .grow {
+    flex-grow: 1;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stack > .grow {
+    flex-grow: 1;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .list-h {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--pad-0);
   }
 }
 /* EOF */
