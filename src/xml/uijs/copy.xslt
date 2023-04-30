@@ -46,6 +46,11 @@
 	-->
 			<xsl:when test="starts-with(name(), 'x:')">
 				<slot>
+					<xsl:for-each select="@*[starts-with(name(),'data-') or name() = 'id' or name() = 'class']">
+						<xsl:attribute name="{name()}">
+							<xsl:value-of select="."/>
+						</xsl:attribute>
+					</xsl:for-each>
 					<xsl:attribute name="out:content">
 						<xsl:choose>
 							<xsl:when test="@select">

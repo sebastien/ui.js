@@ -27,11 +27,17 @@
 				</xsl:if>
 				<script type="importmap">
 					{"imports": {
+					<xsl:for-each select="/*/ui:import">
+					"<xsl:value-of select="@module" />/": "<xsl:value-of select="@path" />/",
+					</xsl:for-each>
 					"@codemirror/": "https://deno.land/x/codemirror_esm@v6.0.1/esm/",
 					"@ui.js": "/lib/js/ui.js",
 					"@ui/": "/lib/js/ui/"
 					}}
 				</script>
+				<style data-template="true">
+					<xsl:apply-templates select="//s:*" mode="css"/>
+				</style>
 			</head>
 			<body>
 				<xsl:apply-templates mode="component"/>
@@ -46,7 +52,7 @@
 				<xsl:value-of select="@name"/>
 			</xsl:attribute>
 		</div>
-		<template>
+		<template data-keep="true">
 			<xsl:attribute name="id">
 				<xsl:value-of select="@name"/>
 			</xsl:attribute>
@@ -115,11 +121,6 @@
 					<xsl:apply-templates mode="css"/>
 				</xsl:for-each>
 				</pre>
-				<style>
-				<xsl:for-each select="//*[starts-with(name(),'s:')]">
-					<xsl:apply-templates mode="css"/>
-				</xsl:for-each>
-				</style>
 			</xsl:if>
 			<xsl:if test="ui:View//@*">
 				<h4>Selectors</h4>
@@ -158,7 +159,8 @@
 							<xsl:value-of select="."/>
 						</code>
 					</pre>
-					<script type="module">
+					<script data-template="true" type="module">
+						<xsl:text>import {controller} from "@ui.js";</xsl:text>
 						<xsl:value-of select="."/>
 					</script>
 				</xsl:for-each>
@@ -201,7 +203,7 @@
 			</script>
 		</xsl:for-each>
 
-		<script type="module" data-skip="true">
+		<script id="script-anchor" type="module" data-skip="true">
 			<xsl:text><![CDATA[
 			import {ui} from "@ui.js";
 			import {loadXMLTemplates} from "@ui/loading.js";
@@ -224,7 +226,14 @@
 			</xsl:for-each>
 
 			<xsl:text><![CDATA[
-			])]).then((templates)=>{
+			])]).then(({stylesheets,scripts})=>{
+				scripts && scripts.forEach(_ => document.head.appendChild(_));
+				if (stylesheets && stylesheets.length) {
+					const css = stylesheets.reduce((r,v) => {r.push(v.innerText);return r}, []).join("\n");
+					const node = document.createElement("style");
+					node.appendChild(document.createTextNode(css));
+					document.head.appendChild(node)
+				}
 				// And finally we render the nodes
 				ui(document, {data});
 			});
