@@ -33,7 +33,7 @@
 							<xsl:value-of select="@class"/>
 						</xsl:if>
 					</xsl:attribute>
-					<xsl:for-each select="@*[starts-with(name(),'data-') or name() = 'id' or name() = 'value' or name() = 'disabled' or name() = 'title' or name() = 'alt' or name() = 'lang']">
+					<xsl:for-each select="@*[name()!=local-name() or starts-with(name(),'data-') or name() = 'id' or name() = 'value' or name() = 'disabled' or name() = 'title' or name() = 'alt' or name() = 'lang']">
 						<xsl:attribute name="{name()}">
 							<xsl:value-of select="."/>
 						</xsl:attribute>
@@ -46,7 +46,7 @@
 	-->
 			<xsl:when test="starts-with(name(), 'x:')">
 				<slot>
-					<xsl:for-each select="@*[starts-with(name(),'data-') or name() = 'id' or name() = 'class']">
+					<xsl:for-each select="@*[starts-with(name(),'data-') or name() = 'id' or name() = 'class' or name()!=local-name()]">
 						<xsl:attribute name="{name()}">
 							<xsl:value-of select="."/>
 						</xsl:attribute>
