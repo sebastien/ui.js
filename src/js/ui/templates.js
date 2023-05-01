@@ -419,14 +419,18 @@ const view = (root, templateName = undefined) => {
               `T${templateName || makeKey()}-E${effectors.length}`,
               false // No need to clone there
             ).name;
-        const handlers = node.getAttributeNames().reduce((r, v) => {
-          if (v.startsWith("on:")) {
-            const d = parseOnDirective(node.getAttribute(v));
+        // We use the attribute nodes directly, as there is an asymetry in
+        // HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
+        // will return `null` (while `getAttribute("on:send")` will return
+        // the value).
+        const handlers = [...node.attributes].reduce((r, { name, value }) => {
+          if (name.startsWith("on:")) {
+            const d = parseOnDirective(value);
             if (d) {
               r = r || {};
               // NOTE: For now we only support relaying the event to the
               // other event, so the handler is basically the path at which we relay.
-              r[`${v.at(3).toUpperCase()}${v.substring(4)}`] =
+              r[`${name.at(3).toUpperCase()}${name.substring(4)}`] =
                 d.event.split(".");
             }
           }
@@ -439,10 +443,18 @@ const view = (root, templateName = undefined) => {
 
         // TODO: We should check for `when` as well.
         effectors.push(
-          new SlotEffector(path, directive.selector, slotTemplate, handlers, [
-            "",
-            node.dataset.id || makeKey(),
-          ])
+          new SlotEffector(
+            path,
+            directive.selector,
+            slotTemplate,
+            handlers,
+            // We only create a sub-local context if the slot has a template.
+            // But maybe we should have the template effector create the local
+            // context instead? The context is really for components.
+            directive.template
+              ? ["", node.dataset.id || makeKey()]
+              : node.dataset.id || null
+          )
         );
         const replacement = document.createComment(`◉ slot:${text}`);
         // It is possible that the root is a <slot>, in which case we need

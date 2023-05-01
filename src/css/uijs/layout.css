@@ -37,6 +37,19 @@
   .pad {
     padding: var(--pad-1);
   }
+  .pad-r {
+    padding-right: var(--pad-1);
+  }
+  .pad-l {
+    padding-left: var(--pad-1);
+  }
+  .pad-t {
+    padding-top: var(--pad-1);
+  }
+  .pad-b {
+    padding-bottom: var(--pad-1);
+  }
+
   .gap {
     gap: var(--pad-1);
   }
