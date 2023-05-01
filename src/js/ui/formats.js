@@ -8,9 +8,16 @@ export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
 export const idem = (_) => _;
 export const ago = (date) => {
+  if (!(date && date instanceof Date)) {
+    return null;
+  }
   const now = new Date();
   const diffInSeconds = Math.floor((now - date) / 1000);
   const absDiff = Math.abs(diffInSeconds);
+
+  if (absDiff < 1) {
+    return "now";
+  }
 
   if (absDiff < 60) {
     return `${absDiff}s ${diffInSeconds > 0 ? "ago" : "ahead"}`;
@@ -58,16 +65,20 @@ export const ago = (date) => {
 };
 export const format = (value, format) => (Formats[format] || idem)(value);
 export const timetuple = (_) =>
-  new Date(
-    Date.UTC(
-      _[0], // Year
-      _[1] - 1, // Month (zero-based, so subtract 1)
-      _[2], // Day
-      _[3], // Hour
-      _[4], // Minute
-      _[5] // Second
-    )
-  );
+  _ && _ instanceof Array
+    ? new Date(
+        Date.UTC(
+          _[0], // Year
+          _[1] - 1, // Month (zero-based, so subtract 1)
+          _[2], // Day
+          _[3], // Hour
+          _[4], // Minute
+          _[5] // Second
+        )
+      )
+    : _ instanceof Date
+    ? _
+    : null;
 export const debug = (value) => {
   console.log("[uijs.debug] Slot value:", { value });
   return value;
