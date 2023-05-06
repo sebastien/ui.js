@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:do="https://github.com/sebastien/uijs#do"  xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0">
+<xsl:stylesheet xmlns="http://www.w3.org/1999/xhtml" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:do="https://github.com/sebastien/uijs#do" xmlns:ui="https://github.com/sebastien/uijs" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0">
 	<xsl:import href="uijs/css.xslt"/>
 	<xsl:import href="uijs/source.xslt"/>
 	<xsl:import href="uijs/tree.xslt"/>
 	<xsl:import href="uijs/copy.xslt"/>
 	<xsl:output method="html" indent="no" encoding="UTF-8"/>
-	<xsl:strip-space elements="*" />
+	<xsl:strip-space elements="*"/>
 	<!--
 	# UI.js Component Stylesheet
 
@@ -28,7 +28,7 @@
 				<script type="importmap">
 					{"imports": {
 					<xsl:for-each select="/*/ui:import">
-					"<xsl:value-of select="@module" />/": "<xsl:value-of select="@path" />/",
+					"<xsl:value-of select="@module"/>/": "<xsl:value-of select="@path"/>/",
 					</xsl:for-each>
 					"@codemirror/": "https://deno.land/x/codemirror_esm@v6.0.1/esm/",
 					"@ui.js": "/lib/js/ui.js",
@@ -44,8 +44,6 @@
 			</body>
 		</html>
 	</xsl:template>
-
-
 	<xsl:template match="ui:Applet" mode="component">
 		<div data-path="data">
 			<xsl:attribute name="data-ui">
@@ -60,9 +58,8 @@
 				<xsl:apply-templates select="*|text()" mode="copy"/>
 			</xsl:for-each>
 		</template>
-		<xsl:call-template name="uijs-script" />
+		<xsl:call-template name="uijs-script"/>
 	</xsl:template>
-
 	<xsl:template match="ui:Component" mode="component">
 		<h2>Component: <xsl:value-of select="./@name"/></h2>
 		<xsl:if test="//*[starts-with(name(),'x:')]">
@@ -117,9 +114,9 @@
 			<xsl:if test="*">
 				<h4>Style</h4>
 				<pre>
-				<xsl:for-each select="//*[starts-with(name(),'s:')]">
-					<xsl:apply-templates mode="css"/>
-				</xsl:for-each>
+					<xsl:for-each select="//*[starts-with(name(),'s:')]">
+						<xsl:apply-templates mode="css"/>
+					</xsl:for-each>
 				</pre>
 			</xsl:if>
 			<xsl:if test="ui:View//@*">
@@ -166,7 +163,6 @@
 				</xsl:for-each>
 			</section>
 		</xsl:if>
-
 		<div id="Template">
 			<div class="template" data-keep="true">
 				<xsl:attribute name="id">
@@ -181,7 +177,7 @@
 		We load implicitly referenced components and instanciante
 		the component, using the data sample defined in the document.
 		-->
-		<xsl:call-template name="uijs-script" />
+		<xsl:call-template name="uijs-script"/>
 		<!--
 		Formats the JavaScript code examples to be nicer.
 		-->
@@ -195,14 +191,12 @@
 			}
 		</script>
 	</xsl:template>
-
 	<xsl:template name="uijs-script">
 		<xsl:for-each select="//ui:Script">
 			<script type="module" data-skip="true">
-				<xsl:value-of select="." />
+				<xsl:value-of select="."/>
 			</script>
 		</xsl:for-each>
-
 		<script id="script-anchor" type="module" data-skip="true">
 			<xsl:text><![CDATA[
 			import {ui} from "@ui.js";
@@ -224,7 +218,6 @@
 			<xsl:for-each select="//*[starts-with(name(),'x:')]"><xsl:if test="position()!=1">,</xsl:if>
 			"../components/<xsl:value-of select="local-name()"/>.xml"
 			</xsl:for-each>
-
 			<xsl:text><![CDATA[
 			])]).then(({stylesheets,scripts})=>{
 				scripts && scripts.forEach(_ => document.head.appendChild(_));
@@ -240,6 +233,4 @@
 			]]></xsl:text>
 		</script>
 	</xsl:template>
-
-
 </xsl:stylesheet>

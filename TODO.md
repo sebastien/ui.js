@@ -6,6 +6,8 @@
 
 ## Fixes
 
+- `[ ]` Event handlers don't bind to nodes at template root
+
 - `[ ]` `SlotEffector` needs to mount the nodes in order
 
 - `[ ]` Measure the initial rendering of data, especially with nested
