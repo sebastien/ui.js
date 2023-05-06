@@ -4,6 +4,7 @@ import { bool as _bool, type, len } from "./utils.js";
 // ## Formats
 export const bool = _bool;
 export const text = (_) => `${_}`;
+export const count = (_) => `${_.length}`;
 export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
 export const idem = (_) => _;
@@ -79,13 +80,14 @@ export const timetuple = (_) =>
     : _ instanceof Date
     ? _
     : null;
-export const debug = (value) => {
-  console.log("[uijs.debug] Slot value:", { value });
+export const debug = (value, scope) => {
+  console.log("[uijs.debug] Slot value:", { value, scope });
   return value;
 };
 export const Formats = {
   bool,
   text,
+  count,
   not,
   idem,
   type,

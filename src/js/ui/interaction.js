@@ -17,12 +17,18 @@ export const unbind = (node, handlers) =>
 export const drag = (event, move, end) => {
   const dragging = {
     node: event.target,
+    ox: event.pageX,
+    oy: event.pageY,
     pointerEvents: event.target.style.pointerEvents,
     userSelect: event.target.style.userSelect,
   };
   const handlers = {
     mousemove: (event) => {
-      move && move(event);
+      move &&
+        move(event, {
+          dx: event.pageX - dragging.ox,
+          dy: event.pageY - dragging.oy,
+        });
     },
     mouseup: (event) => {
       dragging.node.style.pointerEvents = dragging.pointerEvents;

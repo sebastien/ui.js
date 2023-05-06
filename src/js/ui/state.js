@@ -146,7 +146,7 @@ export class StateTree {
       return;
     }
     switch (type(value)) {
-      case "list":
+      case "array":
       case "map":
         // Any child topic should be updated with the delta.
         for (let [k, t] of topic.children.entries()) {
@@ -181,7 +181,7 @@ export class StateTree {
       return changes;
     }
     switch (type(value)) {
-      case "list":
+      case "array":
         for (let k in changes) {
           if (typeof k === "number") {
             while (value.length < k) {

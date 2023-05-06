@@ -57,10 +57,14 @@ export class EffectScope {
     this.state = state;
     this.path = path;
     this.localPath = localPath;
-    this.value = value;
     // FIXME: This should go
     this._local = local;
     this.eventBus = eventBus;
+  }
+
+  get value() {
+    // FIXME: This is going to be slow
+    return this.state.get(this.path);
   }
 
   copy() {
@@ -205,7 +209,9 @@ class ContentEffect extends Effect {
   }
 
   unify(value, previous = this.value) {
-    if (value instanceof Node) {
+    if (value === Empty) {
+      this.textNode.data = "";
+    } else if (value instanceof Node) {
       if (
         this.contentNode &&
         value !== this.contentNode &&
@@ -381,6 +387,12 @@ class EventEffect extends Effect {
     node.addEventListener(this.effector.event, this.handler);
   }
 
+  unify(current, previous = this.value) {
+    if (current !== previous) {
+      console.log("TODO: Event effector unify", { current, previous });
+    }
+  }
+
   dispose() {
     this.node.removeEventListener(this.effector.event, this.handler);
   }
@@ -552,7 +564,9 @@ class MappingSlotEffect extends SlotEffect {
           );
         } else {
           if (!previous || current[i] !== previous[i]) {
-            onError("MappingSlotEffect: TODO Should update item", { i });
+            item.apply(current[i]);
+          } else {
+            // No change in item
           }
         }
       }
@@ -587,7 +601,7 @@ class MappingSlotEffect extends SlotEffect {
           );
         } else {
           if (!previous || current[k] !== previous[k]) {
-            onError("MappingSlotEffect: TODO Should update item", { k });
+            item.apply(current[k]);
           }
         }
       }
@@ -912,9 +926,23 @@ class TemplateEffect extends Effect {
             nodes,
             states,
           };
+        } else {
+          // SEE: Comment in the else branch
+          // for (const state of this.views[i].states) {
+          //   state.apply(this.scope.value);
+          // }
         }
       }
       this.mount();
+    } else {
+      // NOTE: I'm not sure if we need to forward the changes downstream,
+      // I would assume that the subscription system would take care of
+      // detecting and relaying changes.
+      /// for (const view of this.views) {
+      ///   for (const state of view.states) {
+      ///     state.apply(this.scope.value);
+      ///   }
+      /// }
     }
   }
 

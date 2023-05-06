@@ -111,10 +111,12 @@ export class SelectorInput {
   // `path`.
   extract(scope, state = undefined) {
     let res = undefined;
-    const { path, value } = scope;
+    const { path } = scope;
     if (this.type === SelectorInput.KEY) {
       res = path ? path.at(-1) : undefined;
     } else {
+      // We ignore the cached value, we do a fresh extract
+      const value = scope.state.get(path);
       let context =
         this.type === SelectorInput.ABSOLUTE
           ? scope.state.global
@@ -127,7 +129,7 @@ export class SelectorInput {
       // but it does happen that there's no data, and that should not be
       // an issue.
       if (this.path.length && context !== undefined) {
-        for (let k of this.path) {
+        for (const k of this.path) {
           context = context[k];
           if (context === undefined) {
             break;
@@ -137,7 +139,7 @@ export class SelectorInput {
       res = context;
     }
     const format = this.format;
-    return format ? format(res) : res;
+    return format ? format(res, scope) : res;
   }
 
   // -- doc
@@ -197,9 +199,9 @@ export class SelectorState {
   // -- doc
   // Extracts the current value for this selector based on the current
   // `value` at `path`, the `global` state and the `local` component state.
-  extract() {
+  extract(value) {
     // TODO: Should we detect changes and store a revision number?
-    this.value = this.selector.extract(this.scope);
+    this.value = this.selector.extract(this.scope, value);
     return this.value;
   }
 
@@ -232,7 +234,7 @@ export class SelectorState {
   // has changed. This means that the value in the event is already
   onInputChange(input, index, rawValue) {
     let hasChanged = this.alwaysChange;
-    const value = input.format ? input.format(rawValue) : rawValue;
+    const value = input.format ? input.format(rawValue, this.scope) : rawValue;
     switch (this.selector.type) {
       case Selector.SINGLE:
         if (value !== this.value) {
@@ -422,7 +424,7 @@ export const parseInput = (text) => {
       ? null
       : formatters.length === 1
       ? formatters[0]
-      : (_) => formatters.reduce((r, v) => v(r), _);
+      : (_, scope) => formatters.reduce((r, v) => v(r, scope), _);
 
   return new SelectorInput(path, formatter, key);
 };

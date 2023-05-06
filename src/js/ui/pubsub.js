@@ -52,7 +52,7 @@ export class Topic {
   // using the capacity.
   pub(data, limit = 1, capacity = undefined) {
     // DEBUG
-    // console.log(`Topic.pub at '${this.path.join(".")}'`, data);
+    console.log(`Topic.pub at '${this.path.join(".")}'`, data);
     // We let the publisher decide of the capacity of the topic. This may change
     // the data retention on the topic.
     if (capacity !== undefined) {

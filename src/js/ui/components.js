@@ -4,6 +4,8 @@ import { EffectScope } from "./effectors.js";
 import { onError, makeKey } from "./utils.js";
 import { PubSub } from "./pubsub.js";
 
+export const Events = new PubSub();
+
 // --
 // ## Component Controller
 //
@@ -12,7 +14,7 @@ import { PubSub } from "./pubsub.js";
 // registering component-instance specific handlers (ie. mapping local
 // signal handlers).
 export class Controller {
-  static Events = new PubSub();
+  static Events = Events;
 
   constructor(scope) {
     this.scope = scope.split(".");
