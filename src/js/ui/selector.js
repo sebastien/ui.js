@@ -1,4 +1,3 @@
-import { composePaths } from "./paths.js";
 import { onError } from "./utils.js";
 import { Formats } from "./formats.js";
 
@@ -106,10 +105,9 @@ export class SelectorInput {
   }
 
   // -- doc
-  // Extracts the value for this input based on the local `value`, global `store`
-  // and local `state`, where `value` is located at the given
-  // `path`.
-  extract(scope, state = undefined) {
+  // Extracts the value for this input based on the given scope. This
+  // applies formatting.
+  extract(scope) {
     let res = undefined;
     const { path } = scope;
     if (this.type === SelectorInput.KEY) {
@@ -124,7 +122,7 @@ export class SelectorInput {
           ? scope.local
           : this.type === SelectorInput.RELATIVE
           ? value
-          : state;
+          : value;
       // NOTE: We used to throw a warning when the context was undefined,
       // but it does happen that there's no data, and that should not be
       // an issue.
@@ -172,7 +170,7 @@ export class SelectorInput {
 // --
 // ## Selector State
 //
-// Selector states manage a spefic instance of a `Selector`, which
+// Selector states manage a specific application of a `Selector`, which
 // can be bound to pub/sub bus, and update itself (triggering its `handler`)
 // when the value change.
 export class SelectorState {
@@ -199,9 +197,9 @@ export class SelectorState {
   // -- doc
   // Extracts the current value for this selector based on the current
   // `value` at `path`, the `global` state and the `local` component state.
-  extract(value) {
+  extract() {
     // TODO: Should we detect changes and store a revision number?
-    this.value = this.selector.extract(this.scope, value);
+    this.value = this.selector.extract(this.scope);
     return this.value;
   }
 
@@ -276,6 +274,10 @@ export class SelectorState {
   }
 
   dispose() {}
+
+  toString() {
+    return `SelectedPath(${this.abspath}:${this.selector.toString()})`;
+  }
 }
 // --
 // ## Selector
@@ -310,22 +312,22 @@ export class Selector {
   }
 
   // -- doc
-  // Extracts the data selected by this selector using  the local `value` (at the given `path`), global `store` and local `state`, where `value` is located at the given `path`. Path is needed as selectors can extract the key as well.
-  // TODO: apply(state)
-  extract(scope, state = undefined) {
+  // Extracts the data selected by this selector available at the given `scope`.
+  // Note that the returned value has formatting already applied.
+  extract(scope) {
     switch (this.type) {
       case Selector.SINGLE:
         return this.inputs[0].extract(scope);
       case Selector.LIST: {
         const n = this.inputs.length;
-        const res = state ? state : new Array(n);
+        const res = new Array(n);
         for (let i = 0; i < n; i++) {
           res[i] = this.inputs[i].extract(scope);
         }
         return res;
       }
       case Selector.MAP: {
-        const res = state ? state : {};
+        const res = {};
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];

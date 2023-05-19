@@ -9,6 +9,7 @@ import {
 } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
+  ContentEffector,
   SlotEffector,
   WhenEffector,
   MatchEffector,
@@ -443,19 +444,22 @@ const view = (root, templateName = undefined) => {
 
         // TODO: We should check for `when` as well.
         effectors.push(
-          new SlotEffector(
-            path,
-            directive.selector,
-            slotTemplate,
-            handlers,
-            // We only create a sub-local context if the slot has a template.
-            // But maybe we should have the template effector create the local
-            // context instead? The context is really for components.
-            directive.template
-              ? ["", node.dataset.id || makeKey()]
-              : node.dataset.id || null
-          )
+          slotTemplate
+            ? new SlotEffector(
+                path,
+                directive.selector,
+                slotTemplate,
+                handlers,
+                // We only create a sub-local context if the slot has a template.
+                // But maybe we should have the template effector create the local
+                // context instead? The context is really for components.
+                directive.template
+                  ? ["", node.dataset.id || makeKey()]
+                  : node.dataset.id || null
+              )
+            : new ContentEffector(path, directive.selector)
         );
+
         const replacement = document.createComment(`◉ slot:${text}`);
         // It is possible that the root is a <slot>, in which case we need
         // to update the reference.

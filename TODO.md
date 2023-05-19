@@ -6,6 +6,11 @@
 
 ## Fixes
 
+- `[ ]` When removing an element, the topic will recurse and publish
+  many unsub. However what we should probably do is call remove from the
+  topmost, trigger and trigger a recursive dispose -- at least for the
+  child views of a template.
+
 - `[ ]` Event handlers don't bind to nodes at template root
 
 - `[ ]` `SlotEffector` needs to mount the nodes in order
@@ -23,6 +28,9 @@
   every single effect.
 
 - `[ ]` Scope should maybe have a template name ?
+
+- `[ ]` Formatters should only be used on leaves, as otherwise it breaks
+  the extraction, as the value in the pubsub tree is unformatted.
 
 ## Roadmap
 

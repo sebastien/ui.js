@@ -139,14 +139,14 @@ class Effect {
     return this;
   }
 
-  init(value = this.scope.value) {
-    this.apply(value);
+  init() {
+    this.apply();
     this.bind();
     return this;
   }
 
-  apply(value) {
-    return this.unify(this.selected.extract(value), this.value);
+  apply() {
+    return this.unify(this.selected.extract(), this.value);
   }
 
   unify(current, previous = this.value) {
@@ -188,17 +188,16 @@ export class Effector {
 
   // --
   // An effector is applied when the effect need to be instanciated
-  apply(node, value, scope) {
+  apply(node, scope) {
     onError("Effector.apply: no implementation defined", {
       node,
-      value,
       scope,
     });
   }
 }
 
 // --
-// ## Text Effector
+// ## Content Effector
 //
 
 class ContentEffect extends Effect {
@@ -245,7 +244,7 @@ class ContentEffect extends Effect {
   }
 }
 
-class ContentEffector extends Effector {
+export class ContentEffector extends Effector {
   constructor(nodePath, selector) {
     super(nodePath, selector);
   }
@@ -476,7 +475,7 @@ class SingleSlotEffect extends SlotEffect {
             scope.eventBus
           )
         )
-        ?.init(current);
+        ?.init();
       return this.view;
     } else if (current !== previous) {
       this.view.unify(current, previous);
@@ -564,7 +563,7 @@ class MappingSlotEffect extends SlotEffect {
           );
         } else {
           if (!previous || current[i] !== previous[i]) {
-            item.apply(current[i]);
+            item.apply();
           } else {
             // No change in item
           }
@@ -601,7 +600,7 @@ class MappingSlotEffect extends SlotEffect {
           );
         } else {
           if (!previous || current[k] !== previous[k]) {
-            item.apply(current[k]);
+            item.apply();
           }
         }
       }
@@ -653,6 +652,9 @@ class MappingSlotEffect extends SlotEffect {
 export class SlotEffector extends Effector {
   constructor(nodePath, selector, templateName, handlers, localPath = null) {
     super(nodePath, selector);
+    // TODO: Selectors for slots should not have a format, slots pass
+    // down the value directly to a template.
+    //
     // The handlers map event names to the path at which the incoming
     // events should be stored/relayed.
     this.handlers = handlers;
@@ -661,11 +663,14 @@ export class SlotEffector extends Effector {
     // to a component. This ensures the component has a separate space.
     this.localPath = localPath;
     this.templateName = templateName;
-    this._template = !templateName
-      ? new ContentEffector(nodePath, CurrentValueSelector) // Note: no selector as the slot already took care of it
-      : typeof templateName === "string"
-      ? undefined
-      : templateName;
+    if (!templateName) {
+      onError(
+        `SlotEffector: template is not specified, use ContentEffector instead`,
+        { nodePath, selector, localPath }
+      );
+    }
+    this._template =
+      typeof templateName === "string" ? undefined : templateName;
   }
 
   // -- doc
@@ -695,7 +700,6 @@ export class SlotEffector extends Effector {
       scope = scope.copy();
       scope.localPath = composePaths(scope.localPath, this.localPath);
     }
-    const value = this.selector.extract(scope);
     return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
       this,
       node,
@@ -703,7 +707,7 @@ export class SlotEffector extends Effector {
       // passing the same selector, so the scope should not change.
       scope,
       parentLocalPath
-    ).init(value);
+    ).init();
   }
 }
 
