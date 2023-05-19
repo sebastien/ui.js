@@ -17,10 +17,10 @@ This defines base typographic settings.
   }
 
   .icon {
-    font-size: 100%;
     color: var(--color-icon);
     font-family: var(--font-icon);
     font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+    vertical-align: bottom;
   }
 
   button > .icon,

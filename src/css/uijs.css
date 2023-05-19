@@ -2,7 +2,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 
 @import url("./uijs/colors.css");
-@import url("./uijs/parameters.css");
+@import url("./uijs/tokens.css");
 @import url("./uijs/reset.css");
 @import url("./uijs/base.css");
 @import url("./uijs/layout.css");
