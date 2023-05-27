@@ -5,8 +5,8 @@
 @import url("./uijs/tokens.css");
 @import url("./uijs/reset.css");
 @import url("./uijs/base.css");
-@import url("./uijs/layout.css");
 @import url("./uijs/ui.css");
+@import url("./uijs/layout.css");
 @import url("./uijs/theme.css");
 
 @layer loading {

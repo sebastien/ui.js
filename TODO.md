@@ -6,6 +6,17 @@
 
 ## Fixes
 
+- `[ ]` Remove the evenBus and make it part of the main pubsub bus.
+  Events should just be values.
+
+- `[ ]` Support relaying of values from a renderes component local state
+  to another path. For instance `on:value="#.value"` to remap the
+  component's  
+  local value state to the parent local value slot.
+
+- `[ ]` Support for mounting the local state of a component as part of a
+  subset of the state of the other component
+
 - `[ ]` When removing an element, the topic will recurse and publish
   many unsub. However what we should probably do is call remove from the
   topmost, trigger and trigger a recursive dispose -- at least for the

@@ -37,6 +37,12 @@
   .pad {
     padding: var(--pad-1);
   }
+  .pad-1 {
+    padding: var(--pad-1);
+  }
+  .pad-2 {
+    padding: var(--pad-2);
+  }
   .pad-r {
     padding-right: var(--pad-1);
   }
@@ -69,6 +75,9 @@
   .scroll-h {
     overflow-y: scroll;
   }
+  .noscroll-h {
+    overflow-y: hidden;
+  }
 
   /**
 	* ## Layout
@@ -95,6 +104,7 @@
     height: 100%;
     max-height: 100%;
   }
+
   /**
    * `fit-screen` fits (covers) the whole screen, and also sets  the position
    * to `fixed'.
@@ -123,8 +133,15 @@
     justify-content: flex-end;
   }
 
+  .noshrink {
+    flex-shrink: 0;
+  }
   .grow {
     flex-grow: 1;
+  }
+  .fixed {
+    flex-shrink: 0;
+    flex-grow: 0;
   }
 
   .stack {

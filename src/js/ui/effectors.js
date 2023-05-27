@@ -208,7 +208,7 @@ class ContentEffect extends Effect {
   }
 
   unify(value, previous = this.value) {
-    if (value === Empty) {
+    if (value === Empty || value == undefined || value === null) {
       this.textNode.data = "";
     } else if (value instanceof Node) {
       if (
@@ -258,7 +258,7 @@ export class ContentEffector extends Effector {
 
 class AttributeEffect extends Effect {
   unify(value, previous = this.value) {
-    if (value === Empty) {
+    if (value === Empty || value == undefined || value === null) {
       this.node.removeAttribute(this.effector.name);
     } else {
       this.node.setAttribute(this.effector.name, value);
@@ -375,6 +375,7 @@ class EventEffect extends Effect {
           );
         } else {
           // TODO: Arguably, we could be using the state tree with events to publish that
+          // FIXME: If we have a separate bus, we need to explain why in the design.
           this.scope.eventBus.pub(composePaths([template], eventPath), data);
         }
       }

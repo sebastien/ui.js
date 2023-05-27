@@ -51,6 +51,8 @@ attributes, which are always JSON-encodable primitives.
 
 ## Use of an internal PubSub bus
 
+# TODO: We have two pubsub buses now
+
 The internal PubSub bus is used to enable subscribing to arbitrary
 updates to the data, which then allows for granular rendering updates.
 Imagine a huge list of items, with PubSub it's easy to change just the
@@ -68,6 +70,8 @@ accessed by another handler.
   case the events will be accumulated and flushed.
 
 ## 3-States Approach
+
+# TODO: This have been invalidated, there's the scope now
 
 There are always three states/sources of data, each passed from parent
 to child:
