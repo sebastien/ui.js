@@ -185,6 +185,25 @@ export const assign = (scope, path, value) => {
   return scope;
 };
 
+// ## Functional
+
+const Memoized = new Map();
+export const memo = (guards, functor) => {
+  const scope = (guards instanceof Array ? guards : [guards]).reduce((r, v) => {
+    if (r.has(v)) {
+      return r.get(v);
+    } else {
+      const w = new Map();
+      r.set(v, w);
+      return w;
+    }
+  }, Memoized);
+  if (!scope.has(true)) {
+    scope.set(true, functor());
+  }
+  return scope.get(true);
+};
+
 // ## Math
 
 export const round = (number, factor = 1, bound = 1) => {

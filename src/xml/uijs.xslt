@@ -91,6 +91,9 @@
 		<section>
 			<h3>Preview</h3>
 			<div id="Preview" class="Preview">
+				<xsl:attribute name="style">
+					<xsl:value-of select="./ui:View/@style"/>
+				</xsl:attribute>
 				<div data-path="data">
 					<xsl:attribute name="data-ui">
 						<xsl:value-of select="@name"/>

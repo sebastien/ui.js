@@ -4,6 +4,7 @@ import { EffectScope } from "./effectors.js";
 import { onError, makeKey } from "./utils.js";
 import { PubSub } from "./pubsub.js";
 
+// FIXME: I'm not even sure we should have a separate event bus
 export const Events = new PubSub();
 
 // --

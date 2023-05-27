@@ -90,7 +90,6 @@ export class URLHash {
     const d = new URLSearchParams();
     for (const [k, v] of Object.entries(this.state)) {
       d.set(k, this.formatter.apply(v));
-      console.log("SETTING", k, v, this.formatter.apply(v));
     }
     return d.toString();
   }
