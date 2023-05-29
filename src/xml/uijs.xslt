@@ -208,7 +208,9 @@
 			const data={};
 			]]></xsl:text>
 			<xsl:for-each select="//ui:Data">
+				<xsl:if test="normalize-space(.)">
 				Object.assign(data, (<xsl:value-of select="."/>));
+				</xsl:if>
 			</xsl:for-each>
 			<xsl:text><![CDATA[
 			const dataElement = document.getElementById("data");
