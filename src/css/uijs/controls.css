@@ -1,47 +1,10 @@
-@layer ui {
-  .template {
-    display: none;
-  }
-  .with-hover {
-    position: relative;
-  }
-  .with-hover .on-hover {
-    visibility: hidden;
-    pointer-events: none;
-    opacity: 0;
-    transition-property: opacity;
-    transition-delay: 0.1s;
-    transition-duration: 0.25s;
-  }
-  .with-hover:hover .on-hover,
-  .with-hover .on-hover:hover {
-    visibility: visible;
-    pointer-events: auto;
-    opacity: 1;
-  }
-
-
-  .selectable {
-    cursor: pointer;
-  }
-
-  .selectable:hover {
-    background-color: var(--control-bg-hover);
-  }
-
-  .editable[data-placeholder]:before {
-    content: attr(data-placeholder);
-    opacity: 0.75;
-  }
-
-  /**
-   * Component
-   */
-
-  .label {
+@layer controls {
+  .label,
+  label {
     /* We have a more compact line height for labels */
     line-height: 1.15em;
   }
+  .menu,
   menu {
     display: block;
     font-size: var(--font-size-1);
@@ -54,6 +17,7 @@
     line-height: var(--control-lh);
     user-select: none;
   }
+  .menu.popup,
   menu.popup {
     box-shadow: var(--shadow-floating);
     position: absolute;
@@ -64,12 +28,14 @@
     scrollbar-color: var(--color-accent);
     scrollbar-width: thin;
   }
+  .menu > hr,
   menu > hr {
     border: 0px solid transparent;
     background: transparent;
     margin: 0px;
     border-top: 1px solid var(--color-bd);
   }
+  .menu > hr:after,
   menu > hr:after {
     content: attr(data-label);
     display: block;
@@ -79,6 +45,7 @@
     line-height: 1em;
     padding: 12px 8px 8px;
   }
+  .menu > li,
   menu > li {
     display: flex;
     align-items: center;
@@ -87,10 +54,11 @@
     color: var(--control-text);
     cursor: pointer;
   }
+  .menu > li:hover,
   menu > li:hover {
     background-color: var(--control-bg-hover);
   }
-
+  .menu > li > .label,
   menu > li > .label {
     display: block;
     flex-grow: 1;
@@ -98,6 +66,7 @@
     color: var(--color-text);
   }
 
+  .menu > li > .label > .detail,
   menu > li > .label > .detail {
     display: block;
     font-weight: 400;

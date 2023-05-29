@@ -19,7 +19,20 @@
 				<title>Component: <xsl:value-of select="//ui:Component/@name"/></title>
 				<meta charset="utf-8"/>
 				<meta name="viewport" content="width=device-width, initial-scale=1"/>
-				<link href="/lib/css/uijs.css" rel="stylesheet"/>
+				<xsl:choose>
+					<xsl:when test="//ui:Component/ui:stylesheet">
+						<xsl:for-each select="//ui:Component/ui:stylesheet">
+							<link rel="stylesheet">
+								<xsl:attribute name="href">
+									<xsl:value-of select="@src" />
+								</xsl:attribute>
+							</link>
+						</xsl:for-each>
+					</xsl:when>
+					<xsl:otherwise>
+						<link href="/lib/css/uijs.css" rel="stylesheet"/>
+					</xsl:otherwise>
+				</xsl:choose>
 				<xsl:if test="//ui:Component">
 					<link href="/lib/css/uijs/components.css" rel="stylesheet"/>
 					<script src="https://unpkg.com/highlightjs@9.16.2/highlight.pack.js"/>
