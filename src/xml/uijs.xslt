@@ -16,7 +16,7 @@
 	<xsl:template match="/">
 		<html xmlns="http://www.w3.org/1999/xhtml">
 			<head>
-				<title>Component: <xsl:value-of select="//ui:Component/@name"/></title>
+				<title><xsl:value-of select="//ui:Component/@name"/></title>
 				<meta charset="utf-8"/>
 				<meta name="viewport" content="width=device-width, initial-scale=1"/>
 				<xsl:choose>
@@ -24,7 +24,7 @@
 						<xsl:for-each select="//ui:Component/ui:stylesheet">
 							<link rel="stylesheet">
 								<xsl:attribute name="href">
-									<xsl:value-of select="@src" />
+									<xsl:value-of select="@src"/>
 								</xsl:attribute>
 							</link>
 						</xsl:for-each>
@@ -74,7 +74,7 @@
 		<xsl:call-template name="uijs-script"/>
 	</xsl:template>
 	<xsl:template match="ui:Component" mode="component">
-		<h2>Component: <xsl:value-of select="./@name"/></h2>
+		<h2><xsl:value-of select="./@name"/></h2>
 		<xsl:if test="//*[starts-with(name(),'x:')]">
 			<section>
 			Uses
@@ -122,45 +122,61 @@
 				</pre>
 			</section>
 		</xsl:if>
+		<script><![CDATA[
+						const renderCount = (value,parent) => 	{
+							const items = Object.entries(value);
+							console.log({value,items})
+							return `${items.sort().map(([k,v]) => `<li><code>${k} ${v}</code></li>`).join("")}`; 
+						}
+						]]></script>
 		<section>
 			<h3>View</h3>
-			<div class="Tree">
-				<xsl:apply-templates select="./ui:View/*" mode="tree"/>
+			<div class="Columns">
+				<article>
+					<h4>HTML</h4>
+					<div class="Tree">
+						<xsl:apply-templates select="./ui:View/*" mode="tree"/>
+					</div>
+				</article>
+				<xsl:if test="ui:View//@class">
+					<article>
+						<h4>CSS Classes</h4>
+						<ul id="selectors"/>
+						<script>
+						const classNames="<xsl:for-each select="./ui:View//@class"><xsl:value-of select="."/>|</xsl:for-each>";
+						<![CDATA[
+						const classes=classNames.replaceAll(" ","|").split("|").reduce((r,v)=>(v.trim().length && (r[v]=(r[v]||0)+1),r), {});
+						document.getElementById("selectors").innerHTML = renderCount(classes);
+						]]>
+					</script>
+					</article>
+				</xsl:if>
+				<xsl:if test="ui:View//s:*/@*[name() != 'class']">
+					<article>
+						<h4>CSS Tokens</h4>
+						<ul id="tokens"/>
+						<script>
+					{
+					const tokenNames="<xsl:for-each select="./ui:View//s:*/@*"><xsl:value-of select="."/>|</xsl:for-each>";
+					<![CDATA[
+					const vars = /var\((.*?)\)/g;
+					const matches = {};
+					let match;
+					while ((match = vars.exec(tokenNames)) !== null) {matches[match[1]] = (matches[matches[1]]||0)+1;}
+					document.getElementById("tokens").innerHTML = renderCount(matches);
+					]]>
+					}
+				</script>
+					</article>
+				</xsl:if>
 			</div>
-			<xsl:if test="*">
-				<h4>Style</h4>
-				<pre>
-					<xsl:for-each select="//*[starts-with(name(),'s:')]">
-						<xsl:apply-templates mode="css"/>
-					</xsl:for-each>
-				</pre>
-			</xsl:if>
-			<xsl:if test="ui:View//@*">
-				<h4>Selectors</h4>
-				<ul>
-					<xsl:for-each select="./ui:View//@*">
-						<li>
-							<xsl:choose>
-								<xsl:when test="starts-with(name(), 'out:content')">
-									<code class="pill">
-										<xsl:value-of select="name()"/>
-									</code>
-									<code>
-										<xsl:value-of select="."/>
-									</code>
-								</xsl:when>
-								<xsl:otherwise>
-									<code class="pill">
-										<xsl:value-of select="name()"/>
-									</code>
-									<code>
-										<xsl:value-of select="."/>
-									</code>
-								</xsl:otherwise>
-							</xsl:choose>
-						</li>
-					</xsl:for-each>
-				</ul>
+			<xsl:if test="//s:*">
+				<article>
+					<h4>CSS</h4>
+					<pre>
+						<xsl:apply-templates select="//s:*" mode="css"/>
+					</pre>
+				</article>
 			</xsl:if>
 		</section>
 		<xsl:if test="ui:Controller/*|ui:Controller/text()">

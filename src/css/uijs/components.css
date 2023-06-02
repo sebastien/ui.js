@@ -1,8 +1,19 @@
 .Preview {
-  background: white;
-  border: 1px solid var(--control-bd);
-  padding: 10px;
 }
+
+.Columns {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-gap: 10px;
+  /overflow-x: auto;
+}
+
+.Columns article {
+  max-height: 20em * 1.25em;
+  overflow: auto;
+}
+
 .Tree details {
   display: block;
 }
@@ -39,5 +50,9 @@
 }
 .Tree details[open] summary::before {
   content: "\25BC"; /* down-pointing arrow */
+}
+
+#Template {
+  display: none;
 }
 /* EOF */
