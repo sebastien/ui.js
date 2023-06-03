@@ -1,12 +1,4 @@
-import {
-  parseSelector,
-  parseInput,
-  CurrentValueSelector,
-  PATH,
-  FORMAT,
-  EVENT,
-  INPUTS,
-} from "./selector.js";
+import { parseSelector, CurrentValueSelector, INPUTS } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
   ContentEffector,
@@ -100,20 +92,16 @@ const parseWhenDirective = (text) => {
   }
 };
 
-const RE_ON = new RegExp(
-  `^((?<destination>${PATH})=(?<source>${PATH}${FORMAT}))?${EVENT}$`
-);
+const RE_ON = new RegExp(`^(?<event>([A-Z][A-Za-z]+)+)(?<stops>\\.)?$`);
 const parseOnDirective = (text) => {
   const match = text.match(RE_ON);
   if (!match) {
     return null;
   } else {
-    const { source, destination, event, stops } = match.groups;
+    const { event, stops } = match.groups;
     return {
-      source: source ? parseSelector(source) : CurrentValueSelector,
-      destination: destination ? parseInput(destination) : null,
       event,
-      stops,
+      stops: stops ? true : false,
     };
   }
 };
@@ -427,7 +415,16 @@ const view = (root, templateName = undefined) => {
         const handlers = [...node.attributes].reduce((r, { name, value }) => {
           if (name.startsWith("on:")) {
             const d = parseOnDirective(value);
-            if (d) {
+            if (!d) {
+              onError(
+                `templates.view: Could not parse on 'on:*' directive '${value}'`,
+                {
+                  node,
+                  attr: name,
+                  root,
+                }
+              );
+            } else {
               r = r || {};
               // NOTE: For now we only support relaying the event to the
               // other event, so the handler is basically the path at which we relay.
@@ -454,7 +451,7 @@ const view = (root, templateName = undefined) => {
                 // But maybe we should have the template effector create the local
                 // context instead? The context is really for components.
                 directive.template
-                  ? ["", node.dataset.id || makeKey()]
+                  ? ["", node.dataset.id || makeKey(directive.template)]
                   : node.dataset.id || null
               )
             : new ContentEffector(path, directive.selector)
@@ -500,14 +497,8 @@ const view = (root, templateName = undefined) => {
     if (node && node.parentNode) {
       const directive = parseOnDirective(attr.value);
       if (!directive) {
-        onError(`Could not parse on 'on:*' directive '${attr.value}'`, {
-          name,
-          attr,
-          root,
-        });
-      } else if (!directive.source) {
         onError(
-          `Could not parse source selector on 'on:*' directive '${attr.value}'`,
+          `templates.view: Could not parse on 'on:*' directive '${attr.value}'`,
           {
             name,
             attr,

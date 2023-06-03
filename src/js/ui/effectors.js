@@ -319,13 +319,12 @@ class EventEffect extends Effect {
   }
   constructor(effector, node, scope) {
     super(effector, node, scope);
-    const { source, destination, stops } = this.effector.directive;
+    const { event, stops } = this.effector.directive;
+    const destination = event;
     const eventPath = this.effector.eventPath;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
-      const value = source
-        ? source.extract(new EventScope(this.scope, event))
-        : EventEffect.Value(event);
+      const value = EventEffect.Value(event);
       // If there is a path then we update this based on the value
       if (destination) {
         switch (destination.type) {
@@ -391,7 +390,7 @@ export class EventEffector extends Effector {
   // Creates a new `EventEffector` that  is triggered by the given `event`,
   // generating an event `triggers` (when defined), or
   constructor(nodePath, event, directive) {
-    super(nodePath, directive.source);
+    super(nodePath, CurrentValueSelector);
     this.directive = directive;
     this.eventPath = directive.event ? directive.event.split(".") : null;
     this.event = event;

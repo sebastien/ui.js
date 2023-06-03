@@ -35,9 +35,8 @@ export const INPUTS = `${INPUT}(,${INPUT})*`;
 
 // const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
 export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
-export const EVENT =
-  "(!(?<event>(\\.)?[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
-const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
+
+const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})`);
 
 export const commonPath = (paths) => {
   let i = 0;

@@ -341,6 +341,8 @@ const extractSlots = (node) => {
   return hasSlots ? slots : null;
 };
 
+const Keys = new Map();
+
 // --
 // Takes a DOM node that typically has a `data-ui` attribute, looks for the
 // corresponding template in `Templates` and creates a new `Component`
@@ -355,7 +357,7 @@ export const createComponent = (
   // We retrieve the following attributes:
   // - `data-ui`
   // - `data-path`
-  const { ui, path } = node.dataset;
+  const { ui, path, id } = node.dataset;
 
   // --
   // We validate that the template exists.
@@ -369,8 +371,9 @@ export const createComponent = (
   }
 
   // We create an anchor component, and replace the node with the anchor.
-  const id = makeKey();
-  const anchor = document.createComment(`⚓ ${ui}:${id}`);
+  const key = id ? id : makeKey(ui);
+
+  const anchor = document.createComment(`⚓ ${ui}:${key}`);
   const attributes = [...node.attributes].reduce((r, v) => {
     if (!v.name.startsWith("data-")) {
       r.set(v.name, v.value);
@@ -384,7 +387,7 @@ export const createComponent = (
   node.parentElement.replaceChild(anchor, node);
 
   return new Component(
-    id,
+    key,
     anchor,
     template,
     controllers.get(ui),

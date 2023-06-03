@@ -93,15 +93,33 @@ export const numcode = (
   return res.join("");
 };
 
-export const makeKey = () =>
+// --
+// `makeKey(scope)` returns sequential keys for the given scope. This
+// ensures that ids are reproducible.
+const Keys = new Map();
+export const makeKey = (scope = "key") => {
+  let v = Keys.get(scope);
+  if (v === undefined) {
+    v = 0;
+  } else {
+    v += 1;
+  }
+  Keys.set(scope, 0);
+  return `${scope}-${0}`;
+};
+
+// --
+// Generates a new Id. This is not reproducible.
+export const makeId = () =>
   numcode(new Date().getTime() * 100000 + Math.random() * 100000);
+
 export const nextKey = (value) => {
   if (value instanceof Array) {
     value.push(undefined);
     return value.length - 1;
   } else {
     while (true) {
-      const k = makeKey();
+      const k = makeId();
       if (value[k] === undefined) {
         return k;
       }
