@@ -80,7 +80,7 @@ export class Topic {
       topic = topic.parent;
       offset += 1;
     }
-    return count;
+    return data;
   }
 
   del(limit = 1) {

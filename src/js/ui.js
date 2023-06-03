@@ -34,12 +34,9 @@
 //   state = undefined
 // ) => {};
 
-import {
-  ComponentsContext,
-  createComponent,
-  controller,
-} from "./ui/components.js";
+import { createComponent, controller } from "./ui/components.js";
 import { loadTemplates, loadModule } from "./ui/loading.js";
+import { StateTree } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
 import { onWarning } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
@@ -50,8 +47,10 @@ import tokens from "./ui/tokens.js";
 // This is the main function used to instanciate a set of components in a context.
 export const ui = async (scope = document, data = {}, styles = undefined) => {
   const style = undefined;
-  const context =
-    data instanceof ComponentsContext ? data : new ComponentsContext(data);
+  const state = data instanceof StateTree ? data : new StateTree(data);
+
+  // DEBUG
+  window.STATE = state;
 
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
@@ -80,11 +79,11 @@ export const ui = async (scope = document, data = {}, styles = undefined) => {
       onWarning("Could not expand template of scope", scope);
     } else {
       for (const node of scope.querySelectorAll("*[data-ui]")) {
-        const c = createComponent(node, context);
+        const c = createComponent(node, state);
         c && components.push(c);
       }
     }
-    return { templates, components, stylesheets, style, context };
+    return { templates, components, stylesheets, style, state };
   });
 };
 

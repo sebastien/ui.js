@@ -46,20 +46,12 @@ class DOM {
 // - State Bus
 // - `local` and `value` as cached (ie, we don't need to retrieve them)
 export class EffectScope {
-  constructor(
-    state,
-    path,
-    localPath,
-    value = undefined,
-    local = undefined,
-    eventBus = undefined
-  ) {
+  constructor(state, path, localPath, value = undefined, local = undefined) {
     this.state = state;
     this.path = path;
     this.localPath = localPath;
     // FIXME: This should go
     this._local = local;
-    this.eventBus = eventBus;
   }
 
   get value() {
@@ -73,8 +65,7 @@ export class EffectScope {
       this.path,
       this.localPath,
       this.value,
-      undefined,
-      this.eventBus
+      undefined
     );
   }
   // TODO: Use that API instead
@@ -102,14 +93,7 @@ export class EffectScope {
 
 class EventScope extends EffectScope {
   constructor(scope, event) {
-    super(
-      scope.state,
-      scope.path,
-      scope.localPath,
-      event,
-      scope.local,
-      scope.eventBus
-    );
+    super(scope.state, scope.path, scope.localPath, event, scope.local);
   }
 }
 
@@ -376,7 +360,11 @@ class EventEffect extends Effect {
         } else {
           // TODO: Arguably, we could be using the state tree with events to publish that
           // FIXME: If we have a separate bus, we need to explain why in the design.
-          this.scope.eventBus.pub(composePaths([template], eventPath), data);
+          console.log("TODO: PUBLISH EVENT DISPATCHING", {
+            template,
+            eventPath,
+            data,
+          });
         }
       }
       if (stops) {
@@ -472,8 +460,7 @@ class SingleSlotEffect extends SlotEffect {
             this.abspath,
             scope.localPath,
             current,
-            scope.local,
-            scope.eventBus
+            scope.local
           )
         )
         ?.init();
@@ -534,8 +521,7 @@ class MappingSlotEffect extends SlotEffect {
                 this.abspath ? this.abspath : [],
                 scope.localPath,
                 current, // value
-                scope.local,
-                scope.eventBus
+                scope.local
               ),
               true // isEmpty
             )
@@ -557,8 +543,7 @@ class MappingSlotEffect extends SlotEffect {
                 this.abspath ? [...this.abspath, i] : [i],
                 scope.localPath,
                 current[i], // value
-                scope.local,
-                scope.eventBus
+                scope.local
               )
             )
           );
@@ -594,8 +579,7 @@ class MappingSlotEffect extends SlotEffect {
                 this.abspath ? [...this.abspath, k] : [k],
                 scope.localPath,
                 current[k], // value
-                scope.local,
-                scope.eventBus
+                scope.local
               )
             )
           );
@@ -978,11 +962,13 @@ class TemplateEffect extends Effect {
         previous = node;
       }
     }
-    this.scope.eventBus.pub(
-      [this.effector.template.name, "Mount"],
-      { scope: this.scope, effect: this, node: this.node },
-      undefined,
-      -1
+    this.scope.state.bus.pub(
+      [...this.scope.localPath, "Mount"],
+      this.scope.state.bus.pub([this.effector.template.name, "Mount"], {
+        scope: this.scope,
+        effect: this,
+        node: this.node,
+      })
     );
   }
 
@@ -990,27 +976,30 @@ class TemplateEffect extends Effect {
     for (let view of this.views) {
       view.root?.parentNode?.removeChild(view.root);
     }
-    this.scope.eventBus.pub(
+    this.scope.state.bus.pub(
       [this.effector.template.name, "Unmount"],
-      { scope: this.scope, effect: this, node: this.node },
-      undefined,
-      -1
+      this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
+        scope: this.scope,
+        effect: this,
+        node: this.node,
+      })
     );
   }
 
   dispose() {
     super.dispose();
-    for (let view of this.views) {
-      for (let state of view.states) {
+    for (const view of this.views) {
+      for (const state of view.states) {
         state?.dispose();
       }
     }
     this.views = [];
-    this.scope.eventBus.pub(
-      [this.effector.template.name, "Dispose"],
-      this.scope,
-      undefined,
-      -1
+
+    this.scope.state.bus.pub(
+      [this.effector.template.name, "Unmount"],
+      this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
+        scope: this.scope,
+      })
     );
   }
 }

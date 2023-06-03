@@ -206,6 +206,14 @@ export const memo = (guards, functor) => {
 
 // ## Math
 
+export const Enum = (...values) =>
+  Object.freeze(
+    values.reduce((r, v) => {
+      r[`${v}`] = typeof v === "string" ? new Symbol(v) : v;
+      return r;
+    }, {})
+  );
+
 export const round = (number, factor = 1, bound = 1) => {
   const base = number / factor;
   const roundedBase =

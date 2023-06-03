@@ -1,129 +1,319 @@
-import { StateTree } from "./state.js";
+import { parsePath } from "./paths.js";
 import { Templates } from "./templates.js";
 import { EffectScope } from "./effectors.js";
 import { onError, makeKey } from "./utils.js";
-import { PubSub } from "./pubsub.js";
-
-// FIXME: I'm not even sure we should have a separate event bus
-export const Events = new PubSub();
 
 // --
-// ## Component Controller
 //
-// The component controller manages lifecycle events for a given controller,
-// such as what happens when the component is *mounted* or *unmounted*, and
-// registering component-instance specific handlers (ie. mapping local
-// signal handlers).
-export class Controller {
-  static Events = Events;
+// ## Controller Cells
+//
 
-  constructor(scope) {
-    this.scope = scope.split(".");
-    this.handlers = {};
-    this.lifecycle = {};
-    this.onMount = undefined;
-    this.onUnmount = undefined;
-    // We assume that if we  create a controller, we do want to listen
-    // to mount and unmount events, always.
-    Controller.Events.sub(
-      [...this.scope, "Mount"],
-      (this.onMount = this.doMount.bind(this))
-    );
-    Controller.Events.sub(
-      [...this.scope, "Unmount"],
-      (this.onUnmount = this.doUnmount.bind(this))
-    );
+export class Cell {
+  constructor() {
+    this.scope = undefined;
   }
 
-  dispose() {
-    Controller.Events.unsub(
-      [...this.scope, "Mount"],
-      (this.onMount = this.doMount.bind(this))
-    );
-    Controller.Events.unsub(
-      [...this.scope, "Unmount"],
-      (this.onUnmount = this.doUnmount.bind(this))
-    );
+  bind(scope) {
+    this.scope = scope;
   }
 
-  mount(callback) {
-    this.lifecycle["Mount"] = callback;
-    return this;
+  get value() {
+    throw new Error("Cell.value not implemented", { cell: this });
   }
 
-  unmount(callback) {
-    this.lifecycle["Unmount"] = callback;
-    return this;
-  }
-
-  on(key, callback) {
-    switch (typeof key) {
-      case "string":
-        this.handlers[key] = callback;
-        break;
-      case "object":
-        for (let k of Object.keys(key)) {
-          this.on(k, key[k]);
-        }
-        break;
-    }
-    return this;
-  }
-
-  doMount(_, topic) {
-    for (const event of topic.flush()) {
-      // FIXME: This is awkward, all of that should be nicely wrapped
-      const bus = event.scope.state.bus;
-      for (const k in this.handlers) {
-        bus.sub([...event.scope.localPath, k], this.handlers[k]);
-      }
-      this.lifecycle.Mount && this.lifecycle.Mount(event);
-    }
-  }
-
-  doUnmount(event) {
-    // FIXME: This is awkward, all of that should be nicely wrapped
-    const bus = event.scope.state.bus;
-    for (const k in this.handlers) {
-      bus.unsub([...event.scope.localPath.scope, k], this.handlers[k]);
-    }
-    this.lifecycle.Unmount && this.lifecycle.Unmount(event);
+  unbind() {
+    throw new Error("Cell.unbind not implemented", { cell: this });
   }
 }
 
-//  -- doc
-//  `controller(scope:string|Array[string])` is the high-level function
-//  to create a  `Controller` object.
-export const controller = (scope) => new Controller(scope);
-
-export class ComponentsContext {
-  constructor(data = {}) {
-    this.state = data instanceof StateTree ? data : new StateTree(data);
-    this.events = Controller.Events;
+export class Ref extends Cell {
+  constructor(name) {
+    super();
+    this.name = name;
   }
 }
+
+export class Slot extends Cell {
+  constructor(path) {
+    super();
+    this.path = path;
+  }
+
+  get topic() {
+    return this.scope.state.bus.get(this.path);
+  }
+
+  get value() {
+    return this.scope.state.get(this.path);
+  }
+
+  sub(handler) {
+    this.topic.sub(handler);
+    return this;
+  }
+
+  unsub(handler) {
+    this.topic.unsub(handler);
+    return this;
+  }
+
+  set(value) {
+    this.scope.state.put(this.path, value);
+  }
+
+  append(value) {
+    this.scope.state.append(this.path, value);
+  }
+
+  //   TODO
+  //   insert(key, value) {}
+  //
+  //   pop(key) {}
+  //
+  //   removeAt(key) {}
+  //
+  //   remove(value) {}
+  // clear() {}
+}
+
+// FIXME: We may want to specialize based on the type of reducer
+export class Reducer extends Cell {
+  constructor(inputs, functor, input, handlers) {
+    super();
+    this.inputs = inputs;
+    this.functor = functor;
+    this._value = undefined;
+    this.input = input;
+    this.handlers = handlers;
+  }
+
+  onInputChange(key, value, ...rest) {
+    onError("Slot.onInputChange: Not implemented", { slot: this });
+  }
+}
+
+class AtomReducer extends Reducer {
+  constructor(inputs, functor) {
+    super(inputs, functor, undefined, (...args) =>
+      this.onInputChange(null, ...args)
+    );
+  }
+
+  bind(scope) {
+    super.bind(scope);
+    scope.state.bus.sub(this.inputs.path, this.handlers);
+  }
+
+  onInputChange(key, value, ...rest) {
+    if (this.input !== value) {
+      this.input = value;
+      this.doUpdate();
+      this._value = this.functor(this.input);
+    }
+  }
+}
+
+class ArrayReducer extends Reducer {
+  constructor(inputs, functor) {
+    super(
+      inputs,
+      functor,
+      inputs.map(() => undefined),
+      inputs.map(
+        (_, i) =>
+          (...args) =>
+            this.onInputChange(i, ...args)
+      )
+    );
+  }
+
+  bind(scope) {
+    super.bind(scope);
+    for (const i in this.inputs) {
+      scope.state.bus.sub(this.inputs[i].path, this.handlers[i]);
+    }
+  }
+
+  onInputChange(key, value) {
+    if (this.input[key] !== value) {
+      this.input[key] = value;
+      this._value = this.functor(...this.input);
+    }
+  }
+}
+
+class MapReducer extends Reducer {
+  constructor(inputs, functor) {
+    super(
+      inputs,
+      functor,
+      Object.keys(inputs).reduce((r, k) => {
+        r[k] = undefined;
+        return r;
+      }, {}),
+      Object.keys(inputs).reduce((r, k) => {
+        r[k] = (...args) => this.onInputChange(k, ...args);
+        return r;
+      }, {})
+    );
+  }
+
+  bind(scope) {
+    super.bind(scope);
+    for (const [key, cell] of Object.entries(this.inputs)) {
+      scope.state.bus.sub(cell.path, this.handlers[key]);
+    }
+  }
+  onInputChange(key, value) {
+    if (this.input[key] !== value) {
+      this.input[key] = value;
+      this._value = this.functor(this.input);
+    }
+  }
+}
+
+class Use {
+  constructor(cells, scope) {
+    this.cells = cells;
+    this.scope = scope;
+  }
+  cell(cell) {
+    this.cells.push(cell.bind(this.scope));
+    return cell;
+  }
+  hash(path) {
+    return this.cell(new Slot(["@hash", ...parsePath(path)]));
+  }
+
+  global(path) {
+    return this.cell(new Slot(parsePath(path)));
+  }
+
+  local(path) {
+    return this.cell(new Slot([...this.scope.localPath, ...parsePath(path)]));
+  }
+
+  reduce(inputs, functor) {
+    return this.cell(
+      inputs instanceof Cell
+        ? new AtomReducer(inputs, functor)
+        : inputs instanceof Array
+        ? new ArrayReducer(inputs, functor)
+        : new MapReducer(inputs, functor)
+    );
+  }
+}
+// --
+//
+// ## Controllers
+//
+
+const onHandler = (target, property) => {
+  return (handler) => {
+    if (target.has(property)) {
+      target.get(property).push(handler);
+    } else {
+      target.set(property, [handler]);
+    }
+  };
+};
+
+export const Controllers = new Map();
+export const controller = (controller, controllers = Controllers) => {
+  const name = controller.name;
+  if (!name) {
+    onError(
+      "Controller definition should be a named function, no .name attribute found",
+      { controller }
+    );
+  }
+  if (typeof controller !== "function") {
+    onError(
+      `Controller definition should be a named function, not a '${typeof controller}'`,
+      { controller }
+    );
+  }
+  if (controllers.has(name)) {
+    onError("Controller already registered", { name, controllers });
+  } else {
+    controllers.set(name, controller);
+  }
+  return controller;
+};
 
 // --
+// Creates an instance of the controller, using the given definition and scope.
+export const createController = (definition, scope) => {
+  const cells = [];
+  const events = new Map();
+  const on = new Proxy(events, { get: onHandler });
+  const use = new Use(cells, scope);
+  definition({ use, on });
+
+  // We process the event handlers
+  const triggers = new Map();
+  for (const [name, handlers] of events.entries()) {
+    const eventName = `${name.charAt(0).toUpperCase()}${name.substring(1)}`;
+    const trigger = () => {
+      for (const handler of handlers) {
+        handler();
+      }
+    };
+    if (eventName === "Mount") {
+      trigger();
+    } else {
+      scope.state.bus.sub([...scope.localPath, eventName], trigger);
+      triggers.set(eventName, trigger);
+    }
+  }
+
+  // If we registered handlers, then we unmount them on unmount
+  if (triggers.size) {
+    const unmount = () => {
+      for (const [name, handler] of triggers.entries()) {
+        scope.state.bus.unsub([...scope.localPath, name], handler);
+      }
+      scope.state.bus.unsub([...scope.localPath, "Unmount"], unmount);
+    };
+    scope.state.bus.sub([...scope.localPath, "Unmount"], unmount);
+  }
+};
+
+// --
+//
+// ## Components
+//
 // The `Component` class encapsulates an anchor node, a template effector,
 // and state context
 export class Component {
-  constructor(id, anchor, template, context, path, slots, attributes) {
+  constructor(
+    id,
+    anchor,
+    template,
+    controller,
+    state,
+    path,
+    slots,
+    attributes
+  ) {
     this.id = id;
     this.anchor = anchor;
     this.template = template;
-    this.context = context;
+    this.state = state;
     const localPath = ["@local", this.id];
     if (slots) {
-      context.state.patch(localPath, slots);
+      state.patch(localPath, slots);
     }
     this.scope = new EffectScope(
-      context.state,
+      state,
       path || localPath,
       localPath,
-      context.state.get(path || localPath),
-      context.state.get(localPath),
-      context.events
+      state.get(path || localPath),
+      state.get(localPath)
     );
+    this.controller = controller
+      ? createController(controller, this.scope)
+      : null;
     this.effect = template.apply(this.anchor, this.scope, attributes);
   }
 }
@@ -152,9 +342,15 @@ const extractSlots = (node) => {
 };
 
 // --
-// Takes a DOM node that typically has `data-ui` attribute and looks
-// by applying a template.
-export const createComponent = (node, context, templates = Templates) => {
+// Takes a DOM node that typically has a `data-ui` attribute, looks for the
+// corresponding template in `Templates` and creates a new `Component`
+// replacing the given `node` and then rendering the component.
+export const createComponent = (
+  node,
+  state,
+  templates = Templates,
+  controllers = Controllers
+) => {
   // --
   // We retrieve the following attributes:
   // - `data-ui`
@@ -181,13 +377,18 @@ export const createComponent = (node, context, templates = Templates) => {
     }
     return r;
   }, new Map());
+
+  // TODO: We should probably move the  node to a fragment an render
+  // the fragment separately before mounting it, so that we minimize DOM
+  // changes.
   node.parentElement.replaceChild(anchor, node);
 
   return new Component(
     id,
     anchor,
     template,
-    context,
+    controllers.get(ui),
+    state,
     path ? path.split(".") : undefined,
     extractSlots(node),
     attributes

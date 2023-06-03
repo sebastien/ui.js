@@ -73,6 +73,7 @@ export class StateTree {
   put(path = null, value = undefined) {
     return this.patch(path, value, true);
   }
+
   append(path = null, value = undefined) {
     const parent = this.get(path);
     if (parent) {
