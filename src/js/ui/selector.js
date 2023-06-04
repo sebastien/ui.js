@@ -109,21 +109,34 @@ export class SelectorInput {
     let res = undefined;
     const { path } = scope;
     if (this.type === SelectorInput.KEY) {
-      res = path ? path.at(-1) : undefined;
+      return this.apply(undefined, path);
     } else {
       // We ignore the cached value, we do a fresh extract
       const value = scope.state.get(path);
-      let context =
+      return this.apply(
         this.type === SelectorInput.ABSOLUTE
           ? scope.state.global
           : this.type === SelectorInput.LOCAL
           ? scope.local
           : this.type === SelectorInput.RELATIVE
           ? value
-          : value;
+          : value,
+        path
+      );
+    }
+  }
+
+  // --
+  // Applies the selector input to a value (not a scope).
+  apply(value, path = undefined) {
+    let res = undefined;
+    if (this.type === SelectorInput.KEY) {
+      res = path ? path.at(-1) : undefined;
+    } else {
       // NOTE: We used to throw a warning when the context was undefined,
       // but it does happen that there's no data, and that should not be
       // an issue.
+      let context = value;
       if (this.path.length && context !== undefined) {
         for (const k of this.path) {
           context = context[k];
@@ -134,8 +147,8 @@ export class SelectorInput {
       }
       res = context;
     }
-    const format = this.format;
-    return format ? format(res, scope) : res;
+    // NOTE: There use to be a scope passed
+    return this.format ? this.format(res) : res;
   }
 
   // -- doc

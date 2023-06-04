@@ -1,4 +1,10 @@
-import { parseSelector, CurrentValueSelector, INPUTS } from "./selector.js";
+import {
+  parseSelector,
+  parseInput,
+  CurrentValueSelector,
+  INPUT,
+  INPUTS,
+} from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
   ContentEffector,
@@ -21,11 +27,11 @@ import { stylesheet } from "./css.js";
 // This defines how HTML/XML template definitions are translated into
 // a tree of effectors.
 
-const RE_NUMBER = /^\d+(\.\d+)?$/;
 // -- doc
 // `parseValue` parses a text value into its JavaScript representation. Note
 // that this function uses `eval()` and is not safe to use with foreign
 // code.
+const RE_NUMBER = /^\d+(\.\d+)?$/;
 export const parseValue = (value) => {
   if (typeof value !== "string") {
     return value;
@@ -92,17 +98,38 @@ const parseWhenDirective = (text) => {
   }
 };
 
-const RE_ON = new RegExp(`^(?<event>([A-Z][A-Za-z]+)+)(?<stops>\\.)?$`);
+// --
+// ### Handling events: `on:EVENT=DIRECTIVE`.
+//
+// The `on:EVENT=DIRECTIVE` directive is as follows:
+//
+// - `EVENT` is an event name
+// - `DIRECTIVE` is a comma-separated list of mappings `SELECTOR=SELECTOR` and
+//    event names.
+const RE_INPUT = new RegExp(`^${INPUT}$`);
+const RE_EVENT = new RegExp(`^(?<name>([A-Z][A-Za-z]+)+)(?<stops>\\.)?$`);
 const parseOnDirective = (text) => {
-  const match = text.match(RE_ON);
-  if (!match) {
-    return null;
+  const match = text.split(",").reduce(
+    (r, v) => {
+      let match = undefined;
+      const t = v.trim();
+      if ((match = t.match(RE_EVENT))) {
+        const { name, stops } = match.groups;
+        r.events.push(name);
+        if (stops) {
+          r.stops = true;
+        }
+      } else if ((match = t.match(RE_INPUT))) {
+        r.inputs.push(parseInput(t));
+      }
+      return r;
+    },
+    { inputs: [], events: [] }
+  );
+  if (match.inputs.length || match.events.length || match.stops) {
+    return match;
   } else {
-    const { event, stops } = match.groups;
-    return {
-      event,
-      stops: stops ? true : false,
-    };
+    return null;
   }
 };
 
@@ -269,7 +296,16 @@ const isNodeEmpty = (node) => {
   return true;
 };
 
-const createSlotOrContentEffector = (node) => {};
+// --
+// ## Node Operations
+
+const asFragment = (...nodes) => {
+  const fragment = document.createDocumentFragment();
+  for (const node of nodes) {
+    fragment.appendChild(node);
+  }
+  return fragment;
+};
 
 const contentAsFragment = (node) => {
   const fragment = document.createDocumentFragment();
@@ -277,6 +313,12 @@ const contentAsFragment = (node) => {
     fragment.appendChild(node.firstChild);
   }
   return fragment;
+};
+
+const replaceNodeWithPlaceholder = (node, placeholder) => {
+  const anchor = document.createComment(placeholder);
+  node.parentElement.replaceChild(anchor, node);
+  return anchor;
 };
 
 // Creates the HTML template that is used to render the contents. This
@@ -325,18 +367,9 @@ const getNodeEventHandlers = (node) =>
   }, null);
 
 // --
-// ## Views
-//
-class View {
-  constructor(root, refs, effectors) {
-    this.root = root;
-    this.refs = refs;
-    this.effectors = effectors;
-  }
-}
-
-// --
-// Processes a SLOT node.
+// Processes a `<slot template=... select=.... >` node. The `select` attribute
+// defines the data path for which the slot will be applied, if it is suffixed
+// with `.*` then the slot will be mapped for each selected item.
 const processSlotNode = (node, root) => {
   const selector = parseSelector(node.getAttribute("select"));
   const content = contentAsFragment(node);
@@ -360,6 +393,153 @@ const processSlotNode = (node, root) => {
 
   return effector;
 };
+
+// --
+// Processes an `out:NAME=SELECTOR` attribute, where `out:content=SELECTOR`
+// is a special case where the content of the node will be applied wit the
+// value of the selector. Otherwise the handling will be either an
+// style, value or regular attribute.
+const onOutAttribute = (attr, root) => {
+  // The first step is to parse the selector from the `out:NAME=SELECTOR`
+  // attribute.
+  const node = attr.ownerElement;
+  const name = attr.localName;
+  const text = attr.value || `.${name}`;
+  const directive = parseOutDirective(text);
+  node.removeAttribute(attr.name);
+  if (!directive) {
+    onError(`templates.view: Could not parse 'out:' directive "${text}"`, {
+      text,
+      attr,
+    });
+  } else if (!directive.selector) {
+    onError(
+      `templates.view: Cannot parse selector 'out:' of directive "${text}"`,
+      {
+        text,
+        attr,
+      }
+    );
+  } else if (name === "content") {
+    // Now, if we have an `out:content=XXXX`, then it means we're replacing
+    // the content with the value or a template applied with the value.
+    // We extract the fragment, handlers, and content template
+    const fragment = contentAsFragment(node);
+    const template = getNodeTemplate(node, directive.template);
+    const handlers = getNodeEventHandlers(node);
+    const key = makeKey(node.dataset.id || directive.template);
+    const anchor = replaceNodeWithPlaceholder(
+      node,
+      `${key}|${
+        template ? "SlotEffector" : "ContentEffector"
+      }|${template}|out:content=${text}`
+    );
+    return template
+      ? new SlotEffector(
+          nodePath(anchor, root),
+          directive.selector,
+          template,
+          handlers,
+          key,
+          fragment
+        )
+      : new ContentEffector(
+          nodePath(anchor, root),
+          directive.selector,
+          fragment
+        );
+  } else {
+    // It's not an `out:content` attribute, then it's either a style, value
+    // or attribute effector.
+    const nodeName = node.nodeName;
+    return new (
+      name === "style"
+        ? StyleEffector
+        : ((name === "value" || name === "disabled") &&
+            (nodeName === "INPUT" || nodeName === "SELECT")) ||
+          (name === "checked" && nodeName === "INPUT")
+        ? ValueEffector
+        : AttributeEffector
+    )(nodePath(node, root), directive.selector, name);
+  }
+};
+
+const onDoAttribute = (attr, root) => {
+  const node = attr.ownerElement;
+  node.removeAttribute(attr.name);
+  if (attr.localName === "match") {
+    const selector = parseSelector(attr.value);
+    if (!selector) {
+      onError(
+        `templates: Unable to parse selector '${attr.value}' in 'do:match: attribute`,
+        { attr }
+      );
+    } else {
+      // We have `do:match=SELECTOR`, we now need to look at the children
+      // with a `do:case` attribute. These will be the branches.
+      const branches = [...node.childNodes].reduce((r, n, i) => {
+        if (n.nodeType == Node.ELEMENT_NODE && n.hasAttribute("do:case")) {
+          // If the child  has a do:case, then it's a sub-template and
+          // we need to take it out.
+          const t = n.getAttribute("do:case");
+          const value = parseValue(t);
+
+          const template = createTemplate(
+            asFragment(n),
+            // FIXME: I'm not sure why we're making a key here, we should probably
+            // use the name of the parent template
+            `T${templateName || makeKey()}-E${effectors.length}`,
+            false // No need to clone there
+          );
+          replaceNodeWithPlaceholder(n, `#${i}|MatchEffector|${template}|${v}`);
+
+          r.push({
+            template,
+            value,
+            nodeIndex: i,
+          });
+        }
+        return r;
+      }, []);
+      if (branches.length === 0) {
+        return onError(
+          `templates: 'do:match=${attr.value}' node has no 'do:case' branch`,
+          { node: attr.ownerElement, branches }
+        );
+      } else {
+        return new MatchEffector(
+          nodePath(
+            replaceNodeWithPlaceholder(
+              `|MatchEffector||${selector.toString()}`,
+              node
+            ),
+            root
+          ),
+          selector,
+          branches
+        );
+      }
+    }
+  } else {
+    return onError(
+      `templates: Unsupported '${attr.name}' attribute, 'do:match' is supported`,
+      {
+        attr,
+      }
+    );
+  }
+};
+
+// --
+// ## View creation
+//
+class View {
+  constructor(root, refs, effectors) {
+    this.root = root;
+    this.refs = refs;
+    this.effectors = effectors;
+  }
+}
 
 // -- doc
 // Creates a view from the given `root` node, looking for specific
@@ -385,94 +565,38 @@ const view = (root, templateName = undefined) => {
     (attrs[type] = attrs[type] || []).push({ name, attr });
   }
 
-  // --
-  // ### Styled attributes
-  //
-  // We expand the style attributes, which are then aggregated in the
-  // `styleRules` dict.
-  const styledRules = {};
-  for (const node of iterSelector(root, "*[styled]")) {
-    const { rules, classes } = styled(node.getAttribute("styled"));
-    Object.assign(styledRules, rules);
-    classes.forEach((_) => node.classList.add(_));
-    node.removeAttribute("styled");
-  }
+  // NOTE: Disabling this for now
+  // // --
+  // // ### Styled attributes
+  // //
+  // // We expand the style attributes, which are then aggregated in the
+  // // `styleRules` dict.
+  // const styledRules = {};
+  // for (const node of iterSelector(root, "*[styled]")) {
+  //   const { rules, classes } = styled(node.getAttribute("styled"));
+  //   Object.assign(styledRules, rules);
+  //   classes.forEach((_) => node.classList.add(_));
+  //   node.removeAttribute("styled");
+  // }
 
-  for (const { name, attr } of attrs["styled"] || []) {
-    const { rules, classes } = styled(attr.value, `:${name}`);
-    Object.assign(styledRules, rules);
-    const node = attr.ownerElement;
-    classes.forEach((_) => node.classList.add(_));
-    node.removeAttribute("styled");
-  }
+  // for (const { name, attr } of attrs["styled"] || []) {
+  //   const { rules, classes } = styled(attr.value, `:${name}`);
+  //   Object.assign(styledRules, rules);
+  //   const node = attr.ownerElement;
+  //   classes.forEach((_) => node.classList.add(_));
+  //   node.removeAttribute("styled");
+  // }
 
-  // If we have more than one `styledRule`, then we declare a stylesheet.
-  if (Object.keys(styledRules).length > 0) {
-    // NOTE: We should probably put that as part of the view and not
-    // necessarily create it right away.
-    stylesheet(styledRules);
-  }
+  // // If we have more than one `styledRule`, then we declare a stylesheet.
+  // if (Object.keys(styledRules).length > 0) {
+  //   // NOTE: We should probably put that as part of the view and not
+  //   // necessarily create it right away.
+  //   stylesheet(styledRules);
+  // }
 
-  for (const { name, attr } of attrs["do"] || []) {
-    if (name === "match") {
-      const selector = parseSelector(attr.value);
-      if (!selector) {
-        onError(
-          `templates: Unable to parse selector '${attr.value}' in 'do:match: attribute`,
-          { attr }
-        );
-      } else {
-        const node = attr.ownerElement;
-        const branches = [];
-        const childNodes = [...node.childNodes];
-        node.removeAttribute("do:match");
-        for (let i = 0; i < childNodes.length; i++) {
-          const n = childNodes[i];
-          if (n.nodeType == Node.ELEMENT_NODE && n.hasAttribute("do:case")) {
-            // If the child  has a do:case, then it's a sub-template and
-            // we need to take it out.
-            const t = n.getAttribute("do:case");
-            const v = parseValue(t);
-            const anchor = document.createComment(`⟢  case:${t}`);
-            n.removeAttribute("do:case");
-            n.parentNode.replaceChild(anchor, n);
-            const frag = document.createDocumentFragment();
-            frag.appendChild(n);
-            const subtemplate = createTemplate(
-              frag,
-              // FIXME: I'm not sure why we're making a key here, we should probably
-              // use the name of the parent template
-              `T${templateName || makeKey()}-E${effectors.length}`,
-              false // No need to clone there
-            );
-            branches.push({
-              template: subtemplate,
-              value: v,
-              nodeIndex: i,
-            });
-          }
-        }
-        if (branches.length === 0) {
-          onError(
-            `templates: 'do:match=${attr.value}' node has no 'do:case' branch`,
-            { node: attr.ownerElement, branches }
-          );
-        } else {
-          const anchor = document.createComment(`⟣ ${selector.toString()}`);
-          node.parentNode?.replaceChild(anchor, node);
-          effectors.push(
-            new MatchEffector(nodePath(anchor, root), selector, branches)
-          );
-        }
-      }
-    } else {
-      onError(
-        `templates: Unsupported 'do:${name}' attribute, 'do:match' is supported`,
-        {
-          attr,
-        }
-      );
-    }
+  for (const { attr } of attrs["do"] || []) {
+    const effector = onDoAttribute(attr, root);
+    effector && this.effectors.push(effector);
   }
 
   // --
@@ -485,95 +609,8 @@ const view = (root, templateName = undefined) => {
   // ### `out:*` attributes
   //
   // We take care of attribute/content/value effectors
-  for (const { name, attr } of attrs["out"] || []) {
-    const node = attr.ownerElement;
-    const path = nodePath(node, root);
-    const nodeName = node.nodeName;
-    const text = attr.value || `.${name}`;
-    const directive = parseOutDirective(text);
-    if (!directive) {
-      onError(`templates.view: Could not parse 'out:' directive "${text}"`, {
-        text,
-        attr,
-      });
-    } else if (!directive.selector) {
-      onError(
-        `templates.view: Cannot parse selector 'out:' of directive "${text}"`,
-        {
-          text,
-          attr,
-        }
-      );
-    } else {
-      if (name === "content") {
-        const isSlot = nodeName === "SLOT" || nodeName === "slot";
-
-        // We extract the fragment, handlers, and content template
-        const fragment = isSlot ? null : contentAsFragment(node);
-        const slotTemplate = getNodeTemplate(node, directive.template);
-        const handlers = getNodeEventHandlers(node);
-
-        // TODO: We should check for `when` as well.
-        effectors.push(
-          slotTemplate
-            ? new SlotEffector(
-                path,
-                directive.selector,
-                slotTemplate,
-                handlers,
-                // FIXME: Not sure this will hold in the future
-                // --
-                // We only create a sub-local context if the slot has a template.
-                // But maybe we should have the template effector create the local
-                // context instead? The context is really for components.
-                directive.template
-                  ? ["", node.dataset.id || makeKey(directive.template)]
-                  : node.dataset.id || null,
-                fragment
-              )
-            : new ContentEffector(path, directive.selector, fragment)
-        );
-
-        // We replace node with a slot commment
-        const replacement = document.createComment(
-          `#${effectors.length - 1}|${
-            slotTemplate ? "SlotEffector" : "ContentEffector"
-          }|out:content=${text}`
-        );
-        // If the node is a slot, then we replace the entire slot
-        if (nodeName === "SLOT" || nodeName === "slot") {
-          // It is possible that the root is a <slot>, in which case we need
-          // to update the reference.
-          if (node === root) {
-            viewRoot = replacement;
-          }
-          if (node.parentNode) {
-            node.parentNode.replaceChild(
-              // This is a placeholder, the contents  is not important.
-              replacement,
-              node
-            );
-          }
-        } else {
-          // Otherwise we only replace the contents.
-          // TODO: We should set the fragment as the default value for the effector
-          node.appendChild(replacement);
-        }
-      } else {
-        // TODO: We should check for a template as well
-        effectors.push(
-          new (name === "style"
-            ? StyleEffector
-            : ((name === "value" || name === "disabled") &&
-                (nodeName === "INPUT" || nodeName === "SELECT")) ||
-              (name === "checked" && nodeName === "INPUT")
-            ? ValueEffector
-            : AttributeEffector)(path, directive.selector, name)
-        );
-      }
-    }
-    // We remove the attribute from the template as it is now processed
-    node.removeAttribute(attr.name);
+  for (const { attr } of attrs["out"] || []) {
+    effectors.push(onOutAttribute(attr, root));
   }
 
   // --

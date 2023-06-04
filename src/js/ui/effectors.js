@@ -37,14 +37,16 @@ class DOM {
 //
 
 // -- doc
-// The `EffectScope` aggregates a selection in the global state store, of
-// both a current value and a local path to store component-level state.
-// FIXME: This should be reworked, what we need is:
-// - State store
-// - Local root path
-// - Event Bus
-// - State Bus
-// - `local` and `value` as cached (ie, we don't need to retrieve them)
+
+export class NEWEffectScope {
+  constructor(slots) {
+    this.slots = slots;
+  }
+
+  set(name, value) {}
+
+  get(name) {}
+}
 export class EffectScope {
   constructor(state, path, localPath, value = undefined, local = undefined) {
     this.state = state;
@@ -353,57 +355,71 @@ class EventEffect extends Effect {
   }
   constructor(effector, node, scope) {
     super(effector, node, scope);
-    const { event, stops } = this.effector.directive;
+    const { events, inputs, stops } = this.effector.directive;
     const destination = event;
     const eventPath = this.effector.eventPath;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
-      const value = EventEffect.Value(event);
-      // If there is a path then we update this based on the value
-      if (destination) {
-        switch (destination.type) {
-          case "":
-            this.scope.patch(destination.path, value);
-            break;
-          case ".":
-            this.scope.patch([...this.scope.path, ...destination.path], value);
-            break;
-          default:
-            onError("effectors.EventEffect: Selector type not supported yet", {
-              destination,
-            });
-            break;
-        }
+      if (inputs) {
+        const delta = inputs.reduce((r, input) => {
+          r[input.key] = input.apply(event);
+          return r;
+        }, {});
+        console.log("DELTA", this.scope.localPath, ":", delta);
+        this.scope.state.patch(this.scope.localPath, delta);
       }
-      if (eventPath) {
-        // FIXME: We should probably be able to know the template name from
-        // the scope.
-        const { template } = EventEffect.FindScope(event.target);
-        const data = {
-          name: eventPath.join(""),
-          event,
-          scope,
-        };
-        // This is a relative event, which then may have local registered handlers
-        if (eventPath[0] == "") {
-          this.scope.state.put(
-            [...scope.localPath, ...eventPath.slice(1)],
-            data
-          );
-        } else {
-          // TODO: Arguably, we could be using the state tree with events to publish that
-          // FIXME: If we have a separate bus, we need to explain why in the design.
-          console.log("TODO: PUBLISH EVENT DISPATCHING", {
-            template,
-            eventPath,
-            data,
-          });
+      if (events) {
+        const value = EventEffect.Value(event);
+        for (const name of events) {
+          // console.log("TRIGGER", name, ":", { event, value });
+          // TODO
         }
       }
       if (stops) {
         event.preventDefault();
         event.stopPropagation();
       }
+      // // If there is a path then we update this based on the value
+      // if (destination) {
+      //   switch (destination.type) {
+      //     case "":
+      //       this.scope.patch(destination.path, value);
+      //       break;
+      //     case ".":
+      //       this.scope.patch([...this.scope.path, ...destination.path], value);
+      //       break;
+      //     default:
+      //       onError("effectors.EventEffect: Selector type not supported yet", {
+      //         destination,
+      //       });
+      //       break;
+      //   }
+      // }
+      // if (eventPath) {
+      //   // FIXME: We should probably be able to know the template name from
+      //   // the scope.
+      //   const { template } = EventEffect.FindScope(event.target);
+      //   const data = {
+      //     name: eventPath.join(""),
+      //     event,
+      //     scope,
+      //   };
+      //   // This is a relative event, which then may have local registered handlers
+      //   if (eventPath[0] == "") {
+      //     this.scope.state.put(
+      //       [...scope.localPath, ...eventPath.slice(1)],
+      //       data
+      //     );
+      //   } else {
+      //     // TODO: Arguably, we could be using the state tree with events to publish that
+      //     // FIXME: If we have a separate bus, we need to explain why in the design.
+      //     console.log("TODO: PUBLISH EVENT DISPATCHING", {
+      //       template,
+      //       eventPath,
+      //       data,
+      //     });
+      //   }
+      // }
     };
     node.addEventListener(this.effector.event, this.handler);
   }
@@ -501,6 +517,9 @@ export class SlotEffector extends Effector {
     ).init();
   }
 }
+
+// This is the generic, abstract version of a slot effect. This is
+// specialized by `SingleSlotEffect` and `MultipleSlotEffect`.
 class SlotEffect extends Effect {
   constructor(effector, node, scope, parentLocalPath) {
     super(effector, node, scope);
