@@ -36,7 +36,7 @@
 				<xsl:if test="//ui:Component">
 					<link href="/lib/css/uijs/components.css" rel="stylesheet"/>
 					<script src="https://unpkg.com/highlightjs@9.16.2/highlight.pack.js"/>
-					<link href="https://unpkg.com/highlightjs@9.16.2/styles/atelier-seaside-dark.css" rel="stylesheet"/>
+					<link href="/lib/css/highlight-gold.css" rel="stylesheet"/>
 				</xsl:if>
 				<script type="importmap">
 					{"imports": {

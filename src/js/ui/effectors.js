@@ -183,16 +183,44 @@ export class Effector {
 // --
 // ## Content Effector
 //
+// Content effectors replace the content of a given node.
+
+export class ContentEffector extends Effector {
+  constructor(nodePath, selector, placeholder) {
+    super(nodePath, selector);
+    this.placeholder = placeholder;
+  }
+  apply(node, scope) {
+    return new ContentEffect(this, node, scope).init();
+  }
+}
 
 class ContentEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
     this.textNode = document.createTextNode("");
     this.contentNode = undefined;
+    this._placeholder = undefined;
+  }
+
+  // --
+  // Lazily clones the palceholder, if it is defined.
+  get placeholder() {
+    const fragment = this.effector.placeholder;
+    if (fragment && !this._placeholder) {
+      const placeholder = [];
+      for (let i = 0; i < fragment.childNodes.length; i++) {
+        placeholder.push(fragment.childNodes[i].cloneNode(true));
+      }
+      this._placeholder = placeholder;
+    }
+    return this._placeholder;
   }
 
   unify(value, previous = this.value) {
-    if (value === Empty || value == undefined || value === null) {
+    const placeholder = this.placeholder;
+    const isEmpty = value === Empty || value === null || value === undefined;
+    if (isEmpty) {
       this.textNode.data = "";
     } else if (value instanceof Node) {
       if (
@@ -213,27 +241,33 @@ class ContentEffect extends Effect {
           ? value
           : `${value}`;
     }
+
     if (!this.textNode.parentNode) {
       DOM.mount(this.node, this.textNode);
     }
     if (this.contentNode && !this.contentNode.parentNode) {
       DOM.mount(this.node, this.contentNode);
     }
+
+    // We mount/unmount the placeholder, if there's one.
+    if (placeholder)
+      if (isEmpty) {
+        let previous = this.textNode;
+        for (const node of placeholder) {
+          DOM.after(previous, node);
+          previous = node;
+        }
+      } else {
+        for (const node of placeholder) {
+          DOM.unmount(node);
+        }
+      }
     return this;
   }
 
   unmount() {
     // TODO: Should use DOM.mount
     DOM.unmount(this.textNode);
-  }
-}
-
-export class ContentEffector extends Effector {
-  constructor(nodePath, selector) {
-    super(nodePath, selector);
-  }
-  apply(node, scope) {
-    return new ContentEffect(this, node, scope).init();
   }
 }
 
@@ -404,6 +438,69 @@ export class EventEffector extends Effector {
 // --
 // ## Slot Effector
 
+// NOTE: I think the only thing that a slot effector has to do is
+// to detect add remove and relay these.
+export class SlotEffector extends Effector {
+  constructor(nodePath, selector, templateName, handlers, localPath = null) {
+    super(nodePath, selector);
+    // TODO: Selectors for slots should not have a format, slots pass
+    // down the value directly to a template.
+    //
+    // The handlers map event names to the path at which the incoming
+    // events should be stored/relayed.
+    this.handlers = handlers;
+    // `localPath` can be used to change the local scope of the slot. This
+    // is useful when a Template is used, and that template corresponds
+    // to a component. This ensures the component has a separate space.
+    this.localPath = localPath;
+    this.templateName = templateName;
+    if (!templateName) {
+      onError(
+        `SlotEffector: template is not specified, use ContentEffector instead`,
+        { nodePath, selector, localPath }
+      );
+    }
+    this._template =
+      typeof templateName === "string" ? undefined : templateName;
+  }
+
+  // -- doc
+  // The effector `template` is lazily resolved, as it may not have been
+  // defined at time of declaration.
+  get template() {
+    const res = this._template
+      ? this._template
+      : (this._template = Templates.get(this.templateName));
+    if (!res) {
+      onError(`SlotEffector: Could not find template '${this.templateName}'`, [
+        ...Templates.keys(),
+      ]);
+    }
+    return res;
+  }
+
+  apply(node, scope) {
+    // We keep track of the parent local path, as the scope may be changed
+    // and we need to be able to relay data/events from one local scope
+    // to the other.
+    const parentLocalPath = scope.localPath;
+    // In the case the effector has a localPath, we derive the scope and
+    // change the local path. This allows to create a new context in which
+    // the effector state is stored.
+    if (this.localPath) {
+      scope = scope.copy();
+      scope.localPath = composePaths(scope.localPath, this.localPath);
+    }
+    return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
+      this,
+      node,
+      // NOTE: Changing the scope here would distort the value, as we're
+      // passing the same selector, so the scope should not change.
+      scope,
+      parentLocalPath
+    ).init();
+  }
+}
 class SlotEffect extends Effect {
   constructor(effector, node, scope, parentLocalPath) {
     super(effector, node, scope);
@@ -628,70 +725,6 @@ class MappingSlotEffect extends SlotEffect {
       root, // node
       scope
     );
-  }
-}
-
-// NOTE: I think the only thing that a slot effector has to do is
-// to detect add remove and relay these.
-export class SlotEffector extends Effector {
-  constructor(nodePath, selector, templateName, handlers, localPath = null) {
-    super(nodePath, selector);
-    // TODO: Selectors for slots should not have a format, slots pass
-    // down the value directly to a template.
-    //
-    // The handlers map event names to the path at which the incoming
-    // events should be stored/relayed.
-    this.handlers = handlers;
-    // `localPath` can be used to change the local scope of the slot. This
-    // is useful when a Template is used, and that template corresponds
-    // to a component. This ensures the component has a separate space.
-    this.localPath = localPath;
-    this.templateName = templateName;
-    if (!templateName) {
-      onError(
-        `SlotEffector: template is not specified, use ContentEffector instead`,
-        { nodePath, selector, localPath }
-      );
-    }
-    this._template =
-      typeof templateName === "string" ? undefined : templateName;
-  }
-
-  // -- doc
-  // The effector `template` is lazily resolved, as it may not have been
-  // defined at time of declaration.
-  get template() {
-    const res = this._template
-      ? this._template
-      : (this._template = Templates.get(this.templateName));
-    if (!res) {
-      onError(`SlotEffector: Could not find template '${this.templateName}'`, [
-        ...Templates.keys(),
-      ]);
-    }
-    return res;
-  }
-
-  apply(node, scope) {
-    // We keep track of the parent local path, as the scope may be changed
-    // and we need to be able to relay data/events from one local scope
-    // to the other.
-    const parentLocalPath = scope.localPath;
-    // In the case the effector has a localPath, we derive the scope and
-    // change the local path. This allows to create a new context in which
-    // the effector state is stored.
-    if (this.localPath) {
-      scope = scope.copy();
-      scope.localPath = composePaths(scope.localPath, this.localPath);
-    }
-    return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
-      this,
-      node,
-      // NOTE: Changing the scope here would distort the value, as we're
-      // passing the same selector, so the scope should not change.
-      scope,
-      parentLocalPath
-    ).init();
   }
 }
 

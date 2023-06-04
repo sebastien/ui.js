@@ -206,6 +206,34 @@ const iterAttributes = function* (node, regexp) {
   }
 };
 
+const iterNodes = function* (node, ...names) {
+  let walker = document.createTreeWalker(
+    node,
+    NodeFilter.SHOW_ELEMENT,
+    TreeWalkerFilter
+  );
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const name = node.nodeName;
+    for (let n of names) {
+      if (name === n) {
+        yield node;
+      }
+    }
+  }
+  // while (node) {
+  //   const name = node.nodeName;
+  //   console.log("NODE", { node, name });
+  //   for (let n of names) {
+  //     if (name === n) {
+  //       yield node;
+  //     }
+  //   }
+  //   walker.nextNode();
+  //   node = walker.currentNode;
+  // }
+};
+
 // -- doc
 // Iterates through the descendants of `node` (including itself), yielding
 // nodes that match the given `selector`.
@@ -241,6 +269,61 @@ const isNodeEmpty = (node) => {
   return true;
 };
 
+const createSlotOrContentEffector = (node) => {};
+
+const contentAsFragment = (node) => {
+  const fragment = document.createDocumentFragment();
+  while (fragment && node.firstChild) {
+    fragment.appendChild(node.firstChild);
+  }
+  return fragment;
+};
+
+// Creates the HTML template that is used to render the contents. This
+// template can be referenced by name (`data-ui`), or through the
+// directive, or through the contents (FIXME).
+const getNodeTemplate = (node, template) =>
+  node.dataset.ui
+    ? node.dataset.ui
+    : template
+    ? template
+    : isNodeEmpty(node)
+    ? null // An empty node means a null (text) formatter
+    : createTemplate(
+        // The format is the template id
+        node,
+        makeKey("template"),
+        false // No need to clone there
+      ).name;
+
+// We use the attribute nodes directly, as there is an asymetry in
+// HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
+// will return `null` (while `getAttribute("on:send")` will return
+// the value).
+const getNodeEventHandlers = (node) =>
+  [...node.attributes].reduce((r, { name, value }) => {
+    if (name.startsWith("on:")) {
+      const d = parseOnDirective(value);
+      if (!d) {
+        onError(
+          `templates.view: Could not parse on 'on:*' directive '${value}'`,
+          {
+            node,
+            attr: name,
+            root,
+          }
+        );
+      } else {
+        r = r || {};
+        // NOTE: For now we only support relaying the event to the
+        // other event, so the handler is basically the path at which we relay.
+        r[`${name.at(3).toUpperCase()}${name.substring(4)}`] =
+          d.event.split(".");
+      }
+    }
+    return r;
+  }, null);
+
 // --
 // ## Views
 //
@@ -251,6 +334,32 @@ class View {
     this.effectors = effectors;
   }
 }
+
+// --
+// Processes a SLOT node.
+const processSlotNode = (node, root) => {
+  const selector = parseSelector(node.getAttribute("select"));
+  const content = contentAsFragment(node);
+  // TODO: Content should be used as placeholder
+  const template =
+    node.getAttribute("template") ||
+    createTemplate(content, makeKey("fragment"), false /*no cloning needed*/);
+  const key = makeKey(node.dataset.id || node.getAttribute("name") || template);
+  const effector = new SlotEffector(
+    nodePath(node, root),
+    selector,
+    template,
+    getNodeEventHandlers(node),
+    key
+  );
+  // We replace the slot by a placeholder node.
+  node.parentNode.replaceChild(
+    document.createComment(`${key}|Slot|${template}|${selector.toString()}`),
+    node
+  );
+
+  return effector;
+};
 
 // -- doc
 // Creates a view from the given `root` node, looking for specific
@@ -367,6 +476,12 @@ const view = (root, templateName = undefined) => {
   }
 
   // --
+  // ### slot nodes
+  //
+  for (const node of iterNodes(root, "slot", "SLOT")) {
+    effectors.push(processSlotNode(node, root));
+  }
+  // --
   // ### `out:*` attributes
   //
   // We take care of attribute/content/value effectors
@@ -390,54 +505,13 @@ const view = (root, templateName = undefined) => {
         }
       );
     } else {
-      /// If we're here, we have a working directive. We see if we have a slot.
-      if (
-        // In SVG, these nodes are lowercase.
-        (nodeName === "SLOT" || nodeName === "slot") &&
-        name === "content"
-      ) {
-        const slotTemplate = node.dataset.ui
-          ? node.dataset.ui
-          : directive.template
-          ? directive.template
-          : isNodeEmpty(node)
-          ? null // An empty node means a null (text) formatter
-          : createTemplate(
-              // The format is the template id
-              node,
-              `T${templateName || makeKey()}-E${effectors.length}`,
-              false // No need to clone there
-            ).name;
-        // We use the attribute nodes directly, as there is an asymetry in
-        // HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
-        // will return `null` (while `getAttribute("on:send")` will return
-        // the value).
-        const handlers = [...node.attributes].reduce((r, { name, value }) => {
-          if (name.startsWith("on:")) {
-            const d = parseOnDirective(value);
-            if (!d) {
-              onError(
-                `templates.view: Could not parse on 'on:*' directive '${value}'`,
-                {
-                  node,
-                  attr: name,
-                  root,
-                }
-              );
-            } else {
-              r = r || {};
-              // NOTE: For now we only support relaying the event to the
-              // other event, so the handler is basically the path at which we relay.
-              r[`${name.at(3).toUpperCase()}${name.substring(4)}`] =
-                d.event.split(".");
-            }
-          }
-          return r;
-        }, null);
+      if (name === "content") {
+        const isSlot = nodeName === "SLOT" || nodeName === "slot";
 
-        // TODO: If we're embedding another component, we should probably create
-        // a template... or maybe what we should do is define templates that
-        // create a new local context or not.
+        // We extract the fragment, handlers, and content template
+        const fragment = isSlot ? null : contentAsFragment(node);
+        const slotTemplate = getNodeTemplate(node, directive.template);
+        const handlers = getNodeEventHandlers(node);
 
         // TODO: We should check for `when` as well.
         effectors.push(
@@ -447,28 +521,43 @@ const view = (root, templateName = undefined) => {
                 directive.selector,
                 slotTemplate,
                 handlers,
+                // FIXME: Not sure this will hold in the future
+                // --
                 // We only create a sub-local context if the slot has a template.
                 // But maybe we should have the template effector create the local
                 // context instead? The context is really for components.
                 directive.template
                   ? ["", node.dataset.id || makeKey(directive.template)]
-                  : node.dataset.id || null
+                  : node.dataset.id || null,
+                fragment
               )
-            : new ContentEffector(path, directive.selector)
+            : new ContentEffector(path, directive.selector, fragment)
         );
 
-        const replacement = document.createComment(`◉ slot:${text}`);
-        // It is possible that the root is a <slot>, in which case we need
-        // to update the reference.
-        if (node === root) {
-          viewRoot = replacement;
-        }
-        if (node.parentNode) {
-          node.parentNode.replaceChild(
-            // This is a placeholder, the contents  is not important.
-            replacement,
-            node
-          );
+        // We replace node with a slot commment
+        const replacement = document.createComment(
+          `#${effectors.length - 1}|${
+            slotTemplate ? "SlotEffector" : "ContentEffector"
+          }|out:content=${text}`
+        );
+        // If the node is a slot, then we replace the entire slot
+        if (nodeName === "SLOT" || nodeName === "slot") {
+          // It is possible that the root is a <slot>, in which case we need
+          // to update the reference.
+          if (node === root) {
+            viewRoot = replacement;
+          }
+          if (node.parentNode) {
+            node.parentNode.replaceChild(
+              // This is a placeholder, the contents  is not important.
+              replacement,
+              node
+            );
+          }
+        } else {
+          // Otherwise we only replace the contents.
+          // TODO: We should set the fragment as the default value for the effector
+          node.appendChild(replacement);
         }
       } else {
         // TODO: We should check for a template as well

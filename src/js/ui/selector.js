@@ -27,7 +27,7 @@ export const KEY = "([a-zA-Z]+=)?";
 //
 // FIXME: We can't have both local and relative
 export const PATH =
-  "(#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
+  "(#|([@./]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
 export const FORMAT = "(\\|[A-Za-z-]+)*";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
 export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
@@ -35,7 +35,6 @@ export const INPUTS = `${INPUT}(,${INPUT})*`;
 
 // const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
 export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
-
 const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})`);
 
 export const commonPath = (paths) => {
@@ -66,21 +65,21 @@ export const commonPath = (paths) => {
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
 export class SelectorInput {
   static LOCAL = "@";
-  static RELATIVE = ".";
-  static ABSOLUTE = "";
+  static RELATIVE = "";
+  static ABSOLUTE = "/";
   static KEY = "#";
   constructor(path, format, key) {
     const c = path.at(0);
     this.type =
       c === "@"
         ? SelectorInput.LOCAL
-        : c === "."
-        ? SelectorInput.RELATIVE
+        : c === "/"
+        ? SelectorInput.ABSOLUTE
         : c === "#"
         ? SelectorInput.KEY
-        : SelectorInput.ABSOLUTE;
+        : SelectorInput.RELATIVE;
     this.path = (
-      this.type !== SelectorInput.ABSOLUTE ? path.substring(1) : path
+      this.type !== SelectorInput.RELATIVE ? path.substring(1) : path
     )
       .split(".")
       .filter((_) => _.length);
