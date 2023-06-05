@@ -14,7 +14,7 @@
     padding: 8px 0px;
     text-align: left;
     max-width: 260px;
-    line-height: var(--control-lh);
+    line-height: var(--control-line-height);
     user-select: none;
   }
   .menu.popup,
@@ -74,33 +74,44 @@
     color: var(--color-text-alt);
   }
 
+  /*
+   * ## Control
+  */
+  input,
+  button,
+  textarea,
+  .input,
+  .button,
+  .textarea {
+    display: "inline-flex";
+    line-height: var(--control-line-height);
+    border: 1px solid var(--control-bd);
+    background: var(--control-bg);
+    color: var(--control-txt);
+    font-family: var(--font-control);
+    font-size: var(--font-control-size);
+    line-height: var(--font-control-line-height);
+    width: "min-content";
+    padding: var(--pad-2) var(--pad-3);
+    gap: var(--gap-1);
+  }
+
+  input[type="checkbox"] {
+    display: inline-block;
+    border: 2px solid red;
+    /*appearance: none;*/
+  }
   input[type="text"],
   .input,
   textarea,
   .textarea {
-    display: "inline-block";
-    width: "min-content";
     min-width: 15ch;
-    line-height: var(--control-lh);
-    border: 1px solid var(--control-bd);
-    background: var(--control-bg);
-    color: var(--control-txt);
-    font-family: var(--control-font);
-    font-size: var(--control-font-size);
-    line-height: var(--control-line-height);
-    padding: 4px 8px;
-    box-shadow: 0px 0px 0px transparent;
-    transition-property: box-shadow, top, left;
-    transition-duration: 0.15s;
-    position: relative;
-    top: 0px;
-    left: 0px;
+    background: var(--control-input-bg);
   }
   input:hover,
   textarea:hover,
   .input:hover,
   .textarea:hover {
-    box-shadow: -2px 2px 0px var(--color-accent);
   }
   input:focus,
   textarea:focus,
@@ -110,10 +121,6 @@
   .textarea:focus,
   .input:active,
   .textarea:active {
-    box-shadow: -4px 4px 0px var(--color-accent);
-    background-color: var(--control-bg-focused);
-    top: -2px;
-    left: 2px;
   }
 
   input.transparent[type="text"],
@@ -140,24 +147,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
     min-width: 1.75em;
     position: relative;
     text-align: center;
-    border: 1px solid var(--control-bd);
     border-radius: 4px;
-    font-family: var(--font-control);
-    font-size: 12px;
-    padding: 4px 8px;
-    background-color: var(--page-bg);
-    box-shadow: -2px 2px 0px var(--color-accent);
-    color: var(--color-text);
     cursor: pointer;
     font-weight: 500;
-    top: 0px;
-    left: 0px;
-    transition-property: box-shadow, text-shadow, background-color, border-color,
-      color, top, left;
+    transition-property: background-color, border-color, color;
     transition-duration: 0.15s;
   }
   button.default,
@@ -165,27 +161,21 @@
     font-weight: bold;
   }
 
-  button:hover,
   button:focus,
-  .button:hover,
   .button:focus {
-    top: calc(-1 * var(--button-offset));
-    left: var(--button-offset);
-    box-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
-      0px var(--color-accent);
+    background-color: var(--control-bg-focus);
   }
   button:hover,
   .button:hover {
-    background-color: var(--color-accent-bg);
+    background-color: var(--control-bg-hover);
   }
   button.selected,
   .button.selected {
-    background-color: var(--color-accent-bg);
+    background-color: var(--control-bg-selected);
   }
 
   button.default:hover,
   .button.default:hover {
-    text-shadow: 1px 1px 0px var(--color-lightest);
   }
 
   button:focus,
@@ -194,17 +184,13 @@
   }
   button:active,
   .button:active {
-    box-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
-      0px var(--color-accent);
     outline: 2px solid var(--color-accent-alt);
-    top: 0px;
-    left: 0px;
   }
   button.icon,
   .button.icon {
     font-family: var(--font-icon);
-    font-size: var(--font-size-3);
-    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+    font-size: var(--font-icon-size);
+    font-variation-settings: var(--font-icon-variation);
     padding: 4px;
   }
   button.square,
@@ -236,18 +222,12 @@
   .button.label {
     background-color: transparent;
     border: 0px solid transparent;
-    text-shadow: -1px 1px 0px var(--color-accent);
-    box-shadow: 0px 0px #ffffff00;
-    transition-property: text-shadow, top, left;
   }
   button.label:hover,
   button.label:focus,
   .button.label:hover,
   .button.label:focus {
-    box-shadow: 0px 0px #ffffff00;
     background-color: transparent;
-    text-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
-      2px var(--color-accent);
     outline: unset;
   }
   button.label:focus,
@@ -257,20 +237,18 @@
   button.label:active,
   .button.label:active {
     background-color: transparent;
-    text-shadow: calc(-2 * var(--button-offset)) calc(2 * var(--button-offset))
-      2px var(--color-accent);
     outline: unset;
   }
 
   button.small,
   .button.small {
-    font-size: 10px;
-    padding: 2px 4px;
+    font-size: var(--font-size-1);
+    padding: var(--pad-1) var(--pad-2);
   }
   button.x-small,
   .button.x-small {
-    font-size: 10px;
-    padding: 1px;
+    font-size: var(--font-size-1);
+    padding: var(--pad-0);
     border-radius: 0px;
   }
   button.noborder,
@@ -300,7 +278,6 @@
     left: unset;
     top: unset;
     border: 0px solid transparent;
-    margin-right: 2px;
   }
 
   .pill {

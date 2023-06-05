@@ -4,8 +4,6 @@ JavaScript, so that variants can be easily created (faded version, OKLab
 variations).
  */
 :root {
-  --text-max-width: 55ch;
-
   --font-text: "Jost", sans-serif;
   --font-text-line-height: 1.45em;
   --font-text-size: 1rem;
@@ -22,79 +20,84 @@ variations).
   --font-control-line-height: 1.25em;
   --font-control-size: var(--font-size-2);
 
+  /** ### Icons */
   --font-icon: "Material Symbols Outlined", sans-serif;
+  --font-icon-size: 24px;
+  --font-icon-variation: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
 
-  --font-size-0: calc(9 / 14 * 1rem);
-  --font-size-1: calc(12 / 14 * 1rem);
-  --font-size-1_5: calc(13 / 14 * 1rem);
-  --font-size-2: calc(14 / 14 * 1rem);
-  --font-size-3: calc(16 / 14 * 1rem);
-  --font-size-4: calc(18 / 14 * 1rem);
-  --font-size-5: calc(22 / 14 * 1rem);
-  --font-size-6: calc(26 / 14 * 1rem);
-  --font-size-7: calc(32 / 14 * 1rem);
-  --font-size-8: calc(42 / 14 * 1rem);
-  --font-size-9: calc(48 / 14 * 1rem);
+  /** ### Font Size */
+  --font-size-0: calc(9 / 16 * 1rem);
+  --font-size-1: calc(11 / 16 * 1rem);
+  --font-size-2: calc(13 / 16 * 1rem);
+  --font-size-3: calc(16 / 16 * 1rem);
+  --font-size-4: calc(18 / 16 * 1rem);
+  --font-size-5: calc(22 / 16 * 1rem);
+  --font-size-6: calc(26 / 16 * 1rem);
+  --font-size-7: calc(32 / 16 * 1rem);
+  --font-size-8: calc(40 / 16 * 1rem);
+  --font-size-9: calc(48 / 16 * 1rem);
 
-  /* NOTE: Used with controls */
-  --opacity-dimmed: 0.65;
+  /**
+	 * ## Typography
+	*/
+  --text-max-width: 55ch;
 
-  /* FIXME: Should drop the color here */
-  --color-text: var(--palette-grey-20);
-  --color-text-alt: var(--palette-grey-80);
-  --color-icon: var(--palette-grey-60);
-  --color-bd: var(--palette-grey-80);
-  --page-bg: var(--palette-ivory-90);
-  --page-bg-alt: var(--palette-ivory-70);
-  --color-code: var(--palette-grey-40);
-  --color-accent: var(--palette-gold-60);
-  /* FIXME: What is that alt */
-  --color-accent-alt: #fcd64780;
-  --color-accent-txt: var(--color-text);
-  --color-accent-bg: var(--palette-gold-60);
-  --color-accent-bg-alt: #fcd64780;
+  /*
+   * ## Padding 
+  */
+  --pad-1: 4px;
+  --pad-2: 8px;
+  --pad-3: 12px;
+  --pad-4: 16px;
 
-  --color-error-bg: #e8633a;
-  --color-error-bg-alt: #e8633a80;
+  --gap-1: var(--pad-0);
+  --gap-2: var(--pad-1);
+  --gap-3: var(--pad-2);
+  --gap-4: var(--pad-3);
+  --gap-5: var(--pad-4);
 
-  --color-lightest: #ffffff;
-  --color-darkest: #222222;
-
-  --darker-0: #22222205;
-  --darker-1: #22222220;
-  --darker-2: #22222240;
-  --darker-3: #22222250;
-  --darker-4: #22222270;
-  --darker-5: #22222290;
-  --darker-6: #222222a0;
-  --darker-7: #222222b0;
-  --darker-8: #222222d0;
-  --darker-9: #222222f0;
-
-  --shadow-floating: 3px 3px 1px #00000020;
-
-  /* Units */
-  --pad: 16px;
-  --pad-0: calc(var(--pad) * 0.5);
-  --pad-1: calc(var(--pad) * 1);
-  --pad-2: calc(var(--pad) * 2);
-  --pad-3: calc(var(--pad) * 3);
-  --pad-4: calc(var(--pad) * 4);
-
+  /*
+   * ## Overlay
+  */
   --z-popup: 50;
   --z-overlay: 20;
 
-  --control-bd-alt: var(--palette-grey-80);
-  --control-bd: var(--color-text);
-  --control-bd-focused: var(--color-accent);
-  --control-bd-hover: var(--color-accent-alt);
-  --control-bg: var(--palette-white-90);
-  --control-bg-focused: white;
-  --control-lh: 1.15em;
-  --control-bg-hover: var(--color-accent-bg-alt);
-  --control-font: var(--palette-white-90);
-  --control-text: var(--color-text);
+  /*
+   * ## Color basics
+  */
 
-  --button-offset: 2px;
+  /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
+  --color-accent: #03dac6
+
+  --color-primary: #6200ee;
+  --color-primary-alt: #3700b3;
+
+  --color-secondary: #03dac6;
+  --color-secondary-variant: #03dac6;
+
+  --color-secondary-variant: #03dac6;
+
+  /*
+   * ## Page
+  */
+  --page-bg: #FFFFFF;
+
+  /*
+   * ## Boxes
+  */
+  --box-bd: #e0e0e0;
+
+  /*
+   * ## Controls
+  */
+  --control-bd: #e0e0e0;
+  --control-color: #000000;
+  --control-bg: #d0d0d0;
+  --control-input-bg: var(--page-bg);
+  --control-bg-focused: #e0e0e0;
+  --control-bg-hover: #dadada;
+  --control-bg-selected: #cacaca;
+  --control-line-height: 1.15em;
+
 }
 /* EOF */
