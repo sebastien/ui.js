@@ -370,7 +370,7 @@ const getNodeEventHandlers = (node) =>
 // Processes a `<slot template=... select=.... >` node. The `select` attribute
 // defines the data path for which the slot will be applied, if it is suffixed
 // with `.*` then the slot will be mapped for each selected item.
-const processSlotNode = (node, root) => {
+const onSlotNode = (node, root) => {
   const selector = parseSelector(node.getAttribute("select"));
   const content = contentAsFragment(node);
   // TODO: Content should be used as placeholder
@@ -386,8 +386,11 @@ const processSlotNode = (node, root) => {
     key
   );
   // We replace the slot by a placeholder node.
+
   node.parentNode.replaceChild(
-    document.createComment(`${key}|Slot|${template}|${selector.toString()}`),
+    document.createComment(
+      `${key}|Slot|${template.name || template}|${selector.toString()}`
+    ),
     node
   );
 
@@ -399,11 +402,10 @@ const processSlotNode = (node, root) => {
 // is a special case where the content of the node will be applied wit the
 // value of the selector. Otherwise the handling will be either an
 // style, value or regular attribute.
-const onOutAttribute = (attr, root) => {
+const onOutAttribute = (attr, root, name) => {
   // The first step is to parse the selector from the `out:NAME=SELECTOR`
   // attribute.
   const node = attr.ownerElement;
-  const name = attr.localName;
   const text = attr.value || `.${name}`;
   const directive = parseOutDirective(text);
   node.removeAttribute(attr.name);
@@ -428,26 +430,16 @@ const onOutAttribute = (attr, root) => {
     const template = getNodeTemplate(node, directive.template);
     const handlers = getNodeEventHandlers(node);
     const key = makeKey(node.dataset.id || directive.template);
-    const anchor = replaceNodeWithPlaceholder(
-      node,
-      `${key}|${
-        template ? "SlotEffector" : "ContentEffector"
-      }|${template}|out:content=${text}`
-    );
     return template
       ? new SlotEffector(
-          nodePath(anchor, root),
+          nodePath(node, root),
           directive.selector,
           template,
           handlers,
           key,
           fragment
         )
-      : new ContentEffector(
-          nodePath(anchor, root),
-          directive.selector,
-          fragment
-        );
+      : new ContentEffector(nodePath(node, root), directive.selector, fragment);
   } else {
     // It's not an `out:content` attribute, then it's either a style, value
     // or attribute effector.
@@ -475,6 +467,8 @@ const onDoAttribute = (attr, root) => {
         { attr }
       );
     } else {
+      // TODO: Support namespaces
+      // --
       // We have `do:match=SELECTOR`, we now need to look at the children
       // with a `do:case` attribute. These will be the branches.
       const branches = [...node.childNodes].reduce((r, n, i) => {
@@ -546,11 +540,7 @@ class View {
 // attribute types (`in:*=`, `out:*=`, `on:*=`, `when=`) and
 // creating corresponding effectors.
 const view = (root, templateName = undefined) => {
-  const effectors = [];
   // Some transforms may change the root, for instance if it's a <slot> root>
-  let viewRoot = root;
-
-  // TODO: Query the styled variants
 
   //--
   // We start by getting all the nodes within the `in`, `out` and `on`
@@ -565,6 +555,7 @@ const view = (root, templateName = undefined) => {
     (attrs[type] = attrs[type] || []).push({ name, attr });
   }
 
+  // TODO: Query the styled variants
   // NOTE: Disabling this for now
   // // --
   // // ### Styled attributes
@@ -594,6 +585,9 @@ const view = (root, templateName = undefined) => {
   //   stylesheet(styledRules);
   // }
 
+  // We take care of the effectors. Note that processing effectors will
+  // CHANGE the view, removing attributes and nodes.
+  const effectors = [];
   for (const { attr } of attrs["do"] || []) {
     const effector = onDoAttribute(attr, root);
     effector && this.effectors.push(effector);
@@ -603,93 +597,97 @@ const view = (root, templateName = undefined) => {
   // ### slot nodes
   //
   for (const node of iterNodes(root, "slot", "SLOT")) {
-    effectors.push(processSlotNode(node, root));
+    effectors.push(onSlotNode(node, root));
   }
+
   // --
   // ### `out:*` attributes
   //
   // We take care of attribute/content/value effectors
-  for (const { attr } of attrs["out"] || []) {
-    effectors.push(onOutAttribute(attr, root));
+  for (const { name, attr } of attrs["out"] || []) {
+    effectors.push(onOutAttribute(attr, root, name));
   }
 
-  // --
-  // ### Event effectors
-  //
-  for (const { name, attr } of attrs["on"] || []) {
-    const node = attr.ownerElement;
-    // A `<slot out:XXX>` node  may have `on:XXX` attribtues as well, in which
-    // case they've already been processed at that point.
-    if (node && node.parentNode) {
-      const directive = parseOnDirective(attr.value);
-      if (!directive) {
-        onError(
-          `templates.view: Could not parse on 'on:*' directive '${attr.value}'`,
-          {
-            name,
-            attr,
-            root,
-          }
-        );
-      } else {
-        effectors.push(
-          new EventEffector(nodePath(node, root), name, directive)
-        );
-      }
-    }
-    node.removeAttribute(attr.name);
-  }
+  // FIXME: Disabled for now
+  // // --
+  // // ### Event effectors
+  // //
+  // for (const { name, attr } of attrs["on"] || []) {
+  //   const node = attr.ownerElement;
+  //   // A `<slot out:XXX>` node  may have `on:XXX` attribtues as well, in which
+  //   // case they've already been processed at that point.
+  //   if (node && node.parentNode) {
+  //     const directive = parseOnDirective(attr.value);
+  //     if (!directive) {
+  //       onError(
+  //         `templates.view: Could not parse on 'on:*' directive '${attr.value}'`,
+  //         {
+  //           name,
+  //           attr,
+  //           root,
+  //         }
+  //       );
+  //     } else {
+  //       effectors.push(
+  //         new EventEffector(nodePath(node, root), name, directive)
+  //       );
+  //     }
+  //   }
+  //   node.removeAttribute(attr.name);
+  // }
 
-  // --
-  //
-  // ### Conditional effectors
+  // FIXME: Disabled for now
+  // // --
+  // //
+  // // ### Conditional effectors
 
-  // We take care of state change effectors
-  // TODO: This won't work for nested templates
-  for (const node of iterSelector(root, "*[when]")) {
-    const boundary = getBoundaryNode(node);
-    if (boundary === root) {
-      const text = node.getAttribute("when");
-      const when = parseWhenDirective(text);
-      if (!when) {
-        onError(`Could not parse when directive '${text}'`, {
-          node,
-          when: text,
-        });
-      } else {
-        node.removeAttribute("when");
-        const frag = document.createDocumentFragment();
-        while (node.childNodes.length > 0) {
-          frag.appendChild(node.childNodes[0]);
-        }
-        // TODO: If there is no sub-effectors, we should not bother
-        // with a template, it's a waste of resources.
-        const subtemplate = createTemplate(
-          frag,
-          `T${templateName || makeKey()}-E${effectors.length}`,
-          false // No need to clone there
-        );
-        effectors.push(
-          new WhenEffector(
-            nodePath(node, root),
-            when.selector,
-            subtemplate,
-            when.predicate
-          )
-        );
-      }
-    }
-  }
+  // // We take care of state change effectors
+  // // TODO: This won't work for nested templates
+  // for (const node of iterSelector(root, "*[when]")) {
+  //   const boundary = getBoundaryNode(node);
+  //   if (boundary === root) {
+  //     const text = node.getAttribute("when");
+  //     const when = parseWhenDirective(text);
+  //     if (!when) {
+  //       onError(`Could not parse when directive '${text}'`, {
+  //         node,
+  //         when: text,
+  //       });
+  //     } else {
+  //       node.removeAttribute("when");
+  //       const frag = document.createDocumentFragment();
+  //       while (node.childNodes.length > 0) {
+  //         frag.appendChild(node.childNodes[0]);
+  //       }
+  //       // TODO: If there is no sub-effectors, we should not bother
+  //       // with a template, it's a waste of resources.
+  //       const subtemplate = createTemplate(
+  //         frag,
+  //         `T${templateName || makeKey()}-E${effectors.length}`,
+  //         false // No need to clone there
+  //       );
+  //       effectors.push(
+  //         new WhenEffector(
+  //           nodePath(node, root),
+  //           when.selector,
+  //           subtemplate,
+  //           when.predicate
+  //         )
+  //       );
+  //     }
+  //   }
+  // }
 
   // --
   // Refs
   const refs = new Map();
   for (const node of iterSelector(root, "*[ref]")) {
+    // TODO: Warning, nodePath requires the node order not to change
     refs.set(node.getAttribute("ref").split("."), nodePath(node, root));
     node.removeAttribute("ref");
   }
 
-  return new View(viewRoot, refs, effectors);
+  return new View(root, refs, effectors);
 };
 
 // --
@@ -722,7 +720,8 @@ export const createTemplate = (
   clone = true, // TODO: We should probably always have that to false
   templates = Templates
 ) => {
-  let views = [];
+  const views = [];
+
   // NOTE: We skip text nodes there
   const root = node.nodeName.toLowerCase() === "template" ? node.content : node;
   for (let _ of root.children) {
@@ -752,6 +751,8 @@ export const createTemplate = (
   } else {
     viewsParent = root;
   }
+
+  // This filters out the contents of the views parent.
   for (let _ of viewsParent?.childNodes || []) {
     switch (_.nodeType) {
       case Node.TEXT_NODE:
@@ -770,14 +771,26 @@ export const createTemplate = (
     }
   }
 
+  // We build the template effector, which will create a new instance of
+  // each view and then add it.
   const res = new TemplateEffector(
     new Template(
+      // FIXME: Not sure why we have the node here, when we could have views?
       node,
+      // FIXME: Not sure why we need to clone here or not, should explain
       views.map((_) => view(clone ? _.cloneNode(true) : _), name),
       name
     )
   );
+
+  // We register the template name in the template set
   if (name) {
+    if (templates.has(name)) {
+      onError(
+        "templates.createTemplate: Registering template that already exists",
+        { name }
+      );
+    }
     templates.set(name, res);
   }
   return res;

@@ -1,6 +1,14 @@
 import { composePaths, parsePath, pathNode } from "./paths.js";
 import { CurrentValueSelector } from "./selector.js";
-import { Empty, isAtom, isEmpty, onError, assign } from "./utils.js";
+import {
+  Empty,
+  isAtom,
+  isEmpty,
+  onError,
+  makeKey,
+  assign,
+  access,
+} from "./utils.js";
 import { Templates } from "./templates.js";
 
 class DOM {
@@ -38,67 +46,42 @@ class DOM {
 
 // -- doc
 
-export class NEWEffectScope {
-  constructor(slots) {
+export class EffectScope {
+  constructor(state, path, slots, key) {
+    console.log("NEW SCOPE", state, path, slots);
+    this.state = state;
+    this.path = path;
     this.slots = slots;
+    this.key = key;
+  }
+
+  get value() {
+    console.log("XXX SCOPE VALUE", this.path, this.state.get(this.path));
+    return this.state.get(this.path);
+  }
+
+  resolve(path) {
+    return access(this.value, path);
+  }
+
+  derive(path, slots = this.slots, key = this.key) {
+    return new EffectScope(
+      this.state,
+      [...this.path, ...(typeof path === "string" ? path.split(".") : path)],
+      slots,
+      key
+    );
   }
 
   set(name, value) {}
 
   get(name) {}
 }
-export class EffectScope {
-  constructor(state, path, localPath, value = undefined, local = undefined) {
-    this.state = state;
-    this.path = path;
-    this.localPath = localPath;
-    // FIXME: This should go
-    this._local = local;
-  }
 
-  get value() {
-    // FIXME: This is going to be slow
-    return this.state.get(this.path);
-  }
-
-  copy() {
-    return new EffectScope(
-      this.state,
-      this.path,
-      this.localPath,
-      this.value,
-      undefined
-    );
-  }
-  // TODO: Use that API instead
-  // get global() {
-  //   return this.state.global;
-  // }
-
-  get local() {
-    if (this._local === undefined) {
-      this._local = this.state.get(this.localPath);
-    }
-    return this._local;
-  }
-
-  patch(...args) {
-    return this.state.patch(...args), this;
-  }
-
-  toString() {
-    return `<EffectScope path=${this.path.join(
-      "."
-    )} local=${this.localPath.join(".")}>`;
-  }
-}
-
-class EventScope extends EffectScope {
-  constructor(scope, event) {
-    super(scope.state, scope.path, scope.localPath, event, scope.local);
-  }
-}
-
+// --
+// ## Effect
+//
+// Implements the base class of an effect.
 class Effect {
   constructor(effector, node, scope) {
     this.effector = effector;
@@ -111,17 +94,22 @@ class Effect {
     !effector.selector &&
       onError("Effect(): effector should have a selector", { effector });
 
-    this.selected = effector.selector.apply(scope, this.onChange.bind(this));
-    this.abspath = this.selected.abspath;
+    // FIXME: Disabling this as well
+    // this.selected = effector.selector.apply(scope, this.onChange.bind(this));
+
+    // FIXME: Disabling this one
+    // this.abspath = this.selected.abspath;
   }
 
   bind() {
-    this.selected.bind(this.scope);
+    // FIXME: Disabled
+    // this.selected.bind(this.scope);
     return this;
   }
 
   unbind() {
-    this.selected.unbind(this.scope);
+    // FIXME: Disabled
+    // this.selected.unbind(this.scope);
     return this;
   }
 
@@ -132,7 +120,8 @@ class Effect {
   }
 
   apply() {
-    return this.unify(this.selected.extract(), this.value);
+    const value = this.effector.selector.extract(this.scope.value);
+    return this.unify(value, this.value);
   }
 
   unify(current, previous = this.value) {
@@ -356,8 +345,9 @@ class EventEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
     const { events, inputs, stops } = this.effector.directive;
-    const destination = event;
-    const eventPath = this.effector.eventPath;
+    // FIXME
+    // const destination = event;
+    // const eventPath = this.effector.eventPath;
     // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
       if (inputs) {
@@ -365,8 +355,8 @@ class EventEffect extends Effect {
           r[input.key] = input.apply(event);
           return r;
         }, {});
-        console.log("DELTA", this.scope.localPath, ":", delta);
-        this.scope.state.patch(this.scope.localPath, delta);
+        console.log("FIXME DELTA", ":", delta);
+        // this.scope.state.patch(this.scope.localPath, delta);
       }
       if (events) {
         const value = EventEffect.Value(event);
@@ -457,7 +447,7 @@ export class EventEffector extends Effector {
 // NOTE: I think the only thing that a slot effector has to do is
 // to detect add remove and relay these.
 export class SlotEffector extends Effector {
-  constructor(nodePath, selector, templateName, handlers, localPath = null) {
+  constructor(nodePath, selector, templateName, handlers) {
     super(nodePath, selector);
     // TODO: Selectors for slots should not have a format, slots pass
     // down the value directly to a template.
@@ -465,15 +455,11 @@ export class SlotEffector extends Effector {
     // The handlers map event names to the path at which the incoming
     // events should be stored/relayed.
     this.handlers = handlers;
-    // `localPath` can be used to change the local scope of the slot. This
-    // is useful when a Template is used, and that template corresponds
-    // to a component. This ensures the component has a separate space.
-    this.localPath = localPath;
     this.templateName = templateName;
     if (!templateName) {
       onError(
         `SlotEffector: template is not specified, use ContentEffector instead`,
-        { nodePath, selector, localPath }
+        { nodePath, selector }
       );
     }
     this._template =
@@ -496,24 +482,22 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
-    // We keep track of the parent local path, as the scope may be changed
-    // and we need to be able to relay data/events from one local scope
-    // to the other.
-    const parentLocalPath = scope.localPath;
-    // In the case the effector has a localPath, we derive the scope and
-    // change the local path. This allows to create a new context in which
-    // the effector state is stored.
-    if (this.localPath) {
-      scope = scope.copy();
-      scope.localPath = composePaths(scope.localPath, this.localPath);
-    }
+    // FIXME
+    // // We keep track of the parent local path, as the scope may be changed
+    // // and we need to be able to relay data/events from one local scope
+    // // to the other.
+    // const parentLocalPath = scope.localPath;
+    // // In the case the effector has a localPath, we derive the scope and
+    // // change the local path. This allows to create a new context in which
+    // // the effector state is stored.
+    // if (this.localPath) {
+    //   scope = scope.copy();
+    //   scope.localPath = composePaths(scope.localPath, this.localPath);
+    // }
     return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
       this,
       node,
-      // NOTE: Changing the scope here would distort the value, as we're
-      // passing the same selector, so the scope should not change.
-      scope,
-      parentLocalPath
+      scope
     ).init();
   }
 }
@@ -521,41 +505,42 @@ export class SlotEffector extends Effector {
 // This is the generic, abstract version of a slot effect. This is
 // specialized by `SingleSlotEffect` and `MultipleSlotEffect`.
 class SlotEffect extends Effect {
-  constructor(effector, node, scope, parentLocalPath) {
+  constructor(effector, node, scope) {
     super(effector, node, scope);
     this.handlers = {};
-    this.parentLocalPath = parentLocalPath;
   }
   bind() {
     super.bind();
     const scope = this.scope;
     const handlers = this.effector.handlers;
-    const parentLocalPath = this.parentLocalPath;
-    if (handlers) {
-      for (const k in handlers) {
-        const targetPath = composePaths(parentLocalPath, handlers[k]);
-        // We relay the event from the subscribed path to the parent path.
-        const h = (event) => {
-          scope.state.put(targetPath, event);
-        };
-        this.handlers[k] = h;
-        scope.state.sub([...scope.localPath, k], h);
-      }
-    }
+    // FIXME: We should put this back and explain
+    // const parentLocalPath = this.parentLocalPath;
+    // if (handlers) {
+    //   for (const k in handlers) {
+    //     const targetPath = composePaths(parentLocalPath, handlers[k]);
+    //     // We relay the event from the subscribed path to the parent path.
+    //     const h = (event) => {
+    //       scope.state.put(targetPath, event);
+    //     };
+    //     this.handlers[k] = h;
+    //     scope.state.sub([...scope.localPath, k], h);
+    //   }
+    // }
   }
   unbind() {
     const res = super.unbind();
     const scope = this.scope;
-    for (const k in this.handlers) {
-      const p = [...scope.localPath, k];
-      scope.state.sub(p, this.handlers[k]);
-    }
+    // FIXME: Implement this back
+    // for (const k in this.handlers) {
+    //   const p = [...scope.localPath, k];
+    //   scope.state.sub(p, this.handlers[k]);
+    // }
     return res;
   }
 }
 class SingleSlotEffect extends SlotEffect {
-  constructor(effector, node, scope, parentLocalPath) {
-    super(effector, node, scope, parentLocalPath);
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
     this.view = undefined;
   }
 
@@ -563,20 +548,14 @@ class SingleSlotEffect extends SlotEffect {
     if (!this.view) {
       const scope = this.scope;
       const node = document.createComment(
-        `⟥─⟤: slot:${this.scope.path.join(".")}`
+        // FIXME: add a better description of that part
+        `_|SingleSlotEffect`
       );
       DOM.after(this.node, node);
       this.view = this.effector.template
         ?.apply(
           node, // node
-          // NOTE: We may want to include the selector here?
-          new EffectScope(
-            scope.state,
-            this.abspath,
-            scope.localPath,
-            current,
-            scope.local
-          )
+          scope
         )
         ?.init();
       return this.view;
@@ -586,11 +565,14 @@ class SingleSlotEffect extends SlotEffect {
   }
 }
 
+// --
+// Implements the mapping of a slot for each item of a collection.
 class MappingSlotEffect extends SlotEffect {
-  constructor(effector, node, scope, parentLocalPath) {
-    super(effector, node, scope, parentLocalPath);
+  constructor(effector, node, scope) {
+    super(effector, node, scope);
+    // FIXME: This may not be necessary anymore
     // We always go through a change
-    this.selected.alwaysChange = true;
+    // this.selected.alwaysChange = true;
     this.items = undefined;
   }
 
@@ -598,18 +580,21 @@ class MappingSlotEffect extends SlotEffect {
   // ### Lifecycle
 
   unify(current, previous = this.value) {
-    // TODO: Abspath should really be just one path, like the root.
+    // We prepare from comparing the current state with the previous state,
+    // and do the corresponding operations to unify.
     const { node, scope } = this;
     const isCurrentEmpty = isEmpty(current);
     const isPreviousEmpty = isEmpty(previous);
     const isCurrentAtom = isAtom(current);
+
+    const path = this.effector.selector.path;
 
     // FIXME: This should be moved to the slot effector. We also need
     // to retrieve the key.
     // ### Case: Empty
     if (isCurrentEmpty) {
       if (!isPreviousEmpty && this.items) {
-        for (let item of this.items.values()) {
+        for (const item of this.items.values()) {
           item.unmount();
           item.dispose();
         }
@@ -617,8 +602,8 @@ class MappingSlotEffect extends SlotEffect {
       } else {
         // Nothing to do
       }
-      // ### Case: Atom
     } else if (isCurrentAtom) {
+      // ### Case: Atom
       const items = this.items ? this.items : (this.items = new Map());
       if (current !== previous) {
         const item = items.get(null);
@@ -630,21 +615,14 @@ class MappingSlotEffect extends SlotEffect {
             null,
             this.createItem(
               node, // node
-              new EffectScope(
-                scope.state,
-                // FIXME: Not sure about abspath
-                this.abspath ? this.abspath : [],
-                scope.localPath,
-                current, // value
-                scope.local
-              ),
+              scope.derive(path), // scope
               true // isEmpty
             )
           );
         }
       }
-      // ### Case: Array
     } else if (current instanceof Array) {
+      // ### Case: Array
       const items = this.items ? this.items : (this.items = new Map());
       for (let i = 0; i < current.length; i++) {
         const item = items.get(i);
@@ -653,13 +631,7 @@ class MappingSlotEffect extends SlotEffect {
             i,
             this.createItem(
               node, // node
-              new EffectScope(
-                scope.state,
-                this.abspath ? [...this.abspath, i] : [i],
-                scope.localPath,
-                current[i], // value
-                scope.local
-              )
+              scope.derive([...path, i], scope.slots, i)
             )
           );
         } else {
@@ -679,23 +651,17 @@ class MappingSlotEffect extends SlotEffect {
         items.delete(j);
         j++;
       }
-      // ### Case: Object
     } else {
+      // ### Case: Object
       const items = this.items ? this.items : (this.items = new Map());
-      for (let k in current) {
+      for (const k in current) {
         const item = items.get(k);
         if (!item) {
           items.set(
             k,
             this.createItem(
               node, // node
-              new EffectScope(
-                scope.state,
-                this.abspath ? [...this.abspath, k] : [k],
-                scope.localPath,
-                current[k], // value
-                scope.local
-              )
+              scope.derive([...path, k], scope.slots, k)
             )
           );
         } else {
@@ -704,7 +670,7 @@ class MappingSlotEffect extends SlotEffect {
           }
         }
       }
-      for (let k of items.keys()) {
+      for (const k of items.keys()) {
         if (current[k] === undefined) {
           const item = items.get(k);
           if (item) {
@@ -721,14 +687,9 @@ class MappingSlotEffect extends SlotEffect {
 
   // -- doc
   // Creates a new item node in which the template can be rendered.
-  createItem(node, scope, isEmpty = false) {
-    const root = document.createComment(
-      isEmpty
-        ? `⟥─⟤: slot:${scope.path.join(".")}`
-        : `⟥-[${scope.path.at(-1)}]-⟤: slot:${scope.path
-            .slice(0, -1)
-            .join(".")}`
-    );
+  createItem(node, scope) {
+    // TODO: Should have a better comment
+    const root = document.createComment("SLOT:FIXME");
     // We need to insert the node before as the template needs a parent
     if (!node.parentNode) {
       onError("MappingSlotEffect.createItem: node has no parent element", {
@@ -876,20 +837,40 @@ export class MatchEffector extends Effector {
 // ## Template Effector
 //
 
+export class TemplateEffector extends Effector {
+  // -- doc
+  // Counts the number of template effectors created, this is the used
+  // to assign the `data-scope` attribute.
+  static Counter = 0;
+
+  constructor(template, rootName = undefined) {
+    // TODO: We may want path a different selector there.
+    super(null, CurrentValueSelector);
+    this.template = template;
+    this.name = template.name;
+    this.rootName = rootName;
+  }
+
+  apply(node, scope, attributes) {
+    // TODO: We should probably create a new scope?
+    return new TemplateEffect(this, node, scope, attributes).init();
+  }
+}
+
 class TemplateEffect extends Effect {
   // We keep a global map of all the template effector states, it's like
   // the list of all components that were created.
   constructor(effector, node, scope, attributes) {
     super(effector, node, scope);
     // The id of a template is expected to be its local path root.
-    this.id = scope.localPath.at(-1);
+    this.id = makeKey(effector.name);
     // Attributes can be passed and will be added to each view node. Typically
     // these would be class attributes from a top-level component instance.
     this.attributes = attributes;
     this.views = [];
   }
 
-  unify(value, previous = this.value) {
+  unify() {
     const template = this.effector.template;
     // This should really be called only once, when the template is expanded.
     if (this.views.length != template.views.length) {
@@ -898,10 +879,14 @@ class TemplateEffect extends Effect {
       while (this.views.length < template.views.length) {
         this.views.push(undefined);
       }
-      for (let i = 0; i < template.views.length; i++) {
+      // Now for each view…
+      for (const i in template.views) {
+        // … we create the view if it does not exist
         if (!this.views[i]) {
+          // We start with cloning the view root node.
           const view = template.views[i];
           const root = view.root.cloneNode(true);
+          // And getting a list of the root node for each effector.
           const nodes = view.effectors.map((_) => pathNode(_.nodePath, root));
 
           // We update the `data-template` and `data-path` attributes, which is
@@ -918,13 +903,19 @@ class TemplateEffect extends Effect {
                 }
               }
             }
-            root.dataset["template"] =
-              this.effector.rootName || this.effector.name;
-            root.dataset["path"] = this.scope.path
-              ? this.scope.path.join(".")
-              : "";
-            root.dataset["id"] = this.id;
+            // TODO: Re-enable that when we do SSR
+            // We update the node dataset
+            // root.dataset["template"] =
+            //   this.effector.rootName || this.effector.name;
+            // root.dataset["path"] = this.scope.path
+            //   ? this.scope.path.join(".")
+            //   : "";
+            // root.dataset["id"] = this.id;
           }
+
+          // --
+          // ### Refs
+          //
           // We extract refs from the view and register them as corresponding
           // entries in the local state. We need to do this first, as effectors
           // may use specific refs.
@@ -938,33 +929,47 @@ class TemplateEffect extends Effect {
           if (hasRefs) {
             this.scope.patch(this.scope.localPath, refs);
           }
+
+          // --
+          // ### Mounting
+          //
           // We do need to mount the node first, as the effectors may need
-          // the nodes to have a parent.
-          // This mounts the view on the parent
-          // Now we create instances of the children effectors.
-          const states = [];
-          DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
-          if (!root.parentNode) {
-            onError(
-              "TemplateEffect: view root node should always have a parent",
-              { i, root, view }
-            );
-          }
-          for (let i in view.effectors) {
-            const effector = view.effectors[i];
-            const node = nodes[i];
-            !node &&
-              onError("Effector does not have a node", { node, i, effector });
-            const effect = effector.apply(node, this.scope);
-            states.push(effect);
-          }
+          // the nodes to have a parent. This mounts the view on the parent.
+
+          // FIXME: Does not work
+          // DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
+          // if (!root.parentNode) {
+          //   onError(
+          //     "TemplateEffect: view root node should always have a parent",
+          //     { i, root, view }
+          //   );
+          // }
 
           // We add the view, which will be collected in the template effector.
           this.views[i] = {
             root,
             refs,
             nodes,
-            states,
+            states: view.effectors.map((effector, i) => {
+              const node = nodes[i];
+              !node &&
+                onError("Effector does not have a node", { node, i, effector });
+              // DEBUG: This is a good place to see
+              console.group(
+                `[${this.id}] Template.view.${i}: Applying effector ${
+                  Object.getPrototypeOf(effector).constructor.name
+                } on node`,
+                node,
+                {
+                  effector,
+                  root,
+                  refs,
+                }
+              );
+              const res = effector.apply(node, this.scope);
+              console.groupEnd();
+              return res;
+            }),
           };
         } else {
           // SEE: Comment in the else branch
@@ -986,6 +991,7 @@ class TemplateEffect extends Effect {
     }
   }
 
+  // TODO: What is this used for?
   query(query) {
     const res = [];
     for (let view of this.views) {
@@ -994,7 +1000,7 @@ class TemplateEffect extends Effect {
         res.push(root);
       }
       if (root?.querySelectorAll) {
-        for (let node of root.querySelectorAll(query)) {
+        for (const node of root.querySelectorAll(query)) {
           res.push(node);
         }
       }
@@ -1013,28 +1019,30 @@ class TemplateEffect extends Effect {
         previous = node;
       }
     }
-    this.scope.state.bus.pub(
-      [...this.scope.localPath, "Mount"],
-      this.scope.state.bus.pub([this.effector.template.name, "Mount"], {
-        scope: this.scope,
-        effect: this,
-        node: this.node,
-      })
-    );
+    // FIXME: Broadcast the mount
+    // this.scope.state.bus.pub(
+    //   [...this.scope.localPath, "Mount"],
+    //   this.scope.state.bus.pub([this.effector.template.name, "Mount"], {
+    //     scope: this.scope,
+    //     effect: this,
+    //     node: this.node,
+    //   })
+    // );
   }
 
   unmount() {
     for (let view of this.views) {
       view.root?.parentNode?.removeChild(view.root);
     }
-    this.scope.state.bus.pub(
-      [this.effector.template.name, "Unmount"],
-      this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
-        scope: this.scope,
-        effect: this,
-        node: this.node,
-      })
-    );
+    // FIXME: Broadcast the unmount
+    // this.scope.state.bus.pub(
+    //   [this.effector.template.name, "Unmount"],
+    //   this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
+    //     scope: this.scope,
+    //     effect: this,
+    //     node: this.node,
+    //   })
+    // );
   }
 
   dispose() {
@@ -1046,32 +1054,13 @@ class TemplateEffect extends Effect {
     }
     this.views = [];
 
-    this.scope.state.bus.pub(
-      [this.effector.template.name, "Unmount"],
-      this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
-        scope: this.scope,
-      })
-    );
-  }
-}
-
-export class TemplateEffector extends Effector {
-  // -- doc
-  // Counts the number of template effectors created, this is the used
-  // to assign the `data-scope` attribute.
-  static Counter = 0;
-
-  constructor(template, rootName = undefined) {
-    // TODO: We may want path a different selector there.
-    super(null, CurrentValueSelector);
-    this.template = template;
-    this.name = template.name;
-    this.rootName = rootName;
-  }
-
-  apply(node, scope, attributes) {
-    // TODO: We should probably create a new scope?
-    return new TemplateEffect(this, node, scope, attributes).init();
+    // FIXME: Broadcast the unmount
+    // this.scope.state.bus.pub(
+    //   [this.effector.template.name, "Unmount"],
+    //   this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
+    //     scope: this.scope,
+    //   })
+    // );
   }
 }
 

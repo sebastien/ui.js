@@ -300,17 +300,14 @@ export class Component {
     this.anchor = anchor;
     this.template = template;
     this.state = state;
-    const localPath = ["@local", this.id];
-    if (slots) {
-      state.patch(localPath, slots);
-    }
-    this.scope = new EffectScope(
-      state,
-      path || localPath,
-      localPath,
-      state.get(path || localPath),
-      state.get(localPath)
-    );
+    this.scope = new EffectScope(state, path, slots);
+    // this.scope = new EffectScope(
+    //   state,
+    //   path || localPath,
+    //   localPath,
+    //   state.get(path || localPath),
+    //   state.get(localPath)
+    // );
     this.controller = controller
       ? createController(controller, this.scope)
       : null;
@@ -373,7 +370,7 @@ export const createComponent = (
   // We create an anchor component, and replace the node with the anchor.
   const key = id ? id : makeKey(ui);
 
-  const anchor = document.createComment(`⚓ ${ui}:${key}`);
+  const anchor = document.createComment(`${key}|Component|${ui}`);
   const attributes = [...node.attributes].reduce((r, v) => {
     if (!v.name.startsWith("data-")) {
       r.set(v.name, v.value);

@@ -51,6 +51,19 @@ export const type = (_) => {
   }
 };
 
+export const access = (context, path) => {
+  if (path && path.length && context !== undefined) {
+    for (const k of path) {
+      // TODO: We may want to deal with number vs key
+      context = context[k];
+      if (context === undefined) {
+        break;
+      }
+    }
+  }
+  return context;
+};
+
 export const len = (value) => {
   switch (type(value)) {
     case "array":
