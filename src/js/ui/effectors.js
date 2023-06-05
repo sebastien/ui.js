@@ -48,7 +48,6 @@ class DOM {
 
 export class EffectScope {
   constructor(state, path, slots, key) {
-    console.log("NEW SCOPE", state, path, slots);
     this.state = state;
     this.path = path;
     this.slots = slots;
@@ -56,12 +55,15 @@ export class EffectScope {
   }
 
   get value() {
-    console.log("XXX SCOPE VALUE", this.path, this.state.get(this.path));
     return this.state.get(this.path);
   }
 
   resolve(path) {
-    return access(this.value, path);
+    return path
+      ? path.at(-1) === "#"
+        ? this.key
+        : access(this.value, path)
+      : this.value;
   }
 
   derive(path, slots = this.slots, key = this.key) {
@@ -120,7 +122,10 @@ class Effect {
   }
 
   apply() {
-    const value = this.effector.selector.extract(this.scope.value);
+    const value = this.effector.selector.extract(
+      this.scope.value,
+      this.scope.key
+    );
     return this.unify(value, this.value);
   }
 

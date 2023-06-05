@@ -105,31 +105,25 @@ export class SelectorInput {
   // -- doc
   // Extracts the value for this input based on the given scope. This
   // applies formatting.
-  extract(value, path = undefined) {
+  extract(value, key) {
     if (this.type === SelectorInput.KEY) {
-      return this.apply(undefined, path);
+      return this.apply(undefined, key);
     } else {
-      return this.apply(value, path);
+      return this.apply(value, key);
     }
   }
 
   // --
   // Applies the selector input to a value (not a scope).
-  apply(value, path = undefined) {
+  apply(value, key = undefined) {
     let res = undefined;
     if (this.type === SelectorInput.KEY) {
-      res = path ? path.at(-1) : undefined;
+      res = key;
     } else {
       res = access(value, this.path);
     }
     // NOTE: There use to be a scope passed
     return this.format ? this.format(res) : res;
-  }
-
-  // -- doc
-  // Return this absolute path for this selector based on the given basepath.
-  get abspath() {
-    return this.type === SelectorInput.KEY ? [] : this.path;
   }
 
   toString() {
@@ -288,15 +282,15 @@ export class Selector {
   // -- doc
   // Extracts the data selected by this selector available at the given `scope`.
   // Note that the returned value has formatting already applied.
-  extract(value) {
+  extract(value, key) {
     switch (this.type) {
       case Selector.SINGLE:
-        return this.inputs[0].extract(value);
+        return this.inputs[0].extract(value, key);
       case Selector.LIST: {
         const n = this.inputs.length;
         const res = new Array(n);
         for (let i = 0; i < n; i++) {
-          res[i] = this.inputs[i].extract(value);
+          res[i] = this.inputs[i].extract(value, key);
         }
         return res;
       }
@@ -305,7 +299,7 @@ export class Selector {
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];
-          res[input.key ? input.key : i] = input.extract(value);
+          res[input.key ? input.key : i] = input.extract(value, key);
         }
         return res;
       }
