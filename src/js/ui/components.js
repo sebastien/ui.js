@@ -319,6 +319,7 @@ const onHandler = (target, property) => {
     } else {
       target.set(property, [handler]);
     }
+    return handler;
   };
 };
 

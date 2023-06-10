@@ -22,7 +22,17 @@ export const nodePath = (node, root = undefined) => {
 // -- doc
 // Returns the node at the given `path` for the given `root` node.
 export const pathNode = (path, root) =>
-  path.reduce((r, v) => (r ? r.childNodes[v] : r), root);
+  // NOTE: This is not a strict implementation, we'll return the current node
+  // if the node is not a element or fragment.
+  path.reduce(
+    (r, v) =>
+      r &&
+      (r.nodeType === Node.ELEMENT_NODE ||
+        r.nodeType === Node.DOCUMENT_FRAGMENT_NODE)
+        ? r.childNodes[v]
+        : r,
+    root
+  );
 
 // -- doc
 // Returns the value at the given `path` for the given `data`.

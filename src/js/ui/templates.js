@@ -18,8 +18,6 @@ import {
   TemplateEffector,
 } from "./effectors.js";
 import { onError, makeKey, bool } from "./utils.js";
-import { styled } from "./tokens.js";
-import { stylesheet } from "./css.js";
 
 // --
 // ## Templates
@@ -69,33 +67,6 @@ const Comparators = {
   ">=": (a, b) => a >= b,
   "<": (a, b) => a < b,
   "<=": (a, b) => a <= b,
-};
-
-// --
-// Parses a `when=TEXT` directive.
-const parseWhenDirective = (text) => {
-  const match = text.match(
-    /^(?<selector>[^=!<>]+)((?<operator>==?|!=|>|>=|<|<=)(?<value>.+)?)?$/
-  );
-  if (!match) {
-    return null;
-  } else {
-    const { selector, value, operator } = match.groups;
-    const v = value ? parseValue(value) : undefined;
-    const f = operator ? Comparators[operator] : bool;
-    if (!f) {
-      onError(`Could not find comparator for '${operator}'`, {
-        directive: text,
-        groups: match.groups,
-      });
-      return null;
-    }
-
-    return {
-      selector: parseSelector(selector) || CurrentValueSelector,
-      predicate: (_) => f(_, v),
-    };
-  }
 };
 
 const RE_OUT = new RegExp(`^(?<selector>${INPUTS})(:(?<template>[A-Za-z]+))?$`);
@@ -182,32 +153,38 @@ const iterAttributesLike = function* (node, regexp) {
 // Iterates through the attributes that match the given RegExp. This is
 // because we need to query namespace selectors.
 const iterAttributes = function* (node, regexp) {
-  let walker = document.createTreeWalker(
+  const walker = document.createTreeWalker(
     node,
     NodeFilter.SHOW_ELEMENT,
     TreeWalkerFilter
   );
-  for (let r of iterAttributesLike(node, regexp)) {
+  for (const r of iterAttributesLike(node, regexp)) {
     yield r;
   }
   while (walker.nextNode()) {
-    let node = walker.currentNode;
-    for (let r of iterAttributesLike(node, regexp)) {
+    const node = walker.currentNode;
+    for (const r of iterAttributesLike(node, regexp)) {
       yield r;
     }
   }
 };
 
 const iterNodes = function* (node, ...names) {
-  let walker = document.createTreeWalker(
+  const walker = document.createTreeWalker(
     node,
     NodeFilter.SHOW_ELEMENT,
     TreeWalkerFilter
   );
+  // We will yield on the root node if it matches
+  for (const n of names) {
+    if (node.nodeName == n) {
+      yield node;
+    }
+  }
   while (walker.nextNode()) {
     const node = walker.currentNode;
     const name = node.nodeName;
-    for (let n of names) {
+    for (const n of names) {
       if (name === n) {
         yield node;
       }
@@ -282,7 +259,7 @@ const contentAsFragment = (node) => {
 
 const replaceNodeWithPlaceholder = (node, placeholder) => {
   const anchor = document.createComment(placeholder);
-  node.parentElement.replaceChild(anchor, node);
+  node.parentElement && node.parentElement.replaceChild(anchor, node);
   return anchor;
 };
 
@@ -317,7 +294,6 @@ const getNodeEventHandlers = (node) =>
           {
             node,
             attr: name,
-            root,
           }
         );
       } else {
@@ -335,31 +311,40 @@ const getNodeEventHandlers = (node) =>
 // Processes a `<slot template=... select=.... >` node. The `select` attribute
 // defines the data path for which the slot will be applied, if it is suffixed
 // with `.*` then the slot will be mapped for each selected item.
-const onSlotNode = (node, root) => {
-  const selector = parseSelector(node.getAttribute("select"));
-  const content = contentAsFragment(node);
-  // TODO: Content should be used as placeholder
-  const template =
-    node.getAttribute("template") ||
-    createTemplate(content, makeKey("fragment"), false /*no cloning needed*/);
-  const key = makeKey(node.dataset.id || node.getAttribute("name") || template);
-  const effector = new SlotEffector(
-    nodePath(node, root),
-    selector,
-    template,
-    getNodeEventHandlers(node),
-    key
-  );
-  // We replace the slot by a placeholder node.
+const onSlotNode = (node, root, templateName) => {
+  const select = node.getAttribute("select");
+  if (select) {
+    const selector = parseSelector(select);
+    const content = contentAsFragment(node);
+    // TODO: Content should be used as placeholder
+    const template =
+      node.getAttribute("template") ||
+      createTemplate(
+        content,
+        makeKey(templateName ? `${templateName}_fragment` : "fragment"),
+        false /*no cloning needed*/
+      );
+    const key = makeKey(
+      node.dataset.id || node.getAttribute("name") || template
+    );
+    const effector = new SlotEffector(
+      nodePath(node, root),
+      selector,
+      template,
+      getNodeEventHandlers(node),
+      key
+    );
 
-  node.parentNode.replaceChild(
-    document.createComment(
+    // We replace the slot by a placeholder node. This means that there should
+    // be no slot placeholder at that point.
+    replaceNodeWithPlaceholder(
+      node,
       `${key}|Slot|${template.name || template}|${selector.toString()}`
-    ),
-    node
-  );
-
-  return effector;
+    );
+    return effector;
+  } else {
+    return null;
+  }
 };
 
 // --
@@ -421,10 +406,10 @@ const onOutAttribute = (attr, root, name) => {
   }
 };
 
-const onDoAttribute = (attr, root) => {
+const onDoAttribute = (attr, root, templateName) => {
   const node = attr.ownerElement;
-  node.removeAttribute(attr.name);
-  if (attr.localName === "match") {
+  if (attr.localName === "match" || attr.name === "do:match") {
+    node.removeAttribute(attr.name);
     const selector = parseSelector(attr.value);
     if (!selector) {
       onError(
@@ -441,16 +426,20 @@ const onDoAttribute = (attr, root) => {
           // If the child  has a do:case, then it's a sub-template and
           // we need to take it out.
           const t = n.getAttribute("do:case");
+          n.removeAttribute("do:case");
           const value = parseValue(t);
-
           const template = createTemplate(
             asFragment(n),
             // FIXME: I'm not sure why we're making a key here, we should probably
             // use the name of the parent template
-            `T${templateName || makeKey()}-E${effectors.length}`,
+
+            makeKey(templateName ? `${templateName}:case=${t}` : `case=${t}`),
             false // No need to clone there
           );
-          replaceNodeWithPlaceholder(n, `#${i}|MatchEffector|${template}|${v}`);
+          replaceNodeWithPlaceholder(
+            n,
+            `#${i}|MatchEffector|${template.name}|${attr.value}`
+          );
 
           r.push({
             template,
@@ -466,22 +455,20 @@ const onDoAttribute = (attr, root) => {
           { node: attr.ownerElement, branches }
         );
       } else {
-        return new MatchEffector(
-          nodePath(
-            replaceNodeWithPlaceholder(
-              `|MatchEffector||${selector.toString()}`,
-              node
-            ),
-            root
-          ),
-          selector,
-          branches
+        const anchor = replaceNodeWithPlaceholder(
+          node,
+          `|MatchEffector||${selector.toString()}`
         );
+        // TODO: If it's a slot, we should replace the slot with a placeholder,
+        // otherwise we should append the anchor
+        return new MatchEffector(nodePath(anchor, root), selector, branches);
       }
     }
+  } else if (attr.localName === "case" || attr.name === "do:case") {
+    // We do nothing, this should already have been processed
   } else {
     return onError(
-      `templates: Unsupported '${attr.name}' attribute, 'do:match' is supported`,
+      `templates: Unsupported '${attr.name}' attribute, 'do:match' and 'do:case' are supported`,
       {
         attr,
       }
@@ -548,6 +535,67 @@ const onOnAttribute = (attr, root, name) => {
 };
 
 // --
+// Parses a `when=TEXT` directive.
+const parseWhenDirective = (text) => {
+  const match = text.match(
+    /^(?<selector>[^=!<>]+)((?<operator>==?|!=|>|>=|<|<=)(?<value>.+)?)?$/
+  );
+  if (!match) {
+    return null;
+  } else {
+    const { selector, value, operator } = match.groups;
+    const v = value ? parseValue(value) : undefined;
+    const f = operator ? Comparators[operator] : bool;
+    if (!f) {
+      onError(`Could not find comparator for '${operator}'`, {
+        directive: text,
+        groups: match.groups,
+      });
+      return null;
+    }
+
+    return {
+      selector: parseSelector(selector) || CurrentValueSelector,
+      predicate: (_) => f(_, v),
+    };
+  }
+};
+
+const onWhenNode = (node, root, templateName) => {
+  const boundary = getBoundaryNode(node);
+  if (boundary === root) {
+    const text = node.getAttribute("when");
+    const when = parseWhenDirective(text);
+    if (!when) {
+      onError(`Could not parse when directive '${text}'`, {
+        node,
+        when: text,
+      });
+    } else {
+      node.removeAttribute("when");
+      const frag = document.createDocumentFragment();
+      while (node.childNodes.length > 0) {
+        frag.appendChild(node.childNodes[0]);
+      }
+      // TODO: If there is no sub-effectors, we should not bother
+      // with a template, it's a waste of resources.
+      const subtemplate = createTemplate(
+        frag,
+        makeKey(templateName ? `${templateName}:when=${text}` : `when=${text}`),
+        false // No need to clone there
+      );
+      return new WhenEffector(
+        nodePath(node, root),
+        when.selector,
+        subtemplate,
+        when.predicate
+      );
+    }
+  }
+  return null;
+};
+
+// --
 // ## View creation
 //
 class View {
@@ -563,7 +611,9 @@ class View {
 // attribute types (`in:*=`, `out:*=`, `on:*=`, `when=`) and
 // creating corresponding effectors.
 const view = (root, templateName = undefined) => {
-  // Some transforms may change the root, for instance if it's a <slot> root>
+  // Some transforms may change the root, for instance if it's a <slot> root.
+  const container = root.parentElement ? null : document.createElement("div");
+  container && container.appendChild(root);
 
   //--
   // We start by getting all the nodes within the `in`, `out` and `on`
@@ -612,15 +662,16 @@ const view = (root, templateName = undefined) => {
   // CHANGE the view, removing attributes and nodes.
   const effectors = [];
   for (const { attr } of attrs["do"] || []) {
-    const effector = onDoAttribute(attr, root);
-    effector && this.effectors.push(effector);
+    const effector = onDoAttribute(attr, root, templateName);
+    effector && effectors.push(effector);
   }
 
   // --
   // ### slot nodes
   //
   for (const node of iterNodes(root, "slot", "SLOT")) {
-    effectors.push(onSlotNode(node, root));
+    const e = onSlotNode(node, root, templateName);
+    e && effectors.push(e);
   }
 
   // --
@@ -643,41 +694,14 @@ const view = (root, templateName = undefined) => {
   // // --
   // //
   // // ### Conditional effectors
+  for (const node of iterSelector(root, "*[when]")) {
+    const e = onWhenNode(node, root, templateName);
+    e && effectors.push(e);
+  }
 
   // // We take care of state change effectors
   // // TODO: This won't work for nested templates
   // for (const node of iterSelector(root, "*[when]")) {
-  //   const boundary = getBoundaryNode(node);
-  //   if (boundary === root) {
-  //     const text = node.getAttribute("when");
-  //     const when = parseWhenDirective(text);
-  //     if (!when) {
-  //       onError(`Could not parse when directive '${text}'`, {
-  //         node,
-  //         when: text,
-  //       });
-  //     } else {
-  //       node.removeAttribute("when");
-  //       const frag = document.createDocumentFragment();
-  //       while (node.childNodes.length > 0) {
-  //         frag.appendChild(node.childNodes[0]);
-  //       }
-  //       // TODO: If there is no sub-effectors, we should not bother
-  //       // with a template, it's a waste of resources.
-  //       const subtemplate = createTemplate(
-  //         frag,
-  //         `T${templateName || makeKey()}-E${effectors.length}`,
-  //         false // No need to clone there
-  //       );
-  //       effectors.push(
-  //         new WhenEffector(
-  //           nodePath(node, root),
-  //           when.selector,
-  //           subtemplate,
-  //           when.predicate
-  //         )
-  //       );
-  //     }
   //   }
   // }
 
@@ -690,7 +714,10 @@ const view = (root, templateName = undefined) => {
     node.removeAttribute("ref");
   }
 
-  return new View(root, refs, effectors);
+  // We use the container so that the root always has a parent, which makes
+  // it possible to replace the root node, for instance when the template
+  // has a `<slot>` as a root.
+  return new View(container ? container.childNodes[0] : root, refs, effectors);
 };
 
 // --
@@ -721,7 +748,8 @@ export const createTemplate = (
   node,
   name = node.getAttribute("id"),
   clone = true, // TODO: We should probably always have that to false
-  templates = Templates
+  templates = Templates,
+  scriptContainer = document.body
 ) => {
   const views = [];
 
@@ -730,9 +758,11 @@ export const createTemplate = (
   for (let _ of root.children) {
     switch (_.nodeName) {
       case "STYLE":
+        // TODO: We may also want to put these in the template
         break;
       case "SCRIPT":
-        document.body.appendChild(_);
+        // TODO: We may want to put these in the template
+        scriptContainer.appendChild(_);
         break;
     }
   }
@@ -756,7 +786,7 @@ export const createTemplate = (
   }
 
   // This filters out the contents of the views parent.
-  for (let _ of viewsParent?.childNodes || []) {
+  for (const _ of viewsParent?.childNodes || []) {
     switch (_.nodeType) {
       case Node.TEXT_NODE:
         views.push(_);
@@ -776,12 +806,15 @@ export const createTemplate = (
 
   // We build the template effector, which will create a new instance of
   // each view and then add it.
+  const processedViews = views.map((_) =>
+    view(clone ? _.cloneNode(true) : _, name)
+  );
   const res = new TemplateEffector(
     new Template(
       // FIXME: Not sure why we have the node here, when we could have views?
       node,
       // FIXME: Not sure why we need to clone here or not, should explain
-      views.map((_) => view(clone ? _.cloneNode(true) : _), name),
+      processedViews,
       name
     )
   );

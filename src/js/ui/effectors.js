@@ -646,7 +646,9 @@ class MappingSlotEffect extends SlotEffect {
             this.createItem(
               node, // node
               // FIXME: We probably want to change the local path
-              scope.derive([...path, i], scope.localPath, scope.slots, i)
+              scope.derive([...path, i], scope.localPath, scope.slots, i),
+              undefined,
+              i
             )
           );
         } else {
@@ -677,7 +679,9 @@ class MappingSlotEffect extends SlotEffect {
             this.createItem(
               node, // node
               // FIXME: We probably want to change the local path
-              scope.derive([...path, k], scope.localPath, scope.slots, k)
+              scope.derive([...path, k], scope.localPath, scope.slots, k),
+              undefined,
+              k
             )
           );
         } else {
@@ -703,9 +707,11 @@ class MappingSlotEffect extends SlotEffect {
 
   // -- doc
   // Creates a new item node in which the template can be rendered.
-  createItem(node, scope) {
+  createItem(node, scope, isEmpty = false, key = undefined) {
     // TODO: Should have a better comment
-    const root = document.createComment("SLOT:FIXME");
+    const root = document.createComment(
+      key === undefined ? "item" : `item-${key}`
+    );
     // We need to insert the node before as the template needs a parent
     if (!node.parentNode) {
       onError("MappingSlotEffect.createItem: node has no parent element", {
@@ -727,17 +733,26 @@ class MappingSlotEffect extends SlotEffect {
 // --
 // ### Conditional Effector
 
+export class WhenEffector extends SlotEffector {
+  constructor(nodePath, selector, templateName, predicate) {
+    super(nodePath, selector, templateName);
+    this.predicate = predicate;
+  }
+
+  apply(node, scope) {
+    return new WhenEffect(this, node, scope).init();
+  }
+}
+
 class WhenEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
-    // FIXME: Not sure the anchor is necessary
     // The anchor will the element where the contents will be re-inserted
-    this.anchor = document.createComment(
-      `when:${this.effector.selector.toString()}`
-    );
-    this.contentAnchor = document.createComment(
-      `⚓ when:${this.abspath.join(".")}`
-    );
+    //
+    // FIXME: Not sure the anchor is necessary
+    // TODO: Should have better names
+    this.anchor = document.createComment(`WhenEffect`);
+    this.contentAnchor = document.createComment(`WhenEffect:Content`);
     this.displayValue = node?.style?.display;
     this.node.appendChild(this.contentAnchor);
     // FIXME: Not sure why this is necessary. We should not change the node
@@ -791,20 +806,24 @@ class WhenEffect extends Effect {
   }
 }
 
-export class WhenEffector extends SlotEffector {
-  constructor(nodePath, selector, templateName, predicate) {
-    super(nodePath, selector, templateName);
-    this.predicate = predicate;
+// --
+// ## Match Effector
+
+export class MatchEffector extends Effector {
+  constructor(nodePath, selector, branches) {
+    super(nodePath, selector);
+    this.branches = branches;
   }
 
   apply(node, scope) {
-    return new WhenEffect(this, node, scope).init();
+    return new MatchEffect(this, node, scope).init();
   }
 }
-
 class MatchEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
+    console.log("MATCH EFFECTOR", node);
+    debugger;
     this.states = new Array(this.effector.length);
     this.currentBranchIndex = undefined;
   }
@@ -835,17 +854,6 @@ class MatchEffect extends Effect {
       this.currentBranchIndex = index;
     }
     return this;
-  }
-}
-
-export class MatchEffector extends Effector {
-  constructor(nodePath, selector, branches) {
-    super(nodePath, selector);
-    this.branches = branches;
-  }
-
-  apply(node, scope) {
-    return new MatchEffect(this, node, scope).init();
   }
 }
 
@@ -896,7 +904,7 @@ class TemplateEffect extends Effect {
         this.views.push(undefined);
       }
       // Now for each view…
-      for (const i in template.views) {
+      for (let i = 0; i < template.views.length; i++) {
         // … we create the view if it does not exist
         if (!this.views[i]) {
           // We start with cloning the view root node.
@@ -949,14 +957,13 @@ class TemplateEffect extends Effect {
           // We do need to mount the node first, as the effectors may need
           // the nodes to have a parent. This mounts the view on the parent.
 
-          // FIXME: Does not work
-          // DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
-          // if (!root.parentNode) {
-          //   onError(
-          //     "TemplateEffect: view root node should always have a parent",
-          //     { i, root, view }
-          //   );
-          // }
+          DOM.after(i === 0 ? this.node : this.views[i - 1].root, root);
+          if (!root.parentNode) {
+            onError(
+              "TemplateEffect: view root node should always have a parent",
+              { i, root, view }
+            );
+          }
 
           // We add the view, which will be collected in the template effector.
           this.views[i] = {
