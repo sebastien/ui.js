@@ -240,7 +240,7 @@ export const memo = (guards, functor) => {
 export const Enum = (...values) =>
   Object.freeze(
     values.reduce((r, v) => {
-      r[`${v}`] = typeof v === "string" ? new Symbol(v) : v;
+      r[`${v}`] = typeof v === "string" ? Symbol(v) : v;
       return r;
     }, {})
   );

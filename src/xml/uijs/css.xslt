@@ -10,7 +10,7 @@
 	Renders the `<Style>...</Style>` content.
 	-->
 	<xsl:template name="css-rule" match="s:*" mode="css">
-		<xsl:if test="@*[ name() != 'select' and name() != 'class' and name() != 'as' and not(starts-with(name(),'on:')) and not(starts-with(name(),'out:')) and not(starts-with(name(),'data-'))]">
+		<xsl:if test="@*[ name() != 'select' and name() != 'class' and name() != 'as' and name() != 'ref' and not(starts-with(name(),'on:')) and not(starts-with(name(),'out:')) and not(starts-with(name(),'data-'))]">
 			<xsl:call-template name="css-selector"/>
 			<xsl:call-template name="css-properties"/>
 		</xsl:if>
@@ -45,7 +45,7 @@
 	-->
 	<xsl:template name="css-properties">
 		<xsl:text> {</xsl:text>
-		<xsl:for-each select="@*[ name() != 'select' and name() != 'class' and name() != 'as' and not(starts-with(name(),'on:')) and not(starts-with(name(),'out:')) and not(starts-with(name(),'data-'))]">
+		<xsl:for-each select="@*[ name() != 'select' and name() != 'class' and name() != 'as' and name() != 'ref' and not(starts-with(name(),'on:')) and not(starts-with(name(),'out:')) and not(starts-with(name(),'data-'))]">
 			<xsl:value-of select="name()"/>
 			<xsl:text>:</xsl:text>
 			<xsl:value-of select="."/>

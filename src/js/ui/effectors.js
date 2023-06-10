@@ -47,11 +47,13 @@ class DOM {
 // -- doc
 
 export class EffectScope {
-  constructor(state, path, slots, key) {
+  constructor(state, path, localPath, slots, key) {
     this.state = state;
     this.path = path;
-    this.slots = slots;
+    this.localPath = localPath;
     this.key = key;
+    this.slots = slots;
+    this.handlers = new Map();
   }
 
   get value() {
@@ -66,10 +68,11 @@ export class EffectScope {
       : this.value;
   }
 
-  derive(path, slots = this.slots, key = this.key) {
+  derive(path, localPath = this.localPath, slots = this.slots, key = this.key) {
     return new EffectScope(
       this.state,
       [...this.path, ...(typeof path === "string" ? path.split(".") : path)],
+      localPath,
       slots,
       key
     );
@@ -78,6 +81,18 @@ export class EffectScope {
   set(name, value) {}
 
   get(name) {}
+
+  trigger(name, ...args) {
+    const handlers = this.handlers.get(name);
+    handlers &&
+      handlers.forEach((handler) => {
+        try {
+          handler(...args);
+        } catch (exception) {
+          onError(`${name}: Handler failed`, { handler, exception, args });
+        }
+      });
+  }
 }
 
 // --
@@ -330,6 +345,23 @@ export class StyleEffector extends AttributeEffector {
 //  --
 // ## Event Effector
 //
+
+export class EventEffector extends Effector {
+  // -- doc
+  // Creates a new `EventEffector` that  is triggered by the given `event`,
+  // generating an event `triggers` (when defined), or
+  constructor(nodePath, event, directive) {
+    super(nodePath, CurrentValueSelector);
+    this.directive = directive;
+    this.eventPath = directive.event ? directive.event.split(".") : null;
+    this.event = event;
+  }
+
+  apply(node, scope) {
+    return new EventEffect(this, node, scope);
+  }
+}
+
 class EventEffect extends Effect {
   static Value(event) {
     // TODO: Should automatically extract data
@@ -350,24 +382,18 @@ class EventEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
     const { events, inputs, stops } = this.effector.directive;
-    // FIXME
-    // const destination = event;
-    // const eventPath = this.effector.eventPath;
-    // TODO: For TodoItem, the path should be .items.0, etc
     this.handler = (event) => {
       if (inputs) {
         const delta = inputs.reduce((r, input) => {
           r[input.key] = input.apply(event);
           return r;
         }, {});
-        console.log("FIXME DELTA", ":", delta);
-        // this.scope.state.patch(this.scope.localPath, delta);
+        console.log("EVENT:FIXME:Delta", { delta });
       }
       if (events) {
         const value = EventEffect.Value(event);
         for (const name of events) {
-          // console.log("TRIGGER", name, ":", { event, value });
-          // TODO
+          scope.trigger(name, event, scope, value);
         }
       }
       if (stops) {
@@ -413,8 +439,7 @@ class EventEffect extends Effect {
       //       eventPath,
       //       data,
       //     });
-      //   }
-      // }
+      //   } }
     };
     node.addEventListener(this.effector.event, this.handler);
   }
@@ -427,22 +452,6 @@ class EventEffect extends Effect {
 
   dispose() {
     this.node.removeEventListener(this.effector.event, this.handler);
-  }
-}
-
-export class EventEffector extends Effector {
-  // -- doc
-  // Creates a new `EventEffector` that  is triggered by the given `event`,
-  // generating an event `triggers` (when defined), or
-  constructor(nodePath, event, directive) {
-    super(nodePath, CurrentValueSelector);
-    this.directive = directive;
-    this.eventPath = directive.event ? directive.event.split(".") : null;
-    this.event = event;
-  }
-
-  apply(node, scope) {
-    return new EventEffect(this, node, scope);
   }
 }
 
@@ -636,7 +645,8 @@ class MappingSlotEffect extends SlotEffect {
             i,
             this.createItem(
               node, // node
-              scope.derive([...path, i], scope.slots, i)
+              // FIXME: We probably want to change the local path
+              scope.derive([...path, i], scope.localPath, scope.slots, i)
             )
           );
         } else {
@@ -666,7 +676,8 @@ class MappingSlotEffect extends SlotEffect {
             k,
             this.createItem(
               node, // node
-              scope.derive([...path, k], scope.slots, k)
+              // FIXME: We probably want to change the local path
+              scope.derive([...path, k], scope.localPath, scope.slots, k)
             )
           );
         } else {
@@ -924,15 +935,12 @@ class TemplateEffect extends Effect {
           // We extract refs from the view and register them as corresponding
           // entries in the local state. We need to do this first, as effectors
           // may use specific refs.
+          // FIXME: Do we really need to pass the `refs`?
           const refs = {};
-          let hasRefs = false;
           for (const [k, p] of view.refs.entries()) {
             const n = pathNode(p, root);
             assign(refs, k, n);
-            hasRefs = true;
-          }
-          if (hasRefs) {
-            this.scope.patch(this.scope.localPath, refs);
+            this.scope.state.put([...this.scope.localPath, `#${k}`], n);
           }
 
           // --
@@ -1024,30 +1032,14 @@ class TemplateEffect extends Effect {
         previous = node;
       }
     }
-    // FIXME: Broadcast the mount
-    // this.scope.state.bus.pub(
-    //   [...this.scope.localPath, "Mount"],
-    //   this.scope.state.bus.pub([this.effector.template.name, "Mount"], {
-    //     scope: this.scope,
-    //     effect: this,
-    //     node: this.node,
-    //   })
-    // );
+    this.scope.trigger("Mount", this.scope, this.node);
   }
 
   unmount() {
-    for (let view of this.views) {
+    for (const view of this.views) {
       view.root?.parentNode?.removeChild(view.root);
     }
-    // FIXME: Broadcast the unmount
-    // this.scope.state.bus.pub(
-    //   [this.effector.template.name, "Unmount"],
-    //   this.scope.state.bus.pub([...this.scope.localPath, "Unmount"], {
-    //     scope: this.scope,
-    //     effect: this,
-    //     node: this.node,
-    //   })
-    // );
+    this.scope.trigger("Unmount", this.scope, this.node);
   }
 
   dispose() {

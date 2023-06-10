@@ -6,8 +6,8 @@ import { type } from "./utils.js";
 // ## State Tree
 
 export class StateTree {
-  constructor(global = {}, bus = new PubSub()) {
-    this.global = global;
+  constructor(store = {}, bus = new PubSub()) {
+    this.store = store;
     this.bus = bus;
   }
 
@@ -24,7 +24,7 @@ export class StateTree {
   // -- doc
   // Retrieves the value at the given `path`
   get(path) {
-    let res = this.global;
+    let res = this.store;
     for (let k of path instanceof Array ? path : path.split(".")) {
       if (!res) {
         return undefined;
@@ -38,7 +38,7 @@ export class StateTree {
   // Ensures there's a value at the given `path`, assigning the `defaultValue`
   // if not existing.
   ensure(path, defaultValue = undefined, limit = 0, offset = 0) {
-    let scope = this.global;
+    let scope = this.store;
     const p = path instanceof Array ? path : path.split(".");
     let i = 0 + offset;
     const j = p.length - 1 + limit;
@@ -113,9 +113,9 @@ export class StateTree {
       // same values. We should detect changes I think.
       const updated = clear
         ? value
-        : this._apply(p.length === 0 ? this.global : scope[key], value);
+        : this._apply(p.length === 0 ? this.store : scope[key], value);
       if (p.length === 0) {
-        this.global = updated;
+        this.store = updated;
         this._pub(scopeTopic, updated);
       } else {
         scope[key] = updated;

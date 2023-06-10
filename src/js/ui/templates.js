@@ -98,41 +98,6 @@ const parseWhenDirective = (text) => {
   }
 };
 
-// --
-// ### Handling events: `on:EVENT=DIRECTIVE`.
-//
-// The `on:EVENT=DIRECTIVE` directive is as follows:
-//
-// - `EVENT` is an event name
-// - `DIRECTIVE` is a comma-separated list of mappings `SELECTOR=SELECTOR` and
-//    event names.
-const RE_INPUT = new RegExp(`^${INPUT}$`);
-const RE_EVENT = new RegExp(`^(?<name>([A-Z][A-Za-z]+)+)(?<stops>\\.)?$`);
-const parseOnDirective = (text) => {
-  const match = text.split(",").reduce(
-    (r, v) => {
-      let match = undefined;
-      const t = v.trim();
-      if ((match = t.match(RE_EVENT))) {
-        const { name, stops } = match.groups;
-        r.events.push(name);
-        if (stops) {
-          r.stops = true;
-        }
-      } else if ((match = t.match(RE_INPUT))) {
-        r.inputs.push(parseInput(t));
-      }
-      return r;
-    },
-    { inputs: [], events: [] }
-  );
-  if (match.inputs.length || match.events.length || match.stops) {
-    return match;
-  } else {
-    return null;
-  }
-};
-
 const RE_OUT = new RegExp(`^(?<selector>${INPUTS})(:(?<template>[A-Za-z]+))?$`);
 const parseOutDirective = (text) => {
   const match = text.match(RE_OUT);
@@ -523,6 +488,64 @@ const onDoAttribute = (attr, root) => {
     );
   }
 };
+//
+// --
+// ### Handling events: `on:EVENT=DIRECTIVE`.
+//
+// The `on:EVENT=DIRECTIVE` directive is as follows:
+//
+// - `EVENT` is an event name
+// - `DIRECTIVE` is a comma-separated list of mappings `SELECTOR=SELECTOR` and
+//    event names.
+const RE_INPUT = new RegExp(`^${INPUT}$`);
+const RE_EVENT = new RegExp(`^(?<name>([A-Z][A-Za-z]+)+)(?<stops>\\.)?$`);
+const parseOnDirective = (text) => {
+  const match = text.split(",").reduce(
+    (r, v) => {
+      let match = undefined;
+      const t = v.trim();
+      if ((match = t.match(RE_EVENT))) {
+        const { name, stops } = match.groups;
+        r.events.push(name);
+        if (stops) {
+          r.stops = true;
+        }
+      } else if ((match = t.match(RE_INPUT))) {
+        r.inputs.push(parseInput(t));
+      }
+      return r;
+    },
+    { inputs: [], events: [] }
+  );
+  if (match.inputs.length || match.events.length || match.stops) {
+    return match;
+  } else {
+    return null;
+  }
+};
+
+const onOnAttribute = (attr, root, name) => {
+  const node = attr.ownerElement;
+  node.removeAttribute(attr.name);
+  // A `<slot out:XXX>` node  may have `on:XXX` attribtues as well, in which
+  // case they've already been processed at that point.
+  if (node && node.parentNode) {
+    const directive = parseOnDirective(attr.value);
+    if (!directive) {
+      return onError(
+        `templates.view: Could not parse on 'on:*' directive '${attr.value}'`,
+        {
+          name,
+          attr,
+          root,
+        }
+      );
+    } else {
+      return new EventEffector(nodePath(node, root), name, directive);
+    }
+  }
+  return null;
+};
 
 // --
 // ## View creation
@@ -608,33 +631,13 @@ const view = (root, templateName = undefined) => {
     effectors.push(onOutAttribute(attr, root, name));
   }
 
-  // FIXME: Disabled for now
-  // // --
-  // // ### Event effectors
-  // //
-  // for (const { name, attr } of attrs["on"] || []) {
-  //   const node = attr.ownerElement;
-  //   // A `<slot out:XXX>` node  may have `on:XXX` attribtues as well, in which
-  //   // case they've already been processed at that point.
-  //   if (node && node.parentNode) {
-  //     const directive = parseOnDirective(attr.value);
-  //     if (!directive) {
-  //       onError(
-  //         `templates.view: Could not parse on 'on:*' directive '${attr.value}'`,
-  //         {
-  //           name,
-  //           attr,
-  //           root,
-  //         }
-  //       );
-  //     } else {
-  //       effectors.push(
-  //         new EventEffector(nodePath(node, root), name, directive)
-  //       );
-  //     }
-  //   }
-  //   node.removeAttribute(attr.name);
-  // }
+  // --
+  // ### Event effectors
+  //
+  for (const { name, attr } of attrs["on"] || []) {
+    const e = onOnAttribute(attr, root, name);
+    e && effectors.push(e);
+  }
 
   // FIXME: Disabled for now
   // // --

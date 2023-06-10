@@ -17,30 +17,85 @@ export class Cell {
     this.scope = scope;
   }
 
+  unbind() {
+    this.scope = undefined;
+  }
+
   get value() {
     throw new Error("Cell.value not implemented", { cell: this });
   }
 
-  unbind() {
-    throw new Error("Cell.unbind not implemented", { cell: this });
+  sub(handler) {
+    throw new Error("Cell.sub not implemented", { cell: this });
+  }
+
+  unsub(handler) {
+    throw new Error("Cell.unsub not implemented", { cell: this });
+  }
+
+  set(value) {
+    throw new Error("Cell.set not implemented", { cell: this });
   }
 }
 
-export class Ref extends Cell {
-  constructor(name) {
+class LocalCell extends Cell {
+  constructor() {
     super();
-    this.name = name;
+    this.handlers = [];
+    this._value = undefined;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  sub(handler) {
+    this.handlers.push(handler);
+    return this;
+  }
+
+  unsub(handler) {
+    this.handlers.remove(handler);
+    return this;
+  }
+
+  set(value) {
+    if (this._value !== value) {
+      this._value = value;
+      this.trigger(value, this);
+    }
+    return value;
+  }
+
+  trigger(...args) {
+    for (const handler of this.handlers) {
+      try {
+        handler(...args);
+      } catch (e) {
+        onError("components: Handler failed", { cell: this, handler });
+      }
+    }
   }
 }
 
-export class Slot extends Cell {
-  constructor(path) {
+export class StateCell extends Cell {
+  constructor(path, value = undefined) {
     super();
     this.path = path;
+    this.default = value;
+    this.topic = undefined;
   }
 
-  get topic() {
-    return this.scope.state.bus.get(this.path);
+  bind(scope) {
+    super.bind(scope);
+    this.topic = this.scope.state.bus.get(this.path);
+    // If the slot has a default value and there is no value currently
+    // defined in the state, then we assign it.
+    if (this.default !== undefined) {
+      if (this.scope.state.get(this.path) === undefined) {
+        this.scope.state.put(this.path, this.default);
+      }
+    }
   }
 
   get value() {
@@ -76,6 +131,20 @@ export class Slot extends Cell {
   // clear() {}
 }
 
+export class Ref extends StateCell {
+  constructor(name) {
+    super(undefined, undefined);
+    this.name = name;
+  }
+
+  bind(scope) {
+    this.path = [...scope.localPath, `#${this.name}`];
+    return super.bind(scope);
+  }
+}
+
+export class Slot extends StateCell {}
+
 // FIXME: We may want to specialize based on the type of reducer
 export class Reducer extends Cell {
   constructor(inputs, functor, input, handlers) {
@@ -90,6 +159,10 @@ export class Reducer extends Cell {
   onInputChange(key, value, ...rest) {
     onError("Slot.onInputChange: Not implemented", { slot: this });
   }
+
+  doUpdate() {
+    this._value = this.functor(...this.input);
+  }
 }
 
 class AtomReducer extends Reducer {
@@ -101,7 +174,9 @@ class AtomReducer extends Reducer {
 
   bind(scope) {
     super.bind(scope);
-    scope.state.bus.sub(this.inputs.path, this.handlers);
+    this.inputs.sub(this.handlers);
+    this.input = this.inputs.value;
+    this.doUpdate();
   }
 
   onInputChange(key, value, ...rest) {
@@ -129,15 +204,21 @@ class ArrayReducer extends Reducer {
 
   bind(scope) {
     super.bind(scope);
-    for (const i in this.inputs) {
-      scope.state.bus.sub(this.inputs[i].path, this.handlers[i]);
-    }
+    this.input = this.inputs.map((cell, i) => {
+      cell.sub(this.handlers[i]);
+      return cell.value;
+    });
+    this.doUpdate();
+  }
+
+  doUpdate() {
+    this._value = this.functor(...this.input);
   }
 
   onInputChange(key, value) {
     if (this.input[key] !== value) {
       this.input[key] = value;
-      this._value = this.functor(...this.input);
+      this.doUpdate();
     }
   }
 }
@@ -160,10 +241,14 @@ class MapReducer extends Reducer {
 
   bind(scope) {
     super.bind(scope);
+    this.input = {};
     for (const [key, cell] of Object.entries(this.inputs)) {
-      scope.state.bus.sub(cell.path, this.handlers[key]);
+      cell.path.sub(this.handlers[key]);
+      this.input[key] = cell.value;
     }
+    this.doUpdate();
   }
+
   onInputChange(key, value) {
     if (this.input[key] !== value) {
       this.input[key] = value;
@@ -172,28 +257,42 @@ class MapReducer extends Reducer {
   }
 }
 
+// --
+// The `Use` class creates a factory object that creates cells.
 class Use {
   constructor(cells, scope) {
     this.cells = cells;
     this.scope = scope;
   }
+
   cell(cell) {
     this.cells.push(cell.bind(this.scope));
     return cell;
   }
+
   hash(path) {
     return this.cell(new Slot(["@hash", ...parsePath(path)]));
+  }
+
+  ref(name) {
+    return this.cell(new Ref(name));
   }
 
   global(path) {
     return this.cell(new Slot(parsePath(path)));
   }
 
-  local(path) {
-    return this.cell(new Slot([...this.scope.localPath, ...parsePath(path)]));
+  local(path, value) {
+    return this.cell(
+      new Slot([...this.scope.localPath, ...parsePath(path)], value)
+    );
   }
 
-  reduce(inputs, functor) {
+  effect(inputs, functor) {
+    return this.derived(inputs, functor);
+  }
+
+  derived(inputs, functor) {
     return this.cell(
       inputs instanceof Cell
         ? new AtomReducer(inputs, functor)
@@ -203,6 +302,11 @@ class Use {
     );
   }
 }
+
+// ============================================================================
+// CONTROLLERS
+// ============================================================================
+
 // --
 //
 // ## Controllers
@@ -244,40 +348,61 @@ export const controller = (controller, controllers = Controllers) => {
 // --
 // Creates an instance of the controller, using the given definition and scope.
 export const createController = (definition, scope) => {
-  const cells = [];
+  if (!scope) {
+    onError("components.createController: scope is expected, got nothing", {
+      definition,
+      scope,
+    });
+  }
+
+  // `on` is a proxy object that will populate the `events` map
   const events = new Map();
   const on = new Proxy(events, { get: onHandler });
+
+  // `use` wraps the cells and scope
+  const cells = [];
   const use = new Use(cells, scope);
+
+  // Now we run the definition, which should populate the cells and events.
   definition({ use, on });
 
   // We process the event handlers
-  const triggers = new Map();
   for (const [name, handlers] of events.entries()) {
     const eventName = `${name.charAt(0).toUpperCase()}${name.substring(1)}`;
-    const trigger = () => {
-      for (const handler of handlers) {
-        handler();
-      }
-    };
-    if (eventName === "Mount") {
-      trigger();
-    } else {
-      scope.state.bus.sub([...scope.localPath, eventName], trigger);
-      triggers.set(eventName, trigger);
-    }
+    scope.handlers.set(
+      eventName,
+      (scope.handlers.get(eventName) || []).concat(handlers)
+    );
+    // if (eventName === "Mount") {
+    //   console.log("MOUNT", eventName);
+    //   trigger(scope);
+    // } else {
+    //   console.log("HANDLER", { eventName });
+    //   // scope.state.bus.sub([...scope.localPath, eventName], trigger);
+    //   triggers.set(eventName, trigger);
+    // }
   }
 
+  // TODO: On unmount, a component should:
+  // - Cleanup its namespace
+  // - Execute effect unmount hooks
+
+  //
   // If we registered handlers, then we unmount them on unmount
-  if (triggers.size) {
-    const unmount = () => {
-      for (const [name, handler] of triggers.entries()) {
-        scope.state.bus.unsub([...scope.localPath, name], handler);
-      }
-      scope.state.bus.unsub([...scope.localPath, "Unmount"], unmount);
-    };
-    scope.state.bus.sub([...scope.localPath, "Unmount"], unmount);
-  }
+  // if (triggers.size) {
+  //   const unmount = () => {
+  //     for (const [name, handler] of triggers.entries()) {
+  //       scope.state.bus.unsub([...scope.localPath, name], handler);
+  //     }
+  //     scope.state.bus.unsub([...scope.localPath, "Unmount"], unmount);
+  //   };
+  //   scope.state.bus.sub([...scope.localPath, "Unmount"], unmount);
+  // }
 };
+
+// ============================================================================
+// COMPONENTS
+// ============================================================================
 
 // --
 //
@@ -300,7 +425,12 @@ export class Component {
     this.anchor = anchor;
     this.template = template;
     this.state = state;
-    this.scope = new EffectScope(state, path, slots);
+    this.scope = new EffectScope(
+      state,
+      path,
+      ["@components", template.name, id],
+      slots
+    );
     // this.scope = new EffectScope(
     //   state,
     //   path || localPath,
