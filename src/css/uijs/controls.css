@@ -111,7 +111,10 @@
   input:hover,
   textarea:hover,
   .input:hover,
-  .textarea:hover {
+  .textarea:hover,
+  .input.hover,
+  .textarea.hover,
+  {
   }
   input:focus,
   textarea:focus,
@@ -119,8 +122,13 @@
   textarea:active,
   .input:focus,
   .textarea:focus,
+  .input.focus,
+  .textarea.focus,
   .input:active,
-  .textarea:active {
+  .textarea:active,
+  .input.active,
+  .textarea.active {
+  }
   }
 
   input.transparent[type="text"],
@@ -162,11 +170,13 @@
   }
 
   button:focus,
-  .button:focus {
+  .button:focus,
+  .button.focus {
     background-color: var(--control-bg-focus);
   }
   button:hover,
-  .button:hover {
+  .button:hover,
+  .button.hover {
     background-color: var(--control-bg-hover);
   }
   button.selected,
@@ -179,11 +189,13 @@
   }
 
   button:focus,
-  .button:focus {
+  .button:focus,
+  .button.focus {
     outline: 3px solid var(--color-accent-alt);
   }
   button:active,
-  .button:active {
+  .button:active,
+  .button.active {
     outline: 2px solid var(--color-accent-alt);
   }
   button.icon,

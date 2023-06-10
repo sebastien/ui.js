@@ -75,7 +75,8 @@ This resets all the HTML tags so that they can be used as a baseline.
   input,
   select,
   textarea,
-  label {
+  label,
+  .reset {
     box-sizing: border-box;
     margin: 0px;
     padding: 0px;
@@ -84,6 +85,10 @@ This resets all the HTML tags so that they can be used as a baseline.
     vertical-align: baseline;
     list-style-type: none;
     text-rendering: optimizeLegibility;
+    background-color: transparent;
+    box-shadow: none;
+    text-shadow: none;
+    color: default;
   }
 
   *[contenteditable] {
