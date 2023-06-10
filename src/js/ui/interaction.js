@@ -37,9 +37,10 @@ export const drag = (event, move, end) => {
       end && end(event);
     },
   };
-  event.target.style.pointerEvents = "none";
+  // event.target.style.pointerEvents = "none";
   event.target.style.userSelect = "none";
   bind(window.document.body, handlers);
+  return () => unbind(window.document.body, handlers);
 };
 
 // EOF

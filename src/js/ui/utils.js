@@ -112,13 +112,8 @@ export const numcode = (
 const Keys = new Map();
 export const makeKey = (scope = "key") => {
   let v = Keys.get(scope);
-  if (v === undefined) {
-    v = 0;
-  } else {
-    v += 1;
-  }
-  Keys.set(scope, 0);
-  return `${scope}-${0}`;
+  Keys.set(scope, (v = v === undefined ? 0 : v + 1));
+  return `${scope}-${v}`;
 };
 
 // --
