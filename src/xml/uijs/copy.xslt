@@ -35,7 +35,7 @@
 					</xsl:attribute>
 					<!-- NOTE: This is where we copy the attributes, most attributes will be filtered
 					out as they/re style attributes. -->
-					<xsl:for-each select="@*[name()!=local-name() or starts-with(name(),'data-') or name() = 'id' or name() = 'ref' or name() = 'value' or name() = 'disabled' or name() = 'title' or name() = 'alt' or name() = 'lang']">
+					<xsl:for-each select="@*[name()!=local-name() or starts-with(name(),'data-') or name() = 'id' or name() = 'ref' or name() = 'when' or name() = 'value' or name() = 'disabled' or name() = 'title' or name() = 'alt' or name() = 'lang']">
 						<xsl:attribute name="{name()}">
 							<xsl:value-of select="."/>
 						</xsl:attribute>
