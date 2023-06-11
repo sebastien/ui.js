@@ -1,6 +1,7 @@
-import { composePaths, parsePath, pathNode } from "./paths.js";
+import { parsePath, pathNode } from "./paths.js";
 import { CurrentValueSelector } from "./selector.js";
 import {
+  Options,
   Empty,
   isAtom,
   isEmpty,
@@ -975,19 +976,20 @@ class TemplateEffect extends Effect {
               !node &&
                 onError("Effector does not have a node", { node, i, effector });
               // DEBUG: This is a good place to see
-              console.group(
-                `[${this.id}] Template.view.${i}: Applying effector ${
-                  Object.getPrototypeOf(effector).constructor.name
-                } on node`,
-                node,
-                {
-                  effector,
-                  root,
-                  refs,
-                }
-              );
+              Options.debug &&
+                console.group(
+                  `[${this.id}] Template.view.${i}: Applying effector ${
+                    Object.getPrototypeOf(effector).constructor.name
+                  } on node`,
+                  node,
+                  {
+                    effector,
+                    root,
+                    refs,
+                  }
+                );
               const res = effector.apply(node, this.scope);
-              console.groupEnd();
+              Options.debug && console.groupEnd();
               return res;
             }),
           };

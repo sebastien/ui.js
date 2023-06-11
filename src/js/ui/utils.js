@@ -1,6 +1,10 @@
 // --
 //  # Utilities
 
+export const Options = {
+  debug: false,
+};
+
 export const Empty = Symbol("Empty");
 export const RawObjectPrototype = Object.getPrototypeOf({});
 // FIXME: Should be isNothing
