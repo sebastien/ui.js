@@ -125,7 +125,6 @@
 		<script><![CDATA[
 						const renderCount = (value,parent) => 	{
 							const items = Object.entries(value);
-							console.log({value,items})
 							return `${items.sort().map(([k,v]) => `<li><code>${k} ${v}</code></li>`).join("")}`; 
 						}
 						]]></script>
@@ -170,12 +169,17 @@
 					</article>
 				</xsl:if>
 			</div>
-			<xsl:if test="//s:*">
+			<xsl:if test="//s:*|//ui:Style">
 				<article>
 					<h4>CSS</h4>
 					<pre>
+						<xsl:apply-templates select="//ui:Style/*" mode="css"/>
 						<xsl:apply-templates select="//s:*" mode="css"/>
 					</pre>
+					<style>
+						<xsl:apply-templates select="//ui:Style/*" mode="css"/>
+						<xsl:apply-templates select="//s:*" mode="css"/>
+					</style>
 				</article>
 			</xsl:if>
 		</section>

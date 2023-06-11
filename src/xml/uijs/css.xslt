@@ -26,6 +26,9 @@
 		<xsl:value-of select="@select"/>
 		<xsl:call-template name="css-properties"/>
 	</xsl:template>
+	<xsl:template match="css" mode="css">
+		<xsl:value-of select="." />
+	</xsl:template>
 	<!--
 		Outputs the CSS selector for the current node, by looking at its' ancestor
   	`s:` nodes.
