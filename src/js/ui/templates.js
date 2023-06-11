@@ -257,6 +257,16 @@ const contentAsFragment = (node) => {
   return fragment;
 };
 
+const createAnchor = (node, name) => {
+  const anchor = document.createComment(name);
+  if (node.nodeName === "slot" || node.nodeName === "SLOT") {
+    node.parentElement.replaceChild(anchor, node);
+  } else {
+    node.appendChild(anchor);
+  }
+  return anchor;
+};
+
 const replaceNodeWithPlaceholder = (node, placeholder) => {
   const anchor = document.createComment(placeholder);
   node.parentElement && node.parentElement.replaceChild(anchor, node);
@@ -267,6 +277,7 @@ const replaceNodeWithPlaceholder = (node, placeholder) => {
 // template can be referenced by name (`data-ui`), or through the
 // directive, or through the contents (FIXME).
 const getNodeTemplate = (node, template) =>
+  // FIXME: When the node is a slot, this will populate the slot itself
   node.dataset.ui
     ? node.dataset.ui
     : template
@@ -380,9 +391,13 @@ const onOutAttribute = (attr, root, name) => {
     const template = getNodeTemplate(node, directive.template);
     const handlers = getNodeEventHandlers(node);
     const key = makeKey(node.dataset.id || directive.template);
+    const anchor =
+      node.nodeName.toLowerCase() !== "slot"
+        ? createAnchor(node, `out:content=${text}`)
+        : node;
     return template
       ? new SlotEffector(
-          nodePath(node, root),
+          nodePath(anchor, root),
           directive.selector,
           template,
           handlers,
@@ -432,15 +447,10 @@ const onDoAttribute = (attr, root, templateName) => {
             asFragment(n),
             // FIXME: I'm not sure why we're making a key here, we should probably
             // use the name of the parent template
-
             makeKey(templateName ? `${templateName}:case=${t}` : `case=${t}`),
             false // No need to clone there
           );
-          replaceNodeWithPlaceholder(
-            n,
-            `#${i}|MatchEffector|${template.name}|${attr.value}`
-          );
-
+          replaceNodeWithPlaceholder(n, template.name);
           r.push({
             template,
             value,
@@ -455,13 +465,15 @@ const onDoAttribute = (attr, root, templateName) => {
           { node: attr.ownerElement, branches }
         );
       } else {
-        const anchor = replaceNodeWithPlaceholder(
-          node,
-          `|MatchEffector||${selector.toString()}`
-        );
+        // If the node is a slot, we replace it with the anchor, otherwise
+        // we add the anchor at the end.
         // TODO: If it's a slot, we should replace the slot with a placeholder,
         // otherwise we should append the anchor
-        return new MatchEffector(nodePath(anchor, root), selector, branches);
+        return new MatchEffector(
+          nodePath(createAnchor(node, `do:match=${attr.value}`), root),
+          selector,
+          branches
+        );
       }
     }
   } else if (attr.localName === "case" || attr.name === "do:case") {

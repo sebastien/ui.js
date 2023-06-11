@@ -47,8 +47,7 @@ export const pathData = (path, data, offset = 0, origin) => {
           ? origin
             ? origin.at(-1)
             : undefined
-          : dataPath[offset - 1];
-        break;
+          : path[offset - 1];
       case "":
         break;
       default:
@@ -80,7 +79,7 @@ export const parsePath = (path) => {
     return path;
   } else {
     const p = path ? (path.trim() === "." ? [] : path.split(".")) : [];
-    for (let i in p) {
+    for (const i in p) {
       const k = p[i];
       if (k.match(/^\d+$/)) {
         p[i] = parseInt(k);

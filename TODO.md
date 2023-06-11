@@ -6,6 +6,9 @@
 
 ## Fixes
 
+- `[ ]` Reduce the dependency on comments, or at least reduce the
+  comment size, as it will add size to the HTML.
+
 - `[ ]` Remove the evenBus and make it part of the main pubsub bus.
   Events should just be values.
 

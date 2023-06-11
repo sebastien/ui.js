@@ -710,7 +710,7 @@ class MappingSlotEffect extends SlotEffect {
   createItem(node, scope, isEmpty = false, key = undefined) {
     // TODO: Should have a better comment
     const root = document.createComment(
-      key === undefined ? "item" : `item-${key}`
+      `out:content=${this.effector.selector.toString()}#${key || 0}`
     );
     // We need to insert the node before as the template needs a parent
     if (!node.parentNode) {
@@ -822,8 +822,6 @@ export class MatchEffector extends Effector {
 class MatchEffect extends Effect {
   constructor(effector, node, scope) {
     super(effector, node, scope);
-    console.log("MATCH EFFECTOR", node);
-    debugger;
     this.states = new Array(this.effector.length);
     this.currentBranchIndex = undefined;
   }
@@ -833,13 +831,15 @@ class MatchEffect extends Effect {
     const branches = this.effector.branches;
     let index = undefined;
     let branch = undefined;
-    for (let i in branches) {
+    for (let i = 0; i < branches.length; i++) {
       branch = branches[i];
       if (value === branch.value) {
         index = i;
         break;
       }
     }
+    // FIXME: We should check that this works both for regular nodes
+    // and slots as well.
     if (this.states[index] === undefined) {
       // We apply the template effector at the match effect node, which
       // should be a comment node.
