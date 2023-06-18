@@ -1,5 +1,5 @@
 import { parsePath, pathNode } from "./paths.js";
-import { CurrentValueSelector } from "./selector.js";
+import { Selector, CurrentValueSelector } from "./selector.js";
 import {
   Options,
   Empty,
@@ -138,6 +138,7 @@ class Effect {
   }
 
   apply() {
+    // TODO: That's actually an apply()
     const value = this.effector.selector.extract(
       this.scope.value,
       this.scope.key
@@ -198,7 +199,7 @@ export class Effector {
 // Content effectors replace the content of a given node.
 
 export class ContentEffector extends Effector {
-  constructor(nodePath, selector, placeholder) {
+  constructor(nodePath, selector, placeholder = undefined) {
     super(nodePath, selector);
     this.placeholder = placeholder;
   }
@@ -216,7 +217,7 @@ class ContentEffect extends Effect {
   }
 
   // --
-  // Lazily clones the palceholder, if it is defined.
+  // Lazily clones the placeholder, if it is defined.
   get placeholder() {
     const fragment = this.effector.placeholder;
     if (fragment && !this._placeholder) {
@@ -470,30 +471,52 @@ export class SlotEffector extends Effector {
     // The handlers map event names to the path at which the incoming
     // events should be stored/relayed.
     this.handlers = handlers;
+    // Note that template name can also be a selector here.
     this.templateName = templateName;
     if (!templateName) {
       onError(
         `SlotEffector: template is not specified, use ContentEffector instead`,
         { nodePath, selector }
       );
+    } else if (typeof templateName === "string") {
+      this.templateType = "str";
+      this._template = undefined;
+    } else if (templateName instanceof Selector) {
+      this.templateType = "sel";
+      this._template = undefined;
+    } else if (templateName instanceof Effector) {
+      this.templateType = "eff";
+      this._template = templateName;
+    } else {
+      onError("SlotEffector: template should be string, selector or effector", {
+        template: templateName,
+      });
     }
-    this._template =
-      typeof templateName === "string" ? undefined : templateName;
   }
 
   // -- doc
   // The effector `template` is lazily resolved, as it may not have been
   // defined at time of declaration.
   get template() {
-    const res = this._template
-      ? this._template
-      : (this._template = Templates.get(this.templateName));
-    if (!res) {
-      onError(`SlotEffector: Could not find template '${this.templateName}'`, [
-        ...Templates.keys(),
-      ]);
+    if (this._template) {
+      return this._template;
+    } else {
+      switch (this.templateType) {
+        case "str":
+          this._template =
+            Templates.get(this.templateName) ||
+            onError(
+              `SlotEffector: Could not find template '${this.templateName}'`,
+              [...Templates.keys()]
+            );
+          break;
+        case "eff":
+          this._template = this.templateName;
+          break;
+        default:
+      }
+      return this._template;
     }
-    return res;
   }
 
   apply(node, scope) {
@@ -509,20 +532,74 @@ export class SlotEffector extends Effector {
     //   scope = scope.copy();
     //   scope.localPath = composePaths(scope.localPath, this.localPath);
     // }
-    return new (this.selector.isMany ? MappingSlotEffect : SingleSlotEffect)(
-      this,
-      node,
-      scope
-    ).init();
+    const effect = new (this.selector.isMany
+      ? MappingSlotEffect
+      : SingleSlotEffect)(this, node, scope, this.template).init();
+    return this.templateType === "sel"
+      ? new DynamicTemplateEffect(
+          this,
+          node,
+          scope,
+          this.templateName,
+          effect
+        ).init()
+      : effect;
+  }
+}
+
+// --
+// This wraps another effect and changes the template.
+class DynamicTemplateEffect extends Effect {
+  constructor(effector, node, scope, templateSelector, effect) {
+    super(effector, node, scope);
+    templateSelector instanceof Selector ||
+      onError(
+        "DynamicTemplateEffect: template selector is not a Selector instance",
+        { templateSelector, effector, node, scope }
+      );
+    this.templateSelector = templateSelector;
+    this.effect = effect;
+  }
+
+  resolveTemplate(template) {
+    const res =
+      typeof template === "string"
+        ? Templates.get(template)
+        : template instanceof Effector
+        ? template
+        : null;
+    res ||
+      onError(
+        `DynamicTemplateEffect: unable to resolve template '${template}'`,
+        { template }
+      );
+    return res;
+  }
+
+  apply() {
+    return this.unify(
+      this.resolveTemplate(this.templateSelector.apply(this.scope))
+    );
+  }
+
+  unify(current, previous = this.value) {
+    if (current !== previous) {
+      this.value = current;
+      // The template has changed
+      this.effect.dispose();
+      this.effect.template = current;
+      this.effect.apply();
+    }
   }
 }
 
 // This is the generic, abstract version of a slot effect. This is
 // specialized by `SingleSlotEffect` and `MultipleSlotEffect`.
 class SlotEffect extends Effect {
-  constructor(effector, node, scope) {
+  constructor(effector, node, scope, template) {
     super(effector, node, scope);
     this.handlers = {};
+    this.template = template;
   }
   bind() {
     super.bind();
@@ -553,9 +630,10 @@ class SlotEffect extends Effect {
     return res;
   }
 }
+
 class SingleSlotEffect extends SlotEffect {
-  constructor(effector, node, scope) {
-    super(effector, node, scope);
+  constructor(effector, node, scope, template) {
+    super(effector, node, scope, template);
     this.view = undefined;
   }
 
@@ -567,7 +645,7 @@ class SingleSlotEffect extends SlotEffect {
         `_|SingleSlotEffect`
       );
       DOM.after(this.node, node);
-      this.view = this.effector.template
+      this.view = this.template
         ?.apply(
           node, // node
           scope
@@ -583,8 +661,8 @@ class SingleSlotEffect extends SlotEffect {
 // --
 // Implements the mapping of a slot for each item of a collection.
 class MappingSlotEffect extends SlotEffect {
-  constructor(effector, node, scope) {
-    super(effector, node, scope);
+  constructor(effector, node, scope, template) {
+    super(effector, node, scope, template);
     // FIXME: This may not be necessary anymore
     // We always go through a change
     // this.selected.alwaysChange = true;
@@ -629,6 +707,7 @@ class MappingSlotEffect extends SlotEffect {
           items.set(
             null,
             this.createItem(
+              this.template,
               node, // node
               scope.derive(path), // scope
               true // isEmpty
@@ -645,6 +724,7 @@ class MappingSlotEffect extends SlotEffect {
           items.set(
             i,
             this.createItem(
+              this.template,
               node, // node
               // FIXME: We probably want to change the local path
               scope.derive([...path, i], scope.localPath, scope.slots, i),
@@ -678,6 +758,7 @@ class MappingSlotEffect extends SlotEffect {
           items.set(
             k,
             this.createItem(
+              this.template,
               node, // node
               // FIXME: We probably want to change the local path
               scope.derive([...path, k], scope.localPath, scope.slots, k),
@@ -708,7 +789,7 @@ class MappingSlotEffect extends SlotEffect {
 
   // -- doc
   // Creates a new item node in which the template can be rendered.
-  createItem(node, scope, isEmpty = false, key = undefined) {
+  createItem(template, node, scope, isEmpty = false, key = undefined) {
     // TODO: Should have a better comment
     const root = document.createComment(
       `out:content=${this.effector.selector.toString()}#${key || 0}`
@@ -724,7 +805,7 @@ class MappingSlotEffect extends SlotEffect {
       // TODO: Should use DOM.after
       node.parentNode.insertBefore(root, node);
     }
-    return this.effector.template.apply(
+    return template.apply(
       root, // node
       scope
     );

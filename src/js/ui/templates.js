@@ -276,9 +276,9 @@ const replaceNodeWithPlaceholder = (node, placeholder) => {
 // Creates the HTML template that is used to render the contents. This
 // template can be referenced by name (`data-ui`), or through the
 // directive, or through the contents (FIXME).
-const getNodeTemplate = (node, template) =>
+const getNodeTemplate = (node, template) => {
   // FIXME: When the node is a slot, this will populate the slot itself
-  node.dataset.ui
+  return node?.dataset?.ui
     ? node.dataset.ui
     : template
     ? template
@@ -290,6 +290,7 @@ const getNodeTemplate = (node, template) =>
         makeKey("template"),
         false // No need to clone there
       ).name;
+};
 
 // We use the attribute nodes directly, as there is an asymetry in
 // HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
@@ -318,6 +319,11 @@ const getNodeEventHandlers = (node) =>
     return r;
   }, null);
 
+const parseTemplate = (template) => {
+  const match = template ? template.match(/^\{(?<selector>.+)\}$/) : null;
+  return match ? parseSelector(match.groups.selector) : template;
+};
+
 // --
 // Processes a `<slot template=... select=.... >` node. The `select` attribute
 // defines the data path for which the slot will be applied, if it is suffixed
@@ -329,12 +335,13 @@ const onSlotNode = (node, root, templateName) => {
     const content = contentAsFragment(node);
     // TODO: Content should be used as placeholder
     const template =
-      node.getAttribute("template") ||
+      parseTemplate(node.getAttribute("template")) ||
       createTemplate(
         content,
         makeKey(templateName ? `${templateName}_fragment` : "fragment"),
         false /*no cloning needed*/
       );
+
     const key = makeKey(
       node.dataset.id || node.getAttribute("name") || template
     );
@@ -387,24 +394,25 @@ const onOutAttribute = (attr, root, name) => {
     // Now, if we have an `out:content=XXXX`, then it means we're replacing
     // the content with the value or a template applied with the value.
     // We extract the fragment, handlers, and content template
-    const fragment = contentAsFragment(node);
     const template = getNodeTemplate(node, directive.template);
     const handlers = getNodeEventHandlers(node);
-    const key = makeKey(node.dataset.id || directive.template);
+    // TODO: Should probably pass the key to the effector
+    // const key = makeKey(node.dataset.id || directive.template);
     const anchor =
       node.nodeName.toLowerCase() !== "slot"
         ? createAnchor(node, `out:content=${text}`)
         : node;
+    // The rules should be a little bit more refined:
+    // - If there is a template, then the content could be the placholder
+    // - If the node name is slot, then it is for sure a slot effector
     return template
       ? new SlotEffector(
           nodePath(anchor, root),
           directive.selector,
           template,
-          handlers,
-          key,
-          fragment
+          handlers
         )
-      : new ContentEffector(nodePath(node, root), directive.selector, fragment);
+      : new ContentEffector(nodePath(node, root), directive.selector);
   } else {
     // It's not an `out:content` attribute, then it's either a style, value
     // or attribute effector.

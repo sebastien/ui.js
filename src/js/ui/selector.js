@@ -27,7 +27,7 @@ export const KEY = "([a-zA-Z]+=)?";
 //
 // FIXME: We can't have both local and relative
 export const PATH =
-  "(#|([@./]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
+  "(#|(([@/]?.*)(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
 export const FORMAT = "(\\|[A-Za-z-]+)*";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
 export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
@@ -63,26 +63,17 @@ export const commonPath = (paths) => {
 // which is a collection of inputs. Selector inputs can select from
 // the local state (`@` prefixed, like `@status`), or from the global state
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
+const RE_PATH = /^(?<type>[#@/]?)(?<prefix>\.*)(?<rest>.*)/;
 export class SelectorInput {
   static LOCAL = "@";
   static RELATIVE = "";
   static ABSOLUTE = "/";
   static KEY = "#";
   constructor(path, format, key) {
-    const c = path.at(0);
-    this.type =
-      c === "@"
-        ? SelectorInput.LOCAL
-        : c === "/"
-        ? SelectorInput.ABSOLUTE
-        : c === "#"
-        ? SelectorInput.KEY
-        : SelectorInput.RELATIVE;
-    this.path = (
-      this.type !== SelectorInput.RELATIVE ? path.substring(1) : path
-    )
-      .split(".")
-      .filter((_) => _.length);
+    const { type, prefix, rest } = path.match(RE_PATH).groups;
+    this.type = type;
+    this.unwind = prefix ? Math.max(0, prefix.length - 1) : 0;
+    this.path = rest.split(".");
     this.isMany = this.path.at(-1) === "*";
     if (this.isMany) {
       this.path.pop();
@@ -270,6 +261,10 @@ export class Selector {
     );
   }
 
+  apply(scope) {
+    return this.extract(scope.value, scope.key);
+  }
+
   // FIXME
   // // -- doc
   // // Applies the selector at the given value and location. This returns
@@ -396,6 +391,5 @@ export const parseSelector = (text) => {
   return new Selector(inputs, event, stops);
 };
 
-window.parseSelector = parseSelector;
 export const CurrentValueSelector = parseSelector(".");
 // EOF
