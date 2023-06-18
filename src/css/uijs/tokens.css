@@ -45,6 +45,7 @@ variations).
   /*
    * ## Padding 
   */
+  --pad-0: 2px;
   --pad-1: 4px;
   --pad-2: 8px;
   --pad-3: 12px;
@@ -55,6 +56,11 @@ variations).
   --gap-3: var(--pad-2);
   --gap-4: var(--pad-3);
   --gap-5: var(--pad-4);
+
+
+  --rounded-1: 2px;
+  --rounded-2: 4px;
+  --rounded: var(--rounded-1);
 
   /*
    * ## Overlay
