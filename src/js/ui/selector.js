@@ -27,10 +27,9 @@ export const KEY = "([a-zA-Z]+=)?";
 //
 // FIXME: We can't have both local and relative
 export const PATH =
-  "(#|(([@/]?.*)(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
+  "(#|(([@/]?\\.*)(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
 export const FORMAT = "(\\|[A-Za-z-]+)*";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
-export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
 export const INPUTS = `${INPUT}(,${INPUT})*`;
 
 // const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
@@ -73,7 +72,7 @@ export class SelectorInput {
     const { type, prefix, rest } = path.match(RE_PATH).groups;
     this.type = type;
     this.unwind = prefix ? Math.max(0, prefix.length - 1) : 0;
-    this.path = rest.split(".");
+    this.path = rest.length ? rest.split(".") : [];
     this.isMany = this.path.at(-1) === "*";
     if (this.isMany) {
       this.path.pop();
@@ -96,22 +95,28 @@ export class SelectorInput {
   // -- doc
   // Extracts the value for this input based on the given scope. This
   // applies formatting.
-  extract(value, key) {
-    if (this.type === SelectorInput.KEY) {
-      return this.apply(undefined, key);
-    } else {
-      return this.apply(value, key);
-    }
-  }
+  // extract(value, key) {
+  //   if (this.type === SelectorInput.KEY) {
+  //     return this.apply(undefined, key);
+  //   } else {
+  //     return this.apply(value, key);
+  //   }
+  // }
 
   // --
   // Applies the selector input to a value (not a scope).
-  apply(value, key = undefined) {
+
+  // FIXME: Applies should take scope, extract should take a value. Ultimately
+  // as path needs backtracking we need a scope.
+  apply(scope) {
     let res = undefined;
     if (this.type === SelectorInput.KEY) {
-      res = key;
+      res = scope.path.at(-1);
     } else {
-      res = access(value, this.path);
+      res = scope.state.get([
+        ...(this.unwind ? scope.path.slice(0, 0 - this.unwind) : scope.path),
+        ...this.path,
+      ]);
     }
     // NOTE: There use to be a scope passed
     return this.format ? this.format(res) : res;
@@ -261,10 +266,6 @@ export class Selector {
     );
   }
 
-  apply(scope) {
-    return this.extract(scope.value, scope.key);
-  }
-
   // FIXME
   // // -- doc
   // // Applies the selector at the given value and location. This returns
@@ -277,15 +278,15 @@ export class Selector {
   // -- doc
   // Extracts the data selected by this selector available at the given `scope`.
   // Note that the returned value has formatting already applied.
-  extract(value, key) {
+  apply(scope) {
     switch (this.type) {
       case Selector.SINGLE:
-        return this.inputs[0].extract(value, key);
+        return this.inputs[0].apply(scope);
       case Selector.LIST: {
         const n = this.inputs.length;
         const res = new Array(n);
         for (let i = 0; i < n; i++) {
-          res[i] = this.inputs[i].extract(value, key);
+          res[i] = this.inputs[i].apply(scope);
         }
         return res;
       }
@@ -294,13 +295,13 @@ export class Selector {
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];
-          res[input.key ? input.key : i] = input.extract(value, key);
+          res[input.key ? input.key : i] = input.apply(scope);
         }
         return res;
       }
       default:
         // ERROR
-        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+        onError(`Selector.apply: Unsupported selector type: ${this.type}`, {
           type: this.type,
         });
         break;
@@ -316,7 +317,7 @@ export class Selector {
         return commonPath(this.inputs.map((_) => _.path));
       default:
         // ERROR
-        onError(`Selector.extract: Unknown selector type: ${this.type}`, {
+        onError(`Selector.path: Unknown selector type: ${this.type}`, {
           type: this.type,
         });
     }
@@ -334,8 +335,11 @@ export class Selector {
 
 // --
 // Parse the given input, returning a `SelectorInput` structure.
+export const RE_INPUT = new RegExp(
+  `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`
+);
 export const parseInput = (text) => {
-  const match = text.match(INPUT_FIELDS);
+  const match = text.match(RE_INPUT);
   if (!match) {
     return null;
   }

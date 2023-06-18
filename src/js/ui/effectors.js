@@ -139,10 +139,7 @@ class Effect {
 
   apply() {
     // TODO: That's actually an apply()
-    const value = this.effector.selector.extract(
-      this.scope.value,
-      this.scope.key
-    );
+    const value = this.effector.selector.apply(this.scope);
     return this.unify(value, this.value);
   }
 
