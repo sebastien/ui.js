@@ -16,7 +16,9 @@
 	<xsl:template match="/">
 		<html xmlns="http://www.w3.org/1999/xhtml">
 			<head>
-				<title><xsl:value-of select="//ui:Component/@name"/></title>
+				<title>
+					<xsl:value-of select="//ui:Component/@name"/>
+				</title>
 				<meta charset="utf-8"/>
 				<meta name="viewport" content="width=device-width, initial-scale=1"/>
 				<xsl:choose>
@@ -53,7 +55,34 @@
 				</style>
 			</head>
 			<body>
+				<xsl:if test="//ui:Component">
+					<script><![CDATA[
+						const renderCount = (value,parent) => 	{
+							const items = Object.entries(value);
+							return `${items.sort().map(([k,v]) => `<li><code>${k} ${v}</code></li>`).join("")}`; 
+						}
+						]]></script>
+				</xsl:if>
 				<xsl:apply-templates mode="component"/>
+				<!--
+		We load implicitly referenced components and instanciante
+		the component, using the data sample defined in the document.
+		-->
+				<xsl:call-template name="uijs-script"/>
+				<!--
+		Formats the JavaScript code examples to be nicer.
+		-->
+				<xsl:if test="//ui:Component">
+					<script type="module" data-skip="true">
+			import jsBeautify from 'https://esm.run/js-beautify';
+			for (let node of document.querySelectorAll("code[data-language]")){
+				const raw=node.innerText;
+				const fmt=jsBeautify(raw);
+				const res = hljs.highlight(node.dataset.language, fmt);
+				node.innerHTML = res.value;
+			}
+		</script>
+				</xsl:if>
 			</body>
 		</html>
 	</xsl:template>
@@ -71,10 +100,14 @@
 				<xsl:apply-templates select="*|text()" mode="copy"/>
 			</xsl:for-each>
 		</template>
-		<xsl:call-template name="uijs-script"/>
 	</xsl:template>
+	<!--
+	## UI Component
+	-->
 	<xsl:template match="ui:Component" mode="component">
-		<h2><xsl:value-of select="./@name"/></h2>
+		<h2>
+			<xsl:value-of select="./@name"/>
+		</h2>
 		<xsl:if test="//*[starts-with(name(),'x:')]">
 			<section>
 			Uses
@@ -122,12 +155,6 @@
 				</pre>
 			</section>
 		</xsl:if>
-		<script><![CDATA[
-						const renderCount = (value,parent) => 	{
-							const items = Object.entries(value);
-							return `${items.sort().map(([k,v]) => `<li><code>${k} ${v}</code></li>`).join("")}`; 
-						}
-						]]></script>
 		<section>
 			<h3>View</h3>
 			<div class="Columns">
@@ -142,11 +169,13 @@
 						<h4>CSS Classes</h4>
 						<ul id="selectors"/>
 						<script>
+						{
 						const classNames="<xsl:for-each select="./ui:View//@class"><xsl:value-of select="."/>|</xsl:for-each>";
 						<![CDATA[
 						const classes=classNames.replaceAll(" ","|").split("|").reduce((r,v)=>(v.trim().length && (r[v]=(r[v]||0)+1),r), {});
 						document.getElementById("selectors").innerHTML = renderCount(classes);
 						]]>
+						}
 					</script>
 					</article>
 				</xsl:if>
@@ -209,24 +238,10 @@
 				</xsl:for-each>
 			</div>
 		</div>
-		<!--
-		We load implicitly referenced components and instanciante
-		the component, using the data sample defined in the document.
-		-->
-		<xsl:call-template name="uijs-script"/>
-		<!--
-		Formats the JavaScript code examples to be nicer.
-		-->
-		<script type="module" data-skip="true">
-			import jsBeautify from 'https://esm.run/js-beautify';
-			for (let node of document.querySelectorAll("code[data-language]")){
-				const raw=node.innerText;
-				const fmt=jsBeautify(raw);
-				const res = hljs.highlight(node.dataset.language, fmt);
-				node.innerHTML = res.value;
-			}
-		</script>
 	</xsl:template>
+	<!--
+	## UI.js Script
+	-->
 	<xsl:template name="uijs-script">
 		<xsl:for-each select="//ui:Script">
 			<script type="module" data-skip="true">
