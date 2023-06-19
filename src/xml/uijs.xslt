@@ -47,7 +47,8 @@
 					</xsl:for-each>
 					"@codemirror/": "https://deno.land/x/codemirror_esm@v6.0.1/esm/",
 					"@ui.js": "/lib/js/ui.js",
-					"@ui/": "/lib/js/ui/"
+					"@ui/": "/lib/js/ui/",
+					"@components/": "/lib/js/components/"
 					}}
 				</script>
 				<style data-template="true">
@@ -105,6 +106,9 @@
 	## UI Component
 	-->
 	<xsl:template match="ui:Component" mode="component">
+		<xsl:if test="@controller">
+			<script type="module">import <xsl:value-of select="@name" /> from "<xsl:value-of select="@controller"/>";</script>
+		</xsl:if>
 		<h2>
 			<xsl:value-of select="./@name"/>
 		</h2>

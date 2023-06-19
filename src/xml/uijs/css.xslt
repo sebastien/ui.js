@@ -17,9 +17,10 @@
 	</xsl:template>
 	<!--
 		`s:_` nodes are anonymous nodes, meaning that they override the current
-	  style node with specific cases.
+		style node with specific cases, typically using the `select` attribute,
+		like `<s:_ select=":hover" … />`.
 	-->
-	<xsl:template match="*[name() = 's:_']" mode="css">
+	<xsl:template match="s:_" mode="css">
 		<xsl:for-each select="ancestor::s:*[1]">
 			<xsl:call-template name="css-selector"/>
 		</xsl:for-each>
