@@ -100,13 +100,15 @@ const isBoundaryNode = (node) => {
       case "slot":
         return true;
     }
+    // NOTE: New syntax added to the templates should be registered here,
+    // so that we identify boundary nodes.
     // x:case="..." nodes are also boundaries
     if (node.hasAttribute("do:case")) {
       return true;
     }
     // When effectors are also boundary nodes, so we stop at any
     // of their children.
-    if (node.parentElement && node.parentElement.hasAttribute("when")) {
+    else if (node.parentElement && node.parentElement.hasAttribute("when")) {
       return true;
     }
   } else {
@@ -190,6 +192,7 @@ const iterNodes = function* (node, ...names) {
       }
     }
   }
+  // FIXME: Why is this commented out?
   // while (node) {
   //   const name = node.nodeName;
   //   console.log("NODE", { node, name });
@@ -582,37 +585,35 @@ const parseWhenDirective = (text) => {
 };
 
 const onWhenNode = (node, root, templateName) => {
-  const boundary = getBoundaryNode(node);
-  if (boundary === root) {
-    const text = node.getAttribute("when");
-    const when = parseWhenDirective(text);
-    if (!when) {
-      onError(`Could not parse when directive '${text}'`, {
-        node,
-        when: text,
-      });
-    } else {
-      node.removeAttribute("when");
-      const frag = document.createDocumentFragment();
-      while (node.childNodes.length > 0) {
-        frag.appendChild(node.childNodes[0]);
-      }
-      // TODO: If there is no sub-effectors, we should not bother
-      // with a template, it's a waste of resources.
-      const subtemplate = createTemplate(
-        frag,
-        makeKey(templateName ? `${templateName}:when=${text}` : `when=${text}`),
-        false // No need to clone there
-      );
-      return new WhenEffector(
-        nodePath(node, root),
-        when.selector,
-        subtemplate,
-        when.predicate
-      );
+  // NOTE: Before we had a condition for boubdary === root, however I'm
+  // not sure why.
+  const text = node.getAttribute("when");
+  const when = parseWhenDirective(text);
+  if (!when) {
+    onError(`Could not parse when directive '${text}'`, {
+      node,
+      when: text,
+    });
+  } else {
+    node.removeAttribute("when");
+    const frag = document.createDocumentFragment();
+    while (node.childNodes.length > 0) {
+      frag.appendChild(node.childNodes[0]);
     }
+    // TODO: If there is no sub-effectors, we should not bother
+    // with a template, it's a waste of resources.
+    const subtemplate = createTemplate(
+      frag,
+      makeKey(templateName ? `${templateName}:when=${text}` : `when=${text}`),
+      false // No need to clone there
+    );
+    return new WhenEffector(
+      nodePath(node, root),
+      when.selector,
+      subtemplate,
+      when.predicate
+    );
   }
-  return null;
 };
 
 // --

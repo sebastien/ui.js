@@ -27,6 +27,10 @@ export class Topic {
     return n === 0 ? Empty : this.values.at(-1);
   }
 
+  has(name) {
+    return this.get(name, false);
+  }
+
   get(name, create = true) {
     const key = asKey(name);
     return key instanceof Array
@@ -48,6 +52,28 @@ export class Topic {
     return b;
   }
 
+  trigger(data = this.values.at(-1), limit = 1) {
+    // This is the dispatching algorithm, that supports handlers consuming
+    // values.
+    let topic = this;
+    let offset = 0;
+    let count = 0;
+    while (topic && (limit === -1 || offset < limit)) {
+      if (topic.handlers) {
+        for (const handler of topic.handlers) {
+          if (handler(data, topic, offset) === false) {
+            return count++;
+          } else {
+            count++;
+          }
+        }
+      }
+      topic = topic.parent;
+      offset += 1;
+    }
+    return count;
+  }
+
   // TODO: Arguably, it may be easier to always have an  array, and limit it
   // using the capacity.
   pub(data, limit = 1, capacity = undefined) {
@@ -62,24 +88,7 @@ export class Topic {
       this.values.splice(0, this.values.length + 1 - this.capacity);
     }
     this.values.push(data);
-    // This is the dispatching algorithm, that supports handlers consuming
-    // values.
-    let topic = this;
-    let offset = 0;
-    let count = 0;
-    while (topic && (limit === -1 || offset < limit)) {
-      if (topic.handlers) {
-        for (let handler of topic.handlers) {
-          if (handler(data, topic, offset) === false) {
-            return count++;
-          } else {
-            count++;
-          }
-        }
-      }
-      topic = topic.parent;
-      offset += 1;
-    }
+    this.trigger(data, limit);
     return data;
   }
 
@@ -111,6 +120,7 @@ export class Topic {
       return Empty;
     }
   }
+
   flush() {
     const v = this.values;
     this.values = [];
@@ -152,12 +162,13 @@ export class Topic {
         this.handlers.splice(i, 1);
       }
     }
+    // TOOD: If handlers==0, then should probably remove the topic.
     return this;
   }
 
   walk(callback, includeSelf = false) {
     if (includeSelf === false || callback(this) !== false) {
-      for (let v of this.children.values()) {
+      for (const v of this.children.values()) {
         if (v.walk(callback, true) === false) {
           return false;
         }
@@ -175,6 +186,10 @@ export class Topic {
 export class PubSub {
   constructor() {
     this.topics = new Topic();
+  }
+
+  has(topic) {
+    return this.get(topic, false);
   }
 
   get(topic, create = true) {

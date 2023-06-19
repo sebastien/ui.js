@@ -48,13 +48,14 @@ class DOM {
 // -- doc
 
 export class EffectScope {
-  constructor(state, path, localPath, slots, key) {
+  constructor(state, path, localPath, slots, key, parent = null) {
     this.state = state;
     this.path = path;
     this.localPath = localPath;
     this.key = key;
     this.slots = slots;
     this.handlers = new Map();
+    this.parent = parent;
   }
 
   get value() {
@@ -75,7 +76,8 @@ export class EffectScope {
       [...this.path, ...(typeof path === "string" ? path.split(".") : path)],
       localPath,
       slots,
-      key
+      key,
+      this
     );
   }
 
@@ -84,15 +86,21 @@ export class EffectScope {
   get(name) {}
 
   trigger(name, ...args) {
-    const handlers = this.handlers.get(name);
-    handlers &&
-      handlers.forEach((handler) => {
-        try {
-          handler(...args);
-        } catch (exception) {
-          onError(`${name}: Handler failed`, { handler, exception, args });
-        }
-      });
+    let scope = this;
+    while (scope && !scope.handlers.has(name)) {
+      scope = scope.parent;
+    }
+    if (scope) {
+      const handlers = scope.handlers.get(name);
+      handlers &&
+        handlers.forEach((handler) => {
+          try {
+            handler(...args, this, scope);
+          } catch (exception) {
+            onError(`${name}: Handler failed`, { handler, exception, args });
+          }
+        });
+    }
   }
 }
 

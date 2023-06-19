@@ -2,7 +2,7 @@
 //  # Utilities
 
 export const Options = {
-  debug: true,
+  debug: false,
 };
 
 export const Empty = Symbol("Empty");

@@ -1,7 +1,7 @@
 import { parsePath } from "./paths.js";
 import { Templates } from "./templates.js";
 import { EffectScope } from "./effectors.js";
-import { onError, makeKey } from "./utils.js";
+import { access, onError, makeKey } from "./utils.js";
 
 // --
 //
@@ -143,7 +143,26 @@ export class Ref extends StateCell {
   }
 }
 
-export class Slot extends StateCell {}
+export class Slot extends StateCell {
+  // -- doc
+  // When a slot is updated, we need to notify any subscriber of the change.
+  // This is done through the PubSub bus. We iterate through the subscribed
+  // topics, and notify the subscribers if we see a change.
+  updated() {
+    const topic = this.scope.state.bus.has(this.path);
+    const value = this.value;
+    const depth = topic.path.length;
+    topic &&
+      topic.walk((child) => {
+        // If it's an object or a list, we should always trigger an update,
+        // otherwise we compare.
+        const updated = access(value, child.path.slice(depth));
+        console.log("COMPARING", { previous: child.value, updated });
+      });
+
+    return this;
+  }
+}
 
 // FIXME: We may want to specialize based on the type of reducer
 export class Reducer extends Cell {
@@ -282,6 +301,10 @@ class Use {
     return this.cell(new Slot(parsePath(path)));
   }
 
+  input(path, value) {
+    return this.cell(new Slot([...this.scope.path, ...parsePath(path)], value));
+  }
+
   local(path, value) {
     return this.cell(
       new Slot([...this.scope.localPath, ...parsePath(path)], value)
@@ -312,15 +335,17 @@ class Use {
 // ## Controllers
 //
 
-const onHandler = (target, property) => {
-  return (handler) => {
-    if (target.has(property)) {
-      target.get(property).push(handler);
-    } else {
-      target.set(property, [handler]);
-    }
-    return handler;
-  };
+const onGetHandler = (target, property) => {
+  return (handler) => onSetHandler(target, property, handler);
+};
+
+const onSetHandler = (target, property, handler) => {
+  if (target.has(property)) {
+    target.get(property).push(handler);
+  } else {
+    target.set(property, [handler]);
+  }
+  return handler;
 };
 
 export const Controllers = new Map();
@@ -358,7 +383,7 @@ export const createController = (definition, scope) => {
 
   // `on` is a proxy object that will populate the `events` map
   const events = new Map();
-  const on = new Proxy(events, { get: onHandler });
+  const on = new Proxy(events, { get: onGetHandler, set: onSetHandler });
 
   // `use` wraps the cells and scope
   const cells = [];
