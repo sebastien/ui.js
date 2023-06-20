@@ -109,7 +109,7 @@ export class EffectScope {
 //
 // Implements the base class of an effect.
 class Effect {
-  constructor(effector, node, scope) {
+  constructor(effector, node, scope, selector = undefined) {
     this.effector = effector;
     this.node = node;
     this.scope = scope;
@@ -117,25 +117,27 @@ class Effect {
 
     // We perform some checks
     !node && onError("Effect(): effector should have a node", { node });
-    !effector.selector &&
+    !(selector || effector.selector) &&
       onError("Effect(): effector should have a selector", { effector });
 
-    // FIXME: Disabling this as well
-    // this.selected = effector.selector.apply(scope, this.onChange.bind(this));
+    // We apply the selector to the scope and register a selection.
+    // The selection will be updated as the contents changes.
+    this.selection = (selector || effector.selector).apply(
+      scope,
+      this.onChange.bind(this)
+    );
 
     // FIXME: Disabling this one
-    // this.abspath = this.selected.abspath;
+    // this.abspath = this.selection.abspath;
   }
 
   bind() {
-    // FIXME: Disabled
-    // this.selected.bind(this.scope);
+    this.selection.bind(this.scope);
     return this;
   }
 
   unbind() {
-    // FIXME: Disabled
-    // this.selected.unbind(this.scope);
+    this.selection.unbind(this.scope);
     return this;
   }
 
@@ -146,8 +148,8 @@ class Effect {
   }
 
   apply() {
-    // TODO: That's actually an apply()
-    const value = this.effector.selector.apply(this.scope);
+    // We extract the latest value from the selection
+    const value = this.selection.extract();
     return this.unify(value, this.value);
   }
 
@@ -556,13 +558,12 @@ export class SlotEffector extends Effector {
 // This wraps another effect and changes the template.
 class DynamicTemplateEffect extends Effect {
   constructor(effector, node, scope, templateSelector, effect) {
-    super(effector, node, scope);
+    super(effector, node, scope, templateSelector);
     templateSelector instanceof Selector ||
       onError(
         "DynamicTemplateEffect: template selector is not a Selector instance",
         { templateSelector, effector, node, scope }
       );
-    this.templateSelector = templateSelector;
     this.effect = effect;
   }
 
@@ -582,9 +583,7 @@ class DynamicTemplateEffect extends Effect {
   }
 
   apply() {
-    return this.unify(
-      this.resolveTemplate(this.templateSelector.apply(this.scope))
-    );
+    return this.unify(this.resolveTemplate(this.selection.value));
   }
 
   unify(current, previous = this.value) {
@@ -670,7 +669,7 @@ class MappingSlotEffect extends SlotEffect {
     super(effector, node, scope, template);
     // FIXME: This may not be necessary anymore
     // We always go through a change
-    // this.selected.alwaysChange = true;
+    // this.selection.alwaysChange = true;
     this.items = undefined;
   }
 

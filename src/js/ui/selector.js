@@ -93,22 +93,17 @@ export class SelectorInput {
   }
 
   // -- doc
+  // Returns the absolute path of this selector input in the given scope.
+  abspath(scope) {
+    return (
+      this.unwind ? scope.path.slice(0, 0 - this.unwind) : scope.path
+    ).concat(this.path);
+  }
+
+  // -- doc
   // Extracts the value for this input based on the given scope. This
   // applies formatting.
-  // extract(value, key) {
-  //   if (this.type === SelectorInput.KEY) {
-  //     return this.apply(undefined, key);
-  //   } else {
-  //     return this.apply(value, key);
-  //   }
-  // }
-
-  // --
-  // Applies the selector input to a value (not a scope).
-
-  // FIXME: Applies should take scope, extract should take a value. Ultimately
-  // as path needs backtracking we need a scope.
-  apply(scope) {
+  extract(scope) {
     let res = undefined;
     if (this.type === SelectorInput.KEY) {
       res = scope.path.at(-1);
@@ -129,119 +124,126 @@ export class SelectorInput {
   }
 }
 
-// FIXME: Disabled
-// // --
-// // ## Selector State
-// //
-// // Selector states manage a specific application of a `Selector`, which
-// // can be bound to pub/sub bus, and update itself (triggering its `handler`)
-// // when the value change.
-// export class SelectorState {
-//   constructor(selector, scope, handler) {
-//     this.selector = selector;
-//     this.scope = scope;
-//     this.handler = handler;
-//     this.value = undefined;
-//     this.abspath = this.selector.abspath(scope);
-//     this.alwaysChange = false;
-//     // Handlers are registered when an input's monitored path changes
-//     this.handlers = selector.inputs.map(
-//       (_, i) =>
-//         (...args) =>
-//           this.onInputChange(_, i, ...args)
-//     );
-//   }
+// FIXME: This is awefully similar to the controller Reducers, but for now
+// it makes sense to have these separate.
 //
-//   init() {
-//     this.extract();
-//     return this;
-//   }
+// --
+// ## Selection
 //
-//   // -- doc
-//   // Extracts the current value for this selector based on the current
-//   // `value` at `path`, the `global` state and the `local` component state.
-//   extract() {
-//     // TODO: Should we detect changes and store a revision number?
-//     this.value = this.selector.extract(this.scope);
-//     return this.value;
-//   }
-//
-//   // -- doc
-//   // Binds the selector state to the given PubSub bus at the given `path`. The
-//   // selector state will be updated when one its inputs gets an updates.
-//   bind(scope) {
-//     // When we bind a selector state, each input will listen to its specific
-//     // value listened to.
-//     this.handlers.forEach((handler, i) => {
-//       const input = this.selector.inputs[i];
-//       scope.state.bus.sub(input.abspath(scope), handler, false);
-//     });
-//     return this;
-//   }
-//
-//   unbind(scope) {
-//     this.handlers.forEach((handler, i) => {
-//       const input = this.selector.inputs[i];
-//       scope.state.bus.unsub(input.abspath(scope), handler, false);
-//     });
-//     return this;
-//   }
-//
-//   // FIXME: This should capture the global and state scope to work,
-//   // as extractors won't work otherwise.
-//   //
-//   // -- doc
-//   // `onInputChange` is triggered when the value at the path listened to by the input
-//   // has changed. This means that the value in the event is already
-//   onInputChange(input, index, rawValue) {
-//     let hasChanged = this.alwaysChange;
-//     const value = input.format ? input.format(rawValue, this.scope) : rawValue;
-//     switch (this.selector.type) {
-//       case Selector.SINGLE:
-//         if (value !== this.value) {
-//           this.value = value;
-//           hasChanged = true;
-//         }
-//         break;
-//       case Selector.LIST:
-//         {
-//           const i = this.selector.inputs[index];
-//           if (this.value[i] !== value) {
-//             this.value[i] = value;
-//             hasChanged = true;
-//           }
-//         }
-//         break;
-//       case Selector.MAP:
-//         {
-//           const k = this.selector.inputs[index].key;
-//           // FIXME: Difference between SCOPE and VALUE
-//           if (this.value[k] !== value) {
-//             this.value[k] = value;
-//             hasChanged = true;
-//           }
-//         }
-//         break;
-//       default:
-//         onError(
-//           `SelectorState.onInputChange: Unsupported selector type '${this.selector.type}'`,
-//           { selector: this.selector }
-//         );
-//         break;
-//     }
-//     // At the end, we want to notify of a change if any of the input extracted value
-//     // has changed.
-//     if (hasChanged) {
-//       this.handler(this.value);
-//     }
-//   }
-//
-//   dispose() {}
-//
-//   toString() {
-//     return `SelectedPath(${this.abspath}:${this.selector.toString()})`;
-//   }
-// }
+// A selectionmanage a specific application of a `Selector`, which
+// can be bound to pub/sub bus, and update itself (triggering its `handler`)
+// when the value change.
+export class Selection {
+  constructor(selector, scope, handler) {
+    this.selector = selector;
+    this.scope = scope;
+    this.handler = handler;
+    this.value = undefined;
+    this.path = this.selector.abspath(scope);
+    this.alwaysChange = false;
+    // Handlers are registered when an input's monitored path changes
+    this.handlers = selector.inputs.map(
+      (_, i) =>
+        (...args) =>
+          this.onInputChange(_, i, ...args)
+    );
+  }
+
+  init() {
+    this.value = this.extract();
+    return this;
+  }
+
+  // NOTE: This should really be a piull()
+  // -- doc
+  // Extracts the current value for this selector based on the current
+  // `value` at `path`, the `global` state and the `local` component state.
+  extract(scope = this.scope) {
+    // TODO: Should we detect changes and store a revision number?
+    // TODO: Yeah, totally.
+    return this.selector.extract(scope);
+  }
+
+  // -- doc
+  // Binds the selector state to the given PubSub bus at the given `path`. The
+  // selector state will be updated when one its inputs gets an updates.
+  // // FIXME: We should not need the scope
+  bind(scope) {
+    // When we bind a selector state, each input will listen to its specific
+    // value listened to.
+    this.handlers.forEach((handler, i) => {
+      const input = this.selector.inputs[i];
+      scope.state.bus.sub(input.abspath(scope), handler, false);
+    });
+    return this;
+  }
+
+  // // FIXME: We should not need the scope
+  unbind(scope) {
+    this.handlers.forEach((handler, i) => {
+      const input = this.selector.inputs[i];
+      scope.state.bus.unsub(input.abspath(scope), handler, false);
+    });
+    return this;
+  }
+
+  // FIXME: This should capture the global and state scope to work,
+  // as extractors won't work otherwise.
+  //
+  // -- doc
+  // `onInputChange` is triggered when the value at the path listened to by the input
+  // has changed. This means that the value in the event is already
+  onInputChange(input, index, rawValue) {
+    let hasChanged = this.alwaysChange;
+    const value = input.format ? input.format(rawValue, this.scope) : rawValue;
+    switch (this.selector.type) {
+      case Selector.SINGLE:
+        if (value !== this.value) {
+          this.value = value;
+          hasChanged = true;
+        }
+        break;
+      case Selector.LIST:
+        {
+          const i = this.selector.inputs[index];
+          if (this.value[i] !== value) {
+            this.value[i] = value;
+            hasChanged = true;
+          }
+        }
+        break;
+      case Selector.MAP:
+        {
+          const k = this.selector.inputs[index].key;
+          // FIXME: Difference between SCOPE and VALUE
+          if (this.value[k] !== value) {
+            this.value[k] = value;
+            hasChanged = true;
+          }
+        }
+        break;
+      default:
+        onError(
+          `Selection.onInputChange: Unsupported selector type '${this.selector.type}'`,
+          { selector: this.selector }
+        );
+        break;
+    }
+    // At the end, we want to notify of a change if any of the input extracted value
+    // has changed.
+    if (hasChanged) {
+      this.handler(this.value);
+    }
+  }
+
+  dispose() {}
+
+  toString() {
+    return `Selection(path="${this.path.join(
+      "."
+    )}",selector="${this.selector.toString()}")`;
+  }
+}
 // --
 // ## Selector
 //
@@ -266,27 +268,45 @@ export class Selector {
     );
   }
 
-  // FIXME
-  // // -- doc
-  // // Applies the selector at the given value and location. This returns
-  // // a selector state that can subscribe to value, transform them and
-  // // notify of updates.
-  // apply(scope, handler) {
-  //   return new SelectorState(this, scope, handler).init();
-  // }
+  // -- doc
+  // Applies the selector at the given value and location. This returns
+  // a selector state that can subscribe to value, transform them and
+  // notify of updates.
+  apply(scope, handler) {
+    return new Selection(this, scope, handler).init();
+  }
+
+  abspath(scope) {
+    // This returns the common ancestor between all paths
+    const paths = this.inputs.map((_) => _.abspath(scope));
+    const n = paths[0].length;
+    const m = paths.length;
+    let i = 0;
+    while (i < n) {
+      for (let j = 0; j < m; j++) {
+        // If the current path is shorter than the current path, or if
+        // if the current path item differs from the previous path, then we return.
+        if (i >= paths[j].length || (j > 0 && paths[j - 1][i] != paths[j][i])) {
+          return paths[0].slice(0, Math.max(0, i - 1));
+        }
+      }
+      i++;
+    }
+    return paths[0];
+  }
 
   // -- doc
   // Extracts the data selected by this selector available at the given `scope`.
   // Note that the returned value has formatting already applied.
-  apply(scope) {
+  extract(scope) {
     switch (this.type) {
       case Selector.SINGLE:
-        return this.inputs[0].apply(scope);
+        return this.inputs[0].extract(scope);
       case Selector.LIST: {
         const n = this.inputs.length;
         const res = new Array(n);
         for (let i = 0; i < n; i++) {
-          res[i] = this.inputs[i].apply(scope);
+          res[i] = this.inputs[i].extract(scope);
         }
         return res;
       }
@@ -295,7 +315,7 @@ export class Selector {
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];
-          res[input.key ? input.key : i] = input.apply(scope);
+          res[input.key ? input.key : i] = input.extract(scope);
         }
         return res;
       }
