@@ -6,7 +6,7 @@ variations).
 :root {
   --font-text: "Jost", sans-serif;
   --font-text-line-height: 1.45em;
-  --font-text-size: 1rem;
+  --font-text-size: var(--font-size-3);
 
   --font-heading: "Jost", sans-serif;
   --font-heading-line-height: 1.45em;
@@ -19,6 +19,11 @@ variations).
   --font-control: "Jost", sans-serif;
   --font-control-line-height: 1.25em;
   --font-control-size: var(--font-size-2);
+
+
+  --font-input: "Jost", sans-serif;
+  --font-input-line-height: 1.25em;
+  --font-input-size: var(--font-size-3);
 
   /** ### Icons */
   --font-icon: "Material Symbols Outlined", sans-serif;

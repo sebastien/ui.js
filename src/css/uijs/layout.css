@@ -1,70 +1,5 @@
 @layer layout {
   /**
-	* ## Presentation & Formatting 
-	*/
-  /**
-    * `bd` and its `-{t,r,b,l}` variants sets a border on the element.
-	*/
-  .bd {
-    border: 1px solid var(--box-bd);
-  }
-  .bd-t {
-    border-top: 1px solid var(--box-bd);
-  }
-  .bd-b {
-    border-bottom: 1px solid var(--box-bd);
-  }
-  .bd-r {
-    border-right: 1px solid var(--box-bd);
-  }
-  .bd-l {
-    border-left: 1px solid var(--box-bd);
-  }
-
-  .dimmed {
-    opacity: 0.65;
-  }
-
-  .small {
-    font-size: 0.85rem;
-  }
-  /**
-	* ## Content formatting
-	*/
-  .nowrap {
-    white-space: nowrap;
-  }
-  .pad {
-    padding: var(--pad-1);
-  }
-  .pad-1 {
-    padding: var(--pad-1);
-  }
-  .pad-2 {
-    padding: var(--pad-2);
-  }
-  .pad-r {
-    padding-right: var(--pad-1);
-  }
-  .pad-l {
-    padding-left: var(--pad-1);
-  }
-  .pad-t {
-    padding-top: var(--pad-1);
-  }
-  .pad-b {
-    padding-bottom: var(--pad-1);
-  }
-
-  .gap,
-  .gap-1 {
-    gap: var(--gap-1);
-  }
-  .gap-2 {
-    gap: var(--gap-2);
-  }
-
-  /**
    * ## Box Model
 */
   .pos-rel {
@@ -132,6 +67,7 @@
   .row {
     display: flex;
     align-items: center;
+    gap: var(--gap-2);
   }
 
   .row.right {
@@ -152,6 +88,7 @@
   .stack {
     display: flex;
     flex-direction: column;
+    gap: var(--gap-2);
   }
 
   .stack > .grow {
@@ -167,6 +104,69 @@
     display: inline-flex;
     flex-wrap: wrap;
     gap: var(--pad-0);
+  }
+
+  /* NOTE: We leave the padding units after the definition 
+   * of the main layout classes so that we can overridde. 
+*/
+  .nowrap {
+    white-space: nowrap;
+  }
+  .pad {
+    padding: var(--pad-1);
+  }
+  .pad-1 {
+    padding: var(--pad-1);
+  }
+  .pad-2 {
+    padding: var(--pad-2);
+  }
+  .pad-3 {
+    padding: var(--pad-3);
+  }
+  .pad-4 {
+    padding: var(--pad-4);
+  }
+  .pad-5 {
+    padding: var(--pad-5);
+  }
+  .pad-6 {
+    padding: var(--pad-6);
+  }
+  .pad-7 {
+    padding: var(--pad-7);
+  }
+  .pad-r {
+    padding-right: var(--pad-1);
+  }
+  .pad-l {
+    padding-left: var(--pad-1);
+  }
+  .pad-t {
+    padding-top: var(--pad-1);
+  }
+  .pad-b {
+    padding-bottom: var(--pad-1);
+  }
+
+  .gap,
+  .gap-1 {
+    gap: var(--gap-1);
+  }
+  .gap-2 {
+    gap: var(--gap-2);
+  }
+  .gap-3 {
+    gap: var(--gap-3);
+  }
+  .gap-4 {
+    gap: var(--gap-4);
+  }
+  .gap-5 {
+    gap: var(--gap-5);
+  }
+  .gap-6 {
+    gap: var(--gap-6);
   }
 }
 /* EOF */

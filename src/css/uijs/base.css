@@ -35,6 +35,10 @@ This defines base typographic settings.
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "liga";
   }
+  .icon.text {
+    font-size: var(--font-text-size);
+    line-height: var(--font-line-height);
+  }
 
   hr {
     border: 0px solid transparent;

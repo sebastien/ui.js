@@ -4,6 +4,24 @@
     /* We have a more compact line height for labels */
     line-height: 1.15em;
   }
+
+  .item {
+    padding: var(--pad-1) var(--pad-2);
+    display: block;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5em;
+    padding-left: var(--pad-1);
+    padding-right: var(--pad-1);
+    background-color: var(--color-accent-bg-alt);
+  }
+  .pill.error {
+    background-color: var(--color-error-bg-alt);
+  }
+
   .menu,
   menu {
     display: block;
@@ -83,16 +101,16 @@
   .input,
   .button,
   .textarea {
-    display: "inline-flex";
+    display: inline-flex;
     line-height: var(--control-line-height);
     border: 1px solid var(--control-bd);
     background: var(--control-bg);
     color: var(--control-txt);
-    font-family: var(--font-control);
-    font-size: var(--font-control-size);
-    line-height: var(--font-control-line-height);
-    width: "min-content";
-    padding: var(--pad-1) var(--pad-2);
+    font-family: var(--font-input);
+    font-size: var(--font-input-size);
+    line-height: var(--font-input-line-height);
+    width: min-content;
+    padding: var(--pad-2);
 	border-radius: 4px;
     gap: var(--gap-1);
   }
@@ -116,6 +134,7 @@
   .input.hover,
   .textarea.hover,
   {
+  outline:0px solid transparent;
   }
   input:focus,
   textarea:focus,
@@ -130,6 +149,7 @@
   .input.active,
   .textarea.active {
   }
+  outline:0px solid transparent;
   }
 
   input.transparent[type="text"],
@@ -162,8 +182,16 @@
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
+	gap: var(--gap-2);
     transition-property: background-color, border-color, color;
     transition-duration: 0.15s;
+    outline: 0px solid transparent;
+  }
+
+  button .icon,
+  .button .icon {
+	  line-height: var(--font-control-line-height);
+	  font-size: var(--font-control-size);
   }
   button.default,
   .button.default {
@@ -192,12 +220,12 @@
   button:focus,
   .button:focus,
   .button.focus {
-    outline: 3px solid var(--color-accent-alt);
+    outline: 0px solid var(--color-accent-alt);
   }
   button:active,
   .button:active,
   .button.active {
-    outline: 2px solid var(--color-accent-alt);
+    outline: 0px solid var(--color-accent-alt);
   }
   button.icon,
   .button.icon {
@@ -245,7 +273,6 @@
   }
   button.label:focus,
   .button.label:focus {
-    text-decoration: underline dotted;
   }
   button.label:active,
   .button.label:active {
@@ -293,15 +320,4 @@
     border: 0px solid transparent;
   }
 
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 0.5em;
-    padding-left: 1ch;
-    padding-right: 1ch;
-    background-color: var(--color-accent-bg-alt);
-  }
-  .pill.error {
-    background-color: var(--color-error-bg-alt);
-  }
 }
