@@ -22,6 +22,10 @@ export class Topic {
         : [];
   }
 
+  get qualname() {
+    return this.path.join(".");
+  }
+
   get value() {
     const n = this.values.length;
     return n === 0 ? Empty : this.values.at(-1);
@@ -97,6 +101,7 @@ export class Topic {
     // console.log(`Topic.del at '${this.path.join(".")}'`);
     let topic = this;
     let offset = 0;
+    // FIXME: This looks like a trigger()
     while (topic && (limit === -1 || offset < limit)) {
       if (topic.handlers) {
         for (let handler of topic.handlers) {
@@ -107,6 +112,7 @@ export class Topic {
       topic = topic.parent;
       offset += 1;
     }
+    // TODO: We should probably remove the current value
     this.parent.children.delete(this.name, this);
     this.parent = null;
     return this;
@@ -138,6 +144,7 @@ export class Topic {
       this.handlers = [];
     }
     this.handlers.push(handler);
+    // TODO: This may be like a trigger
     // If the current value is not empty, and the handler requests with last n
     if (this.value !== Empty && withLast !== 0) {
       if (this.capacity === 1) {

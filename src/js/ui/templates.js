@@ -276,25 +276,6 @@ const replaceNodeWithPlaceholder = (node, placeholder) => {
   return anchor;
 };
 
-// Creates the HTML template that is used to render the contents. This
-// template can be referenced by name (`data-ui`), or through the
-// directive, or through the contents (FIXME).
-const getNodeTemplate = (node, template) => {
-  // FIXME: When the node is a slot, this will populate the slot itself
-  return node?.dataset?.ui
-    ? node.dataset.ui
-    : template
-    ? template
-    : isNodeEmpty(node)
-    ? null // An empty node means a null (text) formatter
-    : createTemplate(
-        // The format is the template id
-        node,
-        makeKey("template"),
-        false // No need to clone there
-      ).name;
-};
-
 // We use the attribute nodes directly, as there is an asymetry in
 // HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
 // will return `null` (while `getAttribute("on:send")` will return
@@ -315,8 +296,7 @@ const getNodeEventHandlers = (node) =>
         r = r || {};
         // NOTE: For now we only support relaying the event to the
         // other event, so the handler is basically the path at which we relay.
-        r[`${name.at(3).toUpperCase()}${name.substring(4)}`] =
-          d.event.split(".");
+        r[`${name.at(3).toUpperCase()}${name.substring(4)}`] = d.events;
       }
     }
     return r;
@@ -378,6 +358,10 @@ const onOutAttribute = (attr, root, name) => {
   // attribute.
   const node = attr.ownerElement;
   const text = attr.value || `.${name}`;
+  // If the attribute has no owner node, it already has been processed
+  if (!node) {
+    return null;
+  }
   const directive = parseOutDirective(text);
   node.removeAttribute(attr.name);
   if (!directive) {
@@ -397,7 +381,18 @@ const onOutAttribute = (attr, root, name) => {
     // Now, if we have an `out:content=XXXX`, then it means we're replacing
     // the content with the value or a template applied with the value.
     // We extract the fragment, handlers, and content template
-    const template = getNodeTemplate(node, directive.template);
+    const template = node?.dataset?.ui
+      ? node.dataset.ui
+      : directive.template
+      ? directive.template
+      : isNodeEmpty(node)
+      ? null // An empty node means a null (text) formatter
+      : createTemplate(
+          // The format is the template id
+          contentAsFragment(node),
+          makeKey("template"),
+          false // No need to clone there
+        ).name;
     const handlers = getNodeEventHandlers(node);
     // TODO: Should probably pass the key to the effector
     // const key = makeKey(node.dataset.id || directive.template);
@@ -405,6 +400,7 @@ const onOutAttribute = (attr, root, name) => {
       node.nodeName.toLowerCase() !== "slot"
         ? createAnchor(node, `out:content=${text}`)
         : node;
+
     // The rules should be a little bit more refined:
     // - If there is a template, then the content could be the placholder
     // - If the node name is slot, then it is for sure a slot effector
@@ -536,8 +532,12 @@ const parseOnDirective = (text) => {
 
 const onOnAttribute = (attr, root, name) => {
   const node = attr.ownerElement;
+  // NOTE: If the attr has no owner, it has already been proccessed.
+  if (!node) {
+    return null;
+  }
   node.removeAttribute(attr.name);
-  // A `<slot out:XXX>` node  may have `on:XXX` attribtues as well, in which
+  // A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
   // case they've already been processed at that point.
   if (node && node.parentNode) {
     const directive = parseOnDirective(attr.value);
@@ -683,8 +683,8 @@ const view = (root, templateName = undefined) => {
   // CHANGE the view, removing attributes and nodes.
   const effectors = [];
   for (const { attr } of attrs["do"] || []) {
-    const effector = onDoAttribute(attr, root, templateName);
-    effector && effectors.push(effector);
+    const e = onDoAttribute(attr, root, templateName);
+    e && effectors.push(e);
   }
 
   // --
@@ -700,7 +700,8 @@ const view = (root, templateName = undefined) => {
   //
   // We take care of attribute/content/value effectors
   for (const { name, attr } of attrs["out"] || []) {
-    effectors.push(onOutAttribute(attr, root, name));
+    const e = onOutAttribute(attr, root, name);
+    e && effectors.push(e);
   }
 
   // --

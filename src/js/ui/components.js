@@ -112,6 +112,9 @@ export class StateCell extends Cell {
     return this;
   }
 
+  updated() {
+    return this.set(this.value);
+  }
   set(value) {
     this.scope.state.put(this.path, value);
   }
@@ -143,26 +146,7 @@ export class Ref extends StateCell {
   }
 }
 
-export class Slot extends StateCell {
-  // -- doc
-  // When a slot is updated, we need to notify any subscriber of the change.
-  // This is done through the PubSub bus. We iterate through the subscribed
-  // topics, and notify the subscribers if we see a change.
-  updated() {
-    const topic = this.scope.state.bus.has(this.path);
-    const value = this.value;
-    const depth = topic.path.length;
-    topic &&
-      topic.walk((child) => {
-        // If it's an object or a list, we should always trigger an update,
-        // otherwise we compare.
-        const updated = access(value, child.path.slice(depth));
-        console.log("COMPARING", { previous: child.value, updated });
-      });
-
-    return this;
-  }
-}
+export class Slot extends StateCell {}
 
 // FIXME: We may want to specialize based on the type of reducer
 export class Reducer extends Cell {

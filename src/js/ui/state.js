@@ -70,6 +70,11 @@ export class StateTree {
     return this.patch(path, undefined, true);
   }
 
+  // NOTE: We should probably decide which one we want to use, set or put?
+  set(path = null, value = undefined) {
+    return this.patch(path, value, true);
+  }
+
   put(path = null, value = undefined) {
     return this.patch(path, value, true);
   }
