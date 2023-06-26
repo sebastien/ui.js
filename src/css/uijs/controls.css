@@ -95,24 +95,34 @@
   /*
    * ## Control
   */
-  input,
+
   button,
+  input,
   textarea,
-  .input,
   .button,
+  .input,
   .textarea {
     display: inline-flex;
     line-height: var(--control-line-height);
     border: 1px solid var(--control-bd);
     background: var(--control-bg);
     color: var(--control-txt);
+    font-family: var(--font-control);
+    font-size: var(--font-control-size);
+    line-height: var(--font-control-line-height);
+    width: min-content;
+    padding: var(--pad-2);
+    border-radius: 4px;
+    gap: var(--gap-1);
+  }
+
+  input,
+  textarea,
+  .input,
+  .textarea {
     font-family: var(--font-input);
     font-size: var(--font-input-size);
     line-height: var(--font-input-line-height);
-    width: min-content;
-    padding: var(--pad-2);
-	border-radius: 4px;
-    gap: var(--gap-1);
   }
 
   input[type="checkbox"] {
@@ -132,9 +142,8 @@
   .input:hover,
   .textarea:hover,
   .input.hover,
-  .textarea.hover,
-  {
-  outline:0px solid transparent;
+  .textarea.hover {
+    outline: 0px solid transparent;
   }
   input:focus,
   textarea:focus,
@@ -148,8 +157,7 @@
   .textarea:active,
   .input.active,
   .textarea.active {
-  }
-  outline:0px solid transparent;
+    outline: 0px solid transparent;
   }
 
   input.transparent[type="text"],
@@ -182,7 +190,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
-	gap: var(--gap-2);
+    gap: var(--gap-2);
     transition-property: background-color, border-color, color;
     transition-duration: 0.15s;
     outline: 0px solid transparent;
@@ -190,8 +198,8 @@
 
   button .icon,
   .button .icon {
-	  line-height: var(--font-control-line-height);
-	  font-size: var(--font-control-size);
+    line-height: var(--font-control-line-height);
+    font-size: var(--font-control-size);
   }
   button.default,
   .button.default {
@@ -282,7 +290,7 @@
 
   button.small,
   .button.small {
-    font-size: var(--font-size-1);
+    font-size: var(--font-size-2);
     padding: var(--pad-1) var(--pad-2);
   }
   button.x-small,
@@ -319,5 +327,4 @@
     top: unset;
     border: 0px solid transparent;
   }
-
 }
