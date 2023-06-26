@@ -9,6 +9,7 @@ import {
   makeKey,
   assign,
   access,
+  createComment,
 } from "./utils.js";
 import { Templates } from "./templates.js";
 
@@ -73,6 +74,8 @@ export class EffectScope {
   derive(path, localPath = this.localPath, slots = this.slots, key = this.key) {
     return new EffectScope(
       this.state,
+      // NOTE: There's a question here whether we want the path to be relative
+      // or absolute;
       [...this.path, ...(typeof path === "string" ? path.split(".") : path)],
       localPath,
       slots,
@@ -101,6 +104,12 @@ export class EffectScope {
           }
         });
     }
+  }
+
+  toString() {
+    return `EffectScope(path="${this.path.join(
+      "."
+    )}", localPath="${this.localPath.join(".")}", key="${this.key}")`;
   }
 }
 
@@ -527,18 +536,7 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
-    // FIXME
-    // // We keep track of the parent local path, as the scope may be changed
-    // // and we need to be able to relay data/events from one local scope
-    // // to the other.
-    // const parentLocalPath = scope.localPath;
-    // // In the case the effector has a localPath, we derive the scope and
-    // // change the local path. This allows to create a new context in which
-    // // the effector state is stored.
-    // if (this.localPath) {
-    //   scope = scope.copy();
-    //   scope.localPath = composePaths(scope.localPath, this.localPath);
-    // }
+    // NOTE: We leave the scope unchanged here
     const effect = new (this.selector.isMany
       ? MappingSlotEffect
       : SingleSlotEffect)(this, node, scope, this.template).init();
@@ -643,8 +641,7 @@ class SingleSlotEffect extends SlotEffect {
 
   unify(current, previous = this.value) {
     if (!this.view) {
-      const scope = this.scope;
-      const node = document.createComment(
+      const node = createComment(
         // FIXME: add a better description of that part
         `_|SingleSlotEffect`
       );
@@ -652,7 +649,7 @@ class SingleSlotEffect extends SlotEffect {
       this.view = this.template
         ?.apply(
           node, // node
-          scope
+          this.scope.derive(this.effector.selector.path) // scope, derived
         )
         ?.init();
       return this.view;
@@ -795,7 +792,7 @@ class MappingSlotEffect extends SlotEffect {
   // Creates a new item node in which the template can be rendered.
   createItem(template, node, scope, isEmpty = false, key = undefined) {
     // TODO: Should have a better comment
-    const root = document.createComment(
+    const root = createComment(
       `out:content=${this.effector.selector.toString()}#${key || 0}`
     );
     // We need to insert the node before as the template needs a parent
@@ -837,8 +834,8 @@ class WhenEffect extends Effect {
     //
     // FIXME: Not sure the anchor is necessary
     // TODO: Should have better names
-    this.anchor = document.createComment(`WhenEffect`);
-    this.contentAnchor = document.createComment(`WhenEffect:Content`);
+    this.anchor = createComment(`WhenEffect`);
+    this.contentAnchor = createComment(`WhenEffect:Content`);
     this.displayValue = node?.style?.display;
     this.node.appendChild(this.contentAnchor);
     // FIXME: Not sure why this is necessary. We should not change the node

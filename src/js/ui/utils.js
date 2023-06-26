@@ -2,11 +2,18 @@
 //  # Utilities
 
 export const Options = {
-  debug: false,
+  debug: true,
+  anchors: true,
 };
 
 export const Empty = Symbol("Empty");
 export const RawObjectPrototype = Object.getPrototypeOf({});
+
+export const createComment = (text) =>
+  Options.anchors === null
+    ? document.createTextNode("")
+    : document.createComment(Options.anchors === "short" ? "" : text);
+
 // FIXME: Should be isNothing
 export const isEmpty = (value) =>
   value === null || value === undefined || value === Empty;

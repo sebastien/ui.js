@@ -17,7 +17,7 @@ import {
   AttributeEffector,
   TemplateEffector,
 } from "./effectors.js";
-import { onError, makeKey, bool } from "./utils.js";
+import { createComment, onError, makeKey, bool } from "./utils.js";
 
 // --
 // ## Templates
@@ -114,15 +114,6 @@ const isBoundaryNode = (node) => {
   } else {
     return false;
   }
-};
-
-// --
-// Returns the boundary node in this node's ancestors.
-const getBoundaryNode = (node) => {
-  while (node.parentElement && !isBoundaryNode(node.parentElement)) {
-    node = node.parentElement;
-  }
-  return node;
 };
 
 // --
@@ -260,8 +251,12 @@ const contentAsFragment = (node) => {
   return fragment;
 };
 
+// -- doc
+// Creates an anchor node with the given `name` for the given `node`. If the
+// node is a slot, the anchor will replace the slot, otherwise the anchor
+// will be added as a child.
 const createAnchor = (node, name) => {
-  const anchor = document.createComment(name);
+  const anchor = createComment(name);
   if (node.nodeName === "slot" || node.nodeName === "SLOT") {
     node.parentElement.replaceChild(anchor, node);
   } else {
@@ -271,7 +266,7 @@ const createAnchor = (node, name) => {
 };
 
 const replaceNodeWithPlaceholder = (node, placeholder) => {
-  const anchor = document.createComment(placeholder);
+  const anchor = createComment(placeholder);
   node.parentElement && node.parentElement.replaceChild(anchor, node);
   return anchor;
 };
@@ -394,12 +389,7 @@ const onOutAttribute = (attr, root, name) => {
           false // No need to clone there
         ).name;
     const handlers = getNodeEventHandlers(node);
-    // TODO: Should probably pass the key to the effector
-    // const key = makeKey(node.dataset.id || directive.template);
-    const anchor =
-      node.nodeName.toLowerCase() !== "slot"
-        ? createAnchor(node, `out:content=${text}`)
-        : node;
+    const anchor = createAnchor(node, `out:content=${text}`);
 
     // The rules should be a little bit more refined:
     // - If there is a template, then the content could be the placholder

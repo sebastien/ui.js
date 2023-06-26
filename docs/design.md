@@ -92,3 +92,11 @@ local state mapping these values, typically as an array or an object.
 For simple values, the only local state required is the previous value.
 This supports detecting changes and only triggering an effect if the
 value has changed.
+
+## Component local or global state
+
+Components have the option to either work directly with a shared data
+structure through the global state (and its pubsub tree), or to work
+with a local projection of the global state. For instance, a tree list
+component could create a local representation of a tree by maintaining a
+state of nodes, keeping track of which ones are expanded or collapsed.

@@ -1,7 +1,7 @@
 import { parsePath } from "./paths.js";
 import { Templates } from "./templates.js";
 import { EffectScope } from "./effectors.js";
-import { access, onError, makeKey } from "./utils.js";
+import { createComment, onError, makeKey } from "./utils.js";
 
 // --
 //
@@ -510,7 +510,7 @@ export const createComponent = (
   // We create an anchor component, and replace the node with the anchor.
   const key = id ? id : makeKey(ui);
 
-  const anchor = document.createComment(`${key}|Component|${ui}`);
+  const anchor = createComment(`${key}|Component|${ui}`);
   const attributes = [...node.attributes].reduce((r, v) => {
     if (!v.name.startsWith("data-")) {
       r.set(v.name, v.value);
