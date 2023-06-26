@@ -63,6 +63,13 @@ export class EffectScope {
     return this.state.get(this.path);
   }
 
+  update(value, clear = false) {
+    clear
+      ? this.state.put(this.path, value)
+      : this.state.patch(this.path, value);
+    return this.value;
+  }
+
   resolve(path) {
     return path
       ? path.at(-1) === "#"
