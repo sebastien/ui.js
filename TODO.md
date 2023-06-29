@@ -10,7 +10,7 @@
 
 -   `[ ]` `<slot>` are copied into the output, they should not be there
     in the rendered template. Instead they should be replaced by comment
-    with a start/end.
+    with a start/end. This is still the case with `structured-editor`
 
 ## Roadmap
 
