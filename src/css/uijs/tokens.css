@@ -1,0 +1,114 @@
+/* --
+I feel that the creation of the variables/tokens should be assisted with
+JavaScript, so that variants can be easily created (faded version, OKLab
+variations).
+ */
+:root {
+  --font-text: "Jost", sans-serif;
+  --font-text-line-height: 1.45em;
+  --font-text-size: var(--font-size-3);
+
+  --font-heading: "Jost", sans-serif;
+  --font-heading-line-height: 1.45em;
+  --font-heading-size: var(--font-size-4);
+
+  --font-code: "Cousine", monospace;
+  --font-code-line-height: 1.25em;
+  --font-code-size: calc(10.5 / 14 * 1rem);
+
+  --font-control: "Jost", sans-serif;
+  --font-control-line-height: 1.25em;
+  --font-control-size: var(--font-size-2);
+
+
+  --font-input: "Jost", sans-serif;
+  --font-input-line-height: 1.25em;
+  --font-input-size: var(--font-size-3);
+
+  /** ### Icons */
+  --font-icon: "Material Symbols Outlined", sans-serif;
+  --font-icon-size: 24px;
+  --font-icon-variation: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+
+  /** ### Font Size */
+  --font-size-0: calc(9 / 16 * 1rem);
+  --font-size-1: calc(11 / 16 * 1rem);
+  --font-size-2: calc(13 / 16 * 1rem);
+  --font-size-3: calc(16 / 16 * 1rem);
+  --font-size-4: calc(18 / 16 * 1rem);
+  --font-size-5: calc(22 / 16 * 1rem);
+  --font-size-6: calc(26 / 16 * 1rem);
+  --font-size-7: calc(32 / 16 * 1rem);
+  --font-size-8: calc(40 / 16 * 1rem);
+  --font-size-9: calc(48 / 16 * 1rem);
+
+  /**
+	 * ## Typography
+	*/
+  --text-max-width: 55ch;
+
+  /*
+   * ## Padding 
+  */
+  --pad-0: 2px;
+  --pad-1: 4px;
+  --pad-2: 8px;
+  --pad-3: 12px;
+  --pad-4: 16px;
+
+  --gap-1: var(--pad-0);
+  --gap-2: var(--pad-1);
+  --gap-3: var(--pad-2);
+  --gap-4: var(--pad-3);
+  --gap-5: var(--pad-4);
+
+
+  --rounded-1: 2px;
+  --rounded-2: 4px;
+  --rounded: var(--rounded-1);
+
+  /*
+   * ## Overlay
+  */
+  --z-popup: 50;
+  --z-overlay: 20;
+
+  /*
+   * ## Color basics
+  */
+
+  /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
+  --color-accent: #03dac6
+
+  --color-primary: #6200ee;
+  --color-primary-alt: #3700b3;
+
+  --color-secondary: #03dac6;
+  --color-secondary-variant: #03dac6;
+
+  --color-secondary-variant: #03dac6;
+
+  /*
+   * ## Page
+  */
+  --page-bg: #FFFFFF;
+
+  /*
+   * ## Boxes
+  */
+  --box-bd: #e0e0e0;
+
+  /*
+   * ## Controls
+  */
+  --control-bd: #e0e0e0;
+  --control-color: #000000;
+  --control-bg: #d0d0d0;
+  --control-input-bg: var(--page-bg);
+  --control-bg-focused: #e0e0e0;
+  --control-bg-hover: #dadada;
+  --control-bg-selected: #cacaca;
+  --control-line-height: 1.15em;
+
+}
+/* EOF */

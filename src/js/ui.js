@@ -34,67 +34,60 @@
 //   state = undefined
 // ) => {};
 
-import { EffectScope, TemplateEffector } from "./ui/effectors.js";
-import { Templates, template } from "./ui/templates.js";
-import { pub, sub, unsub } from "./ui/pubsub.js";
-import { State, patch, get, remove } from "./ui/state.js";
+import { createComponent, controller } from "./ui/components.js";
+import { loadTemplates, loadModule } from "./ui/loading.js";
+import { StateTree } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
-import { parsePath } from "./ui/paths.js";
-import { onError, makeKey } from "./ui/utils.js";
+import { onWarning } from "./ui/utils.js";
 import tokens from "./ui/tokens.js";
 
-const parseState = (text, context) => eval(`(data)=>(${text})`)(context);
-
-export const ui = (scope = document, context = {}, styles = undefined) => {
-  const templates = [];
-  const components = [];
+// --
+// ## High-Level API
+//
+// This is the main function used to instanciate a set of components in a context.
+export const ui = async (scope = document, data = {}, styles = undefined) => {
   const style = undefined;
+  const state = data instanceof StateTree ? data : new StateTree(data);
+
+  // DEBUG
+  window.STATE = state;
 
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
 
-  for (let _ of document.querySelectorAll("template")) {
-    // This will register the templates in `templates`
-    templates.push(template(_));
-  }
-
-  // We render the components
-  for (const node of scope.querySelectorAll("*[data-ui]")) {
-    const { ui, state, path } = node.dataset;
-    const template = Templates.get(ui);
-    const data = state ? parseState(state, context) : context;
-    if (!template) {
-      onError(`ui.render: Could not find template '${ui}'`, {
-        node,
-        ui,
-      });
+  return loadTemplates(document).then(({ templates, stylesheets, scripts }) => {
+    const components = [];
+    scripts.forEach((_) => {
+      // NOTE: Adding a script node doesn't quite work. We could do
+      // it in SSR, though.
+      const type = _.getAttribute("type");
+      switch (type) {
+        case "importmap":
+          break;
+        case "javascript":
+        case "module":
+        case undefined:
+          loadModule(_.innerText);
+          break;
+        default:
+          onWarning(`Unsupported script type in template: ${type}`);
+          break;
+      }
+    });
+    stylesheets.forEach((_) => document.body.appendChild(_));
+    if (!scope?.querySelectorAll) {
+      onWarning("Could not expand template of scope", scope);
     } else {
-      // We instanciate the template onto the node
-      const key = makeKey();
-      const localPath = ["@local", key];
-      const dataPath = path ? parsePath(path) : state ? ["@data", key] : [];
-      data && patch(dataPath, data);
-      const anchor = document.createComment(`⚓ ${key}`);
-      node.parentElement.replaceChild(anchor, node);
-      // TODO: We should pass the component number as well?
-      const local = get(localPath);
-      // TODO: We should keep the returned state
-      components.push(
-        template.apply(
-          anchor,
-          new EffectScope(State, dataPath, localPath, data, local)
-        )
-      );
+      for (const node of scope.querySelectorAll("*[data-ui]")) {
+        const c = createComponent(node, state);
+        c && components.push(c);
+      }
     }
-  }
-
-  return { templates, components, style };
+    return { templates, components, stylesheets, style, state };
+  });
 };
 
-const on = (handlers) =>
-  Object.entries(handlers).reduce((r, [k, v]) => ((r[k] = sub(k, v)), r), {});
-
-export { on, pub, sub, unsub, patch, get, remove, tokens, stylesheet };
+export { tokens, stylesheet, controller };
 export default ui;
 
 // EOF

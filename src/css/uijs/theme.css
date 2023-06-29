@@ -1,0 +1,20 @@
+@layer theme {
+  body > header {
+    border-bottom: 1px solid var(--color-text);
+    padding-bottom: var(--pad-1);
+    margin-bottom: var(--pad-2);
+  }
+  body > header h1 {
+    font-weight: 600;
+    text-shadow: -4px 4px 0px var(--color-accent);
+  }
+  body > header p {
+    font-size: var(--font-size-3);
+  }
+  */ p {
+    margin-bottom: var(--line-height);
+  }
+  p:last-child {
+    margin-bottom: 0px;
+  }
+}

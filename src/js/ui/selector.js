@@ -1,5 +1,4 @@
-import { composePaths } from "./paths.js";
-import { onError } from "./utils.js";
+import { onError, access } from "./utils.js";
 import { Formats } from "./formats.js";
 
 // -- topic:directives
@@ -12,7 +11,7 @@ import { Formats } from "./formats.js";
 // A directive can have the following components:
 //
 // - A **data selection**, in the form of  path like `todos.items` (absolute) or `.label` (relative), a
-//   special value such as `#key` (current key in the parent) or a combinatio of the above
+//   special value such as `#key` (current key in the parent) or a combination of the above
 //   `[..selected,#key]`, '{count:..items.length,selected:.selected}'
 //
 // - A **data transformation**, prefixed by `|` and using dot-separated names, such as
@@ -25,16 +24,35 @@ import { Formats } from "./formats.js";
 // ## Selector DSL
 //
 export const KEY = "([a-zA-Z]+=)?";
-export const PATH = "#|([@.]?(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?))";
-export const FORMAT = "(\\|[A-Za-z-]+)?";
+//
+// FIXME: We can't have both local and relative
+export const PATH =
+  "(#|(([@/]?\\.*)(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
+export const FORMAT = "(\\|[A-Za-z-]+)*";
 export const INPUT = `${KEY}${PATH}${FORMAT}`;
-export const INPUT_FIELDS = `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`;
 export const INPUTS = `${INPUT}(,${INPUT})*`;
 
 // const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
 export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
-export const EVENT = "(!(?<event>[A-Za-z]+(\\.[A-Za-z]+)*)(?<stops>\\.)?)?";
-const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
+const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})`);
+
+export const commonPath = (paths) => {
+  let i = 0;
+  let n = paths.reduce(
+    (r, _, i) => (i === 0 ? _.length : Math.min(_.length, r)),
+    0
+  );
+  const op = paths[0];
+  while (i < n) {
+    for (const cp of paths) {
+      if (cp[i] !== op[i]) {
+        return cp.slice(0, i);
+      }
+    }
+    i++;
+  }
+  return op.slice(0, n);
+};
 
 // --
 // ## Selector Input
@@ -44,26 +62,17 @@ const RE_SELECTOR = new RegExp(`^(?<inputs>${INPUTS})${EVENT}$`);
 // which is a collection of inputs. Selector inputs can select from
 // the local state (`@` prefixed, like `@status`), or from the global state
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
-class SelectorInput {
+const RE_PATH = /^(?<type>[#@/]?)(?<prefix>\.*)(?<rest>.*)/;
+export class SelectorInput {
   static LOCAL = "@";
-  static RELATIVE = ".";
-  static ABSOLUTE = "";
+  static RELATIVE = "";
+  static ABSOLUTE = "/";
   static KEY = "#";
   constructor(path, format, key) {
-    const c = path.at(0);
-    this.type =
-      c === "@"
-        ? SelectorInput.LOCAL
-        : c === "."
-        ? SelectorInput.RELATIVE
-        : c === "#"
-        ? SelectorInput.KEY
-        : SelectorInput.ABSOLUTE;
-    this.path = (
-      this.type !== SelectorInput.ABSOLUTE ? path.substring(1) : path
-    )
-      .split(".")
-      .filter((_) => _.length);
+    const { type, prefix, rest } = path.match(RE_PATH).groups;
+    this.type = type;
+    this.unwind = prefix ? Math.max(0, prefix.length - 1) : 0;
+    this.path = rest.length ? rest.split(".") : [];
     this.isMany = this.path.at(-1) === "*";
     if (this.isMany) {
       this.path.pop();
@@ -84,55 +93,28 @@ class SelectorInput {
   }
 
   // -- doc
-  // Extracts the value for this input based on the local `value`, global `store`
-  // and local `state`, where `value` is located at the given
-  // `path`.
-  extract(scope, state = undefined) {
-    let res = undefined;
-    const { path, value } = scope;
-    if (this.type === SelectorInput.KEY) {
-      res = path ? path.at(-1) : undefined;
-    } else {
-      let context =
-        this.type === SelectorInput.ABSOLUTE
-          ? scope.state.global
-          : this.type === SelectorInput.RELATIVE
-          ? value
-          : state;
-      if (this.path.length && !context) {
-        onError(
-          `SelectorInput.extract: Context is undefined for input of type ${this.type}`,
-          { value, scope, state, path, ["input.path"]: this.path }
-        );
-      }
-      for (let k of this.path) {
-        context = context[k];
-        if (context === undefined) {
-          break;
-        }
-      }
-      res = context;
-    }
-    const format = this.format;
-    return format ? format(res) : res;
+  // Returns the absolute path of this selector input in the given scope.
+  abspath(scope) {
+    return (
+      this.unwind ? scope.path.slice(0, 0 - this.unwind) : scope.path
+    ).concat(this.path);
   }
 
   // -- doc
-  // Return this absolute path for this selector based on the given basepath.
-  abspath(scope) {
-    switch (this.type) {
-      case SelectorInput.KEY:
-        return scope.path;
-      case SelectorInput.ABSOLUTE:
-        return scope.path;
-      case SelectorInput.RELATIVE:
-        return scope.path ? scope.path.concat(this.path) : this.path;
-      default:
-        onError(`Unsupported selector input type: ${this.type}`, {
-          selectorInput: this,
-        });
-        return scope.path;
+  // Extracts the value for this input based on the given scope. This
+  // applies formatting.
+  extract(scope) {
+    let res = undefined;
+    if (this.type === SelectorInput.KEY) {
+      res = scope.path.at(-1);
+    } else {
+      res = scope.state.get([
+        ...(this.unwind ? scope.path.slice(0, 0 - this.unwind) : scope.path),
+        ...this.path,
+      ]);
     }
+    // NOTE: There use to be a scope passed
+    return this.format ? this.format(res) : res;
   }
 
   toString() {
@@ -142,19 +124,22 @@ class SelectorInput {
   }
 }
 
-// --
-// ## Selector State
+// FIXME: This is awefully similar to the controller Reducers, but for now
+// it makes sense to have these separate.
 //
-// Selector states manage a spefic instance of a `Selector`, which
+// --
+// ## Selection
+//
+// A selectionmanage a specific application of a `Selector`, which
 // can be bound to pub/sub bus, and update itself (triggering its `handler`)
 // when the value change.
-class SelectorState {
+export class Selection {
   constructor(selector, scope, handler) {
     this.selector = selector;
     this.scope = scope;
     this.handler = handler;
     this.value = undefined;
-    this.abspath = this.selector.abspath(scope);
+    this.path = this.selector.abspath(scope);
     this.alwaysChange = false;
     // Handlers are registered when an input's monitored path changes
     this.handlers = selector.inputs.map(
@@ -165,21 +150,24 @@ class SelectorState {
   }
 
   init() {
-    this.extract();
+    this.value = this.extract();
     return this;
   }
 
+  // NOTE: This should really be a piull()
   // -- doc
   // Extracts the current value for this selector based on the current
   // `value` at `path`, the `global` state and the `local` component state.
-  extract() {
+  extract(scope = this.scope) {
     // TODO: Should we detect changes and store a revision number?
-    return (this.value = this.selector.extract(this.scope));
+    // TODO: Yeah, totally.
+    return this.selector.extract(scope);
   }
 
   // -- doc
   // Binds the selector state to the given PubSub bus at the given `path`. The
   // selector state will be updated when one its inputs gets an updates.
+  // // FIXME: We should not need the scope
   bind(scope) {
     // When we bind a selector state, each input will listen to its specific
     // value listened to.
@@ -190,6 +178,7 @@ class SelectorState {
     return this;
   }
 
+  // // FIXME: We should not need the scope
   unbind(scope) {
     this.handlers.forEach((handler, i) => {
       const input = this.selector.inputs[i];
@@ -206,7 +195,7 @@ class SelectorState {
   // has changed. This means that the value in the event is already
   onInputChange(input, index, rawValue) {
     let hasChanged = this.alwaysChange;
-    const value = input.format ? input.format(rawValue) : rawValue;
+    const value = input.format ? input.format(rawValue, this.scope) : rawValue;
     switch (this.selector.type) {
       case Selector.SINGLE:
         if (value !== this.value) {
@@ -216,7 +205,7 @@ class SelectorState {
         break;
       case Selector.LIST:
         {
-          const i = this.inputs[index];
+          const i = this.selector.inputs[index];
           if (this.value[i] !== value) {
             this.value[i] = value;
             hasChanged = true;
@@ -225,7 +214,7 @@ class SelectorState {
         break;
       case Selector.MAP:
         {
-          const k = this.inputs[index].key;
+          const k = this.selector.inputs[index].key;
           // FIXME: Difference between SCOPE and VALUE
           if (this.value[k] !== value) {
             this.value[k] = value;
@@ -235,7 +224,7 @@ class SelectorState {
         break;
       default:
         onError(
-          `SelectorState.onInputChange: Unsupported selector type '${this.selector.type}'`,
+          `Selection.onInputChange: Unsupported selector type '${this.selector.type}'`,
           { selector: this.selector }
         );
         break;
@@ -248,6 +237,12 @@ class SelectorState {
   }
 
   dispose() {}
+
+  toString() {
+    return `Selection(path="${this.path.join(
+      "."
+    )}",selector="${this.selector.toString()}")`;
+  }
 }
 // --
 // ## Selector
@@ -258,10 +253,10 @@ class SelectorState {
 // - The global data store
 // - The component (local) state
 //
-class Selector {
-  static SINGLE = 0;
-  static LIST = 1;
-  static MAP = 2;
+export class Selector {
+  static SINGLE = "V";
+  static LIST = "L";
+  static MAP = "M";
   constructor(inputs, event, stops) {
     this.inputs = inputs;
     this.event = event;
@@ -274,30 +269,49 @@ class Selector {
   }
 
   // -- doc
-  // Applies the selector at the givene value and location. This returns
+  // Applies the selector at the given value and location. This returns
   // a selector state that can subscribe to value, transform them and
   // notify of updates.
   apply(scope, handler) {
-    return new SelectorState(this, scope, handler).init();
+    return new Selection(this, scope, handler).init();
+  }
+
+  abspath(scope) {
+    // This returns the common ancestor between all paths
+    const paths = this.inputs.map((_) => _.abspath(scope));
+    const n = paths[0].length;
+    const m = paths.length;
+    let i = 0;
+    while (i < n) {
+      for (let j = 0; j < m; j++) {
+        // If the current path is shorter than the current path, or if
+        // if the current path item differs from the previous path, then we return.
+        if (i >= paths[j].length || (j > 0 && paths[j - 1][i] != paths[j][i])) {
+          return paths[0].slice(0, Math.max(0, i - 1));
+        }
+      }
+      i++;
+    }
+    return paths[0];
   }
 
   // -- doc
-  // Extracts the data selected by this selector using  the local `value` (at the given `path`), global `store` and local `state`, where `value` is located at the given `path`. Path is needed as selectors can extract the key as well.
-  // TODO: apply(state)
-  extract(scope, state = undefined) {
+  // Extracts the data selected by this selector available at the given `scope`.
+  // Note that the returned value has formatting already applied.
+  extract(scope) {
     switch (this.type) {
       case Selector.SINGLE:
         return this.inputs[0].extract(scope);
       case Selector.LIST: {
-        const res = state ? state : new Array(n);
         const n = this.inputs.length;
+        const res = new Array(n);
         for (let i = 0; i < n; i++) {
           res[i] = this.inputs[i].extract(scope);
         }
         return res;
       }
       case Selector.MAP: {
-        const res = state ? state : {};
+        const res = {};
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
           const input = this.inputs[i];
@@ -307,59 +321,27 @@ class Selector {
       }
       default:
         // ERROR
-        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+        onError(`Selector.apply: Unsupported selector type: ${this.type}`, {
           type: this.type,
         });
         break;
     }
   }
-  abspath(scope, state = undefined) {
+
+  get path() {
     switch (this.type) {
       case Selector.SINGLE:
-        return this.inputs[0].abspath(scope);
+        return this.inputs[0].path;
       case Selector.LIST:
       case Selector.MAP:
-        // ERROR
-        onError(`Selector.abspath: Unsupported selector type: ${this.type}`, {
-          type: this.type,
-        });
-        return state;
+        return commonPath(this.inputs.map((_) => _.path));
       default:
         // ERROR
-        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
+        onError(`Selector.path: Unknown selector type: ${this.type}`, {
           type: this.type,
         });
-        return state;
     }
-  }
-  abspaths(scope, state = undefined) {
-    switch (this.type) {
-      case Selector.SINGLE:
-        return this.inputs[0].abspath(scope);
-      case Selector.LIST: {
-        const n = this.inputs.length;
-        const res = state ? state : new Array(n);
-        for (let i = 0; i < n; i++) {
-          res[i] = this.inputs[i].abspath(scope);
-        }
-        return res;
-      }
-      case Selector.MAP: {
-        const res = state ? state : {};
-        const n = this.inputs.length;
-        for (let i = 0; i < n; i++) {
-          const input = this.inputs[i];
-          res[input.key ? input.key : i] = input.abspath(scope);
-        }
-        return res;
-      }
-      default:
-        // ERROR
-        onError(`Selector.extract: Unsupported selector type: ${this.type}`, {
-          type: this.type,
-        });
-        return state;
-    }
+    return null;
   }
 
   toString() {
@@ -373,8 +355,11 @@ class Selector {
 
 // --
 // Parse the given input, returning a `SelectorInput` structure.
+export const RE_INPUT = new RegExp(
+  `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`
+);
 export const parseInput = (text) => {
-  const match = text.match(INPUT_FIELDS);
+  const match = text.match(RE_INPUT);
   if (!match) {
     return null;
   }
@@ -400,7 +385,7 @@ export const parseInput = (text) => {
       ? null
       : formatters.length === 1
       ? formatters[0]
-      : (_) => formatters.reduce((r, v) => v(r), _);
+      : (_, scope) => formatters.reduce((r, v) => v(r, scope), _);
 
   return new SelectorInput(path, formatter, key);
 };
@@ -430,6 +415,5 @@ export const parseSelector = (text) => {
   return new Selector(inputs, event, stops);
 };
 
-window.parseSelector = parseSelector;
 export const CurrentValueSelector = parseSelector(".");
 // EOF

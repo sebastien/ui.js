@@ -1,0 +1,172 @@
+@layer layout {
+  /**
+   * ## Box Model
+*/
+  .pos-rel {
+    position: relative;
+  }
+  .pos-abs {
+    position: absolute;
+  }
+  .pos-lr {
+    bottom: 0px;
+    right: 0px;
+  }
+  .scroll-h {
+    overflow-y: scroll;
+  }
+  .noscroll-h {
+    overflow-y: hidden;
+  }
+
+  /**
+	* ## Layout
+	*/
+  /**
+   * `fit` ensures that the content fits the parent, expanding both
+   * its width and height. `fit-w` and `fit-`h` are variants that only
+   * do this for the width and height.
+	*/
+  .fit {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .fit-w {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+  .fit-h {
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  /**
+   * `fit-screen` fits (covers) the whole screen, and also sets  the position
+   * to `fixed'.
+   */
+  .fit-screen {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+
+  .columns {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-2);
+  }
+
+  .row.right {
+    justify-content: flex-end;
+  }
+
+  .noshrink {
+    flex-shrink: 0;
+  }
+  .grow {
+    flex-grow: 1;
+  }
+  .fixed {
+    flex-shrink: 0;
+    flex-grow: 0;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-2);
+  }
+
+  .stack > .grow {
+    flex-grow: 1;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .list-h {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--pad-0);
+  }
+
+  /* NOTE: We leave the padding units after the definition 
+   * of the main layout classes so that we can overridde. 
+*/
+  .nowrap {
+    white-space: nowrap;
+  }
+  .pad {
+    padding: var(--pad-1);
+  }
+  .pad-1 {
+    padding: var(--pad-1);
+  }
+  .pad-2 {
+    padding: var(--pad-2);
+  }
+  .pad-3 {
+    padding: var(--pad-3);
+  }
+  .pad-4 {
+    padding: var(--pad-4);
+  }
+  .pad-5 {
+    padding: var(--pad-5);
+  }
+  .pad-6 {
+    padding: var(--pad-6);
+  }
+  .pad-7 {
+    padding: var(--pad-7);
+  }
+  .pad-r {
+    padding-right: var(--pad-1);
+  }
+  .pad-l {
+    padding-left: var(--pad-1);
+  }
+  .pad-t {
+    padding-top: var(--pad-1);
+  }
+  .pad-b {
+    padding-bottom: var(--pad-1);
+  }
+
+  .gap,
+  .gap-1 {
+    gap: var(--gap-1);
+  }
+  .gap-2 {
+    gap: var(--gap-2);
+  }
+  .gap-3 {
+    gap: var(--gap-3);
+  }
+  .gap-4 {
+    gap: var(--gap-4);
+  }
+  .gap-5 {
+    gap: var(--gap-5);
+  }
+  .gap-6 {
+    gap: var(--gap-6);
+  }
+}
+/* EOF */

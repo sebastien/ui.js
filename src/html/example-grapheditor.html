@@ -61,10 +61,10 @@
       <script type="module">
         import { sub } from "../js/ui.js";
         import { patch, get } from "../js/ui.js";
-        import { on, off } from "../js/ui/interaction.js";
+        import { bind, unbind } from "../js/ui/interaction.js";
         import { round } from "../js/ui/utils.js";
         sub("NodeMove", ({ event, path, state }) => {
-          off(window.document.body, state?.handlers);
+          unbind(window.document.body, state?.handlers);
           const dragging = {
             xo: event.pageX,
             yo: event.pageY,
@@ -86,14 +86,14 @@
             mouseup: () => {
               dragging.node.style.pointerEvents = dragging.pointerEvents;
               dragging.node.style.userSelect = dragging.userSelect;
-              off(window.document.body, handlers);
+              unbind(window.document.body, handlers);
             },
           };
           state.dragging = dragging;
           state.handlers = handlers;
           event.target.style.pointerEvents = "none";
           event.target.style.userSelect = "none";
-          on(window.document.body, handlers);
+          bind(window.document.body, handlers);
         });
       </script>
     </template>

@@ -1,8 +1,19 @@
 // --
 //  # Utilities
 
+export const Options = {
+  debug: true,
+  anchors: true,
+};
+
 export const Empty = Symbol("Empty");
 export const RawObjectPrototype = Object.getPrototypeOf({});
+
+export const createComment = (text) =>
+  Options.anchors === null
+    ? document.createTextNode("")
+    : document.createComment(Options.anchors === "short" ? "" : text);
+
 // FIXME: Should be isNothing
 export const isEmpty = (value) =>
   value === null || value === undefined || value === Empty;
@@ -21,8 +32,11 @@ export const bool = (value) =>
     ? false
     : true;
 
-export const onError = (message, context) => {
-  console.error(message, context);
+export const onWarning = (message, ...context) => {
+  console.warn("[uijs]", message, ...context);
+};
+export const onError = (message, ...context) => {
+  console.error("[uijs]", message, ...context);
 };
 export const type = (_) => {
   const t = typeof _;
@@ -46,6 +60,19 @@ export const type = (_) => {
             : "object";
       }
   }
+};
+
+export const access = (context, path) => {
+  if (path && path.length && context !== undefined) {
+    for (const k of path) {
+      // TODO: We may want to deal with number vs key
+      context = context[k];
+      if (context === undefined) {
+        break;
+      }
+    }
+  }
+  return context;
 };
 
 export const len = (value) => {
@@ -90,15 +117,28 @@ export const numcode = (
   return res.join("");
 };
 
-export const makeKey = () =>
+// --
+// `makeKey(scope)` returns sequential keys for the given scope. This
+// ensures that ids are reproducible.
+const Keys = new Map();
+export const makeKey = (scope = "key") => {
+  let v = Keys.get(scope);
+  Keys.set(scope, (v = v === undefined ? 0 : v + 1));
+  return `${scope}-${v}`;
+};
+
+// --
+// Generates a new Id. This is not reproducible.
+export const makeId = () =>
   numcode(new Date().getTime() * 100000 + Math.random() * 100000);
+
 export const nextKey = (value) => {
   if (value instanceof Array) {
     value.push(undefined);
     return value.length - 1;
   } else {
     while (true) {
-      const k = makeKey();
+      const k = makeId();
       if (value[k] === undefined) {
         return k;
       }
@@ -167,7 +207,49 @@ export const copy = (value) =>
       : { ...value }
     : value;
 
+export const assign = (scope, path, value) => {
+  let s = scope;
+  const n = path.length - 1;
+  for (let i = 0; i <= n; i++) {
+    const k = path[i];
+    if (i === n) {
+      s[k] = value;
+    } else if (s[k] === undefined || s[k] === null) {
+      s[k] = typeof path[i + 1] === "number" ? [] : {};
+    }
+    s = s[k];
+  }
+  return scope;
+};
+
+// ## Functional
+
+const Memoized = new Map();
+export const memo = (guards, functor) => {
+  const scope = (guards instanceof Array ? guards : [guards]).reduce((r, v) => {
+    if (r.has(v)) {
+      return r.get(v);
+    } else {
+      const w = new Map();
+      r.set(v, w);
+      return w;
+    }
+  }, Memoized);
+  if (!scope.has(true)) {
+    scope.set(true, functor());
+  }
+  return scope.get(true);
+};
+
 // ## Math
+
+export const Enum = (...values) =>
+  Object.freeze(
+    values.reduce((r, v) => {
+      r[`${v}`] = typeof v === "string" ? Symbol(v) : v;
+      return r;
+    }, {})
+  );
 
 export const round = (number, factor = 1, bound = 1) => {
   const base = number / factor;

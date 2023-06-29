@@ -1,0 +1,38 @@
+@layer behavior {
+  /*
+   * ## Hover Behaviour
+  */
+  .with-hover {
+    position: relative;
+  }
+  .with-hover .on-hover {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition-property: opacity;
+    transition-delay: 0.1s;
+    transition-duration: 0.25s;
+  }
+  .with-hover:hover .on-hover,
+  .with-hover .on-hover:hover {
+    visibility: visible;
+    pointer-events: auto;
+    opacity: 1;
+  }
+
+  /*
+   * ## Selectable behaviour
+  */
+  .selectable {
+    cursor: pointer;
+  }
+
+  .selectable:hover {
+    background-color: var(--control-bg-hover);
+  }
+
+  .editable[data-placeholder]:before {
+    content: attr(data-placeholder);
+    opacity: 0.75;
+  }
+}
