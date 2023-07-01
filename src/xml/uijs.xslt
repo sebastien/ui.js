@@ -43,7 +43,7 @@
 				<script type="importmap">
 					{"imports": {
 					<xsl:for-each select="/*/ui:import">
-					"<xsl:value-of select="@module"/>/": "<xsl:value-of select="@path"/>/",
+						"<xsl:value-of select="@module"/>/": "<xsl:choose><xsl:when test="@path"><xsl:value-of select="@path"/>/</xsl:when><xsl:otherwise>lib/js/<xsl:value-of select="substring-after(@module,'@')"/>/</xsl:otherwise></xsl:choose>",
 					</xsl:for-each>
 					"@codemirror/": "https://deno.land/x/codemirror_esm@v6.0.1/esm/",
 					"@ui.js": "/lib/js/ui.js",
@@ -107,7 +107,7 @@
 	-->
 	<xsl:template match="ui:Component" mode="component">
 		<xsl:if test="@controller">
-			<script type="module">import <xsl:value-of select="@name" /> from "<xsl:value-of select="@controller"/>";</script>
+			<script type="module">import <xsl:value-of select="@name"/> from "<xsl:value-of select="@controller"/>";</script>
 		</xsl:if>
 		<h2>
 			<xsl:value-of select="./@name"/>
@@ -252,10 +252,18 @@
 				<xsl:value-of select="."/>
 			</script>
 		</xsl:for-each>
+		<!-- This creates a script that loads the XML templates for the 
+		dependencies -->
+		<script id="uijs-component-dependencies" type="module" data-template="true">
+			<xsl:text>import {loadXMLTemplates} from "@ui/loading.js";loadXMLTemplates([...new Set([</xsl:text>
+			<xsl:for-each select="//*[starts-with(name(),'x:')]"><xsl:if test="position()!=1">,</xsl:if>
+		"../components/<xsl:value-of select="local-name()"/>.xml"
+		</xsl:for-each>
+			<xsl:text>])]);</xsl:text>
+		</script>
 		<script id="script-anchor" type="module" data-skip="true">
 			<xsl:text><![CDATA[
 			import {ui} from "@ui.js";
-			import {loadXMLTemplates} from "@ui/loading.js";
 			// We populate the data
 			const data={};
 			]]></xsl:text>
@@ -269,24 +277,10 @@
 			if (dataElement){
 				dataElement.innerText = JSON.stringify(data);
 			}
+			// FIXME: This only works if the loadXMLTemplate was run before
+			// this.
 			// We load the imported components as XML templates.
-			loadXMLTemplates([...new Set([
-			]]></xsl:text>
-			<xsl:for-each select="//*[starts-with(name(),'x:')]"><xsl:if test="position()!=1">,</xsl:if>
-			"../components/<xsl:value-of select="local-name()"/>.xml"
-			</xsl:for-each>
-			<xsl:text><![CDATA[
-			])]).then(({stylesheets,scripts})=>{
-				scripts && scripts.forEach(_ => document.head.appendChild(_));
-				if (stylesheets && stylesheets.length) {
-					const css = stylesheets.reduce((r,v) => {r.push(v.innerText);return r}, []).join("\n");
-					const node = document.createElement("style");
-					node.appendChild(document.createTextNode(css));
-					document.head.appendChild(node)
-				}
-				// And finally we render the nodes
-				ui(document, {data});
-			});
+			ui(document, {data});
 			]]></xsl:text>
 		</script>
 	</xsl:template>
