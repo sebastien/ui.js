@@ -10,6 +10,13 @@
     display: block;
   }
 
+  .selectable {
+    cursor: pointer;
+  }
+  .selectable:hover {
+    background-color: var(--control-bg-hover);
+  }
+
   .pill {
     display: inline-flex;
     align-items: center;
@@ -123,6 +130,7 @@
     font-family: var(--font-input);
     font-size: var(--font-input-size);
     line-height: var(--font-input-line-height);
+    background-color: var(--control-input-bg);
   }
 
   input[type="checkbox"] {
