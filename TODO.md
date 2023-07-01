@@ -9,13 +9,16 @@
 - `[ ]` Reduce the dependency on comments, or at least reduce the
   comment size, as it will add size to the HTML.
 
+- `[ ]` `<slot>` are copied into the output, they should not be there in
+  the rendered template. Instead they should be replaced by comment with
+  a start/end. This is still the case with `structured-editor`
+
 - `[ ]` Remove the evenBus and make it part of the main pubsub bus.
   Events should just be values.
 
 - `[ ]` Support relaying of values from a renderes component local state
   to another path. For instance `on:value="#.value"` to remap the
-  component's  
-  local value state to the parent local value slot.
+  component's local value state to the parent local value slot.
 
 - `[ ]` Support for mounting the local state of a component as part of a
   subset of the state of the other component
