@@ -25,6 +25,18 @@
 .bd {
   border: 1px solid var(--box-bd);
 }
+.bd-h > * {
+  border-right: 1px solid var(--box-bd);
+}
+.bd-h > *:last-child {
+  border-right: 0px solid var(--box-bd);
+}
+.bd-v > * {
+  border-bottom: 1px solid var(--box-bd);
+}
+.bd-v > *:last-child {
+  border-bottom: 0px solid var(--box-bd);
+}
 .bd-t {
   border-top: 1px solid var(--box-bd);
 }

@@ -106,6 +106,16 @@
     gap: var(--pad-0);
   }
 
+  .grid-1_1 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-1_2 {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+  }
+
   /* NOTE: We leave the padding units after the definition 
    * of the main layout classes so that we can overridde. 
 */
@@ -167,6 +177,9 @@
   }
   .gap-6 {
     gap: var(--gap-6);
+  }
+  .no-gap {
+    gap: 0px;
   }
 }
 /* EOF */
