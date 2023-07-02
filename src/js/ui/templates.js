@@ -17,7 +17,14 @@ import {
   AttributeEffector,
   TemplateEffector,
 } from "./effectors.js";
-import { Options, createComment, onError, makeKey, bool } from "./utils.js";
+import {
+  Any,
+  Options,
+  createComment,
+  onError,
+  makeKey,
+  bool,
+} from "./utils.js";
 
 // --
 // ## Templates
@@ -434,12 +441,18 @@ const onDoAttribute = (attr, root, templateName) => {
       // We have `do:match=SELECTOR`, we now need to look at the children
       // with a `do:case` attribute. These will be the branches.
       const branches = [...node.childNodes].reduce((r, n, i) => {
-        if (n.nodeType == Node.ELEMENT_NODE && n.hasAttribute("do:case")) {
+        if (
+          n.nodeType == Node.ELEMENT_NODE &&
+          (n.hasAttribute("do:case") || n.hasAttribute("do:otherwise"))
+        ) {
           // If the child  has a do:case, then it's a sub-template and
           // we need to take it out.
-          const t = n.getAttribute("do:case");
+          const t =
+            n.getAttribute("do:case") ||
+            (n.hasAttribute("do:otherwise") && "*");
           n.removeAttribute("do:case");
-          const value = parseValue(t);
+          n.removeAttribute("do:otherwise");
+          const value = t == "*" ? Any : parseValue(t);
           const template = createTemplate(
             asFragment(n),
             // FIXME: I'm not sure why we're making a key here, we should probably
@@ -477,7 +490,7 @@ const onDoAttribute = (attr, root, templateName) => {
     // We do nothing, this should already have been processed
   } else {
     return onError(
-      `templates: Unsupported '${attr.name}' attribute, 'do:match' and 'do:case' are supported`,
+      `templates: Unsupported '${attr.name}' attribute, 'do:match', 'do:case' and 'do:otherwise' are supported`,
       {
         attr,
       }

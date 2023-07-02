@@ -8,6 +8,7 @@ export const Options = {
 };
 
 export const Empty = Symbol("Empty");
+export const Any = Symbol("Any");
 export const RawObjectPrototype = Object.getPrototypeOf({});
 
 export const createComment = (text) =>

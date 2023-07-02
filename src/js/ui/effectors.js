@@ -2,6 +2,7 @@ import { parsePath, pathNode } from "./paths.js";
 import { Selector, CurrentValueSelector } from "./selector.js";
 import {
   Options,
+  Any,
   Empty,
   isAtom,
   isEmpty,
@@ -925,7 +926,7 @@ class MatchEffect extends Effect {
     let branch = undefined;
     for (let i = 0; i < branches.length; i++) {
       branch = branches[i];
-      if (value === branch.value) {
+      if (branch.value === Any || value === branch.value) {
         index = i;
         break;
       }
@@ -935,11 +936,22 @@ class MatchEffect extends Effect {
     if (this.states[index] === undefined) {
       // We apply the template effector at the match effect node, which
       // should be a comment node.
+      Options.debug &&
+        console.log(
+          `MatchEffector: creating based on matched branch ${index}`,
+          { value }
+        );
       this.states[index] = branch.template.apply(this.node, this.scope);
     }
     if (index !== this.currentBranchIndex) {
+      Options.debug &&
+        console.log(
+          `MatchEffector: mounting matched branch ${index}/${this.currentBranchIndex}`,
+          { value }
+        );
       this.states[index].init().mount();
       const previousState = this.states[this.currentBranchIndex];
+      // NOTE: We could cleanup the previous state if we wanted to
       if (previousState) {
         previousState.unmount();
       }
