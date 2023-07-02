@@ -45,9 +45,17 @@ import tokens from "./ui/tokens.js";
 // ## High-Level API
 //
 // This is the main function used to instanciate a set of components in a context.
-export const ui = (scope = document, data = {}, styles = undefined) => {
+export const ui = (
+  scope = document,
+  data = {},
+  styles = undefined,
+  options = undefined
+) => {
   const style = undefined;
   const state = data instanceof StateTree ? data : new StateTree(data);
+  if (options) {
+    Object.assign(Options, options);
+  }
 
   // DEBUG
   if (Options.debug) {
@@ -99,6 +107,7 @@ export const ui = (scope = document, data = {}, styles = undefined) => {
     }
   );
 };
+ui.options = Options;
 
 export { tokens, stylesheet, controller };
 export default ui;

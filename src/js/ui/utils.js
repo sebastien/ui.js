@@ -4,6 +4,7 @@
 export const Options = {
   debug: true,
   anchors: true,
+  allowDuplicateTemplates: false,
 };
 
 export const Empty = Symbol("Empty");

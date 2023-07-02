@@ -813,10 +813,12 @@ class MappingSlotEffect extends SlotEffect {
       // TODO: Should use DOM.after
       node.parentNode.insertBefore(root, node);
     }
-    return template.apply(
-      root, // node
-      scope
-    );
+    return template
+      ? template.apply(
+          root, // node
+          scope
+        )
+      : null;
   }
 }
 

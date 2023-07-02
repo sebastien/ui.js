@@ -17,7 +17,7 @@ import {
   AttributeEffector,
   TemplateEffector,
 } from "./effectors.js";
-import { createComment, onError, makeKey, bool } from "./utils.js";
+import { Options, createComment, onError, makeKey, bool } from "./utils.js";
 
 // --
 // ## Templates
@@ -834,12 +834,16 @@ export const createTemplate = (
   // We register the template name in the template set
   if (name) {
     if (templates.has(name)) {
-      onError(
-        "templates.createTemplate: Registering template that already exists",
-        { name }
-      );
+      if (!Options.allowDuplicateTemplates) {
+        onError(
+          "templates.createTemplate: Registering template that already exists",
+          { name }
+        );
+      }
+      return templates.get(name, res);
+    } else {
+      templates.set(name, res);
     }
-    templates.set(name, res);
   }
   return res;
 };
