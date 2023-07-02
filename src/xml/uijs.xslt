@@ -169,31 +169,40 @@
 					<xsl:if test="ui:View//@class">
 						<article>
 							<h4>CSS Classes</h4>
-							<ul id="selectors"/>
+							<ul>
+								<xsl:attribute name="id">
+									<xsl:value-of select="concat('selectors_',$cid)"/>
+								</xsl:attribute>
+							</ul>
 							<script>
 							{
-							const classNames="<xsl:for-each select="./ui:View//@class"><xsl:value-of select="."/>|</xsl:for-each>";
-							<![CDATA[
+							const cid="<xsl:value-of select="$cid"/>";
+							const classNames="<xsl:for-each select="./ui:View//@class"><xsl:value-of select="."/>|</xsl:for-each>"; <![CDATA[
 							const classes=classNames.replaceAll(" ","|").split("|").reduce((r,v)=>(v.trim().length && (r[v]=(r[v]||0)+1),r), {});
-							document.getElementById("selectors").innerHTML = renderCount(classes);
+							document.getElementById(`selectors_${cid}`).innerHTML = renderCount(classes);
 							]]>
 							}
 						</script>
 						</article>
 					</xsl:if>
-					<xsl:if test="ui:View//s:*/@*[name() != 'class']">
+					<xsl:if test="./ui:View//s:*/@*[name() != 'class']">
 						<article>
 							<h4>CSS Tokens</h4>
-							<ul id="tokens"/>
+							<ul>
+								<xsl:attribute name="id">
+									<xsl:value-of select="concat('tokens_',$cid)"/>
+								</xsl:attribute>
+							</ul>
 							<script>
 							{
+							const cid="<xsl:value-of select="$cid"/>";
 							const tokenNames=`<xsl:for-each select="./ui:View//s:*/@*"><xsl:value-of select="."/>|</xsl:for-each>`;
 							<![CDATA[
 							const vars = /var\((.*?)\)/g;
 							const matches = {};
 							let match;
 							while ((match = vars.exec(tokenNames)) !== null) {matches[match[1]] = (matches[matches[1]]||0)+1;}
-							document.getElementById("tokens").innerHTML = renderCount(matches);
+							document.getElementById(`tokens_${cid}`).innerHTML = renderCount(matches);
 							]]>
 							}
 						</script>
@@ -288,7 +297,9 @@ Object.assign(data, (<xsl:value-of select="."/>));
 				<xsl:text>const scope=(</xsl:text>
 				<xsl:value-of select="concat('preview_', $cid)"/>
 				<xsl:text>);</xsl:text>
-				<xsl:text>const dataElement = document.getElementById("data_</xsl:text><xsl:value-of select="$cid"/><xsl:text>");
+				<xsl:text>const dataElement = document.getElementById("data_</xsl:text>
+				<xsl:value-of select="$cid"/>
+				<xsl:text>");
 if (dataElement){
 	dataElement.innerText = JSON.stringify(data);
 }
