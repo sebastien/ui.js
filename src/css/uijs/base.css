@@ -114,6 +114,22 @@ This defines base typographic settings.
     font-size: var(--font-control-size);
   }
 
+  .typography h1,
+  .typography h2,
+  .typography h3,
+  .typography h4,
+  .typography h5,
+  .typography h6,
+  h1.typography,
+  h2.typography,
+  h3.typography,
+  h4.typography,
+  h5.typography,
+  h6.typography {
+    margin-top: calc(var(--line-height) * 2);
+    margin-bottom: calc(var(--line-height) * 1);
+  }
+
   .typography p {
     margin-top: 0.5em;
     margin-bottom: 0.5em;
