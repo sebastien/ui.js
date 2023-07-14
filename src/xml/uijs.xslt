@@ -82,6 +82,9 @@
 			</body>
 		</html>
 	</xsl:template>
+	<!--
+	## UI Applet
+	-->
 	<xsl:template match="ui:Applet" mode="component">
 		<div data-path="data">
 			<xsl:attribute name="data-ui">
@@ -96,6 +99,64 @@
 				<xsl:apply-templates select="*|text()" mode="copy"/>
 			</xsl:for-each>
 		</template>
+		<xsl:call-template name="uijs-script">
+			<xsl:with-param name="cid" select="generate-id(.)"/>
+		</xsl:call-template>
+	</xsl:template>
+	<!--
+	## UI Test
+	-->
+	<xsl:template match="ui:Test" mode="component">
+		<xsl:variable name="id" select="generate-id(.)"/>
+		<h1>Test</h1>
+		<section>
+			<xsl:attribute name="id">
+				<xsl:value-of select="concat('test-', $id)"/>
+			</xsl:attribute>
+			<header>
+				<h1>
+					<xsl:value-of select="@name"/>
+				</h1>
+			</header>
+			<table>
+				<thead>
+				</thead>
+				<tbody>
+					<tr>
+						<td>
+							<div>
+								<xsl:attribute name="data-ui">
+									<xsl:value-of select="$id"/>
+								</xsl:attribute>
+								<xsl:attribute name="data-path">
+									<xsl:value-of select="$id"/>
+								</xsl:attribute>
+							</div>
+						</td>
+						<td>
+							<div>
+								<xsl:for-each select="./ui:Expected">
+									<xsl:copy-of select="current()"/>
+								</xsl:for-each>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<template data-keep="true">
+				<xsl:attribute name="name">
+					<xsl:value-of select="$id"/>
+				</xsl:attribute>
+				<xsl:for-each select="./ui:Template">
+					<xsl:apply-templates select="*|text()" mode="copy"/>
+				</xsl:for-each>
+			</template>
+			<script type="module">
+      import ui from "@ui.js";
+	  const scope = document.getElementById("test-<xsl:value-of select="$id"/>");
+      ui(scope);
+    </script>
+		</section>
 	</xsl:template>
 	<!--
 	## UI Component
@@ -216,10 +277,6 @@
 							<xsl:apply-templates select="//ui:Style/*" mode="css"/>
 							<xsl:apply-templates select="//s:*" mode="css"/>
 						</pre>
-						<style>
-							<xsl:apply-templates select="//ui:Style/*" mode="css"/>
-							<xsl:apply-templates select="//s:*" mode="css"/>
-						</style>
 					</article>
 				</xsl:if>
 			</section>
@@ -232,10 +289,6 @@
 								<xsl:value-of select="."/>
 							</code>
 						</pre>
-						<script data-template="true" type="module">
-							<xsl:text>import {controller} from "@ui.js";</xsl:text>
-							<xsl:value-of select="."/>
-						</script>
 					</xsl:for-each>
 				</section>
 			</xsl:if>
@@ -252,6 +305,19 @@
 					<xsl:for-each select="ui:View">
 						<xsl:apply-templates select="*|text()" mode="copy"/>
 					</xsl:for-each>
+					<!-- We include the stylsheet in the template -->
+					<style>
+						<xsl:apply-templates select="//ui:Style/*" mode="css"/>
+						<xsl:apply-templates select="//s:*" mode="css"/>
+					</style>
+					<xsl:if test="ui:Controller/*|ui:Controller/text()">
+						<script data-template="true" type="module">
+							<xsl:text>import {controller} from "@ui.js";</xsl:text>
+							<xsl:for-each select="./ui:Controller">
+								<xsl:value-of select="."/>
+							</xsl:for-each>
+						</script>
+					</xsl:if>
 				</div>
 			</div>
 			<!--
@@ -268,6 +334,7 @@
 -->
 	<xsl:template name="uijs-script">
 		<xsl:param name="cid"/>
+		<xsl:param name="scope"/>
 		<section class="Scripts">
 			<xsl:for-each select=".//ui:Script">
 				<script type="module" data-skip="true">
@@ -294,9 +361,9 @@ const data={};
 Object.assign(data, (<xsl:value-of select="."/>));
 					</xsl:if>
 				</xsl:for-each>
-				<xsl:text>const scope=(</xsl:text>
+				<xsl:text>const scope=(document.getElementById("</xsl:text>
 				<xsl:value-of select="concat('preview_', $cid)"/>
-				<xsl:text>);</xsl:text>
+				<xsl:text>")||document);</xsl:text>
 				<xsl:text>const dataElement = document.getElementById("data_</xsl:text>
 				<xsl:value-of select="$cid"/>
 				<xsl:text>");
