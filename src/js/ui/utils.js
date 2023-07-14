@@ -2,9 +2,10 @@
 //  # Utilities
 
 export const Options = {
-  debug: true,
-  anchors: true,
+  debug: false,
+  anchors: false,
   allowDuplicateTemplates: false,
+  exportState: true,
 };
 
 export const Empty = Symbol("Empty");

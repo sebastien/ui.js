@@ -222,6 +222,14 @@ export class PubSub {
     const t = this.get(topic, false);
     return t && t.unsub(handler), this;
   }
+
+  list() {
+    return this.topics.list().map((_) => ({
+      name: _.path.join("."),
+      count: _.handlers ? _.handlers.length : 0,
+      value: _.value,
+    }));
+  }
 }
 
 export const bus = () => {

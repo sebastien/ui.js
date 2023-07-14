@@ -58,14 +58,14 @@ export const ui = (
   }
 
   // DEBUG
-  if (Options.debug) {
-    window.STATE = state;
+  if (Options.exportState) {
+    window.state = state;
   }
 
   // NOTE: This is a side-effect and will register the styles as tokens.
   tokens(styles);
 
-  return loadTemplates(document).then(
+  return loadTemplates(scope).then(
     async ({ templates, stylesheets, scripts }) => {
       const components = [];
       scripts.forEach((_) => {
@@ -86,6 +86,7 @@ export const ui = (
             break;
         }
       });
+
       // TODO: This should probably be handled by loading?
       stylesheets.forEach((_) => document.body.appendChild(_));
 

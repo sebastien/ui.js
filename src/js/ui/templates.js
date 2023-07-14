@@ -771,7 +771,7 @@ class Template {
 // template is different.
 export const createTemplate = (
   node,
-  name = node.getAttribute("id"),
+  name = node.getAttribute("name") || node.getAttribute("id"),
   clone = true, // TODO: We should probably always have that to false
   templates = Templates,
   scriptContainer = document.body

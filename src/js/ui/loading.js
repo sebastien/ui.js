@@ -1,4 +1,4 @@
-import { Templates, createTemplate, iterSelector } from "./templates.js";
+import { Templates, createTemplate } from "./templates.js";
 import { Options, onWarning, onError } from "./utils.js";
 
 // --
@@ -260,10 +260,10 @@ export const loadXMLTemplate = (url) =>
 
 const registerTemplate = (template) => Templates.set(template.name, template);
 const registerScript = (script) => {
-  console.log("REGISTER SCRIPT", { script });
+  document.head.appendChild(script);
 };
 const registerStylesheet = (stylesheet) => {
-  console.log("REGISTER STYLESHET", { stylesheet });
+  document.head.appendChild(stylesheet);
 };
 
 //   const {templates, stylesheets, scripts} = await loadTemplates(node);
@@ -320,8 +320,8 @@ export const loadTemplates = (
 ) => {
   const promises = [];
   const templates = [];
-  let stylesheets = [];
-  let scripts = [];
+  const stylesheets = [];
+  const scripts = [];
   const roots = !node
     ? []
     : node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
@@ -345,8 +345,8 @@ export const loadTemplates = (
             tmpl.content ? tmpl.content : tmpl,
             !tmpl.dataset.keep
           );
-          stylesheets = stylesheets.concat(nodes.stylesheets);
-          scripts = scripts.concat(nodes.scripts);
+          stylesheets.push.apply(stylesheets, nodes.stylesheets);
+          scripts.push.apply(scripts, nodes.scripts);
           templates.push(createTemplate(tmpl));
         }
         !tmpl.dataset.keep && tmpl.parentElement.removeChild(tmpl);
