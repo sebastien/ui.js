@@ -101,14 +101,16 @@ variations).
   /*
    * ## Controls
   */
-  --control-bd: #e0e0e0;
+  --control-bd: #d9d9d9;
   --control-color: #000000;
-  --control-bg: #d0d0d0;
+  --control-bg: #fafafa;
   --control-input-bg: var(--page-bg);
   --control-bg-focused: #e0e0e0;
-  --control-bg-hover: #dadada;
+  --control-bg-hover: #eaeaea;
   --control-bg-selected: #cacaca;
   --control-line-height: 1.15em;
+  --control-font-size: var(--font-size-3);
 
+  --shadow-floating: 4px 4px 4px #0000000a;
 }
 /* EOF */

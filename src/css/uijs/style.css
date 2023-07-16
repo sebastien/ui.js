@@ -1,3 +1,6 @@
+.invisible {
+  visibility: hidden;
+}
 .rounded {
   border-radius: var(--rounded-2);
 }

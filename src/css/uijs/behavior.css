@@ -2,9 +2,11 @@
   /*
    * ## Hover Behaviour
   */
+  .show-menu,
   .with-hover {
     position: relative;
   }
+  .show-menu > .menu,
   .with-hover .on-hover {
     visibility: hidden;
     pointer-events: none;
@@ -14,10 +16,16 @@
     transition-duration: 0.25s;
   }
   .with-hover:hover .on-hover,
+  .show-menu:hover > .menu,
   .with-hover .on-hover:hover {
     visibility: visible;
     pointer-events: auto;
     opacity: 1;
+  }
+  .show-menu:hover > .menu {
+    bottom: 0px;
+    left: 0px;
+    transform: translateY(100%);
   }
 
   /*
@@ -31,6 +39,9 @@
     background-color: var(--control-bg-hover);
   }
 
+  .hover:hover .hovered {
+    background-color: var(--control-bg-hover);
+  }
   .editable[data-placeholder]:before {
     content: attr(data-placeholder);
     opacity: 0.75;

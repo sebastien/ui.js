@@ -32,9 +32,9 @@
   .menu,
   menu {
     display: block;
-    font-size: var(--font-size-1);
+    font-size: var(--control-font-size);
     background-color: var(--page-bg);
-    border: 1px solid var(--control-bd-alt);
+    border: 1px solid var(--control-bd);
     border-radius: 4px;
     padding: 8px 0px;
     text-align: left;
@@ -242,6 +242,7 @@
   .button:active,
   .button.active {
     outline: 0px solid var(--color-accent-alt);
+    background-color: var(--control-bg-selected);
   }
   button.icon,
   .button.icon {
@@ -296,6 +297,11 @@
     outline: unset;
   }
 
+  button.medium,
+  .button.medium {
+    font-size: var(--font-size-3);
+    padding: var(--pad-1) var(--pad-2);
+  }
   button.small,
   .button.small {
     font-size: var(--font-size-2);
@@ -334,5 +340,29 @@
     left: unset;
     top: unset;
     border: 0px solid transparent;
+  }
+
+  .floating {
+    box-shadow: var(--shadow-floating);
+  }
+
+  .panel {
+    border: 1px solid var(--control-bd);
+    background-color: var(--control-bg);
+  }
+
+  .pointer {
+    cursor: pointer;
+  }
+
+  .movable {
+    cursor: move;
+  }
+
+  .no-select {
+    user-select: none;
+  }
+  .no-events {
+    pointe-events: none;
   }
 }
