@@ -2,7 +2,7 @@
 //  # Utilities
 
 export const Options = {
-  debug: false,
+  debug: true,
   anchors: false,
   allowDuplicateTemplates: false,
   exportState: true,
@@ -13,9 +13,9 @@ export const Any = Symbol("Any");
 export const RawObjectPrototype = Object.getPrototypeOf({});
 
 export const createComment = (text) =>
-  Options.anchors === null
-    ? document.createTextNode("")
-    : document.createComment(Options.anchors === "short" ? "" : text);
+  Options.anchors
+    ? document.createComment(Options.anchors === "short" ? "" : text)
+    : document.createTextNode("");
 
 // FIXME: Should be isNothing
 export const isEmpty = (value) =>

@@ -40,9 +40,16 @@
 					<script src="https://unpkg.com/highlightjs@9.16.2/highlight.pack.js"/>
 					<link href="/lib/css/highlight-gold.css" rel="stylesheet"/>
 				</xsl:if>
+				<xsl:for-each select="/*/ui:import[not(@module)]">
+					<script>
+						<xsl:attribute name="src">
+							<xsl:value-of select="@path"/>
+						</xsl:attribute>
+					</script>
+				</xsl:for-each>
 				<script type="importmap">
 					{"imports": {
-					<xsl:for-each select="/*/ui:import">
+					<xsl:for-each select="/*/ui:import[@module!='']">
 						"<xsl:value-of select="@module"/>/": "<xsl:choose><xsl:when test="@path"><xsl:value-of select="@path"/>/</xsl:when><xsl:otherwise>lib/js/<xsl:value-of select="substring-after(@module,'@')"/>/</xsl:otherwise></xsl:choose>",
 					</xsl:for-each>
 					"@codemirror/": "https://deno.land/x/codemirror_esm@v6.0.1/esm/",
@@ -55,7 +62,7 @@
 					<xsl:apply-templates select="//s:*" mode="css"/>
 				</style>
 			</head>
-			<body>
+			<body class="reset">
 				<xsl:if test="//ui:Component">
 					<script><![CDATA[
 						const renderCount = (value,parent) => 	{
