@@ -414,7 +414,7 @@ const onOutAttribute = (attr, root, name) => {
     // or attribute effector.
     const nodeName = node.nodeName;
     return new (
-      name === "style"
+      name === "style" || name.startsWith("style-")
         ? StyleEffector
         : ((name === "value" || name === "disabled") &&
             (nodeName === "INPUT" || nodeName === "SELECT")) ||
