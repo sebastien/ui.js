@@ -2,7 +2,7 @@
 //  # Utilities
 
 export const Options = {
-  debug: true,
+  debug: false,
   anchors: false,
   allowDuplicateTemplates: false,
   exportState: true,
@@ -34,6 +34,15 @@ export const bool = (value) =>
   (value instanceof Array && value.length === 0)
     ? false
     : true;
+
+export const strip = (text, prefix = " ", suffix = prefix) => {
+  if (!text) {
+    return text;
+  }
+  const i = text.startsWith(prefix) ? prefix.length : undefined;
+  const j = text.endsWith(suffix) ? text.length - prefix.length : undefined;
+  return i || j ? text.substring(i || 0, j) : text;
+};
 
 export const onWarning = (message, ...context) => {
   console.warn("[uijs]", message, ...context);
