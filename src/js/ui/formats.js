@@ -86,6 +86,12 @@ export const debug = (value, scope) => {
   console.log("[uijs.debug] Slot value:", { value, scope });
   return value;
 };
+
+export const registerFormat = (name, format) => {
+  Formats[name] = format;
+  return format;
+};
+
 export const Formats = {
   bool,
   text,
