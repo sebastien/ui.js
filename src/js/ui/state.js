@@ -130,6 +130,7 @@ export class StateTree {
         }
       }
     }
+    return [...scopeTopic.path, key];
   }
   _del(topic) {
     if (!topic) {
