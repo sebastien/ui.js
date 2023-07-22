@@ -3,7 +3,7 @@ import {
   parseInput,
   CurrentValueSelector,
   INPUT,
-  INPUTS,
+  SELECTOR,
 } from "./selector.js";
 import { nodePath } from "./paths.js";
 import {
@@ -22,6 +22,7 @@ import {
   Options,
   createComment,
   onError,
+  onWarning,
   makeKey,
   bool,
 } from "./utils.js";
@@ -76,7 +77,7 @@ const Comparators = {
   "<=": (a, b) => a <= b,
 };
 
-const RE_OUT = new RegExp(`^(?<selector>${INPUTS})(:(?<template>[A-Za-z]+))?$`);
+const RE_OUT = new RegExp(`^${SELECTOR}(:(?<template>[A-Za-z]+))?$`);
 const parseOutDirective = (text) => {
   const match = text.match(RE_OUT);
   if (!match) {
