@@ -15,10 +15,12 @@ export class Cell {
 
   bind(scope) {
     this.scope = scope;
+    return this;
   }
 
   unbind() {
     this.scope = undefined;
+    return this;
   }
 
   get value() {
@@ -96,6 +98,7 @@ export class StateCell extends Cell {
         this.scope.state.put(this.path, this.default);
       }
     }
+    return this;
   }
 
   get value() {
@@ -115,12 +118,28 @@ export class StateCell extends Cell {
   updated() {
     return this.set(this.value);
   }
+
+  remove() {
+    this.scope.state.remove(this.path);
+    // TODO: Should we unbind at that point?
+    this.unbind();
+    return this;
+  }
+
+  update(value) {
+    this.scope.state.patch(this.path, value);
+    return this;
+  }
+
   set(value) {
     this.scope.state.put(this.path, value);
+    return this;
   }
 
   append(value) {
-    this.scope.state.append(this.path, value);
+    return new StateCell(this.scope.state.append(this.path, value), value).bind(
+      this.scope
+    );
   }
 
   //   TODO
@@ -281,8 +300,8 @@ class Use {
     return this.cell(new Ref(name));
   }
 
-  global(path) {
-    return this.cell(new Slot(parsePath(path)));
+  global(path, value = undefined) {
+    return this.cell(new Slot(parsePath(path), value));
   }
 
   input(path, value) {
