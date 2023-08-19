@@ -82,6 +82,16 @@ export const timetuple = (_) =>
     : _ instanceof Date
     ? _
     : null;
+
+const htmlParser = new DOMParser();
+export const html = (value, scope) => {
+  const doc = htmlParser.parseFromString(value, "text/html");
+  const res = new DocumentFragment();
+  while (doc.firstChild) {
+    res.appendChild(doc.firstChild);
+  }
+  return res;
+};
 export const debug = (value, scope) => {
   console.log("[uijs.debug] Slot value:", { value, scope });
   return value;
@@ -97,6 +107,7 @@ export const Formats = {
   text,
   count,
   not,
+  html,
   idem,
   type,
   attr,

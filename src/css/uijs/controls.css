@@ -13,8 +13,17 @@
   .selectable {
     cursor: pointer;
   }
+
   .selectable:hover {
     background-color: var(--control-bg-hover);
+  }
+
+  .selectable:focus {
+    background-color: var(--control-bg-focused);
+  }
+
+  .selectable:active {
+    background-color: var(--control-bg-focused);
   }
 
   .pill {

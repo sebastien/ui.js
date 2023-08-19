@@ -497,8 +497,6 @@ const extractSlots = (node) => {
   return hasSlots ? slots : null;
 };
 
-const Keys = new Map();
-
 // --
 // Takes a DOM node that typically has a `data-ui` attribute, looks for the
 // corresponding template in `Templates` and creates a new `Component`
@@ -519,10 +517,16 @@ export const createComponent = (
   // We validate that the template exists.
   const template = templates.get(ui);
   if (!template) {
-    onError(`ui.render: Could not find template '${ui}'`, {
-      node,
-      ui,
-    });
+    onError(
+      `ui.render: Could not find template '${ui}', available templates are ${[
+        ...templates.keys(),
+      ].join(", ")}`,
+      {
+        node,
+        ui,
+        templates,
+      }
+    );
     return null;
   }
 

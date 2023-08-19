@@ -305,7 +305,7 @@
 				<xsl:attribute name="id">
 					<xsl:value-of select="concat('template_',$cid)"/>
 				</xsl:attribute>
-				<div class="template" data-keep="true">
+				<template class="template" data-keep="true">
 					<xsl:attribute name="id">
 						<xsl:value-of select="@name"/>
 					</xsl:attribute>
@@ -325,7 +325,7 @@
 							</xsl:for-each>
 						</script>
 					</xsl:if>
-				</div>
+				</template>
 			</div>
 			<!--
 		We load implicitly referenced components and instanciante
@@ -360,6 +360,8 @@
 			<script id="script-anchor" type="module" data-skip="true">
 				<xsl:text>
 import {ui} from "@ui.js";
+import {loadTemplates} from "@ui/loading.js";
+import { Options } from "@ui/utils.js";
 // We populate the data
 const data={};
 				</xsl:text>
@@ -380,6 +382,11 @@ if (dataElement){
 // FIXME: This only works if the loadXMLTemplate was run before
 // this.
 // We load the imported components as XML templates.
+// TODO: I swapped the scope for document, as the tempalte is not defined
+// in the scope.
+
+Options.allowDuplicateTemplates = true;
+await loadTemplates(document);
 ui(scope, {data_</xsl:text>
 				<xsl:value-of select="$cid"/>
 				<xsl:text>:data}, {}, {allowDuplicateTemplates:true});</xsl:text>
