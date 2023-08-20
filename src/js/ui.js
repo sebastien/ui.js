@@ -34,7 +34,8 @@
 //   state = undefined
 // ) => {};
 
-import { createComponent, controller } from "./ui/components.js";
+import { createComponent } from "./ui/components.js";
+import { controller } from "./ui/controllers.js";
 import { Loader, loadTemplates, createModule } from "./ui/loading.js";
 import { StateTree } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
@@ -44,7 +45,7 @@ import tokens from "./ui/tokens.js";
 // --
 // ## High-Level API
 //
-// This is the main function used to instanciate a set of components in a context.
+// This is the main function used to instantiate a set of components in a context.
 export const ui = (
   scope = document,
   data = {},
