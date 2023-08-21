@@ -30,7 +30,16 @@ class DOM {
   static mount(parent, node) {
     switch (parent.nodeType) {
       case Node.ELEMENT_NODE:
-        node.parentNode !== parent && parent.appendChild(node);
+        if (node instanceof Array) {
+          let n = node[0];
+          n.parentNode !== parent && parent.appendChild(n);
+          for (let i = 1; i < node.length; i++) {
+            DOM.after(n, node[i]);
+            n = node[i];
+          }
+        } else {
+          node.parentNode !== parent && parent.appendChild(node);
+        }
         break;
       default:
         // TODO: Should really be DOM.after, but it breaks the effectors test
@@ -38,8 +47,26 @@ class DOM {
     }
   }
   static unmount(node) {
-    node.parentNode?.removeChild(node);
+    if (node === null || node === undefined) {
+      return node;
+    } else if (node instanceof Array) {
+      for (const n of node) {
+        n.parentNode?.removeChild(n);
+      }
+    } else {
+      node.parentNode?.removeChild(node);
+    }
     return node;
+  }
+  static replace(previous, node) {
+    if (node === null || node === undefined) {
+      return node;
+    } else if (previous instanceof Array) {
+      previous[0].parentNode?.insertBefore(node, previous[0]);
+      DOM.unmount(previous);
+    } else {
+      previous.parentNode?.replaceChild(node, previous);
+    }
   }
 }
 // --
@@ -259,18 +286,20 @@ class ContentEffect extends Effect {
     const isEmpty = value === Empty || value === null || value === undefined;
     if (isEmpty) {
       this.textNode.data = "";
+    } else if (value instanceof DocumentFragment) {
+      if (this.contentNode) {
+        DOM.unmount(this.contentNode);
+      }
+      this.contentNode = [...value.childNodes];
+      this.textNode.data = "";
     } else if (value instanceof Node) {
-      if (
-        this.contentNode &&
-        value !== this.contentNode &&
-        this.contentNode.parentElement
-      ) {
-        this.contentNode.parentElement.replaceChild(value, this.contentNode);
+      if (this.contentNode && value !== this.contentNode) {
+        DOM.replace(this.contentNode, value);
       }
       this.contentNode = value;
       this.textNode.data = "";
     } else {
-      this.contentNode = undefined;
+      DOM.unmount(this.contentNode);
       this.textNode.data =
         value === Empty || value === null || value === undefined
           ? ""
