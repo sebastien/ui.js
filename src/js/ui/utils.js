@@ -2,7 +2,7 @@
 //  # Utilities
 
 export const Options = {
-  debug: false,
+  debug: true,
   anchors: false,
   allowDuplicateTemplates: false,
   exportState: true,

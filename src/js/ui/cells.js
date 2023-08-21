@@ -4,6 +4,9 @@ import { onError } from "./utils.js";
 // ## Controller Cells
 //
 
+// TODO: StateCell -> StoredCell
+// TODO: LocalCell -> InternalCell
+//
 export class Cell {
   constructor() {
     this.scope = undefined;
@@ -34,6 +37,10 @@ export class Cell {
 
   set(value) {
     throw new Error("Cell.set not implemented", { cell: this });
+  }
+
+  clear() {
+    this.set(undefined);
   }
 
   onDeferred(promise, operation) {

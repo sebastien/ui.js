@@ -87,8 +87,8 @@ const htmlParser = new DOMParser();
 export const html = (value) => {
   const doc = htmlParser.parseFromString(value, "text/html");
   const res = new DocumentFragment();
-  while (doc.firstChild) {
-    res.appendChild(doc.firstChild);
+  while (doc.body && doc.body.firstChild) {
+    res.appendChild(doc.body.firstChild);
   }
   return res;
 };

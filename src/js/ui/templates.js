@@ -283,6 +283,7 @@ const replaceNodeWithPlaceholder = (node, placeholder) => {
 // HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
 // will return `null` (while `getAttribute("on:send")` will return
 // the value).
+// FIXME: Is node is slot, then event handlers are no good
 const getNodeEventHandlers = (node) =>
   [...node.attributes].reduce((r, { name, value }) => {
     if (name.startsWith("on:")) {

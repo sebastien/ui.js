@@ -1,6 +1,6 @@
 import { parsePath } from "./paths.js";
 import { PubSub } from "./pubsub.js";
-import { type } from "./utils.js";
+import { onError, type } from "./utils.js";
 
 // --
 // ## State Tree
@@ -95,7 +95,8 @@ export class StateTree {
   patch(path = null, value = undefined, clear = false) {
     const p = path instanceof Array ? path : path ? parsePath(path) : [];
     const scope = p.length === 0 ? null : this.scope(p);
-    const scopeTopic = this.bus.get(p.slice(0, -1), false);
+    // We make sure to create the topic
+    const scopeTopic = this.bus.get(p.slice(0, -1), true);
     const key = p.at(-1);
     if (
       clear &&

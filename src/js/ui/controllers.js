@@ -2,6 +2,7 @@ import {
   Cell,
   Slot,
   Ref,
+  LocalCell,
   StateCell,
   AtomReducer,
   ArrayReducer,
@@ -55,6 +56,9 @@ class Use {
         new Slot([...this.scope.path, ...parsePath(path)], value)
       );
     }
+  }
+  internal(value) {
+    return this.cell(new LocalCell(value));
   }
 
   // TODO: Should deprecate that

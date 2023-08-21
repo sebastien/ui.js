@@ -46,6 +46,18 @@ export const dimension = (value) => {
   }
 };
 
+export const area = (value) => position(value).concat(dimension(value));
+
+export const place = (node, area) => {
+  node.style.left = `${area[0]}px`;
+  node.style.top = `${area[1]}px`;
+  if (area.length > 2) {
+    node.style.width = `${area[2]}px`;
+    node.style.height = `${area[3]}px`;
+  }
+  return node;
+};
+
 export const reldimension = (context, value) => {
   const a = dimension(context);
   const b = dimension(value);
