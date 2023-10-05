@@ -380,11 +380,13 @@ export class Selection {
     // true for composite selections.
     // --
     // If it's a many selector, it needs to be changed right away
-    if (rawValue == Empty) {
-      console.warn("RAW VALUE", { input, index, rawValue });
-    }
     let hasChanged = this.alwaysChange || this.selector.isMany;
-    const value = input.format ? input.format(rawValue, this.scope) : rawValue;
+    const value =
+      rawValue === Empty
+        ? undefined
+        : input.format
+        ? input.format(rawValue, this.scope)
+        : rawValue;
     const current = this.raw;
     switch (this.selector.type) {
       case Selector.SINGLE:
@@ -407,7 +409,11 @@ export class Selection {
           const k = this.selector.inputs[index].key;
           // FIXME: Difference between SCOPE and VALUE
           if (current[k] !== value) {
-            this.raw[k] = value;
+            if (rawValue === Empty) {
+              delete this.raw[k];
+            } else {
+              this.raw[k] = value;
+            }
             hasChanged = true;
           }
         }
