@@ -225,10 +225,10 @@ export class Effector {
   // using the given `selector`.
   constructor(nodePath, selector) {
     this.nodePath = nodePath;
-    this.selector = selector;
-    if (!selector) {
+    this.selector = selector || CurrentValueSelector;
+    if (!this.selector) {
       onError("Effector(): Effector has no selector defined", {
-        selector,
+        selector: this.selector,
         nodePath,
       });
     }

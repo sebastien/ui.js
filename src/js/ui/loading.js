@@ -253,6 +253,19 @@ export const loadXMLTemplate = (url) =>
         templates.forEach((_) => registerTemplate(_.name, _));
         scripts.forEach((_) => registerScript(_));
         stylesheets.forEach((_) => registerStylesheet(_));
+        console.log(
+          "[uijs] loading.loadXMLTemplate: Loaded template",
+          { url },
+          { scripts, stylesheets, templates }
+        );
+        if (templates.length == 0) {
+          onError("loadXMLTemplate: url did not contain any template", url, {
+            node,
+            templates,
+            scripts,
+            stylesheets,
+          });
+        }
         return { scripts, stylesheets, templates };
       })
     )
@@ -330,7 +343,12 @@ export const loadTemplates = (
     : [node];
   for (const selector of selectors) {
     for (const n of roots) {
-      for (const tmpl of n.querySelectorAll(selector)) {
+      // The root may match the selector itself, so we need to insert it
+      const matches = [...n.querySelectorAll(selector)];
+      if (n.matches(selector)) {
+        matches.splice(0, 0, n);
+      }
+      for (const tmpl of matches) {
         // This will register the templates in `templates`
         const src = tmpl.dataset.src;
         if (src) {

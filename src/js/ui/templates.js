@@ -316,40 +316,89 @@ const parseTemplate = (template) => {
 // defines the data path for which the slot will be applied, if it is suffixed
 // with `.*` then the slot will be mapped for each selected item.
 const onSlotNode = (node, root, templateName) => {
-  const select = node.getAttribute("select");
-  if (select) {
-    const selector = parseSelector(select);
-    const content = contentAsFragment(node);
-    // TODO: Content should be used as placeholder
-    const template =
-      parseTemplate(node.getAttribute("template")) ||
-      createTemplate(
-        content,
-        makeKey(templateName ? `${templateName}_fragment` : "fragment"),
-        false /*no cloning needed*/
-      );
-
-    const key = makeKey(
-      node.dataset.id || node.getAttribute("name") || template
-    );
-    const effector = new SlotEffector(
-      nodePath(node, root),
-      selector,
-      template,
-      getNodeEventHandlers(node),
-      key
-    );
-
-    // We replace the slot by a placeholder node. This means that there should
-    // be no slot placeholder at that point.
-    replaceNodeWithPlaceholder(
-      node,
-      `${key}|Slot|${template.name || template}|${selector.toString()}`
-    );
-    return effector;
-  } else {
-    return null;
+  // We retrieve the `template` and `selector` from the attributes.
+  const template = node.getAttribute("template");
+  const selector = node.hasAttribute("selector")
+    ? parseSelector(node.getAttribute("selector"))
+    : null;
+  // We extract the bindings from the attributes
+  const bindings = new Map();
+  for (const attr of node.attributes) {
+    if (attr.name !== "template" && attr.name !== "select") {
+      const v = attr.value;
+      if (v.startsWith("{") && v.endsWith("}")) {
+        bindings.set(attr.name, parseSelector(v.slice(1, -1)));
+      } else {
+        // This is a raw (static binding)
+        bindings.set(attr.name, attr.value);
+      }
+    }
   }
+  // If the node has a `template` node, then the contents will be interpreted
+  // as the inputs to be given to the template upon rendering.
+  if (template) {
+    for (const child of [...node.children]) {
+      if (
+        (child.nodeName === "SLOT" || child.nodeName == "slot") &&
+        child.hasAttribute("name")
+      ) {
+        // TODO: Here we should detect if the slot has template, in which
+        // case it's a slot effector, oterwise is may just be a data
+        // selector.
+        const effector = "TODO:Slot child effector";
+        bindings.set(child.getAttribute("name"), effector);
+        node.removeChild(child);
+      }
+    }
+  }
+  // We remove the slot node from the template object, as we don't
+  // want it to appear in the output. We replace it with a placeholder.
+  const key = makeKey(node.dataset.id || node.getAttribute("name") || template);
+  const path = nodePath(node, root);
+  replaceNodeWithPlaceholder(
+    node,
+    `${key}|Slot|${template.name || template}|${
+      selector ? selector.toString() : "."
+    }`
+  );
+  return new SlotEffector(path, selector, template);
+
+  // NOTE: Previous behaviour, left for reference
+  // const select = node.getAttribute("select");
+  // if (select) {
+  //   const selector = parseSelector(select);
+  //   const content = contentAsFragment(node);
+  //   // TODO: Content should be used as placeholder
+  //   const template =
+  //     parseTemplate(node.getAttribute("template")) ||
+  //     createTemplate(
+  //       content,
+  //       makeKey(templateName ? `${templateName}_fragment` : "fragment"),
+  //       false /*no cloning needed*/
+  //     );
+
+  //   console.log("SLOT TEMPLATE", node, template);
+  //   const key = makeKey(
+  //     node.dataset.id || node.getAttribute("name") || template
+  //   );
+  //   const effector = new SlotEffector(
+  //     nodePath(node, root),
+  //     selector,
+  //     template,
+  //     getNodeEventHandlers(node),
+  //     key
+  //   );
+
+  //   // We replace the slot by a placeholder node. This means that there should
+  //   // be no slot placeholder at that point.
+  //   replaceNodeWithPlaceholder(
+  //     node,
+  //     `${key}|Slot|${template.name || template}|${selector.toString()}`
+  //   );
+  //   return effector;
+  // } else {
+  //   return null;
+  // }
 };
 
 // --
@@ -694,8 +743,10 @@ const view = (root, templateName = undefined) => {
 
   // --
   // ### slot nodes
-  //
-  for (const node of iterNodes(root, "slot", "SLOT")) {
+
+  // NOTE: We pre-expand the iterator into an array as onSlotNode
+  // is destructive. We want all the slots first and the we process them.
+  for (const node of [...iterNodes(root, "slot", "SLOT")]) {
     const e = onSlotNode(node, root, templateName);
     e && effectors.push(e);
   }
