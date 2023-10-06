@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" media="screen" href="../uijs.xslt"?>
+<UI xmlns="https://github.com/sebastien/uijs" xmlns:do="https://github.com/sebastien/uijs#do" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0">
+  <Component name="Item">
+    <Description><![CDATA[A color palette editor]]></Description>
+    <View>
+      <s:Item display="flex" align-items="center" gap="var(--gap-2)">
+        <s:icon class="icon dimmed" out:content="icon" font-size="1em"/>
+        <s:label out:content="label"/>
+      </s:Item>
+    </View>
+    <Data><![CDATA[
+			{
+				icon:"view_column_2",
+				label:"Column 1",
+			}
+				]]></Data>
+  </Component>
+</UI>

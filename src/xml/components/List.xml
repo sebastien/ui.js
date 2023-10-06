@@ -1,0 +1,38 @@
+<?xml-stylesheet type="text/xsl" media="screen" href="../uijs.xslt"?>
+<UI xmlns="https://github.com/sebastien/uijs" xmlns:do="https://github.com/sebastien/uijs#do" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0">
+    <Component name="List">
+        <!-- TODO: Controller features: selectable, select min, select max, draggable -->
+        <Description><![CDATA[ XXX ]]></Description>
+        <View>
+            <s:List class="rounded-item shadow" border="1px solid var(--control-bd)">
+                <slot select="items.*">
+                    <li class="selectable item" out:data-selected="isSelected" >
+                        <!-- TODO: We should allow for the componsition of a custom renderer here,
+                            to override the default presentation
+                        -->
+                        <s:status out:data-selected="isSelected">
+                            X
+                        </s:status>
+                        <span out:content="label" />
+                        <s:actions do:when="actions">
+                        </s:action>
+                    </li>
+                </slot>
+            </s:List>
+        </View>
+        <Data>
+                {items:[
+  { "label": "Paris, France", "value": "Paris" },
+  { "label": "New York City, United States", "value": "New York City" },
+  { "label": "Tokyo, Japan", "value": "Tokyo" },
+  { "label": "London, United Kingdom", "value": "London" },
+  { "label": "Sydney, Australia", "value": "Sydney" },
+  { "label": "Rio de Janeiro, Brazil", "value": "Rio de Janeiro" },
+  { "label": "Moscow, Russia", "value": "Moscow" },
+  { "label": "Cairo, Egypt", "value": "Cairo" },
+  { "label": "Cape Town, South Africa", "value": "Cape Town" },
+  { "label": "Dubai, United Arab Emirates", "value": "Dubai" }
+                ]}
+		</Data>
+    </Component>
+</UI>
