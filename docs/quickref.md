@@ -1,24 +1,43 @@
-## Effectors
+## Slots
 
-### Content (`out:{content,*}`)
+### Expanding to a value
 
--   Expand value: `<slot out:content="SELECTOR" />` to replace the slot
-    with the string-representation of the selected value(s).
+``` html
+<slot select="path.to.value|processor" />
+```
 
--   Apply template: `<slot out:content="SELECTOR:TEMPLATE" />` to apply
-    the `TEMPLATE` with the selected value(s)
+### Expanding to a registered template
 
--   Inline template: `<slot out:content="SELECTOR">TEMPLATE</slot>` to
-    apply the `TEMPLATE` with the selected value(s)
+``` html
+<slot template="ComponentName" />
+```
+
+## Selectors
+
+    SELECTOR  | PROCESSOR : RENDERER
+    SELECTOR* | PROCESSOR : RENDERER
+
+- Data path
+
+- Renderer
+
+- Expand value: `<slot out:content="SELECTOR" />` to replace the slot
+  with the string-representation of the selected value(s).
+
+- Apply template: `<slot out:content="SELECTOR:TEMPLATE" />` to apply
+  the `TEMPLATE` with the selected value(s)
+
+- Inline template: `<slot out:content="SELECTOR">TEMPLATE</slot>` to
+  apply the `TEMPLATE` with the selected value(s)
 
 ### Conditionals (`do:{match,case}`)
 
--   `<slot do:match="SELECTOR">...</slot>` with
-    `<* do:case="VALUE|PREDICATE">`
+- `<slot do:match="SELECTOR">...</slot>` with
+  `<* do:case="VALUE|PREDICATE">`
 
 ### EVENTS (`on:*`)
 
--   `<* on:click="SELECTOR!HANDLER">…`
+- `<* on:click="SELECTOR!HANDLER">…`
 
 ## Selectors
 
@@ -27,15 +46,15 @@ Are used to select data globally (shared space) or locally
 
 Shared space:
 
--   `settings.theme`: absolute
--   `.user.name`: relative to the current path
+- `settings.theme`: absolute
+- `.user.name`: relative to the current path
 
 Component-local:
 
--   `@items`: absolute
+- `@items`: absolute
 
 Special:
 
--   `#`: current key or index in a collection
--   `*`: selects a collection items, like `.items.*`, instead of the
-    collection itself.
+- `#`: current key or index in a collection
+- `*`: selects a collection items, like `.items.*`, instead of the
+  collection itself.

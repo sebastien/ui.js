@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Structured Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cousine:wght@400;700&amp;family=Karla:wght@400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="../css/uijs.css" rel="stylesheet" />
+    <link href="../css/example-structured-editor.css" rel="stylesheet" />
+  </head>
+  <div data-ui="Editor"></div>
+  <template id="Editor">
+    Editor
+    <slot out:content=".content.*@EditorNode" />
+  </template>
+  <template id="EditorNode">
+    <slot do:match=".type">
+      <span do:case="'inline'"><slot out:content=".content" /></span>
+      <span do:case>
+        <slot out:content=".content.*@EditorNode" />
+      </span>
+    </slot>
+  </template>
+  <body>
+    <script type="module">
+      import ui from "../js/ui.js";
+      const content = [
+        { type: "inline", content: "hello" },
+        { type: "inline", content: "world" },
+        {
+          type: "block",
+          content: [
+            { type: "inline", content: "A" },
+            { type: "inline", content: "B" },
+          ],
+        },
+      ];
+      ui(document, {
+        content,
+      });
+    </script>
+  </body>
+</html>

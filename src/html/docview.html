@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en-nz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="../css/uijs.css" rel="stylesheet" />
+    <script type="importmap">
+      { "@ui.js": "../js/ui.js", "@ui/": "../js/ui/" }
+    </script>
+    <script type="importmap">
+      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+    </script>
+    <title>DocView example</title>
+  </head>
+  <body>
+    <header>
+      <h1>Docview</h1>
+      <p>This is an example of creating a Zim-like notebook.</p>
+    </header>
+
+    <div class="DocView stack fit bd bd-h">
+      <nav class="search bd">
+        <input type="search" class="fit-w" />
+      </nav>
+      <nav class="overflow-w row" style="height: 10em">
+        <section class="panel fit-h bd-r" style="width: 25%">
+          <ul>
+            <li class="item selectable">
+              <span class="label">basekit</span>
+            </li>
+          </ul>
+        </section>
+        <section class="panel fit-h bd-r no-gap" style="width: 25%">
+          <ul>
+            <li class="item selectable">
+              <span class="label">utils</span>
+            </li>
+          </ul>
+        </section>
+        <section class="panel fit-h" style="width: 25%">
+          <ul>
+            <li class="item selectable">
+              <span class="label">Files</span>
+            </li>
+            <li class="item selectable">
+              <span class="label">mkdtemp</span>
+            </li>
+            <li class="item selectable">
+              <span class="label">sha257sum</span>
+            </li>
+          </ul>
+        </section>
+      </nav>
+      <main class="grid-1_2 grow bd-t">
+        <aside class="bd-r pad">
+          <h4>Symbol</h4>
+        </aside>
+        <section class="pad">
+          <pre>Source code</pre>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import ui from "@ui.js";
+      ui(document, { message: "Hello, world!" });
+    </script>
+  </body>
+</html>
