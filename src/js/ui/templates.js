@@ -322,15 +322,15 @@ const onSlotNode = (node, root, templateName) => {
     ? parseSelector(node.getAttribute("selector"))
     : null;
   // We extract the bindings from the attributes
-  const bindings = new Map();
+  const bindings = {};
   for (const attr of node.attributes) {
     if (attr.name !== "template" && attr.name !== "select") {
       const v = attr.value;
       if (v.startsWith("{") && v.endsWith("}")) {
-        bindings.set(attr.name, parseSelector(v.slice(1, -1)));
+        bindings[attr.name] = parseSelector(v.slice(1, -1));
       } else {
         // This is a raw (static binding)
-        bindings.set(attr.name, attr.value);
+        bindings[attr.name] = attr.value;
       }
     }
   }
@@ -342,11 +342,17 @@ const onSlotNode = (node, root, templateName) => {
         (child.nodeName === "SLOT" || child.nodeName == "slot") &&
         child.hasAttribute("name")
       ) {
-        // TODO: Here we should detect if the slot has template, in which
-        // case it's a slot effector, oterwise is may just be a data
-        // selector.
-        const effector = "TODO:Slot child effector";
-        bindings.set(child.getAttribute("name"), effector);
+        // NOTE: This may be a performance issue.
+        // If we're passing data through nested slots it's going to
+        // be a nested template. The reason for that is that we don't know
+        // what will be done with that slot. It could be passed down, it
+        // could be rendered once, or many times.
+        const container = document.createElement("div");
+        while (child.firstChild) {
+          container.appendChild(child.firstChild);
+        }
+        const name = child.getAttribute("name");
+        bindings[name] = view(container, `${templateName}.{name}`);
         node.removeChild(child);
       }
     }
@@ -361,7 +367,7 @@ const onSlotNode = (node, root, templateName) => {
       selector ? selector.toString() : "."
     }`
   );
-  return new SlotEffector(path, selector, template);
+  return new SlotEffector(path, selector, template, undefined, bindings);
 
   // NOTE: Previous behaviour, left for reference
   // const select = node.getAttribute("select");

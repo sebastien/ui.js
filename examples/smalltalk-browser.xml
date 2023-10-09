@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" media="screen" href="../lib/xml/uijs.xslt"?>
-<UI xmlns="https://github.com/sebastien/uijs" xmlns:do="https://github.com/sebastien/uijs#do" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:in="https://github.com/sebastien/uijs#in" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0" noraw="">
+<UI xmlns="https://github.com/sebastien/uijs" xmlns:do="https://github.com/sebastien/uijs#do" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:in="https://github.com/sebastien/uijs#in" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0" raw="false">
   <import module="@ui" path="/lib/js/ui"/>
   <import components="../lib/xml/components/"/>
   <import component="Item"/>
@@ -11,8 +11,9 @@
           <!--
                 <x:Item><in:icon><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="black"/></svg></in:icon><in:label>Item label</in:label></x:Item>
           -->
-            <slot template="Item" label="Item One"/>
-            <slot template="Item"><slot name="label">Item Two</slot></slot>
+            <slot template="Item" label="Item 1" title="Component with inline value"/>
+            <slot template="Item" label="{label}" title="Component with selected value"/>
+            <slot template="Item" title="Component with slot value"><slot name="label">Item Two</slot></slot>
        </s:Smalltalk>
     </View>
   </Applet>

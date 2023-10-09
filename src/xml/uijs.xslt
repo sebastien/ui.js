@@ -167,7 +167,7 @@ const scope=(document.getElementById("</xsl:text>
       <xsl:text>")||document);
 </xsl:text>
       <!-- Adding @raw to the UI will disable the JavaScript expansion -->
-      <xsl:if test="/ui:UI[not(@raw)]">
+      <xsl:if test="/ui:UI[not(@raw='true')]">
         <xsl:text>ui(scope, {</xsl:text>
         <xsl:value-of select="$cid"/>
         <xsl:text>:data}, {}, {allowDuplicateTemplates:false});</xsl:text>

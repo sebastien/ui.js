@@ -6,7 +6,7 @@
     <View>
       <s:Item display="flex" align-items="center" gap="var(--gap-2)">
         <s:icon class="icon dimmed" out:content="icon" font-size="1em"/>
-        <s:label out:content="label"/>
+        <s:label out:content="label" out:title="title"/>
       </s:Item>
     </View>
     <Data><![CDATA[

@@ -14,6 +14,8 @@ import {
 } from "./utils.js";
 import { Templates } from "./templates.js";
 
+// --
+// A collection of utilities to better work with the DOM
 class DOM {
   static after(previous, node) {
     switch (previous.nextSibling) {
@@ -75,14 +77,22 @@ class DOM {
 //
 
 // -- doc
+// The effect scope encapsulates the state of an effector, including
+// where it gets its data from.
 
 export class EffectScope {
   constructor(state, path, localPath, slots, key, parent = null) {
+    // State store, which is a state tree and a pub/sub bus.
     this.state = state;
+    // Main data selection path, the root for relative selectors
     this.path = path;
+    // Path to the effect scope in the state store.
     this.localPath = localPath;
+    // Key if the effect is part of a collection
     this.key = key;
+    // TODO: Not sure what this is
     this.slots = slots;
+    // Event handlers declared within the scope.
     this.handlers = new Map();
     this.parent = parent;
   }
@@ -91,10 +101,21 @@ export class EffectScope {
     return this.state.get(this.path);
   }
 
+  get local() {
+    return this.state.get(this.localPath);
+  }
+
   update(value, clear = false) {
     clear
       ? this.state.put(this.path, value)
       : this.state.patch(this.path, value);
+    return this.value;
+  }
+
+  updateLocal(value, clear = false) {
+    clear
+      ? this.state.put(this.localPath, value)
+      : this.state.patch(this.localPath, value);
     return this.value;
   }
 
@@ -542,7 +563,7 @@ class EventEffect extends Effect {
 // NOTE: I think the only thing that a slot effector has to do is
 // to detect add remove and relay these.
 export class SlotEffector extends Effector {
-  constructor(nodePath, selector, templateName, handlers) {
+  constructor(nodePath, selector, templateName, handlers, bindings) {
     super(nodePath, selector);
     // TODO: Selectors for slots should not have a format, slots pass
     // down the value directly to a template.
@@ -550,6 +571,7 @@ export class SlotEffector extends Effector {
     // The handlers map event names to the path at which the incoming
     // events should be stored/relayed.
     this.handlers = handlers;
+    this.bindings = bindings;
     // Note that template name can also be a selector here.
     this.templateName = templateName;
     if (!templateName) {
@@ -558,6 +580,7 @@ export class SlotEffector extends Effector {
         { nodePath, selector }
       );
     } else if (typeof templateName === "string") {
+      // TODO: We should replace these by Enum
       this.templateType = "str";
       this._template = undefined;
     } else if (templateName instanceof Selector) {
@@ -709,10 +732,16 @@ class SingleSlotEffect extends SlotEffect {
         `_|SingleSlotEffect`
       );
       DOM.after(this.node, node);
+      const scope = this.scope.derive(this.effector.selector.path);
+      //  TODO: Alternatitvely we could use Prototypes for that
+      if (this.effector.bindings) {
+        scope.updateLocal(this.effector.bindings);
+        console.log("XXXX LOCAL:TODO THIS SHOULD NOT BE EMPTY", scope.local);
+      }
       this.view = this.template
         ?.apply(
           node, // node
-          this.scope.derive(this.effector.selector.path) // scope, derived
+          scope // scope, derived
         )
         ?.init();
       return this.view;
