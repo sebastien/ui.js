@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/ui.css" type="text/css" media="all">
+  </head>
+  <body>
+    <section>
+      <!-- We denote that we want an instance of the component -->
+      <slot template="Announcements" title="NZX Announcements"/>
+    </section>
+      <template name="Announcements"
+          inout:selection="0"
+          in:title
+          in:sources
+      >
+      <div class="card">
+        <h1 out:content="title"></h1>
+        <label>Source</label>
+
+        <!-- NOTE: We embed a JS expression here in the effect -->
+        <select class="selector" x:for="sources" on:change="selection={parseInt(_.target.value)}">
+          <!-- NOTE: We could do on:Selected="selection=" -->
+          <option out:value=".index" out:content=".label" />
+        </select>
+
+        <!-- NOTE: We could have something like ann=announcements -->
+        <ul class="list" x:for="announcements">
+          <li class="item">
+            <code out:content=".id" />
+            <code out:content=".companyCode" />
+            <code out:content=".securityCode" />
+          </li>
+        </ul>
+      </div>
+    </template>
+
+    <script type="module">
+      import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+      ui(document, { sources: [
+        {url:"apis.nzx.com/public/1.0", label:"Public API"}
+      ]});
+    </script>
+  </body>
+
+</html>
