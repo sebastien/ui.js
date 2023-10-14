@@ -6,6 +6,7 @@ import { onError } from "./utils.js";
 
 // TODO: StateCell -> StoredCell
 // TODO: LocalCell -> InternalCell
+// TODO: Shoudl be slots
 //
 export class Cell {
   constructor() {

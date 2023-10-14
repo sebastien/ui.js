@@ -73,6 +73,11 @@ In the document:
     For applications where low latency is important (interactive
     editors), having granular updates is a must.
 
+-  *Direct HTML, or XML/XSLT shorthands*: UI.js can be written using XML, 
+    which provides syntatic sugar and additional features to write self
+    documenting components and stylesheets.
+
+
 # References
 
 -   [DIY UI](https://observablehq.com/@sebastien/diy-ui),
