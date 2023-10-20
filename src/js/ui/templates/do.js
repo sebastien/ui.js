@@ -1,10 +1,9 @@
-import { parseSelector } from "../selector.js";
 import { nodePath } from "../path.js";
 import { MatchEffector } from "../effectors.js";
 import { Any } from "../utils/values.js";
 import { onError } from "../utils/logging.js";
 import { makeKey } from "../utils/ids.js";
-import { parseValue } from "./directives.js";
+import { parseValue, parseSelector } from "./directives.js";
 import { onTemplateNode } from "./template.js";
 import {
   asFragment,

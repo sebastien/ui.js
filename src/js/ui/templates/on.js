@@ -1,7 +1,7 @@
-import { INPUT, parseInput } from "../selector.js";
 import { EventEffector } from "../effectors.js";
 import { nodePath } from "../path.js";
 import { onError } from "../utils/logging.js";
+import { parseOnDirective } from "../templates/directives.js";
 
 export const onOnAttribute = (processor, attr, root, name) => {
   const node = attr.ownerElement;
@@ -28,42 +28,6 @@ export const onOnAttribute = (processor, attr, root, name) => {
     }
   }
   return null;
-};
-
-//
-// --
-// ### Handling events: `on:EVENT=DIRECTIVE`.
-//
-// The `on:EVENT=DIRECTIVE` directive is as follows:
-//
-// - `EVENT` is an event name
-// - `DIRECTIVE` is a comma-separated list of mappings `SELECTOR=SELECTOR` and
-//    event names.
-const RE_INPUT = new RegExp(`^${INPUT}$`);
-const RE_EVENT = new RegExp(`^(?<name>([A-Z][A-Za-z]+)+)(?<stops>\\.)?$`);
-export const parseOnDirective = (text) => {
-  const match = text.split(",").reduce(
-    (r, v) => {
-      let match = undefined;
-      const t = v.trim();
-      if ((match = t.match(RE_EVENT))) {
-        const { name, stops } = match.groups;
-        r.events.push(name);
-        if (stops) {
-          r.stops = true;
-        }
-      } else if ((match = t.match(RE_INPUT))) {
-        r.inputs.push(parseInput(t));
-      }
-      return r;
-    },
-    { inputs: [], events: [] }
-  );
-  if (match.inputs.length || match.events.length || match.stops) {
-    return match;
-  } else {
-    return null;
-  }
 };
 
 // We use the attribute nodes directly, as there is an asymetry in

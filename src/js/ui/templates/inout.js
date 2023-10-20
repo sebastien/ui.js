@@ -1,7 +1,6 @@
 import { onError } from "../utils/logging.js";
 import { isNodeEmpty, contentAsFragment, createAnchor } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
-import { SELECTOR, parseSelector } from "../selector.js";
 import { nodePath } from "../path.js";
 import {
   AttributeEffector,
@@ -12,20 +11,7 @@ import {
 } from "../effectors.js";
 import { onTemplateNode } from "./template.js";
 import { findEventHandlers } from "./on.js";
-
-const RE_OUT = new RegExp(`^${SELECTOR}(:(?<template>[A-Za-z]+))?$`);
-export const parseOutDirective = (text) => {
-  const match = text.match(RE_OUT);
-  if (!match) {
-    return null;
-  } else {
-    const { selector, template } = match.groups;
-    return {
-      selector: selector ? parseSelector(selector) : null,
-      template,
-    };
-  }
-};
+import { parseOutDirective } from "./directives.js";
 
 // --
 // Processes an `out:NAME=SELECTOR` attribute, where `out:content=SELECTOR`

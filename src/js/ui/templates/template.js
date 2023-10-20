@@ -1,4 +1,4 @@
-import { parseSelector } from "../selector.js";
+import { parseSelector } from "./directives.js";
 import { onError } from "../utils/logging.js";
 import { TemplateEffector } from "../effectors.js";
 import { createView } from "./view.js";

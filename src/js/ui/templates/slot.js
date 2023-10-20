@@ -1,4 +1,4 @@
-import { parseSelector } from "../selector.js";
+import { parseSelector } from "./directives.js";
 import { nodePath } from "../path.js";
 import { SlotEffector } from "../effectors.js";
 import { replaceNodeWithPlaceholder } from "../utils/dom.js";

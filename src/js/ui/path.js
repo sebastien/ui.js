@@ -89,4 +89,22 @@ export const parsePath = (path) => {
   }
 };
 
+export const commonPath = (paths) => {
+  let i = 0;
+  let n = paths.reduce(
+    (r, _, i) => (i === 0 ? _.length : Math.min(_.length, r)),
+    0
+  );
+  const op = paths[0];
+  while (i < n) {
+    for (const cp of paths) {
+      if (cp[i] !== op[i]) {
+        return cp.slice(0, i);
+      }
+    }
+    i++;
+  }
+  return op.slice(0, n);
+};
+
 // EOF

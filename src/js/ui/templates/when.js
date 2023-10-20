@@ -1,10 +1,10 @@
 import { WhenEffector } from "../effectors.js";
-import { CurrentValueSelector, parseSelector } from "../selector.js";
+import { CurrentValueSelector } from "../selector.js";
 import { nodePath } from "../path.js";
 import { onError } from "../utils/logging.js";
 import { makeKey } from "../utils/ids.js";
 import { bool } from "../utils/values.js";
-import { parseValue } from "./directives.js";
+import { parseValue, parseSelector } from "./directives.js";
 import { onTemplateNode } from "./template.js";
 
 const Comparators = {
