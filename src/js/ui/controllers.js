@@ -8,7 +8,7 @@ import {
   ArrayReducer,
   MapReducer,
 } from "./cells.js";
-import { parsePath } from "./paths.js";
+import { parsePath } from "./path.js";
 
 // --
 // The `Use` class creates a factory object that creates cells.

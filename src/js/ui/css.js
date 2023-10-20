@@ -1,4 +1,5 @@
-import { map, numfmt } from "./utils.js";
+import { map } from "./utils/collections.js";
+import { numfmt } from "./utils/text.js";
 import { idem } from "./formats.js";
 import { Color } from "./color.js";
 

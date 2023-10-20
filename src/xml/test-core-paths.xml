@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" media="screen" href="./uijs.xsl.xml"?>
 <Test>
-	<title>Path Parsing</title>
-	<Case>
-	<![CDATA[
-		const {pathData, parsePath, composePaths} = await import(`${path.js}/ui/paths.js`);
+  <title>Path Parsing</title>
+  <Case><![CDATA[
+		const {pathData, parsePath, composePaths} = await import(`${path.js}/ui/path.js`);
 		test(({expect})=>{
 			expect()
 				.as("Parsing the  key symbol")
@@ -19,6 +18,5 @@
 				.as("Parsing composed paths")
 				.same(pathData(["@"], {a:0, b:1, c:2}, 0, ["test", "example"]));
 		});
-	]]>
-	</Case>
+	]]></Case>
 </Test>

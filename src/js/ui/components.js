@@ -1,6 +1,8 @@
 import { Templates } from "./templates.js";
 import { EffectScope } from "./effectors.js";
-import { createComment, onError, makeKey } from "./utils.js";
+import { createComment } from "./utils/dom.js";
+import { onError } from "./utils/logging.js";
+import { makeKey } from "./utils/ids.js";
 import { Controllers, createController } from "./controllers.js";
 
 // ============================================================================

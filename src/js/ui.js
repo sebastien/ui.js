@@ -39,7 +39,8 @@ import { controller } from "./ui/controllers.js";
 import { Loader, loadTemplates, createModule } from "./ui/loading.js";
 import { StateTree } from "./ui/state.js";
 import { stylesheet } from "./ui/css.js";
-import { Options, onWarning } from "./ui/utils.js";
+import { onWarning } from "./ui/utils/logging.js";
+import Options from "./ui/utils/options.js";
 import tokens from "./ui/tokens.js";
 
 // --

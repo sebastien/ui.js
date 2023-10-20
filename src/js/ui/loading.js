@@ -1,5 +1,6 @@
 import { Templates, createTemplate } from "./templates.js";
-import { Options, onWarning, onError } from "./utils.js";
+import Options from "./utils/options.js";
+import { onWarning, onError } from "./utils/logging.js";
 
 // --
 // # Loader

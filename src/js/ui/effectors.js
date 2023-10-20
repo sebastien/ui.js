@@ -1,76 +1,14 @@
-import { parsePath, pathNode } from "./paths.js";
+import { parsePath, pathNode } from "./path.js";
+import { DOM } from "./utils/dom.js";
 import { Selector, CurrentValueSelector } from "./selector.js";
-import {
-  Options,
-  Any,
-  Empty,
-  isAtom,
-  isEmpty,
-  onError,
-  makeKey,
-  assign,
-  access,
-  createComment,
-} from "./utils.js";
+import Options from "./utils/options.js";
+import { Any, Empty, isAtom, isEmpty } from "./utils/values.js";
+import { onError } from "./utils/logging.js";
+import { makeKey } from "./utils/ids.js";
+import { assign, access } from "./utils/collections.js";
+import { createComment } from "./utils/dom.js";
 import { Templates } from "./templates.js";
 
-// --
-// A collection of utilities to better work with the DOM
-class DOM {
-  static after(previous, node) {
-    switch (previous.nextSibling) {
-      case null:
-        previous.parentNode && previous.parentNode.appendChild(node);
-        return;
-      case node:
-        return;
-      default:
-        previous.parentNode &&
-          previous.parentNode.insertBefore(node, previous.nextSibling);
-    }
-  }
-  static mount(parent, node) {
-    switch (parent.nodeType) {
-      case Node.ELEMENT_NODE:
-        if (node instanceof Array) {
-          let n = node[0];
-          n.parentNode !== parent && parent.appendChild(n);
-          for (let i = 1; i < node.length; i++) {
-            DOM.after(n, node[i]);
-            n = node[i];
-          }
-        } else {
-          node.parentNode !== parent && parent.appendChild(node);
-        }
-        break;
-      default:
-        // TODO: Should really be DOM.after, but it breaks the effectors test
-        DOM.after(parent, node);
-    }
-  }
-  static unmount(node) {
-    if (node === null || node === undefined) {
-      return node;
-    } else if (node instanceof Array) {
-      for (const n of node) {
-        n.parentNode?.removeChild(n);
-      }
-    } else {
-      node.parentNode?.removeChild(node);
-    }
-    return node;
-  }
-  static replace(previous, node) {
-    if (node === null || node === undefined) {
-      return node;
-    } else if (previous instanceof Array) {
-      previous[0].parentNode?.insertBefore(node, previous[0]);
-      DOM.unmount(previous);
-    } else {
-      previous.parentNode?.replaceChild(node, previous);
-    }
-  }
-}
 // --
 // ## Effectors
 //

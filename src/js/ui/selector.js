@@ -1,4 +1,5 @@
-import { onError, Empty } from "./utils.js";
+import { Empty } from "./utils/values.js";
+import { onError } from "./utils/logging.js";
 import { Formats } from "./formats.js";
 
 // -- topic:directives
@@ -19,105 +20,6 @@ import { Formats } from "./formats.js";
 //
 // - An *event*, prefixed by `!` such as `!.Added` or `Todo.Added`. When an event is suffixed by a `.`, it
 //   will stop propagation and prevent the default.
-
-// --
-// ## Selector DSL
-//
-export const KEY = "([a-zA-Z]+=)?";
-//
-// FIXME: We can't have both local and relative
-export const PATH =
-  "(#|(([@/]?\\.*)(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
-export const FORMAT = "(\\|[A-Za-z-]+)*";
-export const INPUT = `${KEY}${PATH}${FORMAT}`;
-export const INPUTS = `(\\((?<inputList>${INPUT}(,${INPUT})*)\\)(?<inputListFormat>${FORMAT})|(?<inputSeq>${INPUT}(,${INPUT})*))`;
-
-// const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
-export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
-export const SELECTOR = `^(?<selector>${INPUTS})`;
-const RE_SELECTOR = new RegExp(SELECTOR);
-
-export const commonPath = (paths) => {
-  let i = 0;
-  let n = paths.reduce(
-    (r, _, i) => (i === 0 ? _.length : Math.min(_.length, r)),
-    0
-  );
-  const op = paths[0];
-  while (i < n) {
-    for (const cp of paths) {
-      if (cp[i] !== op[i]) {
-        return cp.slice(0, i);
-      }
-    }
-    i++;
-  }
-  return op.slice(0, n);
-};
-
-// --
-// Parse the given input, returning a `SelectorInput` structure.
-export const RE_INPUT = new RegExp(
-  `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`
-);
-
-export const parseFormat = (text) => {
-  const formatters = (text || "").split("|").reduce((r, v) => {
-    const f = Formats[v];
-    if (!v) {
-      return r;
-    } else if (f === undefined) {
-      onError(
-        `Could not find format ${v} in selector ${text}, pick one of ${Object.keys(
-          Formats
-        ).join(", ")}`
-      );
-      return r;
-    } else {
-      r.push(f);
-      return r;
-    }
-  }, []);
-  return formatters.length === 0
-    ? null
-    : formatters.length === 1
-    ? formatters[0]
-    : (_, scope) => formatters.reduce((r, v) => v(r, scope), _);
-};
-
-export const parseInput = (text) => {
-  const match = text.match(RE_INPUT);
-  if (!match) {
-    return null;
-  }
-  const { key, path, formats } = match.groups;
-  return new SelectorInput(path, parseFormat(formats), key);
-};
-
-// -- doc
-// Parses the given selector and returns an `{inputs,event,stops}` structure.
-export const parseSelector = (text) => {
-  const match = text.match(RE_SELECTOR);
-  if (!match) {
-    return null;
-  }
-  const { event, stops, inputList, inputListFormat, inputSeq } = match.groups;
-  const parsedInputs = (inputList || inputSeq).split(",").map((t, i) => {
-    const res = parseInput(t);
-    if (!res) {
-      onError(
-        `selector.parseSelector: Could not parse input ${i} "${t}" in "${text}"`,
-        {
-          input: t,
-          text,
-          match,
-        }
-      );
-    }
-    return res;
-  });
-  return new Selector(parsedInputs, event, stops, parseFormat(inputListFormat));
-};
 
 // --
 // ## Selector Input
@@ -443,5 +345,106 @@ export class Selection {
     )}",selector="${this.selector.toString()}")`;
   }
 }
+
+// --
+// ## Selector DSL
+//
+export const KEY = "([a-zA-Z]+=)?";
+//
+// FIXME: We can't have both local and relative
+export const PATH =
+  "(#|(([@/]?\\.*)(\\*|([A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*(\\.\\*)?)))";
+export const FORMAT = "(\\|[A-Za-z-]+)*";
+export const INPUT = `${KEY}${PATH}${FORMAT}`;
+export const INPUTS = `(\\((?<inputList>${INPUT}(,${INPUT})*)\\)(?<inputListFormat>${FORMAT})|(?<inputSeq>${INPUT}(,${INPUT})*))`;
+
+// const VALUE = "=(?<value>\"[^\"]*\"|'[^']*'|[^\\s]+)";
+export const SOURCE = "(:(?<source>(\\.?[A-Za-z0-9]+)(\\.[A-Za-z0-9]+)*))?";
+export const SELECTOR = `^(?<selector>${INPUTS})`;
+const RE_SELECTOR = new RegExp(SELECTOR);
+
+export const commonPath = (paths) => {
+  let i = 0;
+  let n = paths.reduce(
+    (r, _, i) => (i === 0 ? _.length : Math.min(_.length, r)),
+    0
+  );
+  const op = paths[0];
+  while (i < n) {
+    for (const cp of paths) {
+      if (cp[i] !== op[i]) {
+        return cp.slice(0, i);
+      }
+    }
+    i++;
+  }
+  return op.slice(0, n);
+};
+
+// --
+// Parse the given input, returning a `SelectorInput` structure.
+export const RE_INPUT = new RegExp(
+  `^((?<key>[a-zA-Z]+)=)?(?<path>${PATH})(?<formats>(\\|[A-Za-z-]+)+)?$`
+);
+
+export const parseFormat = (text) => {
+  const formatters = (text || "").split("|").reduce((r, v) => {
+    const f = Formats[v];
+    if (!v) {
+      return r;
+    } else if (f === undefined) {
+      onError(
+        `Could not find format ${v} in selector ${text}, pick one of ${Object.keys(
+          Formats
+        ).join(", ")}`
+      );
+      return r;
+    } else {
+      r.push(f);
+      return r;
+    }
+  }, []);
+  return formatters.length === 0
+    ? null
+    : formatters.length === 1
+    ? formatters[0]
+    : (_, scope) => formatters.reduce((r, v) => v(r, scope), _);
+};
+
+export const parseInput = (text) => {
+  const match = text.match(RE_INPUT);
+  if (!match) {
+    return null;
+  }
+  const { key, path, formats } = match.groups;
+  return new SelectorInput(path, parseFormat(formats), key);
+};
+
+// -- doc
+// Parses the given selector and returns an `{inputs,event,stops}` structure.
+export const parseSelector = (text) => {
+  const match = text.match(RE_SELECTOR);
+  if (!match) {
+    return null;
+  }
+  const { event, stops, inputList, inputListFormat, inputSeq } = match.groups;
+  const parsedInputs = (inputList || inputSeq).split(",").map((t, i) => {
+    const res = parseInput(t);
+    if (!res) {
+      onError(
+        `selector.parseSelector: Could not parse input ${i} "${t}" in "${text}"`,
+        {
+          input: t,
+          text,
+          match,
+        }
+      );
+    }
+    return res;
+  });
+  return new Selector(parsedInputs, event, stops, parseFormat(inputListFormat));
+};
+
 export const CurrentValueSelector = parseSelector(".");
+
 // EOF

@@ -1,4 +1,5 @@
-import { bool as _bool, type, len } from "./utils.js";
+import { bool as _bool, type } from "./utils/values.js";
+import { len } from "./utils/collections.js";
 
 // --
 // ## Formats
