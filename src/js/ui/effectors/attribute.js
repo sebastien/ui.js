@@ -1,0 +1,24 @@
+import { Effect, Effector } from "../effectors.js";
+
+class AttributeEffect extends Effect {
+  unify(value, previous = this.value) {
+    if (value === Empty || value == undefined || value === null) {
+      this.node.removeAttribute(this.effector.name);
+    } else {
+      this.node.setAttribute(this.effector.name, value);
+    }
+    return this;
+  }
+}
+
+export class AttributeEffector extends Effector {
+  constructor(nodePath, selector, name) {
+    super(nodePath, selector);
+    this.name = name;
+  }
+
+  apply(node, scope) {
+    return new AttributeEffect(this, node, scope).init();
+  }
+}
+// EOF

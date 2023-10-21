@@ -1,6 +1,6 @@
 import { parseSelector } from "./directives.js";
 import { nodePath } from "../path.js";
-import { SlotEffector } from "../effectors.js";
+import { SlotEffector } from "../effectors/slot.js";
 import { replaceNodeWithPlaceholder } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
 

@@ -2,13 +2,11 @@ import { onError } from "../utils/logging.js";
 import { isNodeEmpty, contentAsFragment, createAnchor } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
 import { nodePath } from "../path.js";
-import {
-  AttributeEffector,
-  StyleEffector,
-  ValueEffector,
-  ContentEffector,
-  SlotEffector,
-} from "../effectors.js";
+import { AttributeEffector } from "../effectors/attribute.js";
+import { StyleEffector } from "../effectors/style.js";
+import { ValueEffector } from "../effectors/value.js";
+import { ContentEffector } from "../effectors/content.js";
+import { SlotEffector } from "../effectors/slot.js";
 import { onTemplateNode } from "./template.js";
 import { findEventHandlers } from "./on.js";
 import { parseOutDirective } from "./directives.js";

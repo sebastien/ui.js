@@ -1,4 +1,4 @@
-import { WhenEffector } from "../effectors.js";
+import { WhenEffector } from "../effectors/when.js";
 import { CurrentValueSelector } from "../selector.js";
 import { nodePath } from "../path.js";
 import { onError } from "../utils/logging.js";

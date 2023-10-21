@@ -1,5 +1,5 @@
 import { nodePath } from "../path.js";
-import { MatchEffector } from "../effectors.js";
+import { MatchEffector } from "../effectors/match.js";
 import { Any } from "../utils/values.js";
 import { onError } from "../utils/logging.js";
 import { makeKey } from "../utils/ids.js";
@@ -11,6 +11,7 @@ import {
   replaceNodeWithPlaceholder,
 } from "../utils/dom.js";
 
+// FIXM:E: This is a actually a match effector
 export const onDoAttribute = (processor, attr, root, templateName) => {
   const node = attr.ownerElement;
   if (attr.localName === "match" || attr.name === "do:match") {

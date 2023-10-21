@@ -1,4 +1,4 @@
-import { EventEffector } from "../effectors.js";
+import { EventEffector } from "../effectors/event.js";
 import { nodePath } from "../path.js";
 import { onError } from "../utils/logging.js";
 import { parseOnDirective } from "../templates/directives.js";

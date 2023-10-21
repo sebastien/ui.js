@@ -1,6 +1,6 @@
 import { parseSelector } from "./directives.js";
 import { onError } from "../utils/logging.js";
-import { TemplateEffector } from "../effectors.js";
+import { TemplateEffector } from "../effectors/template.js";
 import { createView } from "./view.js";
 
 // --
