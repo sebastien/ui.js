@@ -31,6 +31,11 @@ export class Component {
     this.anchor = anchor;
     this.template = template;
     this.state = state;
+    // TODO: We should really initialize a component with "slots" as bindings.
+    // Each binding is then mapped into a local component scope. The scope
+    // should resolve from cells first, and if not from the store. Effect
+    // scope should be from cells.
+    // TODO: State really should be store.
     this.scope = new EffectScope(
       state,
       path,
@@ -107,7 +112,6 @@ export const createComponent = (
 
   // We create an anchor component, and replace the node with the anchor.
   const key = id ? id : makeKey(templateName);
-
   const anchor = createComment(`${key}|Component|${templateName}`);
   const attributes = [...node.attributes].reduce((r, v) => {
     if (!v.name.startsWith("data-")) {

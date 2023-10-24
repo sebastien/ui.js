@@ -15,6 +15,7 @@ export class Cell {
     this.revision = 0;
   }
 
+  // TODO: All the bind/unbding shoudl be reworked
   bind(scope) {
     this.scope = scope;
     return this;
@@ -190,6 +191,7 @@ export class StateCell extends Cell {
   // clear() {}
 }
 
+// FIXME: Should be a local cell
 export class Ref extends StateCell {
   constructor(name) {
     super(undefined, undefined);
@@ -382,4 +384,41 @@ export class MapReducer extends Reducer {
   }
 }
 
+// We could arguably use prototypical inheritance instead,
+export class Scope {
+  constructor(parent, store, path) {
+    // The parent scope
+    this.parent = parent;
+    // The store where shared data is
+    this.store = store;
+    // The current path of this scope in the store
+    this.path = path;
+    // A derived scope sharing the parent's definitions
+    this.cells = parent ? Object.create(parent.cells) : {};
+    // Internal cells that are not part of exported scope
+    this.internalCells = new Map();
+  }
+  has(key) {
+    return this.internalCells.has(key) || this.cells[key] !== undefined;
+  }
+  get(key) {
+    return this.internalCells.get(key) || this.cells[key];
+  }
+  // Internal cells won't get inherited by sub scopes
+  internal(key, value) {
+    // TODO: Returns a local cell
+  }
+  // Defines an input, which will take the other cell (by name from the
+  // scope) and will map it locally.
+  input(key, parentKey) {}
+  // Defines an output, which will create a local cell and map it to the other
+  // cell
+  output(key, parentKey) {}
+  // Both cells are the same cell
+  fused(key, parentKey) {}
+  // Imports a cell at the given path in the store
+  stored(key, path, useStore = true, useCells = false, useInternal = false) {}
+  // Derives a cell form the inputs
+  derived(key, ...inputs) {}
+}
 // EOF
