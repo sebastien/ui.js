@@ -19,7 +19,7 @@ export const parseTemplate = (template) => {
 // FIXME: I'm not sure we need to keep that class, as it seems that it's
 // actually the template effector
 export class Template {
-  constructor(root, views, name = undefined) {
+  constructor(name, root, views) {
     this.name = name;
     this.root = root;
     this.views = views;
@@ -30,6 +30,8 @@ export class Template {
 // Parses the given `node` and its descendants as a template definition. The
 // `name` is useful for nested templates where the actual root/component
 // template is different.
+//
+//NOTE: This is a destructive operation on the original template node.
 export const onTemplateNode = (
   processor,
   node,
@@ -37,14 +39,13 @@ export const onTemplateNode = (
   clone = true, // TODO: We should probably always have that to false
   scriptContainer = document.body
 ) => {
-  const views = [];
-
   // NOTE: We skip text nodes there
   const root = node.nodeName.toLowerCase() === "template" ? node.content : node;
   for (const _ of root.children) {
     switch (_.nodeName) {
       case "STYLE":
         // TODO: We may also want to put these in the template
+        scriptContainer.appendChild(_);
         break;
       case "SCRIPT":
         // TODO: We may want to put these in the template
@@ -52,6 +53,9 @@ export const onTemplateNode = (
         break;
     }
   }
+
+  // TODO: We should harvest the `in:`, `inout:` and `out:` attributes, which
+  // are then the inputs bindings for the template.
 
   // If there is  `data-body` attribute, then we'll get a different node
   // to source the children. This is important when using different namespaces,
@@ -71,44 +75,31 @@ export const onTemplateNode = (
     viewsParent = root;
   }
 
-  // This filters out the contents of the views parent.
-  for (const _ of viewsParent?.childNodes || []) {
-    switch (_.nodeType) {
-      case Node.TEXT_NODE:
-        views.push(_);
-        break;
-      case Node.ELEMENT_NODE:
-        switch (_.nodeName.toLowerCase()) {
-          case "style":
-          case "script":
-            break;
-          default:
-            views.push(_);
-        }
-        break;
-      default:
-    }
-  }
-
-  // We build the template effector, which will create a new instance of
-  // each view and then add it.
-  const processedViews = views.map((_) =>
-    createView(processor, clone ? _.cloneNode(true) : _, name)
-  );
-
-  const res = new TemplateEffector(
-    new Template(
-      // FIXME: Not sure why we have the node here, when we could have views?
-      node,
-      // FIXME: Not sure why we need to clone here or not, should explain
-      processedViews,
-      name
+  // FIXME: We some times register anonymous templates that we don/t really
+  // care about.
+  return processor.register(
+    name,
+    new TemplateEffector(
+      new Template(
+        name,
+        node,
+        ([...viewsParent?.childNodes] || []).reduce(
+          (r, _) => (
+            _.nodeType === Node.TEXT_NODE ||
+            (_.nodeType == Node.ELEMENT_NODE &&
+              _.nodeName.toLowerCase() !== "style" &&
+              _.nodeName.toLowerCase() !== "script")
+              ? r.push(
+                  createView(processor, clone ? _.cloneNode(true) : _, name)
+                )
+              : null,
+            r
+          ),
+          []
+        )
+      )
     )
   );
-
-  processor.register(res);
-
-  return res;
 };
 
 // EOF

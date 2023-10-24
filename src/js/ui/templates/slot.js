@@ -4,16 +4,7 @@ import { SlotEffector } from "../effectors/slot.js";
 import { replaceNodeWithPlaceholder } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
 
-// --
-// Processes a `<slot template=... select=.... >` node. The `select` attribute
-// defines the data path for which the slot will be applied, if it is suffixed
-// with `.*` then the slot will be mapped for each selected item.
-export const onSlotNode = (processor, node, root, templateName) => {
-  // We retrieve the `template` and `selector` from the attributes.
-  const template = node.getAttribute("template");
-  const selector = node.hasAttribute("selector")
-    ? parseSelector(node.getAttribute("selector"))
-    : null;
+export const getSlotBindings = (node) => {
   // We extract the bindings from the attributes
   const bindings = {};
   for (const attr of node.attributes) {
@@ -27,6 +18,22 @@ export const onSlotNode = (processor, node, root, templateName) => {
       }
     }
   }
+  return bindings;
+};
+
+// --
+// Processes a `<slot template=... select=.... >` node. The `select` attribute
+// defines the data path for which the slot will be applied, if it is suffixed
+// with `.*` then the slot will be mapped for each selected item.
+export const onSlotNode = (processor, node, root, templateName) => {
+  // We retrieve the `template` and `selector` from the attributes.
+  const template = node.getAttribute("template");
+  const selector = node.hasAttribute("selector")
+    ? parseSelector(node.getAttribute("selector"))
+    : null;
+
+  const bindings = getSlotBindings(node);
+
   // If the node has a `template` node, then the contents will be interpreted
   // as the inputs to be given to the template upon rendering.
   if (template) {
@@ -62,6 +69,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
       selector ? selector.toString() : "."
     }`
   );
+  console.log("NEW SLOT", path, selector, template);
   return new SlotEffector(path, selector, template, undefined, bindings);
 
   // NOTE: Previous behaviour, left for reference

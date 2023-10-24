@@ -1,5 +1,6 @@
 import { iterNodes, iterSelector, iterAttributes } from "./walking.js";
 import { nodePath } from "../path.js";
+import { onError } from "../utils/logging.js";
 
 // --
 // ## View creation
@@ -27,7 +28,7 @@ export const createView = (processor, root, templateName = undefined) => {
   const attrs = {};
   for (const [match, attr] of iterAttributes(
     root,
-    /^(?<type>in|out|on|do|styled):(?<name>.+)$/
+    /^(?<type>in|out|on|do|styled|x):(?<name>.+)$/
   )) {
     const type = match.groups.type;
     const name = match.groups.name;
@@ -68,17 +69,26 @@ export const createView = (processor, root, templateName = undefined) => {
   // CHANGE the view, removing attributes and nodes.
   const effectors = [];
   for (const { attr } of attrs["do"] || []) {
-    const e = processor.do(processor, attr, root, templateName);
+    const e = processor.Do(processor, attr, root, templateName);
     e && effectors.push(e);
   }
 
   // --
   // ### slot nodes
 
+  for (const { name, attr } of attrs["x"] || []) {
+    const e =
+      name === "for" ? processor.For(processor, attr, root, name) : null;
+    if (!e) {
+      onError(`Unsupported attribute "x:${name}"`);
+    }
+    e && effectors.push(e);
+  }
+
   // NOTE: We pre-expand the iterator into an array as onSlotNode
   // is destructive. We want all the slots first and the we process them.
   for (const node of [...iterNodes(root, "slot", "SLOT")]) {
-    const e = processor.slot(processor, node, root, templateName);
+    const e = processor.Slot(processor, node, root, templateName);
     e && effectors.push(e);
   }
 
@@ -87,7 +97,7 @@ export const createView = (processor, root, templateName = undefined) => {
   //
   // We take care of attribute/content/value effectors
   for (const { name, attr } of attrs["out"] || []) {
-    const e = processor.out(processor, attr, root, name);
+    const e = processor.Out(processor, attr, root, name);
     e && effectors.push(e);
   }
 
@@ -95,7 +105,7 @@ export const createView = (processor, root, templateName = undefined) => {
   // ### Event effectors
   //
   for (const { name, attr } of attrs["on"] || []) {
-    const e = processor.on(processor, attr, root, name);
+    const e = processor.On(processor, attr, root, name);
     e && effectors.push(e);
   }
 
@@ -104,7 +114,7 @@ export const createView = (processor, root, templateName = undefined) => {
   // //
   // // ### Conditional effectors
   for (const node of iterSelector(root, "*[when]")) {
-    const e = processor.when(processor, node, root, templateName);
+    const e = processor.When(processor, node, root, templateName);
     e && effectors.push(e);
   }
 

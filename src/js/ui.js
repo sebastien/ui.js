@@ -101,7 +101,8 @@ export const ui = (
         while (Loader.pending) {
           await Loader.join();
         }
-        for (const node of scope.querySelectorAll("*[data-ui]")) {
+        // And here we detect components and we instanciate them
+        for (const node of scope.querySelectorAll("slot[template]")) {
           const c = createComponent(node, state);
           c && components.push(c);
         }

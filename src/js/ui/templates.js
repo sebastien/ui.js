@@ -5,17 +5,23 @@ import { onTemplateNode } from "./templates/template.js";
 import { onWhenAttribute } from "./templates/when.js";
 import { onDoAttribute } from "./templates/do.js";
 import { onOutAttribute } from "./templates/inout.js";
+import { onForAttribute } from "./templates/for.js";
 import { onOnAttribute } from "./templates/on.js";
 
 export const Templates = new Map();
 
-const TemplateProcessor = {
-  do: onDoAttribute,
-  slot: onSlotNode,
-  out: onOutAttribute,
-  on: onOnAttribute,
-  when: onWhenAttribute,
-  register: (t, name, templates = Templates) => {
+class TemplateProcessor {
+  constructor(templates = Templates, name) {
+    this.Dor = onDoAttribute;
+    this.Slot = onSlotNode;
+    this.Out = onOutAttribute;
+    this.On = onOnAttribute;
+    this.When = onWhenAttribute;
+    this.For = onForAttribute;
+    this.templates = templates;
+    this.name;
+  }
+  register(name, t, templates = this.templates) {
     if (name) {
       if (templates.has(name)) {
         if (!Options.allowDuplicateTemplates) {
@@ -30,8 +36,8 @@ const TemplateProcessor = {
       }
     }
     return t;
-  },
-};
+  }
+}
 
 // --
 // ## Templates
@@ -45,7 +51,13 @@ export const createTemplate = (
   scriptContainer = document.body,
   templates = Templates
 ) => {
-  return onTemplateNode(TemplateProcessor, node, name, clone, scriptContainer);
+  return onTemplateNode(
+    new TemplateProcessor(templates, name),
+    node,
+    name,
+    clone,
+    scriptContainer
+  );
 };
 
 // EOF

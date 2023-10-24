@@ -54,7 +54,7 @@ export const onOutAttribute = (processor, attr, root, name) => {
           processor,
           // The format is the template id
           contentAsFragment(node),
-          makeKey("template"),
+          makeKey(processor.name ? `${processor.name}-inout` : "inout"),
           false // No need to clone there
         ).name;
     const handlers = findEventHandlers(node);

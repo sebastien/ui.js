@@ -1,6 +1,5 @@
 import { Templates, createTemplate } from "./templates.js";
-import Options from "./utils/options.js";
-import { onWarning, onError } from "./utils/logging.js";
+import { onWarning, onError, onInfo, onDebug } from "./utils/logging.js";
 
 // --
 // # Loader
@@ -21,9 +20,7 @@ class AssetLoader {
     if (this.memoized.has(key)) {
       return this.memoized.get(key);
     } else {
-      if (Options.debug) {
-        console.log(`[uijs] Loader.loading asset "${key}"`);
-      }
+      onDebug(`Loader.loading asset "${key}"`);
       const res = creator(...args);
       const self = this;
       this.pending += 1;
@@ -254,8 +251,8 @@ export const loadXMLTemplate = (url) =>
         templates.forEach((_) => registerTemplate(_.name, _));
         scripts.forEach((_) => registerScript(_));
         stylesheets.forEach((_) => registerStylesheet(_));
-        console.log(
-          "[uijs] loading.loadXMLTemplate: Loaded template",
+        onInfo(
+          "loading.loadXMLTemplate: Loaded template",
           { url },
           { scripts, stylesheets, templates }
         );
@@ -372,12 +369,11 @@ export const loadTemplates = (
       }
     }
   }
-  Options.debug &&
-    console.log(
-      "[uijs] loading.loadTemplates: Loaded templates",
-      templates.map((_) => _.name),
-      { scripts, stylesheets }
-    );
+  onDebug(
+    "loading.loadTemplates: Loaded templates",
+    templates.map((_) => _.name),
+    { scripts, stylesheets }
+  );
   return Promise.resolve({
     templates,
     stylesheets,

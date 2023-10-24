@@ -1,5 +1,9 @@
+import Options from "../utils/options.js";
+import { onError, onWarning } from "../utils/logging.js";
+import { assign } from "../utils/collections.js";
 import { Effect, Effector } from "../effectors.js";
 import { CurrentValueSelector } from "../selector.js";
+import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
 
@@ -53,7 +57,16 @@ class TemplateEffect extends Effect {
           const view = template.views[i];
           const root = view.root.cloneNode(true);
           // And getting a list of the root node for each effector.
-          const nodes = view.effectors.map((_) => pathNode(_.nodePath, root));
+          const nodes = view.effectors.map((_, i) => {
+            const n = pathNode(_.nodePath, root);
+            if (!n) {
+              onWarning(
+                `Effector #${i} cannot resolve the following path from the root`,
+                { path: _.nodePath, root }
+              );
+            }
+            return n;
+          });
 
           // We update the `data-template` and `data-path` attributes, which is
           // used by `EventEffectors` in particular to find the scope.

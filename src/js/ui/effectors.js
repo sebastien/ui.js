@@ -16,9 +16,9 @@ export class EffectScope {
     // State store, which is a state tree and a pub/sub bus.
     this.state = state;
     // Main data selection path, the root for relative selectors
-    this.path = path;
+    this.path = path || [];
     // Path to the effect scope in the state store.
-    this.localPath = localPath;
+    this.localPath = localPath || [];
     // Key if the effect is part of a collection
     this.key = key;
     // TODO: Not sure what this is

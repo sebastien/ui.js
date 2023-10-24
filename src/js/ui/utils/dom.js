@@ -13,6 +13,7 @@ export const asFragment = (...nodes) => {
   return fragment;
 };
 
+// Flushes the content of the node into a new fragment
 export const contentAsFragment = (node) => {
   const fragment = document.createDocumentFragment();
   while (fragment && node.firstChild) {

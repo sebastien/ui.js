@@ -1,5 +1,6 @@
 import { Effect, Effector } from "../effectors.js";
 import { DOM } from "../utils/dom.js";
+import { Empty } from "../utils/values.js";
 
 export class ContentEffector extends Effector {
   constructor(nodePath, selector, placeholder = undefined) {

@@ -25,6 +25,8 @@ export const bool = (value) =>
     ? false
     : true;
 
+export const isObject = (value) =>
+  value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
 export const type = (_) => {
   const t = typeof _;
   switch (_) {

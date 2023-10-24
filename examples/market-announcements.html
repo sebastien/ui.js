@@ -16,22 +16,30 @@
       <!-- We denote that we want an instance of the component -->
       <slot template="Announcements" title="NZX Announcements" />
     </section>
-    <template name="Announcements" inout:selection="0" in:title in:sources>
+    <!--
+      This declares "selection" as being an input and output, and that
+      "title" and "sources" are both inputs. All of these will be sourced
+      from the scope at component creation.
+    -->
+    <template name="Announcements" inout:selection="(0)" in:title in:sources>
       <div class="card">
-        <h1 out:content="title"></h1>
+        <h1 out:content="title">Loading…</h1>
         <label>Source</label>
 
         <!-- NOTE: We embed a JS expression here in the effect -->
+        <!-- NOTE: x:for=sources is like out:content="sources.* -->
+        <!--
         <select
           class="selector"
           x:for="sources"
           on:change="selection={parseInt(_.target.value)}"
         >
-          <!-- NOTE: We could do on:Selected="selection=" -->
           <option out:value=".index" out:content=".label" />
         </select>
+        -->
 
         <!-- NOTE: We could have something like ann=announcements -->
+        <!--
         <ul class="list" x:for="announcements">
           <li class="item">
             <code out:content=".id" />
@@ -39,6 +47,7 @@
             <code out:content=".securityCode" />
           </li>
         </ul>
+        -->
       </div>
     </template>
 
@@ -46,7 +55,8 @@
       // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
       import ui from "../lib/js/ui.js";
       ui(document, {
-        sources: [{ url: "apis.nzx.com/public/1.0", label: "Public API" }],
+        title: "NZX Market Announcements",
+        sources: [{ url: "apis.nzx.com/public/", label: "Public API" }],
       });
     </script>
   </body>

@@ -4,6 +4,7 @@ import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
 import { makeKey } from "./utils/ids.js";
 import { Controllers, createController } from "./controllers.js";
+import { getSlotBindings } from "./templates/slot.js";
 
 // ============================================================================
 // COMPONENTS
@@ -83,23 +84,21 @@ export const createComponent = (
   templates = Templates,
   controllers = Controllers
 ) => {
-  // --
-  // We retrieve the following attributes:
-  // - `data-ui`
-  // - `data-path`
-  const { ui, path, id } = node.dataset;
+  const bindings = getSlotBindings(node);
+  const templateName = node.getAttribute("template");
+  const id = node.getAttribute("id");
 
   // --
   // We validate that the template exists.
-  const template = templates.get(ui);
+  const template = templates.get(templateName);
   if (!template) {
     onError(
-      `ui.render: Could not find template '${ui}', available templates are ${[
+      `ui.render: Could not find template '${templateName}', available templates are ${[
         ...templates.keys(),
       ].join(", ")}`,
       {
         node,
-        ui,
+        templateName,
         templates,
       }
     );
@@ -107,9 +106,9 @@ export const createComponent = (
   }
 
   // We create an anchor component, and replace the node with the anchor.
-  const key = id ? id : makeKey(ui);
+  const key = id ? id : makeKey(templateName);
 
-  const anchor = createComment(`${key}|Component|${ui}`);
+  const anchor = createComment(`${key}|Component|${templateName}`);
   const attributes = [...node.attributes].reduce((r, v) => {
     if (!v.name.startsWith("data-")) {
       r.set(v.name, v.value);
@@ -126,9 +125,10 @@ export const createComponent = (
     key,
     anchor,
     template,
-    controllers.get(ui),
+    controllers.get(templateName),
     state,
-    path ? path.split(".") : undefined,
+    // This should be the scope/state path
+    undefined,
     extractSlots(node),
     attributes
   );

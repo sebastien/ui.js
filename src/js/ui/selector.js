@@ -31,20 +31,20 @@ import { commonPath } from "./path.js";
 // the local state (`@` prefixed, like `@status`), or from the global state
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
 const RE_PATH = /^(?<type>[#@/]?)(?<prefix>\.*)(?<rest>.*)/;
+
+const SelectorKey = Object.freeze({
+  Local: "@",
+  Relative: ".",
+  Abasolute: "/",
+});
+
 export class SelectorInput {
-  static LOCAL = "@";
-  static RELATIVE = "";
-  static ABSOLUTE = "/";
-  static KEY = "#";
-  constructor(path, format, key) {
-    const { type, prefix, rest } = path.match(RE_PATH).groups;
+  constructor(type, path, isMany, format, key) {
     this.type = type;
-    this.unwind = prefix ? Math.max(0, prefix.length - 1) : 0;
-    this.path = rest.length ? rest.split(".") : [];
-    this.isMany = this.path.at(-1) === "*";
-    if (this.isMany) {
-      this.path.pop();
-    }
+    // FIXME: Not sure we still need unwind
+    this.unwind = 0;
+    this.path = path || [];
+    this.isMany = isMany;
     this.format = format
       ? format instanceof Function
         ? format
@@ -63,9 +63,12 @@ export class SelectorInput {
   // -- doc
   // Returns the absolute path of this selector input in the given scope.
   abspath(scope) {
-    return (
-      this.unwind ? scope.path.slice(0, 0 - this.unwind) : scope.path
-    ).concat(this.path);
+    return scope
+      ? (this.unwind
+          ? scope.path.slice(0, 0 - this.unwind)
+          : scope.path
+        ).concat(this.path)
+      : this.path;
   }
 
   // -- doc
@@ -102,6 +105,7 @@ export class SelectorInput {
 // - The component (local) state
 //
 export class Selector {
+  // TODO: Should be Enum
   static SINGLE = "V";
   static LIST = "L";
   static MAP = "M";
@@ -203,6 +207,7 @@ export class Selector {
   }
 }
 
+// TODO: This should probably be move to cells
 // FIXME: This is awfully similar to the controller Reducers, but for now
 // it makes sense to have these separate.
 //
