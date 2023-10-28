@@ -1,4 +1,3 @@
-import { CurrentValueSelector } from "./selector.js";
 import { onError } from "./utils/logging.js";
 import { access } from "./utils/collections.js";
 
@@ -11,59 +10,63 @@ import { access } from "./utils/collections.js";
 // The effect scope encapsulates the state of an effector, including
 // where it gets its data from.
 
+const ScopeType = Object.freeze({
+  // Path resolves from the local scope
+  Scope: ".",
+  // Path resolves from the current value (if any)
+  Value: "_",
+  // Path resolves from the absolute store
+  Store: "/",
+  // Path resolves from the key
+  Key: "#",
+});
+
 export class EffectScope {
-  constructor(state, path, localPath, slots, key, parent = null) {
+  constructor(store, path, localPath, slots, key, parent = null) {
     // State store, which is a state tree and a pub/sub bus.
-    this.state = state;
+    this.store = store;
     // Main data selection path, the root for relative selectors
     this.path = path || [];
-    // Path to the effect scope in the state store.
-    this.localPath = localPath || [];
     // Key if the effect is part of a collection
     this.key = key;
     // TODO: Not sure what this is
     this.slots = slots;
+    // This is the current value
+    this.current = store.get(this.path);
     // Event handlers declared within the scope.
     this.handlers = new Map();
     this.parent = parent;
   }
 
-  get value() {
-    return this.state.get(this.path);
+  sub(path, handler, withLast) {
+    /// FIXME: Sub should be on a cell, really
+    console.log("TODO: Scope.sub", path, handler);
   }
 
-  get local() {
-    return this.state.get(this.localPath);
+  set(name, value) {
+    console.log("XXXX TODO: Scope.set", { name, value });
   }
 
-  update(value, clear = false) {
-    clear
-      ? this.state.put(this.path, value)
-      : this.state.patch(this.path, value);
-    return this.value;
-  }
-
-  updateLocal(value, clear = false) {
-    clear
-      ? this.state.put(this.localPath, value)
-      : this.state.patch(this.localPath, value);
-    return this.value;
+  get(name) {
+    console.log("XXXX TODO: Scope.get", { name });
   }
 
   resolve(path) {
-    return path
-      ? path.at(-1) === "#"
-        ? this.key
-        : access(this.value, path)
-      : this.value;
+    const k = path[0];
+    if (this.slots && this.slots[k]) {
+      return access(this.slots[k], path, 1);
+    } else {
+      return this.store.get(path);
+    }
   }
 
-  derive(path, localPath = this.localPath, slots = this.slots, key = this.key) {
+  derive(path, localPath = undefined, slots = this.slots, key = this.key) {
     return new EffectScope(
-      this.state,
+      this.store,
       // NOTE: There's a question here whether we want the path to be relative
       // or absolute;
       [...this.path, ...(typeof path === "string" ? path.split(".") : path)],
+      // FIXME: Local path is no more
       localPath,
       slots,
       key,
@@ -71,32 +74,27 @@ export class EffectScope {
     );
   }
 
-  set(name, value) {}
-
-  get(name) {}
-
   trigger(name, ...args) {
-    let scope = this;
-    while (scope && !scope.handlers.has(name)) {
-      scope = scope.parent;
-    }
-    if (scope) {
-      const handlers = scope.handlers.get(name);
-      handlers &&
-        handlers.forEach((handler) => {
-          try {
-            handler(...args, this, scope);
-          } catch (exception) {
-            onError(`${name}: Handler failed`, { handler, exception, args });
-          }
-        });
-    }
+    console.warn("TRIGGER NOT IMPLEMENTED", { name, args });
+    // let scope = this;
+    // while (scope && !scope.handlers.has(name)) {
+    //   scope = scope.parent;
+    // }
+    // if (scope) {
+    //   const handlers = scope.handlers.get(name);
+    //   handlers &&
+    //     handlers.forEach((handler) => {
+    //       try {
+    //         handler(...args, this, scope);
+    //       } catch (exception) {
+    //         onError(`${name}: Handler failed`, { handler, exception, args });
+    //       }
+    //     });
+    // }
   }
 
   toString() {
-    return `EffectScope(path="${this.path.join(
-      "."
-    )}", localPath="${this.localPath.join(".")}", key="${this.key}")`;
+    return `EffectScope(path="${this.path.join(".")}", key="${this.key}")`;
   }
 }
 
@@ -105,7 +103,7 @@ export class EffectScope {
 //
 // Implements the base class of an effect.
 export class Effect {
-  constructor(effector, node, scope, selector = undefined) {
+  constructor(effector, node, scope, selector = effector.selector) {
     this.effector = effector;
     this.node = node;
     this.scope = scope;
@@ -113,27 +111,22 @@ export class Effect {
 
     // We perform some checks
     !node && onError("Effect(): effector should have a node", { node });
-    !(selector || effector.selector) &&
-      onError("Effect(): effector should have a selector", { effector });
 
     // We apply the selector to the scope and register a selection.
     // The selection will be updated as the contents changes.
-    this.selection = (selector || effector.selector).apply(
-      scope,
-      this.onChange.bind(this)
-    );
 
-    // FIXME: Disabling this one
-    // this.abspath = this.selection.abspath;
+    this.selection = selector
+      ? selector.apply(scope, this.onChange.bind(this))
+      : null;
   }
 
   bind() {
-    this.selection.bind(this.scope);
+    this.selection?.bind(this.scope);
     return this;
   }
 
   unbind() {
-    this.selection.unbind(this.scope);
+    this.selection?.unbind(this.scope);
     return this;
   }
 
@@ -145,7 +138,7 @@ export class Effect {
 
   apply() {
     // We extract the latest value from the selection
-    const value = this.selection.extract();
+    const value = this.selection ? this.selection.extract() : undefined;
     return this.unify(value, this.value);
   }
 
@@ -177,13 +170,8 @@ export class Effector {
   // using the given `selector`.
   constructor(nodePath, selector) {
     this.nodePath = nodePath;
-    this.selector = selector || CurrentValueSelector;
-    if (!this.selector) {
-      onError("Effector(): Effector has no selector defined", {
-        selector: this.selector,
-        nodePath,
-      });
-    }
+    // The selector may be empty, as not all effectors create a selection.
+    this.selector = selector;
   }
 
   // --

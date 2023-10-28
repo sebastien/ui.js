@@ -60,11 +60,12 @@ export const copy = (value) =>
       : { ...value }
     : value;
 
-export const access = (context, path) => {
+export const access = (context, path, offset = 0) => {
   if (path && path.length && context !== undefined) {
-    for (const k of path) {
+    const n = path.length;
+    for (let i = offset; i < n; i++) {
       // TODO: We may want to deal with number vs key
-      context = context[k];
+      context = context[path[i]];
       if (context === undefined) {
         break;
       }

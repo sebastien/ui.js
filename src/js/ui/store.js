@@ -1,14 +1,10 @@
 import { parsePath } from "./path.js";
 import { PubSub } from "./pubsub.js";
 import { type } from "./utils/values.js";
-import { onWarning } from "./utils/logging.js";
 
-// --
-// ## State Tree
-
-export class StateTree {
-  constructor(store = {}, bus = new PubSub()) {
-    this.store = store;
+export class Store {
+  constructor(data = {}, bus = new PubSub()) {
+    this.data = data;
     this.bus = bus;
   }
 
@@ -25,7 +21,7 @@ export class StateTree {
   // -- doc
   // Retrieves the value at the given `path`
   get(path) {
-    let res = this.store;
+    let res = this.data;
     for (let k of path instanceof Array ? path : path.split(".")) {
       if (!res) {
         return undefined;
@@ -39,7 +35,7 @@ export class StateTree {
   // Ensures there's a value at the given `path`, assigning the `defaultValue`
   // if not existing.
   ensure(path, defaultValue = undefined, limit = 0, offset = 0) {
-    let scope = this.store;
+    let scope = this.data;
     const p = path instanceof Array ? path : path.split(".");
     let i = 0 + offset;
     const j = p.length - 1 + limit;
@@ -120,9 +116,9 @@ export class StateTree {
       // same values. We should detect changes I think.
       const updated = clear
         ? value
-        : this._apply(p.length === 0 ? this.store : scope[key], value);
+        : this._apply(p.length === 0 ? this.data : scope[key], value);
       if (p.length === 0) {
-        this.store = updated;
+        this.data = updated;
         this._pub(scopeTopic, updated);
       } else {
         scope[key] = updated;

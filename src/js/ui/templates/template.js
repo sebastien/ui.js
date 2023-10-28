@@ -24,6 +24,15 @@ export class Template {
     this.root = root;
     this.views = views;
   }
+
+  get hasEffectors() {
+    for (const v of this.views) {
+      if (v.effectors.length + v.refs.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 // -- doc
@@ -55,7 +64,8 @@ export const onTemplateNode = (
   }
 
   // TODO: We should harvest the `in:`, `inout:` and `out:` attributes, which
-  // are then the inputs bindings for the template.
+  // are then the inputs bindings for the template. This should also be
+  // optional, as the selected paths can be extracted from thew views.
 
   // If there is  `data-body` attribute, then we'll get a different node
   // to source the children. This is important when using different namespaces,

@@ -1,5 +1,4 @@
 import { WhenEffector } from "../effectors/when.js";
-import { CurrentValueSelector } from "../selector.js";
 import { nodePath } from "../path.js";
 import { onError } from "../utils/logging.js";
 import { makeKey } from "../utils/ids.js";
@@ -39,7 +38,7 @@ export const parseWhenDirective = (text) => {
     }
 
     return {
-      selector: parseSelector(selector) || CurrentValueSelector,
+      selector: parseSelector(selector) || null,
       predicate: (_) => f(_, v),
     };
   }

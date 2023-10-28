@@ -70,8 +70,9 @@ export const parseForDirective = (text) => {
         `For directive expects just one selection, got ${res.inputs.length}`
       );
     }
-    res.inputs.forEach((_) => (_.isMany = true));
   }
+  // It's a for directive, so it's always going to be many
+  res.isMany = true;
   return res;
 };
 

@@ -17,7 +17,12 @@ export const isBoundaryNode = (node) => {
     // NOTE: New syntax added to the templates should be registered here,
     // so that we identify boundary nodes.
     // x:case="..." nodes are also boundaries
-    if (node.hasAttribute("do:case") || node.hasAttribute("x:for")) {
+    if (
+      // do:case are a template in themselves
+      node.hasAttribute("do:case") ||
+      // Children of x:for nodes are part of a new view
+      node.parentNode?.hasAttribute("x:for")
+    ) {
       return true;
     }
     // When effectors are also boundary nodes, so we stop at any

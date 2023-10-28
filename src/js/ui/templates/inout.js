@@ -44,33 +44,32 @@ export const onOutAttribute = (processor, attr, root, name) => {
     // Now, if we have an `out:content=XXXX`, then it means we're replacing
     // the content with the value or a template applied with the value.
     // We extract the fragment, handlers, and content template
-    const template = node?.dataset?.ui
-      ? node.dataset.ui
-      : directive.template
+    const contents = contentAsFragment(node);
+    const template = directive.template
       ? directive.template
       : isNodeEmpty(node)
       ? null // An empty node means a null (text) formatter
       : onTemplateNode(
           processor,
           // The format is the template id
-          contentAsFragment(node),
+          contents,
           makeKey(processor.name ? `${processor.name}-inout` : "inout"),
           false // No need to clone there
-        ).name;
+        );
     const handlers = findEventHandlers(node);
     const anchor = createAnchor(node, `out:content=${text}`);
 
     // The rules should be a little bit more refined:
     // - If there is a template, then the content could be the placholder
     // - If the node name is slot, then it is for sure a slot effector
-    return template
+    return template && (template.hasEffectors || handlers)
       ? new SlotEffector(
           nodePath(anchor, root),
           directive.selector,
           template,
           handlers
         )
-      : new ContentEffector(nodePath(node, root), directive.selector);
+      : new ContentEffector(nodePath(node, root), directive.selector, contents);
   } else {
     // It's not an `out:content` attribute, then it's either a style, value
     // or attribute effector.

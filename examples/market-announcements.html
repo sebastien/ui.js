@@ -21,22 +21,24 @@
       "title" and "sources" are both inputs. All of these will be sourced
       from the scope at component creation.
     -->
-    <template name="Announcements" inout:selection="(0)" in:title in:sources>
+    <template name="Announcements" inout:selection="(0)">
       <div class="card">
         <h1 out:content="title">Loading…</h1>
         <label>Source</label>
 
         <!-- NOTE: We embed a JS expression here in the effect -->
         <!-- NOTE: x:for=sources is like out:content="sources.* -->
-        <!--
         <select
           class="selector"
           x:for="sources"
           on:change="selection={parseInt(_.target.value)}"
         >
-          <option out:value=".index" out:content=".label" />
-        </select>
+          <option out:content=".label">Unnamed option</option>
+            <!--
+          <option out:value=".index" out:content=".label"></option>
         -->
+          </option>
+        </select>
 
         <!-- NOTE: We could have something like ann=announcements -->
         <!--
@@ -56,7 +58,13 @@
       import ui from "../lib/js/ui.js";
       ui(document, {
         title: "NZX Market Announcements",
-        sources: [{ url: "apis.nzx.com/public/", label: "Public API" }],
+        sources: [
+          { url: "apis.nzx.com/public/", label: "Public API" },
+          {
+            url: "staging-apis.nzx.com/public/",
+            label: "Public API (Staging)",
+          },
+        ],
       });
     </script>
   </body>

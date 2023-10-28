@@ -3,7 +3,6 @@ import { EffectScope } from "./effectors.js";
 import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
 import { makeKey } from "./utils/ids.js";
-import { Controllers, createController } from "./controllers.js";
 import { getSlotBindings } from "./templates/slot.js";
 
 // ============================================================================
@@ -22,7 +21,7 @@ export class Component {
     anchor,
     template,
     controller,
-    state,
+    store,
     path,
     slots,
     attributes
@@ -30,18 +29,13 @@ export class Component {
     this.id = id;
     this.anchor = anchor;
     this.template = template;
-    this.state = state;
+    this.store = store;
     // TODO: We should really initialize a component with "slots" as bindings.
     // Each binding is then mapped into a local component scope. The scope
     // should resolve from cells first, and if not from the store. Effect
     // scope should be from cells.
     // TODO: State really should be store.
-    this.scope = new EffectScope(
-      state,
-      path,
-      ["@components", template.name, id],
-      slots
-    );
+    this.scope = new EffectScope(store, path, ["@components", id], slots);
     // this.scope = new EffectScope(
     //   state,
     //   path || localPath,
@@ -49,9 +43,6 @@ export class Component {
     //   state.get(path || localPath),
     //   state.get(localPath)
     // );
-    this.controller = controller
-      ? createController(controller, this.scope)
-      : null;
     this.effect = template.apply(this.anchor, this.scope, attributes);
   }
 }
@@ -83,12 +74,7 @@ const extractSlots = (node) => {
 // Takes a DOM node that typically has a `data-ui` attribute, looks for the
 // corresponding template in `Templates` and creates a new `Component`
 // replacing the given `node` and then rendering the component.
-export const createComponent = (
-  node,
-  state,
-  templates = Templates,
-  controllers = Controllers
-) => {
+export const createComponent = (node, store, templates = Templates) => {
   const bindings = getSlotBindings(node);
   const templateName = node.getAttribute("template");
   const id = node.getAttribute("id");
@@ -129,8 +115,8 @@ export const createComponent = (
     key,
     anchor,
     template,
-    controllers.get(templateName),
-    state,
+    null,
+    store,
     // This should be the scope/state path
     undefined,
     extractSlots(node),

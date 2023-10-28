@@ -1,5 +1,4 @@
 import { Effect, Effector } from "../effectors.js";
-import { CurrentValueSelector } from "../selector.js";
 import { parsePath } from "../path.js";
 
 export class EventEffector extends Effector {
@@ -7,7 +6,7 @@ export class EventEffector extends Effector {
   // Creates a new `EventEffector` that  is triggered by the given `event`,
   // generating an event `triggers` (when defined), or
   constructor(nodePath, event, directive) {
-    super(nodePath, CurrentValueSelector);
+    super(nodePath, null);
     this.directive = directive;
     this.eventPath = directive.event ? directive.event.split(".") : null;
     this.event = event;

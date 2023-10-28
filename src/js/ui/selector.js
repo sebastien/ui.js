@@ -32,17 +32,21 @@ import { commonPath } from "./path.js";
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
 const RE_PATH = /^(?<type>[#@/]?)(?<prefix>\.*)(?<rest>.*)/;
 
-const SelectorKey = Object.freeze({
+const SelectorScope = Object.freeze({
   Local: "@",
   Relative: ".",
-  Abasolute: "/",
+  Absolute: "/",
+  Key: "#",
+});
+const SelectorType = Object.freeze({
+  Atom: "_",
+  List: "[]",
+  Mapping: "{}",
 });
 
 export class SelectorInput {
   constructor(type, path, isMany, format, key) {
-    this.type = type;
-    // FIXME: Not sure we still need unwind
-    this.unwind = 0;
+    this.type = type || SelectorScope.Relative;
     this.path = path || [];
     this.isMany = isMany;
     this.format = format
@@ -61,28 +65,14 @@ export class SelectorInput {
   }
 
   // -- doc
-  // Returns the absolute path of this selector input in the given scope.
-  abspath(scope) {
-    return scope
-      ? (this.unwind
-          ? scope.path.slice(0, 0 - this.unwind)
-          : scope.path
-        ).concat(this.path)
-      : this.path;
-  }
-
-  // -- doc
   // Extracts the value for this input based on the given scope. This
   // applies formatting.
   extract(scope) {
     let res = undefined;
-    if (this.type === SelectorInput.KEY) {
-      res = scope.path.at(-1);
+    if (this.type === SelectorScope.Key) {
+      res = scope.key;
     } else {
-      res = scope.state.get([
-        ...(this.unwind ? scope.path.slice(0, 0 - this.unwind) : scope.path),
-        ...this.path,
-      ]);
+      res = scope.resolve(this.path);
     }
     // NOTE: There use to be a scope passed
     return this.format ? this.format(res) : res;
@@ -104,11 +94,8 @@ export class SelectorInput {
 // - The global data store
 // - The component (local) state
 //
+
 export class Selector {
-  // TODO: Should be Enum
-  static SINGLE = "V";
-  static LIST = "L";
-  static MAP = "M";
   constructor(inputs, event, stops, format = undefined) {
     this.inputs = inputs;
     this.format = format;
@@ -116,8 +103,8 @@ export class Selector {
     this.stops = stops;
     this.isMany = inputs.length === 1 && inputs[0].isMany;
     this.type = inputs.reduce(
-      (r, v) => (v.key ? Selector.MAP : r),
-      inputs.length > 1 ? Selector.LIST : Selector.SINGLE
+      (r, v) => (v.key ? SelectorType.Mapping : r),
+      inputs.length > 1 ? SelectorType.List : SelectorType.Atom
     );
   }
 
@@ -129,35 +116,16 @@ export class Selector {
     return new Selection(this, scope, handler).init();
   }
 
-  abspath(scope) {
-    // This returns the common ancestor between all paths
-    const paths = this.inputs.map((_) => _.abspath(scope));
-    const n = paths[0].length;
-    const m = paths.length;
-    let i = 0;
-    while (i < n) {
-      for (let j = 0; j < m; j++) {
-        // If the current path is shorter than the current path, or if
-        // if the current path item differs from the previous path, then we return.
-        if (i >= paths[j].length || (j > 0 && paths[j - 1][i] != paths[j][i])) {
-          return paths[0].slice(0, Math.max(0, i - 1));
-        }
-      }
-      i++;
-    }
-    return paths[0];
-  }
-
   // -- doc
   // Extracts the data selected by this selector available at the given `scope`.
   // Note that the returned value has formatting already applied.
   extract(scope, raw = false) {
     let res = undefined;
     switch (this.type) {
-      case Selector.SINGLE:
+      case SelectorType.Atom:
         res = this.inputs[0].extract(scope);
         break;
-      case Selector.LIST: {
+      case SelectorType.List: {
         const n = this.inputs.length;
         res = new Array(n);
         for (let i = 0; i < n; i++) {
@@ -165,7 +133,7 @@ export class Selector {
         }
         break;
       }
-      case Selector.MAP: {
+      case SelectorType.Mapping: {
         res = {};
         const n = this.inputs.length;
         for (let i = 0; i < n; i++) {
@@ -187,10 +155,10 @@ export class Selector {
 
   get path() {
     switch (this.type) {
-      case Selector.SINGLE:
+      case SelectorType.Atom:
         return this.inputs[0].path;
-      case Selector.LIST:
-      case Selector.MAP:
+      case SelectorType.List:
+      case SelectorType.Mapping:
         return commonPath(this.inputs.map((_) => _.path));
       default:
         // ERROR
@@ -224,7 +192,6 @@ export class Selection {
     this.handler = handler;
     this.raw = undefined;
     this.value = undefined;
-    this.path = this.selector.abspath(scope);
     this.alwaysChange = false;
     // Handlers are registered when an input's monitored path changes
     this.handlers = selector.inputs.map(
@@ -242,7 +209,7 @@ export class Selection {
     return this;
   }
 
-  // NOTE: This should really be a piull()
+  // NOTE: This should really be a pull()
   // -- doc
   // Extracts the current value for this selector based on the current
   // `value` at `path`, the `global` state and the `local` component state.
@@ -259,19 +226,19 @@ export class Selection {
   bind(scope) {
     // When we bind a selector state, each input will listen to its specific
     // value listened to.
-    this.handlers.forEach((handler, i) => {
-      const input = this.selector.inputs[i];
-      scope.state.bus.sub(input.abspath(scope), handler, false);
-    });
+    // this.handlers.forEach((handler, i) => {
+    //   const input = this.selector.inputs[i];
+    //   scope.sub(input.abspath(scope), handler, false);
+    // });
     return this;
   }
 
   // // FIXME: We should not need the scope
   unbind(scope) {
-    this.handlers.forEach((handler, i) => {
-      const input = this.selector.inputs[i];
-      scope.state.bus.unsub(input.abspath(scope), handler, false);
-    });
+    // this.handlers.forEach((handler, i) => {
+    //   const input = this.selector.inputs[i];
+    //   scope.unsub(input.abspath(scope), handler, false);
+    // });
     return this;
   }
 
@@ -346,12 +313,8 @@ export class Selection {
   dispose() {}
 
   toString() {
-    return `Selection(path="${this.path.join(
-      "."
-    )}",selector="${this.selector.toString()}")`;
+    return `Selection(selector="${this.selector.toString()}")`;
   }
 }
-
-export const CurrentValueSelector = new Selector([new SelectorInput(".")]);
 
 // EOF

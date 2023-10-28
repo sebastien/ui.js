@@ -172,22 +172,24 @@ class SingleSlotEffect extends SlotEffect {
   }
 
   unify(current, previous = this.value) {
+    console.log("XXX UNIFY/single", { current, previous });
     if (!this.view) {
       const node = createComment(
         // FIXME: add a better description of that part
         `_|SingleSlotEffect`
       );
       DOM.after(this.node, node);
-      const scope = this.scope.derive(this.effector.selector.path);
-      //  TODO: Alternatitvely we could use Prototypes for that
-      if (this.effector.bindings) {
-        scope.updateLocal(this.effector.bindings);
-        console.log("XXXX LOCAL:TODO THIS SHOULD NOT BE EMPTY", scope.local);
-      }
+
+      // TODO: We should only derive a scope if we have bindings there
+      // if (this.effector.bindings) {
+      //   scope.updateLocal(this.effector.bindings);
+      // }
+
+      console.log("TEMPLATE", this.template);
       this.view = this.template
         ?.apply(
           node, // node
-          scope // scope, derived
+          this.scope
         )
         ?.init();
       return this.view;
@@ -212,6 +214,7 @@ class MappingSlotEffect extends SlotEffect {
   // ### Lifecycle
 
   unify(current, previous = this.value) {
+    console.log("XXXX UNIFY/mapping", { current, previous });
     // We prepare from comparing the current state with the previous state,
     // and do the corresponding operations to unify.
     const { node, scope } = this;

@@ -22,22 +22,9 @@
 // a centralised state tree. Components can then subscribe and subsribe
 // to data changes to be updated.
 
-// TODO: This should probably be a rendereffector
-//
-// NOTE: We're storing the topic path of any component in the rendered
-// component itself. This makes it possible to link a node to the context.
-// export const render = (
-//   root,
-//   template,
-//   data,
-//   path = null,
-//   state = undefined
-// ) => {};
-
 import { createComponent } from "./ui/components.js";
-import { controller } from "./ui/controllers.js";
 import { Loader, loadTemplates, createModule } from "./ui/loading.js";
-import { StateTree } from "./ui/state.js";
+import { Store } from "./ui/store.js";
 import { stylesheet } from "./ui/css.js";
 import { onWarning } from "./ui/utils/logging.js";
 import Options from "./ui/utils/options.js";
@@ -54,14 +41,14 @@ export const ui = (
   options = undefined
 ) => {
   const style = undefined;
-  const state = data instanceof StateTree ? data : new StateTree(data);
+  const store = data instanceof Store ? data : new Store(data);
   if (options) {
     Object.assign(Options, options);
   }
 
   // DEBUG
-  if (Options.exportState) {
-    window.state = state;
+  if (Options.exportStore) {
+    window.store = store;
   }
 
   // NOTE: This is a side-effect and will register the styles as tokens.
@@ -103,17 +90,17 @@ export const ui = (
         }
         // And here we detect components and we instanciate them
         for (const node of scope.querySelectorAll("slot[template]")) {
-          const c = createComponent(node, state);
+          const c = createComponent(node, store);
           c && components.push(c);
         }
       }
-      return { templates, components, stylesheets, style, state };
+      return { templates, components, stylesheets, style, store };
     }
   );
 };
 ui.options = Options;
 
-export { tokens, stylesheet, controller };
+export { tokens, stylesheet };
 export default ui;
 
 // EOF

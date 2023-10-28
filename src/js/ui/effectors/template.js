@@ -2,7 +2,6 @@ import Options from "../utils/options.js";
 import { onError, onWarning } from "../utils/logging.js";
 import { assign } from "../utils/collections.js";
 import { Effect, Effector } from "../effectors.js";
-import { CurrentValueSelector } from "../selector.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
@@ -15,7 +14,7 @@ export class TemplateEffector extends Effector {
 
   constructor(template, rootName = undefined) {
     // TODO: We may want path a different selector there.
-    super(null, CurrentValueSelector);
+    super(null, null);
     this.template = template;
     this.name = template.name;
     this.rootName = rootName;
