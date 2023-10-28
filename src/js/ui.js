@@ -24,7 +24,6 @@
 
 import { createComponent } from "./ui/components.js";
 import { Loader, loadTemplates, createModule } from "./ui/loading.js";
-import { Store } from "./ui/store.js";
 import { stylesheet } from "./ui/css.js";
 import { onWarning } from "./ui/utils/logging.js";
 import Options from "./ui/utils/options.js";
@@ -41,14 +40,9 @@ export const ui = (
   options = undefined
 ) => {
   const style = undefined;
-  const store = data instanceof Store ? data : new Store(data);
+  const store = data;
   if (options) {
     Object.assign(Options, options);
-  }
-
-  // DEBUG
-  if (Options.exportStore) {
-    window.store = store;
   }
 
   // NOTE: This is a side-effect and will register the styles as tokens.

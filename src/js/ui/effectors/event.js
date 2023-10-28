@@ -40,7 +40,8 @@ class EventEffect extends Effect {
     this.handler = (event) => {
       if (inputs) {
         const delta = inputs.reduce((r, input) => {
-          r[input.key] = input.apply(event);
+          console.warn("EVENT:TODO:Delta reduction", input);
+          // r[input.key] = input.apply(event);
           return r;
         }, {});
         console.log("EVENT:FIXME:Delta", { delta });

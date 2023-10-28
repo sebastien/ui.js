@@ -1,4 +1,4 @@
-import { access } from "../utils/collections.js";
+import { map, access } from "./utils/collections.js";
 
 // Wraps a subscription
 export class Subscription {
@@ -17,9 +17,11 @@ export class Subscribable {
     this.paths = new Map();
   }
 
-  get(path, creates = false) {
+  subs(path, creates = false, offset = 0) {
     let paths = this.paths;
-    for (const chunk of path) {
+    const n = path.length;
+    for (let i = offset; i < n; i++) {
+      const chunk = path[i];
       if (!paths.has(chunk)) {
         if (creates) {
           const s = new Map();
@@ -37,9 +39,9 @@ export class Subscribable {
     return paths;
   }
 
-  sub(path, handler) {
+  sub(path, handler, offset = 0) {
     const res = new Subscription(path, handler);
-    const p = this.get(path, true);
+    const p = this.subs(path, true, offset);
     if (!p.has(Subscription)) {
       // This sets the list of subscriptions
       p.set(Subscription, []);
@@ -49,10 +51,12 @@ export class Subscribable {
     return res;
   }
 
-  topics(path) {
+  topics(path, offset = 0) {
     const res = [];
     let paths = this.paths;
-    for (const chunk of path) {
+    const n = path.length;
+    for (let i = offset; i < n; i++) {
+      const chunk = path[i];
       if (paths.has(chunk)) {
         const p = paths.get(chunk);
         res.splice(0, 0, p);
@@ -62,23 +66,23 @@ export class Subscribable {
     return res;
   }
 
-  unsub(path, sub) {
-    const p = this.get(path, false);
+  unsub(path, sub, offset = 0) {
+    const p = this.subs(path, false, offset);
     const i = p ? p.indexOf(sub) : -1;
     return i >= 0 ? (p.splice(i, 1), sub) : null;
   }
 
-  trigger(path, bubbles) {
+  trigger(path, bubbles, offset = 0) {
     if (bubbles) {
-      for (const p in this.topics(path)) {
+      for (const p in this.topics(path, offset)) {
         for (const s of p.get(Subscription) || []) {
           s.trigger();
         }
       }
     } else {
-      const p = this.get(path, false);
+      const p = this.subs(path, false, offset);
       if (p) {
-        for (const s of this.get(Subscription) || []) {
+        for (const s of p.get(Subscription) || []) {
           s.trigger();
         }
       }
@@ -100,15 +104,60 @@ class Cell extends Subscribable {
   delete(path) {}
 }
 
-class Value extends Cell {
+export class Value extends Cell {
   constructor(value) {
     super();
     this.value = value;
   }
 
-  get(path) {
-    return access(this.value, path);
+  get(path, offset = 0) {
+    return access(this.value, path, offset);
   }
 }
 
+export class Scope extends Cell {
+  constructor(parent) {
+    super();
+    this.slots = parent
+      ? Object.create(
+          parent instanceof Scope
+            ? parent.slots
+            : map(parent, (_) => new Value(_))
+        )
+      : {};
+    this.parent = parent;
+  }
+
+  get(path, offset = 0) {
+    const slot = this.slots[path[0]];
+    return slot ? slot.get(path, offset + 1) : undefined;
+  }
+
+  subs(path, creates = false, offset = 0) {
+    const slot = this.slots[path[0]];
+    return slot ? slot.subs(path, creates, offset + 1) : undefined;
+  }
+
+  sub(path, handler, offset = 0) {
+    const slot = this.slots[path[0]];
+    return slot ? slot.sub(path, handler, offset + 1) : undefined;
+  }
+
+  topics(path, offset = 0) {
+    const slot = this.slots[path[0]];
+    return slot ? slot.topics(path, offset + 1) : undefined;
+  }
+
+  unsub(path, sub, offset = 0) {
+    const slot = this.slots[path[0]];
+    return slot ? slot.unsub(path, sub, offset + 1) : undefined;
+  }
+
+  trigger(path, bubbles, offset = 0) {
+    const slot = this.slots[path[0]];
+    return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
+  }
+
+  // TODO: Cell
+}
 // EOF

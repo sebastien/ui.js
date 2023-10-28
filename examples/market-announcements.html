@@ -33,23 +33,19 @@
           x:for="sources"
           on:change="selection={parseInt(_.target.value)}"
         >
-          <option out:content=".label">Unnamed option</option>
-            <!--
-          <option out:value=".index" out:content=".label"></option>
-        -->
+          <option out:value=".index" out:content=".label">
+            Unnamed option
           </option>
         </select>
 
         <!-- NOTE: We could have something like ann=announcements -->
-        <!--
         <ul class="list" x:for="announcements">
           <li class="item">
-            <code out:content=".id" />
-            <code out:content=".companyCode" />
-            <code out:content=".securityCode" />
+            <code out:content=".id"></code>
+            <code out:content=".companyCode"></code>
+            <code out:content=".securityCode"></code>
           </li>
         </ul>
-        -->
       </div>
     </template>
 
@@ -64,6 +60,9 @@
             url: "staging-apis.nzx.com/public/",
             label: "Public API (Staging)",
           },
+        ],
+        announcements: [
+          { id: 230123, companyCode: "NZX", securityCode: "NZX" },
         ],
       });
     </script>

@@ -1,5 +1,7 @@
 import { onError } from "./utils/logging.js";
 import { access } from "./utils/collections.js";
+import { SelectorType } from "./selector.js";
+import { Scope } from "./reactive.js";
 
 // --
 // ## Effectors
@@ -10,71 +12,24 @@ import { access } from "./utils/collections.js";
 // The effect scope encapsulates the state of an effector, including
 // where it gets its data from.
 
-const ScopeType = Object.freeze({
-  // Path resolves from the local scope
-  Scope: ".",
-  // Path resolves from the current value (if any)
-  Value: "_",
-  // Path resolves from the absolute store
-  Store: "/",
-  // Path resolves from the key
-  Key: "#",
-});
-
-export class EffectScope {
-  constructor(store, path, localPath, slots, key, parent = null) {
-    // State store, which is a state tree and a pub/sub bus.
-    this.store = store;
-    // Main data selection path, the root for relative selectors
-    this.path = path || [];
-    // Key if the effect is part of a collection
+export class EffectScope extends Scope {
+  constructor(value, key, parent, path) {
+    super(parent);
     this.key = key;
-    // TODO: Not sure what this is
-    this.slots = slots;
-    // This is the current value
-    this.current = store.get(this.path);
-    // Event handlers declared within the scope.
+    // This is the path for this scope in the parent scope
+    this.path = path;
+    // This is the value extracted from the parent scope
+    // FIXME: Value needs to be subscribed to
+    this.value = value;
     this.handlers = new Map();
-    this.parent = parent;
   }
 
-  sub(path, handler, withLast) {
-    /// FIXME: Sub should be on a cell, really
-    console.log("TODO: Scope.sub", path, handler);
+  derive(path, localPath = undefined, slots = undefined, key = undefined) {
+    // TODO: Remove localPath and slots?
+    return new EffectScope(this.get(path), key, this, path);
   }
 
-  set(name, value) {
-    console.log("XXXX TODO: Scope.set", { name, value });
-  }
-
-  get(name) {
-    console.log("XXXX TODO: Scope.get", { name });
-  }
-
-  resolve(path) {
-    const k = path[0];
-    if (this.slots && this.slots[k]) {
-      return access(this.slots[k], path, 1);
-    } else {
-      return this.store.get(path);
-    }
-  }
-
-  derive(path, localPath = undefined, slots = this.slots, key = this.key) {
-    return new EffectScope(
-      this.store,
-      // NOTE: There's a question here whether we want the path to be relative
-      // or absolute;
-      [...this.path, ...(typeof path === "string" ? path.split(".") : path)],
-      // FIXME: Local path is no more
-      localPath,
-      slots,
-      key,
-      this
-    );
-  }
-
-  trigger(name, ...args) {
+  triggerEvent(name, ...args) {
     console.warn("TRIGGER NOT IMPLEMENTED", { name, args });
     // let scope = this;
     // while (scope && !scope.handlers.has(name)) {
@@ -93,6 +48,57 @@ export class EffectScope {
     // }
   }
 
+  get(path, offset = 0) {
+    const k = path[offset];
+    if (this.value && this.value[k] !== 0) {
+      // We resolve in the current value first
+      return access(this.value[k], path, offset + 1);
+    } else {
+      // Otherwise we resolve in the current scope
+      return super.get(path, offset);
+    }
+  }
+
+  sub(path, handler, offset = 0) {
+    console.warn("SUB NOT IMPLEMENTED");
+  }
+
+  unsub(path, sub, offset = 0) {
+    console.warn("UNSUB NOT IMPLEMENTED");
+  }
+
+  trigger(path, bubbles, offset = 0) {
+    console.warn("TRIGGER NOT IMPLEMENTED");
+  }
+
+  topics(path, offset = 0) {
+    console.warn("TOPICS NOT IMPLEMENTED");
+  }
+
+  subs(path, creates = false, offset = 0) {
+    console.warn("SUBS NOT IMPLEMENTED");
+  }
+
+  // FIXME: A subscription is actually a dervied cell
+  select(selector) {
+    if (!selector) {
+      return null;
+    }
+    switch (selector.type) {
+      case SelectorType.Atom:
+        return this.get(selector.inputs[0].path);
+      case SelectorType.List:
+        return selector.inputs.map((_) => this.get(_.path));
+      case SelectorType.Map:
+        return selector.inputs.reduce(
+          (r, _) => ((r[_.name] = this.get(_.path)), r),
+          {}
+        );
+      default:
+        onError("Unsupported selector type", selector.type, { selector });
+    }
+  }
+
   toString() {
     return `EffectScope(path="${this.path.join(".")}", key="${this.key}")`;
   }
@@ -105,6 +111,7 @@ export class EffectScope {
 export class Effect {
   constructor(effector, node, scope, selector = effector.selector) {
     this.effector = effector;
+    this.selector = selector;
     this.node = node;
     this.scope = scope;
     this.value = undefined;
@@ -115,18 +122,20 @@ export class Effect {
     // We apply the selector to the scope and register a selection.
     // The selection will be updated as the contents changes.
 
-    this.selection = selector
-      ? selector.apply(scope, this.onChange.bind(this))
-      : null;
+    // TODO: We need to do the binding
+    this.selection = selector && scope ? scope.select(selector) : null;
+    // this.selection = selector
+    //   ? selector.apply(scope, this.onChange.bind(this))
+    //   : null;
   }
 
   bind() {
-    this.selection?.bind(this.scope);
+    // TODO: Subscribe to the selection
     return this;
   }
 
   unbind() {
-    this.selection?.unbind(this.scope);
+    // TODO: Unscubscribe to the selection
     return this;
   }
 
@@ -138,7 +147,7 @@ export class Effect {
 
   apply() {
     // We extract the latest value from the selection
-    const value = this.selection ? this.selection.extract() : undefined;
+    const value = this.scope.select(this.selector);
     return this.unify(value, this.value);
   }
 

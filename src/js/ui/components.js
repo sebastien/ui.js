@@ -35,7 +35,7 @@ export class Component {
     // should resolve from cells first, and if not from the store. Effect
     // scope should be from cells.
     // TODO: State really should be store.
-    this.scope = new EffectScope(store, path, ["@components", id], slots);
+    this.scope = new EffectScope(undefined, undefined, store);
     // this.scope = new EffectScope(
     //   state,
     //   path || localPath,
