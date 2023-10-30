@@ -45,7 +45,7 @@ export const parseWhenDirective = (text) => {
 };
 
 export const onWhenAttribute = (processor, node, root, templateName) => {
-  // NOTE: Before we had a condition for boubdary === root, however I'm
+  // NOTE: Before we had a condition for boundary === root, however I'm
   // not sure why.
   const text = node.getAttribute("when");
   const when = parseWhenDirective(text);

@@ -20,7 +20,6 @@ variations).
   --font-control-line-height: 1.25em;
   --font-control-size: var(--font-size-2);
 
-
   --font-input: "Jost", sans-serif;
   --font-input-line-height: 1.25em;
   --font-input-size: var(--font-size-3);
@@ -31,16 +30,19 @@ variations).
   --font-icon-variation: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
 
   /** ### Font Size */
-  --font-size-0: calc(9 / 16 * 1rem);
-  --font-size-1: calc(11 / 16 * 1rem);
-  --font-size-2: calc(13 / 16 * 1rem);
-  --font-size-3: calc(16 / 16 * 1rem);
-  --font-size-4: calc(18 / 16 * 1rem);
-  --font-size-5: calc(22 / 16 * 1rem);
-  --font-size-6: calc(26 / 16 * 1rem);
-  --font-size-7: calc(32 / 16 * 1rem);
-  --font-size-8: calc(40 / 16 * 1rem);
-  --font-size-9: calc(48 / 16 * 1rem);
+  --font-base: 13;
+  --font-size: 13;
+  --font-ratio: calc(var(--font-size) / var(--font-base));
+  --font-size-0: calc(9 * var(--font-ratio) / 16 * 1rem);
+  --font-size-1: calc(11 * var(--font-ratio) / 16 * 1rem);
+  --font-size-2: calc(13 * var(--font-ratio) / 16 * 1rem);
+  --font-size-3: calc(16 * var(--font-ratio) / 16 * 1rem);
+  --font-size-4: calc(18 * var(--font-ratio) / 16 * 1rem);
+  --font-size-5: calc(22 * var(--font-ratio) / 16 * 1rem);
+  --font-size-6: calc(26 * var(--font-ratio) / 16 * 1rem);
+  --font-size-7: calc(32 * var(--font-ratio) / 16 * 1rem);
+  --font-size-8: calc(40 * var(--font-ratio) / 16 * 1rem);
+  --font-size-9: calc(48 * var(--font-ratio) / 16 * 1rem);
 
   /**
 	 * ## Typography
@@ -50,18 +52,17 @@ variations).
   /*
    * ## Padding 
   */
-  --pad-0: 2px;
-  --pad-1: 4px;
-  --pad-2: 8px;
-  --pad-3: 12px;
-  --pad-4: 16px;
+  --pad-0: calc(1px * 2);
+  --pad-1: calc(1px * 4);
+  --pad-2: calc(1px * 8);
+  --pad-3: calc(1px * 12);
+  --pad-4: calc(1px * 16);
 
   --gap-1: var(--pad-0);
   --gap-2: var(--pad-1);
   --gap-3: var(--pad-2);
   --gap-4: var(--pad-3);
   --gap-5: var(--pad-4);
-
 
   --rounded-1: 2px;
   --rounded-2: 4px;
@@ -78,25 +79,24 @@ variations).
   */
 
   /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
-  --color-accent: #03dac6
-
+  /* TODO: Should name the colors */
+  --color-accent: #03dac6;
   --color-primary: #6200ee;
   --color-primary-alt: #3700b3;
-
   --color-secondary: #03dac6;
   --color-secondary-variant: #03dac6;
-
   --color-secondary-variant: #03dac6;
 
   /*
    * ## Page
   */
-  --page-bg: #FFFFFF;
+  --page-bg: #ffffff;
 
   /*
    * ## Boxes
   */
   --box-bd: #e0e0e0;
+  --link-color: var(--color-primary);
 
   /*
    * ## Controls

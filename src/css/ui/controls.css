@@ -10,6 +10,11 @@
     display: block;
   }
 
+  a[href],
+  .link {
+    color: var(--link-color);
+  }
+
   .selectable {
     cursor: pointer;
   }
@@ -115,6 +120,7 @@
   button,
   input,
   textarea,
+  select,
   .button,
   .input,
   .textarea {
@@ -336,8 +342,6 @@
     opacity: 1;
   }
 
-  .select {
-  }
   .select > button,
   .select > .button,
   .select > button:hover,
@@ -372,6 +376,6 @@
     user-select: none;
   }
   .no-events {
-    pointe-events: none;
+    pointer-events: none;
   }
 }

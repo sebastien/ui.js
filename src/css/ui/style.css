@@ -19,6 +19,14 @@
   box-shadow: 0px 2px 2px #0000000a;
 }
 
+.bold {
+  font-weight: 600;
+}
+
+.small {
+  font-size: 90%;
+}
+
 /**
 	* ## Presentation & Formatting 
 	*/

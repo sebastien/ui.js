@@ -20,6 +20,20 @@
   }
 
   /**
+	* ## Text
+	*/
+
+  .tr {
+    text-align: right;
+  }
+  .tl {
+    text-align: left;
+  }
+  .tt {
+    align-self: flex-start;
+  }
+
+  /**
 	* ## Layout
 	*/
   /**
@@ -44,6 +58,39 @@
     height: 100%;
     max-height: 100%;
   }
+  .bl {
+    display: block;
+  }
+  .ibl {
+    display: inline-block;
+  }
+  .fl {
+    display: inline;
+  }
+  .ifl {
+    display: inline-flex;
+  }
+
+  /* @tmpl
+   * range(10).map(_ => `.w-${_}c { width: ${_}ch; }`)
+   */
+  .w-9c {
+    width: 9ch;
+  }
+  .w-10c {
+    width: 10ch;
+  }
+  .w-c1 {
+    width: 160px;
+  }
+  .w-c2 {
+    width: 320px;
+  }
+  .w-c3 {
+    width: 480px;
+  }
+
+  /* @end */
 
   /**
    * `fit-screen` fits (covers) the whole screen, and also sets  the position
@@ -158,7 +205,30 @@
   .pad-b {
     padding-bottom: var(--pad-1);
   }
-
+  .mb-1 {
+    margin-bottom: var(--pad-1);
+  }
+  .mb-2 {
+    margin-bottom: var(--pad-2);
+  }
+  .mb-3 {
+    margin-bottom: var(--pad-3);
+  }
+  .mb-4 {
+    margin-bottom: var(--pad-4);
+  }
+  .mt-1 {
+    margin-top: var(--pad-1);
+  }
+  .mt-2 {
+    margin-top: var(--pad-2);
+  }
+  .mt-3 {
+    margin-top: var(--pad-3);
+  }
+  .mt-4 {
+    margin-top: var(--pad-4);
+  }
   .gap,
   .gap-1 {
     gap: var(--gap-1);

@@ -1,0 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Khula:wght@400;600;700&display=swap");
+:root {
+  --pad-unit: 0.75px;
+  --font-size: 12;
+  --font-text: "Khula", sans-serif;
+  --font-heading: "Khula", sans-serif;
+  --font-code: "Cousine", monospace;
+  --font-control: "Khula", sans-serif;
+  --font-input: "Khula", sans-serif;
+
+  --color-grey: rgb(114, 114, 114);
+  --color-black: rgb(17, 17, 17);
+  --color-blue: rgb(53, 131, 209);
+  --color-green: rgb(17, 125, 29);
+  --color-red: #fa582a;
+
+  --color-primary: var(--color-blue);
+}
