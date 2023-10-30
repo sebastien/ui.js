@@ -30,6 +30,22 @@ export const map = (v, f) => {
     return res;
   }
 };
+
+export const range = (start, end, step = 1, closed = false) => {
+  if (end === undefined) {
+    end = start;
+    start = 0;
+  }
+  const n = Math.ceil(Math.max(0, (end - start) / step)) + (closed ? 1 : 0);
+  const r = new Array(n);
+  let v = start;
+  for (let i = 0; i < n; i++) {
+    r[i] = v;
+    v += step;
+  }
+  return r;
+};
+
 export const values = (v) => {
   if (v instanceof Array) {
     return v;
