@@ -28,32 +28,43 @@
       from the scope at component creation.
     -->
     <template name="Announcements" data-selection="0" date-state="loading">
-      <div class="card">
-        <h1 out:content="title">Loading…</h1>
+      <div class="card col-3 pad-4 bd stack gap-4">
+        <h4 out:content="title">Loading…</h4>
 
         <!-- NOTE: We embed a JS expression here in the effect -->
         <!-- NOTE: x:for=sources is like out:content="sources.* -->
         <label>Source</label>
-        <select
-          class="selector"
+        <ul
+          class="list-h"
           x:for="sources"
           on:change="selection={parseInt(_.target.value)}"
         >
-          <option out:value=".index" out:content=".label">
+          <li class="selectable label" out:value=".index" out:content=".label">
             Unnamed option
-          </option>
-        </select>
-
-        <!-- "state" here is an internal value -->
-        <div x:when="state=='loading'">Loading</div>
-        <div x:when="state=='empty'">No announcements</div>
-        <ul x:when="state=='ready'" class="list" x:for="announcements">
-          <li class="item">
-            <code out:content=".id"></code>
-            <code out:content=".companyCode"></code>
-            <code out:content=".securityCode"></code>
           </li>
         </ul>
+
+        <!-- "state" here is an internal value -->
+        <!--
+        <div x:when="state=='loading'">Loading</div>
+        <div x:when="state=='empty'">No announcements</div>
+        -->
+        <ul class="list-v bd-v mv-2" x:for="announcements">
+          <li class="row gap-2 mv-2 pv-2">
+            <span out:content=".id">…</span>
+            <span out:content=".company">…</span>
+            <span class="grow" out:content=".description">…</span>
+            <span class="w-4c" out:content=".date">…</span>
+          </li>
+        </ul>
+        <p class="dimmed mb-2">
+          Last change on 30 October 2023 ― 5:00 pm.Data is realtime, polled
+          every minute.
+        </p>
+        <p class="small">
+          Data sourced from API deployed at
+          <a href="https://api.nzx.dev/public">api.nzx.dev/public</a>
+        </p>
       </div>
     </template>
 
@@ -70,7 +81,14 @@
           },
         ],
         announcements: [
-          { id: 230123, companyCode: "NZX", securityCode: "NZX" },
+          {
+            id: 230123,
+            companyCode: "NZX",
+            company: "Geneva Finance",
+            securityCode: "NZX",
+            description: "Geneva Half Year Profit Guidance",
+            date: "10:10",
+          },
         ],
       });
     </script>

@@ -57,16 +57,27 @@ variations).
   --pad-2: calc(1px * 8);
   --pad-3: calc(1px * 12);
   --pad-4: calc(1px * 16);
+  --pad-5: calc(1px * 20);
+  --pad-6: calc(1px * 24);
+  --pad-7: calc(1px * 28);
+  --pad-8: calc(1px * 32);
 
   --gap-1: var(--pad-0);
   --gap-2: var(--pad-1);
   --gap-3: var(--pad-2);
   --gap-4: var(--pad-3);
   --gap-5: var(--pad-4);
+  --gap-6: var(--pad-6);
+  --gap-7: var(--pad-7);
+  --gap-8: var(--pad-8);
 
   --rounded-1: 2px;
   --rounded-2: 4px;
   --rounded: var(--rounded-1);
+  /*
+   * ## Layout
+  */
+  --col-width: 160px;
 
   /*
    * ## Overlay

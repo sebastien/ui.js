@@ -17,18 +17,45 @@
 
   .selectable {
     cursor: pointer;
+    user-select: none;
   }
 
   .selectable:hover {
     background-color: var(--control-bg-hover);
   }
 
-  .selectable:focus {
+  .selectable:focus,
+  .selectable.focus {
     background-color: var(--control-bg-focused);
   }
 
-  .selectable:active {
+  .selectable:active,
+  .selectable.active {
     background-color: var(--control-bg-focused);
+  }
+
+  /* Selectable labels typically don't have padding and therefore
+   * should rely on border and text color instead */
+  .label.selectable {
+    border-bottom: 1px solid transparent;
+  }
+
+  .label.selectable:hover {
+    background-color: transparent;
+    color: var(--color--accent);
+    border-color: var(--color-text);
+  }
+
+  .label.selectable:focus {
+    background-color: transparent;
+    border-color: var(--color-text);
+  }
+
+  .label.selectable:active,
+  .label.selectable.active {
+    background-color: transparent;
+    color: var(--color--accent);
+    border-color: var(--color-accent);
   }
 
   .pill {

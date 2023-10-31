@@ -1,4 +1,7 @@
 import { map, range } from "../utils/collections.js";
+if (!Bun) {
+  throw new Exception("Bun is required to run this");
+}
 
 const RE_TMPL_START = new RegExp("/\\*\\s*@tmpl", "g");
 const RE_TMPL_MID = new RegExp("\\*/", "g");
@@ -22,12 +25,14 @@ const findRegions = function* (text) {
     }
     const md = match(RE_TMPL_MID, text, o);
     if (!md) {
+      o = ts;
       break;
     } else {
       o = md.index + md[0].length;
     }
     const me = match(RE_TMPL_END, text, o);
     if (!me) {
+      o = ts;
       break;
     } else {
       o = me.index;
@@ -63,31 +68,41 @@ const findRegions = function* (text) {
   }
 };
 
-const out = (value) => {
-  if (typeof value === "string") {
-    console.log(value);
-  } else if (value instanceof Array) {
-    for (const _ of value) {
-      console.log(_);
-    }
-  }
-};
-
-const process = async (path) => {
-  const text = await Bun.file(path).text();
+const process = function* (text) {
   for (const r of findRegions(text)) {
     switch (r.type) {
       case "tmpl":
-        out(r.pre);
-        out(eval(`({range,map})=>(${r.tmpl})`)({ range, map }));
+        {
+          yield r.pre;
+          const v = eval(`({range,map})=>(${r.tmpl})`)({ range, map });
+          if (typeof v === "string") {
+            yield v;
+          } else if (v instanceof Array) {
+            for (const _ of v) {
+              yield _;
+            }
+          }
+        }
         break;
       default:
-        out(r.text);
+        yield r.text;
     }
   }
 };
 
+const rewrite = async (path) => {
+  const file = Bun.file(path);
+  const text = await file.text();
+  const out = file.writer();
+  for (const chunk of process(text)) {
+    out.write(chunk);
+  }
+  out.flush();
+};
+
+// TODO: Should wrap this in a CLI
 for (const path of Bun.argv.slice(2)) {
-  await process(path);
+  rewrite(path);
 }
+
 // EOF

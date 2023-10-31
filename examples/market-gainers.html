@@ -28,20 +28,20 @@
       from the scope at component creation.
     -->
     <template name="Announcements" data-selection="0" date-state="loading">
-      <div class="card w-c2 pad-4 bd">
+      <div class="card w-c2 pad-4 bd stack gap-2">
         <h4>NZX Gainers &amp; Decliners</h4>
 
-        <ul class="items list-h"
+        <ul class="x list-h mt-4 gap-4"
           on:change="selection={parseInt(_.target.value)}"
         >
-          <li class="item link selectable" value="gainers">Gainers</li>
-          <li class="item link selectable" value="decliners">Decliners</li>
-          <li class="item link selectable" value="indices">Decliners</li>
+          <li class="bold label selectable" value="gainers">Gainers</li>
+          <li class="bold label selectable" value="decliners">Decliners</li>
+          <li class="bold label selectable" value="indices">Decliners</li>
         </ul>
 
         <!-- "state" here is an internal value -->
         <ul class="bd-t list-v mt-4 mb-4">
-          <li class="item bd-b stack">
+          <li class="mt-2 mb-2 pd-2 pb-2 bd-b stack">
             <div class="overview fit-w row">
               <span class="grow bold link">CBD</span>
               <span class="ib w-10c tr">$0.194</span>
