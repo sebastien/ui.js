@@ -25,7 +25,12 @@ class MatchEffect extends Effect {
     let branch = undefined;
     for (let i = 0; i < branches.length; i++) {
       branch = branches[i];
-      if (branch.value === Any || value === branch.value) {
+      const { guard } = branch;
+      if (
+        guard === true ||
+        value === guard ||
+        (guard instanceof Function && guard(value))
+      ) {
         index = i;
         break;
       }

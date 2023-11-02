@@ -3,7 +3,7 @@ import { MatchEffector } from "../effectors/match.js";
 import { Any } from "../utils/values.js";
 import { onError } from "../utils/logging.js";
 import { makeKey } from "../utils/ids.js";
-import { parseValue, parseSelector } from "./directives.js";
+import { parseLiteral, parseSelector } from "./directives.js";
 import { onTemplateNode } from "./template.js";
 import {
   asFragment,
@@ -39,7 +39,7 @@ export const onDoAttribute = (processor, attr, root, templateName) => {
             (n.hasAttribute("do:otherwise") && "*");
           n.removeAttribute("do:case");
           n.removeAttribute("do:otherwise");
-          const value = t == "*" ? Any : parseValue(t);
+          const value = t == "*" ? Any : parseLiteral(t);
           const template = onTemplateNode(
             processor,
             asFragment(n),

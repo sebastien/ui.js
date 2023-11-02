@@ -40,19 +40,28 @@
         </ul>
 
         <!-- "state" here is an internal value -->
-        <ul class="bd-t list-v mt-4 mb-4">
-          <li class="mt-2 mb-2 pd-2 pb-2 bd-b stack">
-            <div class="overview fit-w row">
-              <span class="grow bold link">CBD</span>
-              <span class="ib w-10c tr">$0.194</span>
-              <span class="ib w-10c tr">8.99%</span>
-            </div>
-            <div class="detail fit-w row">
-              <span class="grow bold">Cannasouth Limited Ordinary Shares</span>
-              <span class="ib wc-10c tr tt small">1:44PM</span>
-            </div>
-          </li>
-        </ul>
+        <slot x:match="items">
+        <!-- FIXME: If I change this to a slot, the the next one will be used -->
+          <div x:case="undefined">Loading…</div>
+          <div x:when="{(items||[]).length === 0}">No items</div>
+          <div x:otherwise>
+            <ul class="bd-t list-v mt-4 mb-4">
+              <li class="mt-2 mb-2 pd-2 pb-2 bd-b stack">
+                <div class="overview fit-w row">
+                  <span class="grow bold link">CBD</span>
+                  <span class="ib w-10c tr">$0.194</span>
+                  <span class="ib w-10c tr">8.99%</span>
+                </div>
+                <div class="detail fit-w row">
+                  <span class="grow bold">Cannasouth Limited Ordinary Shares</span>
+                  <span class="ib wc-10c tr tt small">1:44PM</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </slot>
+
+        <!-- FIXME: For some reason these disappear -->
         <p class="dimmed mb-2">Last change on 30 October 2023 ― 5:00 pm.Data is 20 mins delayed.</p>
         <p class="small">Data sourced from API deployed at <a href="https://api.nzx.dev/ticker/1.0">api.nzx.dev/ticker/1.0</a></p>
 

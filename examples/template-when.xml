@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" media="screen" href="../lib/xml/uijs.xslt"?>
+<UI xmlns="https://github.com/sebastien/uijs" xmlns:do="https://github.com/sebastien/uijs#do" xmlns:on="https://github.com/sebastien/uijs#on" xmlns:out="https://github.com/sebastien/uijs#out" xmlns:s="https://github.com/sebastien/uijs#s" xmlns:x="https://github.com/sebastien/uijs#x" version="1.0">
+  <Page>
+    <head>
+      <link href="../lib/css/uijs.css" rel="stylesheet"/>
+    </head>
+    <body>
+      <slot template="Hello World"/>
+      <template name="HelloWorld">
+      Hello, world in page!
+      </template>
+    </body>
+  </Page>
+</UI>

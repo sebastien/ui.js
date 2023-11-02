@@ -28,7 +28,7 @@ export const createView = (processor, root, templateName = undefined) => {
   const attrs = {};
   for (const [match, attr] of iterAttributes(
     root,
-    /^(?<type>in|out|on|do|styled|x):(?<name>.+)$/
+    /^(?<type>in|out|inout|on|styled|x):(?<name>.+)$/
   )) {
     const type = match.groups.type;
     const name = match.groups.name;
@@ -65,22 +65,23 @@ export const createView = (processor, root, templateName = undefined) => {
   //   stylesheet(styledRules);
   // }
 
-  // We take care of the effectors. Note that processing effectors will
-  // CHANGE the view, removing attributes and nodes.
   const effectors = [];
-  for (const { attr } of attrs["do"] || []) {
-    const e = processor.Do(processor, attr, root, templateName);
-    e && effectors.push(e);
-  }
 
-  // --
   // ### slot nodes
 
   for (const { name, attr } of attrs["x"] || []) {
-    const e =
-      name === "for" ? processor.For(processor, attr, root, name) : null;
-    if (!e) {
-      onError(`Unsupported attribute "x:${name}"`);
+    let e = null;
+    switch (name) {
+      case "for":
+        e = processor.For(processor, attr, root, name);
+        break;
+      case "match":
+        // NOTE: The match processor will remove x:case, x:when
+        // and x:otherwise.
+        e = processor.Match(processor, attr, root, name);
+        break;
+      default:
+        onError(`Unsupported attribute "x:${name}"`);
     }
     e && effectors.push(e);
   }
@@ -88,8 +89,12 @@ export const createView = (processor, root, templateName = undefined) => {
   // NOTE: We pre-expand the iterator into an array as onSlotNode
   // is destructive. We want all the slots first and the we process them.
   for (const node of [...iterNodes(root, "slot", "SLOT")]) {
-    const e = processor.Slot(processor, node, root, templateName);
-    e && effectors.push(e);
+    if (node.hasAttribute("x:for") || node.hasAttribute("x:match")) {
+      // We do nothing, we/ve already processed the node
+    } else {
+      const e = processor.Slot(processor, node, root, templateName);
+      e && effectors.push(e);
+    }
   }
 
   // --
@@ -100,6 +105,8 @@ export const createView = (processor, root, templateName = undefined) => {
     const e = processor.Out(processor, attr, root, name);
     e && effectors.push(e);
   }
+  // TODO: attr["in"]
+  // TODO: attr["inout"]
 
   // --
   // ### Event effectors
@@ -108,21 +115,6 @@ export const createView = (processor, root, templateName = undefined) => {
     const e = processor.On(processor, attr, root, name);
     e && effectors.push(e);
   }
-
-  // FIXME: Disabled for now
-  // // --
-  // //
-  // // ### Conditional effectors
-  for (const node of iterSelector(root, "*[when]")) {
-    const e = processor.When(processor, node, root, templateName);
-    e && effectors.push(e);
-  }
-
-  // // We take care of state change effectors
-  // // TODO: This won't work for nested templates
-  // for (const node of iterSelector(root, "*[when]")) {
-  //   }
-  // }
 
   // --
   // Refs

@@ -56,8 +56,18 @@ export const parseSelector = (text) => {
   );
 };
 
-export const parseValue = (text) => {
-  console.log("PARSE VALUE", text);
+// A literal can be directly converted to JavaScript and does not use
+export const parseLiteral = (text) => {
+  return text && text.startsWith("(") && text.endsWith(")")
+    ? JSON.parse(text.slice(1, -1))
+    : text;
+};
+
+// An expression makes use of the context
+export const parseExpression = (text) => {
+  return text && text.startsWith("{") && text.endsWith("}")
+    ? text.slice(1, -1)
+    : null;
 };
 
 export const parseOnDirective = (text) => parseSelector(text);

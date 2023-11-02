@@ -52,12 +52,14 @@ export const onSlotNode = (processor, node, root, templateName) => {
           container.appendChild(child.firstChild);
         }
         const name = child.getAttribute("name");
-        console.error("NOT IMPLEMEMENTED");
         // FIXME:  This is parsing a new template
         // bindings[name] = view(container, `${templateName}.{name}`);
         node.removeChild(child);
       }
     }
+  } else {
+    // If there is no template, then the slot contains the template.
+    console.warn("TODO: Slot", node.outerHTML);
   }
   // We remove the slot node from the template object, as we don't
   // want it to appear in the output. We replace it with a placeholder.
@@ -65,11 +67,10 @@ export const onSlotNode = (processor, node, root, templateName) => {
   const path = nodePath(node, root);
   replaceNodeWithPlaceholder(
     node,
-    `${key}|Slot|${template.name || template}|${
+    `${key}|Slot|${template?.name || template || "_"}|${
       selector ? selector.toString() : "."
     }`
   );
-  console.log("NEW SLOT", path, selector, template);
   return new SlotEffector(path, selector, template, undefined, bindings);
 
   // NOTE: Previous behaviour, left for reference

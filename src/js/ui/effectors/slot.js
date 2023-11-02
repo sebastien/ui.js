@@ -69,7 +69,7 @@ export class SlotEffector extends Effector {
 
   apply(node, scope) {
     // NOTE: We leave the scope unchanged here
-    const effect = new (this.selector.isMany
+    const effect = new (this.selector?.isMany
       ? MappingSlotEffect
       : SingleSlotEffect)(this, node, scope, this.template).init();
     return this.templateType === "sel"

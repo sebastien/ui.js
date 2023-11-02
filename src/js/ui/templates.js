@@ -2,24 +2,26 @@ import Options from "./utils/options.js";
 import { onError } from "./utils/logging.js";
 import { onSlotNode } from "./templates/slot.js";
 import { onTemplateNode } from "./templates/template.js";
-import { onWhenAttribute } from "./templates/when.js";
 import { onDoAttribute } from "./templates/do.js";
 import { onOutAttribute } from "./templates/inout.js";
 import { onForAttribute } from "./templates/for.js";
 import { onOnAttribute } from "./templates/on.js";
+import { onMatchAttribute } from "./templates/match.js";
 
 export const Templates = new Map();
 
 class TemplateProcessor {
-  constructor(templates = Templates, name) {
+  constructor(templates = Templates, name, scripts) {
     this.Dor = onDoAttribute;
     this.Slot = onSlotNode;
     this.Out = onOutAttribute;
     this.On = onOnAttribute;
-    this.When = onWhenAttribute;
+    this.Match = onMatchAttribute;
     this.For = onForAttribute;
+    this.Template = onTemplateNode;
     this.templates = templates;
-    this.name;
+    this.name = name;
+    this.scripts = scripts;
   }
   register(name, t, templates = this.templates) {
     if (name) {
@@ -52,10 +54,11 @@ export const createTemplate = (
   templates = Templates
 ) => {
   return onTemplateNode(
-    new TemplateProcessor(templates, name),
+    new TemplateProcessor(templates, name, scriptContainer),
     node,
     name,
     clone,
+    // FIXME: Should remove this attribute
     scriptContainer
   );
 };

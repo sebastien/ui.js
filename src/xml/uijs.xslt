@@ -46,6 +46,8 @@
               </link>
             </xsl:for-each>
           </xsl:when>
+          <xsl:when test="/ui:UI/ui:Page">
+		  </xsl:when>
           <xsl:otherwise>
             <link href="/lib/css/uijs.css" rel="stylesheet"/>
           </xsl:otherwise>

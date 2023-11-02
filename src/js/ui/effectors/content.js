@@ -3,7 +3,7 @@ import { DOM } from "../utils/dom.js";
 import { Empty } from "../utils/values.js";
 
 export class ContentEffector extends Effector {
-  constructor(nodePath, selector, placeholder = undefined) {
+  constructor(nodePath, selector, placeholder = undefined, bindings) {
     super(nodePath, selector);
     this.placeholder = placeholder;
   }

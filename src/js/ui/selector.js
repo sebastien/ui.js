@@ -95,6 +95,7 @@ export class Selector {
       (r, v) => (v.key ? SelectorType.Mapping : r),
       inputs.length > 1 ? SelectorType.List : SelectorType.Atom
     );
+    this.fields = inputs.map((_) => _.key || _.path.at(-1));
     switch (this.type) {
       case SelectorType.Atom:
         this.path = this.inputs[0].path;

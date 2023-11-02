@@ -45,18 +45,19 @@
         </ul>
 
         <!-- "state" here is an internal value -->
-        <!--
-        <div x:when="state=='loading'">Loading</div>
-        <div x:when="state=='empty'">No announcements</div>
-        -->
-        <ul class="list-v bd-v mv-2" x:for="announcements">
-          <li class="row gap-2 mv-2 pv-2">
-            <span out:content=".id">…</span>
-            <span out:content=".company">…</span>
-            <span class="grow" out:content=".description">…</span>
-            <span class="w-4c" out:content=".date">…</span>
-          </li>
-        </ul>
+        <slot x:match="state">
+          <div x:case="loading">Loading</div>
+          <div x:case="empty">No announcements</div>
+          <ul class="list-v bd-v mv-2" x:otherwise x:for="announcements">
+            <li class="row gap-2 mv-2 pv-2">
+              <span out:content=".id">…</span>
+              <span out:content=".company">…</span>
+              <span class="grow" out:content=".description">…</span>
+              <span class="w-4c" out:content=".date">…</span>
+            </li>
+          </ul>
+        </slot>
+
         <p class="dimmed mb-2">
           Last change on 30 October 2023 ― 5:00 pm.Data is realtime, polled
           every minute.
