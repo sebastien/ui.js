@@ -125,36 +125,36 @@ export class Scope extends Cell {
             : map(parent, (_) => new Value(_))
         )
       : {};
-    this.parent = parent;
+    this.parent = parent instanceof Scope ? parent : null;
   }
 
   get(path, offset = 0) {
-    const slot = this.slots[path[0]];
+    const slot = this.slots[path[offset]];
     return slot ? slot.get(path, offset + 1) : undefined;
   }
 
   subs(path, creates = false, offset = 0) {
-    const slot = this.slots[path[0]];
+    const slot = this.slots[path[offset]];
     return slot ? slot.subs(path, creates, offset + 1) : undefined;
   }
 
   sub(path, handler, offset = 0) {
-    const slot = this.slots[path[0]];
+    const slot = this.slots[path[offset]];
     return slot ? slot.sub(path, handler, offset + 1) : undefined;
   }
 
   topics(path, offset = 0) {
-    const slot = this.slots[path[0]];
+    const slot = this.slots[path[offset]];
     return slot ? slot.topics(path, offset + 1) : undefined;
   }
 
   unsub(path, sub, offset = 0) {
-    const slot = this.slots[path[0]];
+    const slot = this.slots[path[offset]];
     return slot ? slot.unsub(path, sub, offset + 1) : undefined;
   }
 
   trigger(path, bubbles, offset = 0) {
-    const slot = this.slots[path[0]];
+    const slot = this.slots[path[offset]];
     return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
   }
 

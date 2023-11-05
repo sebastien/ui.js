@@ -23,6 +23,7 @@
 // to data changes to be updated.
 
 import { createComponent } from "./ui/components.js";
+import { controller } from "./ui/controllers.js";
 import { Loader, loadTemplates, createModule } from "./ui/loading.js";
 import { stylesheet } from "./ui/css.js";
 import { onWarning } from "./ui/utils/logging.js";
@@ -94,7 +95,7 @@ export const ui = (
 };
 ui.options = Options;
 
-export { tokens, stylesheet };
+export { tokens, stylesheet, controller };
 export default ui;
 
 // EOF

@@ -95,6 +95,8 @@ export const onTemplateNode = (
         node,
         ([...viewsParent?.childNodes] || []).reduce(
           (r, _) => (
+            // We only create views from text and element nodes, excluding
+            // style and script nodes.
             _.nodeType === Node.TEXT_NODE ||
             (_.nodeType == Node.ELEMENT_NODE &&
               _.nodeName.toLowerCase() !== "style" &&
@@ -107,7 +109,10 @@ export const onTemplateNode = (
           ),
           []
         )
-      )
+      ),
+      undefined,
+      // It is a component if it has a name
+      name ? true : false
     )
   );
 };

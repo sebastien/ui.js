@@ -50,6 +50,7 @@ export class EffectScope extends Scope {
 
   get(path, offset = 0) {
     const k = path[offset];
+    // FIXME: Not sure why it's !== 0
     if (this.value && this.value[k] !== 0) {
       // We resolve in the current value first
       return access(this.value[k], path, offset + 1);
@@ -67,8 +68,19 @@ export class EffectScope extends Scope {
     console.warn("UNSUB NOT IMPLEMENTED");
   }
 
-  trigger(path, bubbles, offset = 0) {
-    console.warn("TRIGGER NOT IMPLEMENTED");
+  trigger(event, scope, node, bubbles = true) {
+    // This is typically called when the component is mounted
+    console.log("TRIGGER", { event, scope, node, bubbles });
+    if (this.handlers.has(event)) {
+      for (const h of this.handlers.get(event)) {
+        if (h(event, scope, node) === false) {
+          return false;
+        }
+      }
+    }
+    return bubbles && this.parent
+      ? this.parent.trigger(event, scope, bubbles)
+      : true;
   }
 
   topics(path, offset = 0) {

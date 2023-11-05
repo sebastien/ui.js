@@ -4,6 +4,7 @@ import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
 import { makeKey } from "./utils/ids.js";
 import { getSlotBindings } from "./templates/slot.js";
+import { Controllers, createController } from "./controllers.js";
 
 // ============================================================================
 // COMPONENTS
@@ -36,6 +37,9 @@ export class Component {
     // scope should be from cells.
     // TODO: State really should be store.
     this.scope = new EffectScope(undefined, undefined, store);
+    this.controller = controller
+      ? createController(controller, this.scope)
+      : null;
     // this.scope = new EffectScope(
     //   state,
     //   path || localPath,
@@ -115,7 +119,7 @@ export const createComponent = (node, store, templates = Templates) => {
     key,
     anchor,
     template,
-    null,
+    Controllers.get(template.name),
     store,
     // This should be the scope/state path
     undefined,

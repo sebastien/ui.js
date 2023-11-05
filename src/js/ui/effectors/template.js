@@ -12,12 +12,13 @@ export class TemplateEffector extends Effector {
   // to assign the `data-scope` attribute.
   static Counter = 0;
 
-  constructor(template, rootName = undefined) {
+  constructor(template, rootName = undefined, isComponent = false) {
     // TODO: We may want path a different selector there.
     super(null, null);
     this.template = template;
     this.name = template.name;
     this.rootName = rootName;
+    this.isComponent = false;
   }
 
   apply(node, scope, attributes) {
@@ -194,14 +195,16 @@ class TemplateEffect extends Effect {
         previous = node;
       }
     }
-    this.scope.trigger("Mount", this.scope, this.node);
+    this.effector.isComponent &&
+      this.scope.trigger("Mount", this.scope, this.node, false);
   }
 
   unmount() {
     for (const view of this.views) {
       view.root?.parentNode?.removeChild(view.root);
     }
-    this.scope.trigger("Unmount", this.scope, this.node);
+    this.effector.isComponent &&
+      this.scope.trigger("Unmount", this.scope, this.node);
   }
 
   dispose() {

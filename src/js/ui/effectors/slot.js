@@ -172,7 +172,6 @@ class SingleSlotEffect extends SlotEffect {
   }
 
   unify(current, previous = this.value) {
-    console.log("XXX UNIFY/single", { current, previous });
     if (!this.view) {
       const node = createComment(
         // FIXME: add a better description of that part
@@ -185,7 +184,6 @@ class SingleSlotEffect extends SlotEffect {
       //   scope.updateLocal(this.effector.bindings);
       // }
 
-      console.log("TEMPLATE", this.template);
       this.view = this.template
         ?.apply(
           node, // node
@@ -214,7 +212,7 @@ class MappingSlotEffect extends SlotEffect {
   // ### Lifecycle
 
   unify(current, previous = this.value) {
-    console.log("XXXX UNIFY/mapping", { current, previous });
+    console.log("FOR", { current });
     // We prepare from comparing the current state with the previous state,
     // and do the corresponding operations to unify.
     const { node, scope } = this;

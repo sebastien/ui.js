@@ -35,7 +35,6 @@ class ContentEffect extends Effect {
   }
 
   unify(value, previous = this.value) {
-    console.log("XXX CONTENT EFF", { value, previous });
     const placeholder = this.placeholder;
     const isEmpty = value === Empty || value === null || value === undefined;
     if (isEmpty) {

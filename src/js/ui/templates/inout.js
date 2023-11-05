@@ -1,13 +1,11 @@
 import { onError } from "../utils/logging.js";
 import { isNodeEmpty, contentAsFragment, createAnchor } from "../utils/dom.js";
-import { makeKey } from "../utils/ids.js";
 import { nodePath } from "../path.js";
 import { AttributeEffector } from "../effectors/attribute.js";
 import { StyleEffector } from "../effectors/style.js";
 import { ValueEffector } from "../effectors/value.js";
 import { ContentEffector } from "../effectors/content.js";
 import { SlotEffector } from "../effectors/slot.js";
-import { onTemplateNode } from "./template.js";
 import { findEventHandlers } from "./on.js";
 import { parseOutDirective } from "./directives.js";
 
@@ -49,11 +47,12 @@ export const onOutAttribute = (processor, attr, root, name) => {
       ? directive.template
       : isNodeEmpty(node)
       ? null // An empty node means a null (text) formatter
-      : onTemplateNode(
+      : processor.Template(
           processor,
           // The format is the template id
           contents,
-          makeKey(processor.name ? `${processor.name}-inout` : "inout"),
+          // Anonymous node
+          null,
           false // No need to clone there
         );
     const handlers = findEventHandlers(node);

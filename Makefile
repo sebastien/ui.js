@@ -7,11 +7,15 @@ SOURCES_HTML=$(call get-sources,src/html,html)
 EXAMPLES_ALL=$(call get-sources,examples,*)
 SOURCES_ALL=$(foreach T,JS CSS XML XSL HTML,$(SOURCES_$T))
 RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%) $(EXAMPLES_ALL:%=run/%)
-DIST_ALL=$(patsubst src/js/%,dist/%,$(filter %.js,$(SOURCES_ALL)))
+DIST_ALL=\
+	$(patsubst src/js/%,dist/%,$(filter %.js,$(SOURCES_JS)))\
+	$(patsubst src/css/%,dist/%,$(filter %.js,$(SOURCES_CSS)))\
+	$(patsubst src/xml/%,dist/%,$(filter %.js,$(SOURCES_XSL)))
 
+
+# --
+# Make commands
 get-sources=$(wildcard $1/*.$2 $1/*/*.$2 $1/*/*/*.$2)
-
-
 use-bin=$1
 
 .PHONY: dist run stats
@@ -21,9 +25,11 @@ run: $(RUN_ALL)
 
 clean:
 	@test -e dist && rm -rf dist
-	test -e run && find run type -l -exec unlink {} ';'
-	test -e run && find run type -d -empty -exec rmdir {} ';'
-	test -e  .run && rm -rf .run
+	if [ -e run ]; then
+		find run -type l -delete
+		find run -type d -empty -delete
+		find run -name ".*" -delete
+	fi
 
 prep: $(RUN_ALL)
 	@
@@ -62,7 +68,7 @@ dist/%: src/css/% run/.has-npm-uglifycss
 	$(call use-bin,uglifycss) --ugly-comments --output "$@" $<
 
 run/.has-npm-%: run/.has-cmd-bun
-	if [ -z "$$(which $* 2> /dev/null)" ]; then
+	@if [ -z "$$(which $* 2> /dev/null)" ]; then
 		bun install %
 	fi
 	if [ -z "$$(which $* 2> /dev/null)" ]; then

@@ -40,19 +40,19 @@ class MatchEffect extends Effect {
     if (this.states[index] === undefined) {
       // We apply the template effector at the match effect node, which
       // should be a comment node.
-      Options.debug &&
-        console.log(
-          `MatchEffector: creating based on matched branch ${index}`,
-          { value }
-        );
+      // Options.debug &&
+      //   console.log(
+      //     `MatchEffector: creating based on matched branch ${index}`,
+      //     { value }
+      //   );
       this.states[index] = branch.template.apply(this.node, this.scope);
     }
     if (index !== this.currentBranchIndex) {
-      Options.debug &&
-        console.log(
-          `MatchEffector: mounting matched branch ${index}/${this.currentBranchIndex}`,
-          { value }
-        );
+      // Options.debug &&
+      //   console.log(
+      //     `MatchEffector: mounting matched branch ${index}/${this.currentBranchIndex}`,
+      //     { value }
+      //   );
       this.states[index].init().mount();
       const previousState = this.states[this.currentBranchIndex];
       // NOTE: We could cleanup the previous state if we wanted to

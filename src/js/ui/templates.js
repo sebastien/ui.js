@@ -2,7 +2,6 @@ import Options from "./utils/options.js";
 import { onError } from "./utils/logging.js";
 import { onSlotNode } from "./templates/slot.js";
 import { onTemplateNode } from "./templates/template.js";
-import { onDoAttribute } from "./templates/do.js";
 import { onOutAttribute } from "./templates/inout.js";
 import { onForAttribute } from "./templates/for.js";
 import { onOnAttribute } from "./templates/on.js";
@@ -12,7 +11,6 @@ export const Templates = new Map();
 
 class TemplateProcessor {
   constructor(templates = Templates, name, scripts) {
-    this.Dor = onDoAttribute;
     this.Slot = onSlotNode;
     this.Out = onOutAttribute;
     this.On = onOnAttribute;

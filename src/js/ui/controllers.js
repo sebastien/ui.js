@@ -1,87 +1,9 @@
-import {
-  Cell,
-  Slot,
-  Ref,
-  LocalCell,
-  StateCell,
-  AtomReducer,
-  ArrayReducer,
-  MapReducer,
-} from "./cells.js";
-import { parsePath } from "./path.js";
+import { onError } from "./utils/logging.js";
 
 // --
 // The `Use` class creates a factory object that creates cells.
-class Use {
-  constructor(cells, scope) {
-    this.cells = cells;
-    this.scope = scope;
-  }
-
-  cell(cell, value = undefined) {
-    this.cells.push(cell.bind(this.scope));
-    if (value !== undefined) {
-      cell.set(value);
-    }
-    return cell;
-  }
-
-  hash(path) {
-    return this.cell(new Slot(["@hash", ...parsePath(path)]));
-  }
-
-  ref(name) {
-    return this.cell(new Ref(name));
-  }
-
-  global(path, value = undefined) {
-    return this.cell(new Slot(parsePath(path), value));
-  }
-
-  // TODO: inputs() returning a proxy
-  //
-  input(path, value) {
-    return this.cell(new Slot([...this.scope.path, ...parsePath(path)], value));
-  }
-
-  output(path, value) {
-    // NOTE: This is like local
-
-    if (value instanceof Cell) {
-      const cell = new StateCell([...this.scope.path, ...parsePath(path)]);
-      value.sub((_) => cell.set(_));
-      return this.cell(cell, value.value);
-    } else {
-      return this.cell(
-        new Slot([...this.scope.path, ...parsePath(path)], value)
-      );
-    }
-  }
-  internal(value) {
-    return this.cell(new LocalCell(value));
-  }
-
-  // TODO: Should deprecate that
-  local(path, value) {
-    return this.cell(
-      new Slot([...this.scope.localPath, ...parsePath(path)], value)
-    );
-  }
-
-  effect(inputs, functor) {
-    return this.derived(inputs, functor);
-  }
-
-  derived(inputs, functor) {
-    return this.cell(
-      inputs instanceof Cell
-        ? new AtomReducer(inputs, functor)
-        : inputs instanceof Array
-        ? new ArrayReducer(inputs, functor)
-        : new MapReducer(inputs, functor)
-    );
-  }
-}
+class Use {}
+export const Controllers = new Map();
 
 // ============================================================================
 // CONTROLLERS
@@ -105,7 +27,13 @@ const onSetHandler = (target, property, handler) => {
   return handler;
 };
 
-export const Controllers = new Map();
+class Controller {
+  constructor(events, cells) {
+    this.events = events;
+    this.cells = cells;
+  }
+}
+
 // --
 // Creates an instance of the controller, using the given definition and scope.
 export const createController = (definition, scope) => {
@@ -125,6 +53,7 @@ export const createController = (definition, scope) => {
   const use = new Use(cells, scope);
 
   // Now we run the definition, which should populate the cells and events.
+  // TODO: We may want to return something?
   definition({ use, on });
 
   // We process the event handlers
@@ -159,6 +88,8 @@ export const createController = (definition, scope) => {
   //   };
   //   scope.state.bus.sub([...scope.localPath, "Unmount"], unmount);
   // }
+
+  return new Controller(events, cells);
 };
 
 export const controller = (controller, controllers = Controllers) => {
@@ -179,6 +110,8 @@ export const controller = (controller, controllers = Controllers) => {
     onError("Controller already registered", { name, controllers });
   } else {
     controllers.set(name, controller);
+    // TODO: Here we should look for components that have already been
+    // mounted, and then execute the code one them.
   }
   return controller;
 };

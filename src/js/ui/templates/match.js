@@ -37,7 +37,8 @@ export const onMatchAttribute = (processor, attr, root, templateName) => {
           child.nodeName == "slot" || child.nodeName === "SLOT"
             ? child
             : asFragment(child),
-          child.nodeName,
+          // Unnamed template
+          null,
           false /* we do not need to clone this node */
         ),
       });

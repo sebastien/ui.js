@@ -1,6 +1,4 @@
 import { parseForDirective } from "./directives.js";
-import { onTemplateNode } from "./template.js";
-import { makeKey } from "../utils/ids.js";
 import { nodePath } from "../path.js";
 import { SlotEffector } from "../effectors/slot.js";
 import { findEventHandlers } from "./on.js";
@@ -26,10 +24,10 @@ export const onForAttribute = (processor, attr, root) => {
   return new SlotEffector(
     nodePath(anchor, root),
     selector,
-    onTemplateNode(
+    processor.Template(
       processor,
       content,
-      makeKey("x:for"),
+      null,
       false // No need to clone there
     ),
     handlers
