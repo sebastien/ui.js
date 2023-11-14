@@ -1,4 +1,6 @@
-import { type, map, each } from "./utils.js";
+import { type } from "./values.js";
+import { map, each } from "./collections.js";
+
 export const diffstate = (
   valueA,
   valueB,
