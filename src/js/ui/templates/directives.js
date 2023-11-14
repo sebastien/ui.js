@@ -1,5 +1,5 @@
 import { parse, seq, capture, text, or, opt, list } from "../utils/reparser.js";
-import { map, values } from "../utils/collections.js";
+import { map, reduce, values } from "../utils/collections.js";
 import { Selector, SelectorInput } from "../selector.js";
 import { onError } from "../utils/logging.js";
 
@@ -22,20 +22,15 @@ const PATH = seq(
   opt(capture(text("*"), "card"))
 );
 
-const FORMAT = seq(text("|"), capture("[a-zA-Z_0-9]+", "formatter"));
+const CODE = seq(text("{"), capture("[^\\}]+", "code"), text("}"));
+const EXPR = seq(text("("), capture("[^\\)]+", "expr"), text(")"));
+const FORMAT = seq(text("|"), or(capture("[a-zA-Z_0-9]+", "formatter"), CODE));
 
-const SELECTION = seq(
-  or(
-    seq(text("("), capture("[^\\)]+", "expr"), text(")")),
-    seq(text("{"), capture("[^\\}]+", "code"), text("}")),
-    PATH
-  ),
-  opt(list(FORMAT, "", "format"))
-);
+const SELECTION = seq(or(EXPR, CODE, PATH), opt(list(FORMAT, "", "format")));
 
 const INPUT = seq(opt(capture("[a-zA-Z]+", "key"), text("=")), SELECTION);
-const SELECTOR = list(INPUT, ",", "inputs");
-
+const PROCESSOR = seq(text("->{"), capture("[^\\}]+", "processor"), text("}"));
+const SELECTOR = seq(list(INPUT, ",", "inputs"), opt(PROCESSOR));
 // ----------------------------------------------------------------------------
 // HIGH LEVEL API
 // ----------------------------------------------------------------------------
@@ -47,6 +42,21 @@ export const parseDirective = (text) => {
 const RE_SELECTOR = new RegExp(SELECTOR);
 export const parseSelector = (text) => {
   const p = parse(text, RE_SELECTOR);
+  // FIXME: Here it is not clear if we should have a format per input,
+  // or an overall format. Maybe `||` should format the overall and `|` just
+  // one input?
+  // const formats = reduce(
+  //   p.inputs,
+  //   (r, { format }) =>
+  //     reduce(
+  //       format,
+  //       (r, { code, formatter }) => (r.push({ code, formatter }), r),
+  //       r
+  //     ),
+  //   []
+  // );
+
+  console.log("XXX PARSE SELCETOR", text, { p });
   // TODO: Support code and expr in selector input
   return new Selector(
     map(
@@ -56,10 +66,17 @@ export const parseSelector = (text) => {
   );
 };
 
+const RE_NUMBER = new RegExp("^\\d+(\\.\\d+)?$");
 // A literal can be directly converted to JavaScript and does not use
 export const parseLiteral = (text) => {
   return text && text.startsWith("(") && text.endsWith(")")
     ? JSON.parse(text.slice(1, -1))
+    : RE_NUMBER.test(text)
+    ? parseFloat(text)
+    : text === "true"
+    ? true
+    : text === "false"
+    ? false
     : text;
 };
 

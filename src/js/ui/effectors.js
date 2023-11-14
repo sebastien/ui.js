@@ -24,8 +24,7 @@ export class EffectScope extends Scope {
     this.handlers = new Map();
   }
 
-  derive(path, localPath = undefined, slots = undefined, key = undefined) {
-    // TODO: Remove localPath and slots?
+  derive(path, slots = undefined, key = undefined) {
     return new EffectScope(this.get(path), key, this, path);
   }
 
@@ -50,8 +49,10 @@ export class EffectScope extends Scope {
 
   get(path, offset = 0) {
     const k = path[offset];
-    // FIXME: Not sure why it's !== 0
-    if (this.value && this.value[k] !== 0) {
+    if (k === "#") {
+      return this.key;
+    } else if (this.value && this.value[k] !== undefined) {
+      // FIXME: Not super clear why that is, it should be explained.
       // We resolve in the current value first
       return access(this.value[k], path, offset + 1);
     } else {

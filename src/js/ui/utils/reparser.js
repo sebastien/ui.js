@@ -48,7 +48,7 @@ export const capture = (element, group = "item", start = undefined) =>
   })`;
 
 export const text = (value) =>
-  value.replaceAll(/[-+*()?<>\[\]\.\$]/g, (_) => "\\" + _);
+  value.replaceAll(/[-+*()?<>\|\^\[\]\.\{\}\$]/g, (_) => "\\" + _);
 
 export const next = (element, sep = ",", group = "item", start = 0) =>
   `${sep}${capture(element, group, start)}`;

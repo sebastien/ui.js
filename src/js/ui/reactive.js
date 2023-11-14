@@ -118,14 +118,24 @@ export class Cell extends Subscribable {
   }
 
   get(path) {
-    throw new NotImplementedError();
+    throw NotImplementedError;
   }
 }
 
 export class Value extends Cell {
-  constructor(value) {
+  constructor(value, comparator = cmp) {
     super();
     this.value = value;
+    this.comparator = comparator;
+  }
+
+  set(value, path = null, offset = 0) {
+    if (path) {
+      throw NotImplementedError;
+    }
+    const previous = this.value;
+    this.value = value;
+    this.comparator(value, previous) && this.trigger(value);
   }
 
   get(path = null, offset = 0) {
@@ -133,15 +143,15 @@ export class Value extends Cell {
   }
 
   put(path) {
-    throw new NotImplementedError();
+    throw NotImplementedError;
   }
 
   patch(path) {
-    throw new NotImplementedError();
+    throw NotImplementedError;
   }
 
   delete(path) {
-    throw new NotImplementedError();
+    throw NotImplementedError;
   }
 }
 
@@ -283,6 +293,19 @@ export class Scope extends Cell {
   get(path, offset = 0) {
     const slot = this.slots[path[offset]];
     return slot ? slot.get(path, offset + 1) : undefined;
+  }
+
+  set(path, value) {
+    if (typeof path === "string") {
+      const slot = this.slots[path];
+      if (slot) {
+        slot.set(value);
+      } else {
+        this.slots[path] = new Value(value);
+      }
+    } else {
+      throw NotImplementedError;
+    }
   }
 
   subscribed(path, creates = false, offset = 0) {

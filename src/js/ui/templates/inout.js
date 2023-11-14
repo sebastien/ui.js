@@ -24,6 +24,7 @@ export const onOutAttribute = (processor, attr, root, name) => {
     return null;
   }
   const directive = parseOutDirective(text);
+  console.log("DIRECTIVE", text, { directive });
   node.removeAttribute(attr.name);
   if (!directive) {
     onError(`templates.view: Could not parse 'out:' directive "${text}"`, {

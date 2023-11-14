@@ -1,4 +1,4 @@
-import { parseSelector } from "./directives.js";
+import { parseLiteral } from "./directives.js";
 import { onError } from "../utils/logging.js";
 import { TemplateEffector } from "../effectors/template.js";
 import { createView } from "./view.js";
@@ -11,18 +11,14 @@ import { createView } from "./view.js";
 // be reused.
 //
 
-export const parseTemplate = (template) => {
-  const match = template ? template.match(/^\{(?<selector>.+)\}$/) : null;
-  return match ? parseSelector(match.groups.selector) : template;
-};
-
 // FIXME: I'm not sure we need to keep that class, as it seems that it's
 // actually the template effector
 export class Template {
-  constructor(name, root, views) {
+  constructor(name, root, views, bindings) {
     this.name = name;
     this.root = root;
     this.views = views;
+    this.bindings = bindings;
   }
 
   get hasEffectors() {
@@ -85,6 +81,17 @@ export const onTemplateNode = (
     viewsParent = root;
   }
 
+  const bindings =
+    node.attributes && node.attributes.length > 0 ? {} : undefined;
+  for (let i = 0; node.attributes && i < node.attributes.length; i++) {
+    const attr = node.attributes[i];
+    if (attr.namespaceURI === "in") {
+      bindings[attr.name] = parseLiteral(attr.value);
+    } else if (attr.name.startsWith("in:")) {
+      bindings[attr.name.substring(3)] = parseLiteral(attr.value);
+    }
+  }
+
   // FIXME: We some times register anonymous templates that we don/t really
   // care about.
   return processor.register(
@@ -110,6 +117,7 @@ export const onTemplateNode = (
           []
         )
       ),
+      bindings,
       undefined,
       // It is a component if it has a name
       name ? true : false

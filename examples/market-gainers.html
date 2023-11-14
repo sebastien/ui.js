@@ -31,17 +31,21 @@
       "title" and "sources" are both inputs. All of these will be sourced
       from the scope at component creation.
     -->
-    <template name="Gainers" data-selection="0" date-state="loading">
+    <template name="Gainers" in:source="0" in:state="loading">
       <div class="card col-2 pad-4 bd stack gap-2">
         <h4>NZX Gainers &amp; Decliners</h4>
 
         <!-- FIXME: on:change should support inline processing and redirection to controller -->
-        <ul
-          class="x list-h mt-4 gap-4"
-          x:for="feeds"
-          on:change="source={parseInt(_.target.value)}"
-        >
-          <li class="bold label selectable" out:content=".label">…</li>
+        <ul class="x list-h mt-4 gap-4" x:for="feeds">
+          <li
+            class="bold label selectable"
+            out:data-selected="#,source->{_ === source}"
+            out:data-index="#"
+            out:content=".label"
+            on:click="source={parseInt(_.target.value)}"
+          >
+            …
+          </li>
         </ul>
 
         <!-- "state" here is an internal value -->

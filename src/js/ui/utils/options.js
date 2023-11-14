@@ -1,5 +1,5 @@
 const Options = {
-  debug: true,
+  debug: false,
   anchors: false,
   allowDuplicateTemplates: false,
   exportState: true,

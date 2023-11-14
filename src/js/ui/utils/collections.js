@@ -80,7 +80,7 @@ export const each = (v, f) => {
       }
     }
     return true;
-  } else {
+  } else if (v !== undefined) {
     return f(v) === false ? false : true;
   }
 };
@@ -159,6 +159,7 @@ export const copy = (value) =>
 export const access = (context, path, offset = 0) => {
   if (path && path.length && context !== undefined) {
     const n = path.length;
+    // Note that it's a feature here to allow an offset greater than the path
     for (let i = offset; i < n; i++) {
       // TODO: We may want to deal with number vs key
       context = context[path[i]];

@@ -1,6 +1,7 @@
 import Options from "../utils/options.js";
 import { onError, onWarning } from "../utils/logging.js";
-import { assign } from "../utils/collections.js";
+import { assign, each } from "../utils/collections.js";
+import { Value } from "../reactive.js";
 import { Effect, Effector } from "../effectors.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
@@ -12,10 +13,11 @@ export class TemplateEffector extends Effector {
   // to assign the `data-scope` attribute.
   static Counter = 0;
 
-  constructor(template, rootName = undefined, isComponent = false) {
+  constructor(template, bindings, rootName = undefined, isComponent = false) {
     // TODO: We may want path a different selector there.
     super(null, null);
     this.template = template;
+    this.bindings = bindings;
     this.name = template.name;
     this.rootName = rootName;
     this.isComponent = false;
@@ -23,6 +25,14 @@ export class TemplateEffector extends Effector {
 
   apply(node, scope, attributes) {
     // TODO: We should probably create a new scope?
+    each(this.bindings, (v, k) => {
+      console.log("SETTING BINDING", v, k);
+      if (scope.slots[k]) {
+        scope.slots[k].set(v);
+      } else {
+        scope.slots[k] = new Value(v);
+      }
+    });
     return new TemplateEffect(this, node, scope, attributes).init();
   }
 }

@@ -18,7 +18,8 @@ export const onOnAttribute = (processor, attr, root, name) => {
     handler = new Function(
       "event",
       "scope",
-      `{const v=(${directive.expr});scope.set("${directive.slot}", v);return v}`
+      "node",
+      `{const _=event;const v=(${directive.expr});scope.set("${directive.slot}", v);return v}`
     );
   } else {
     onError("Unsupported directive", { value: attr.value, directive });

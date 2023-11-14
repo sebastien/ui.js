@@ -266,7 +266,7 @@ class MappingSlotEffect extends SlotEffect {
               this.template,
               node, // node
               // FIXME: We probably want to change the local path
-              scope.derive([...path, i], scope.localPath, scope.slots, i),
+              scope.derive([...path, i], scope.slots, i),
               undefined,
               i
             )
@@ -300,7 +300,7 @@ class MappingSlotEffect extends SlotEffect {
               this.template,
               node, // node
               // FIXME: We probably want to change the local path
-              scope.derive([...path, k], scope.localPath, scope.slots, k),
+              scope.derive([...path, k], scope.slots, k),
               undefined,
               k
             )
