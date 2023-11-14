@@ -89,10 +89,10 @@
     <!-- TODO: This should be moved in the template -->
     <script type="module">
       import { controller } from "@ui.js";
-      const Gainers = ({ use, on }) => {
-        /*
+      const Gainers = ({ use, on, scope }) => {
         const feeds = use.input("feeds");
         const source = use.local("source");
+        console.log("SCOPE", scope);
         const url = use.derived([feeds, source], ([feeds, source]) => {
           console.log("TODO: Picking URL from", feeds, "using", source);
         });
@@ -105,11 +105,10 @@
             console.log("Cleaning up the prevous value");
           }
         );
-        */
 
-        on.Mount((event) => {
-          console.log("Component is mounted", event);
-        });
+        // on.Mount((event) => {
+        //   console.log("Component is mounted", event);
+        // });
       };
       export default controller(Gainers);
     </script>

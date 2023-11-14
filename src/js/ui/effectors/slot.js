@@ -212,7 +212,6 @@ class MappingSlotEffect extends SlotEffect {
   // ### Lifecycle
 
   unify(current, previous = this.value) {
-    console.log("FOR", { current });
     // We prepare from comparing the current state with the previous state,
     // and do the corresponding operations to unify.
     const { node, scope } = this;

@@ -5,11 +5,12 @@ export class EventEffector extends Effector {
   // -- doc
   // Creates a new `EventEffector` that  is triggered by the given `event`,
   // generating an event `triggers` (when defined), or
-  constructor(nodePath, event, directive) {
+  constructor(nodePath, event, directive, handler = null) {
     super(nodePath, null);
     this.directive = directive;
     this.eventPath = directive.event ? directive.event.split(".") : null;
     this.event = event;
+    this.handler = handler;
   }
 
   apply(node, scope) {

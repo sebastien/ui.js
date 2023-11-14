@@ -9,6 +9,20 @@ export const onOnAttribute = (processor, attr, root, name) => {
   if (!node) {
     return null;
   }
+  console.log("ON", attr.value);
+  const directive = parseOnDirective(attr.value);
+  let handler = null;
+  if (!directive) {
+    onError("Unsupported directive", attr.value);
+  } else if (directive.expr) {
+    handler = new Function(
+      "event",
+      "scope",
+      `{const v=(${directive.expr});scope.set("${directive.slot}", v);return v}`
+    );
+  } else {
+    onError("Unsupported directive", { value: attr.value, directive });
+  }
   node.removeAttribute(attr.name);
   // A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
   // case they've already been processed at that point.
@@ -24,7 +38,7 @@ export const onOnAttribute = (processor, attr, root, name) => {
         }
       );
     } else {
-      return new EventEffector(nodePath(node, root), name, directive);
+      return new EventEffector(nodePath(node, root), name, directive, handler);
     }
   }
   return null;

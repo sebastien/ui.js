@@ -1,8 +1,81 @@
 import { onError } from "./utils/logging.js";
+import { items } from "./utils/collections.js";
+import { isObject } from "./utils/values.js";
+import { ValueError } from "./utils/errors.js";
+import {
+  Cell,
+  Value,
+  ValueReducer,
+  ListReducer,
+  MapReducer,
+} from "./reactive.js";
 
 // --
 // The `Use` class creates a factory object that creates cells.
-class Use {}
+class Use {
+  constructor(scope) {
+    this.cells = [];
+    this.scope = scope;
+  }
+
+  // --
+  // Returns a value cell corresponding to the slot with the given
+  // name, creating it if it does not exist. Unlike `local`, this will
+  // use cells defined in parent scopes.
+  input(name, value = undefined) {
+    if (this.scope.slots[name] === undefined) {
+      const cell = new Value(value);
+      this.cells.push(cell);
+      this.scope.slots[name] = cell;
+      return cell;
+    } else {
+      return this.scope.slots[name];
+    }
+  }
+
+  output(name, cell) {}
+
+  // --
+  // Returns a local cell, overriding any cell with the same name defined
+  // in the parent scope.
+  local(name, value = undefined) {
+    if (!this.scope.slots.hasOwnProperty(name)) {
+      const cell = new Value(value);
+      this.cells.push(cell);
+      this.scope.slots[name] = cell;
+      return cell;
+    } else {
+      return this.scope.slots[name];
+    }
+  }
+
+  derived(inputs, functor) {
+    let cell = undefined;
+    if (inputs instanceof Cell) {
+      cell = new ValueReducer(inputs, functor);
+    } else if (inputs instanceof Array) {
+      for (const [i, v] of items(inputs)) {
+        if (!(v instanceof Cell)) {
+          return onError(`Excepted cell for input #${i}`, { cell, inputs });
+        }
+      }
+      cell = new ListReducer(inputs, functor);
+    } else if (isObject(inputs)) {
+      for (const [i, v] of items(inputs)) {
+        if (!(v instanceof Cell)) {
+          return onError(`Excepted cell for input #${i}`, { cell, inputs });
+        }
+      }
+      cell = new MapReducer(inputs, functor);
+    } else {
+      throw ValueError;
+    }
+    if (cell) {
+      this.cells.push(cell);
+    }
+    return cell;
+  }
+}
 export const Controllers = new Map();
 
 // ============================================================================
@@ -49,12 +122,11 @@ export const createController = (definition, scope) => {
   const on = new Proxy(events, { get: onGetHandler, set: onSetHandler });
 
   // `use` wraps the cells and scope
-  const cells = [];
-  const use = new Use(cells, scope);
+  const use = new Use(scope);
 
   // Now we run the definition, which should populate the cells and events.
   // TODO: We may want to return something?
-  definition({ use, on });
+  definition({ use, on, scope });
 
   // We process the event handlers
   for (const [name, handlers] of events.entries()) {
@@ -89,7 +161,7 @@ export const createController = (definition, scope) => {
   //   scope.state.bus.sub([...scope.localPath, "Unmount"], unmount);
   // }
 
-  return new Controller(events, cells);
+  return new Controller(events, use.cells);
 };
 
 export const controller = (controller, controllers = Controllers) => {

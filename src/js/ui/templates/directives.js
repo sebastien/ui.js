@@ -70,7 +70,18 @@ export const parseExpression = (text) => {
     : null;
 };
 
-export const parseOnDirective = (text) => parseSelector(text);
+const RE_INLINE_ON = new RegExp(
+  seq(
+    opt(seq(capture("[A-Za-z_0-9]+", "slot"), text("="))),
+    seq(text("{"), capture("[^}]+", "expr"), text("}"))
+  )
+);
+export const parseOnDirective = (text) => {
+  // Case 1: It's an inline expression
+  // (assign?=){expression})
+  const p = parse(text, RE_INLINE_ON);
+  return p;
+};
 
 export const parseForDirective = (text) => {
   const res = parseSelector(text);
