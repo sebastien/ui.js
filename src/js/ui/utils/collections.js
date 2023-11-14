@@ -6,12 +6,26 @@ export const asMappable = (f) => (_) => _ instanceof Array ? _.map(f) : f(_);
 
 // Fixm: this should probably expand objects to their values
 export const list = (_) =>
-  _ instanceof Array ? _ : _ !== null && _ !== undefined ? [_] : [];
+  _ instanceof Array
+    ? _
+    : _ instanceof Map
+    ? [_.values]
+    : _ !== null && _ !== undefined
+    ? [_]
+    : [];
 
 export const reduce = (v, f, r) => {
-  if (v instanceof Array) {
+  if (v === undefined) {
+    return v;
+  } else if (v instanceof Array) {
     return v.reduce(f, r);
-  } else {
+  } else if (v instanceof Map) {
+    for (const [k, w] of v.entries()) {
+      const rr = f(r, w, k);
+      r = rr !== undefined ? rr : r;
+    }
+    return r;
+  } else if (isObject(v)) {
     for (const k in v) {
       const rr = f(r, v[k], k);
       r = rr !== undefined ? rr : r;
@@ -20,32 +34,58 @@ export const reduce = (v, f, r) => {
   }
 };
 export const map = (v, f) => {
-  if (v instanceof Array) {
+  if (v === undefined) {
+    return v;
+  } else if (v instanceof Array) {
     return v.map(f);
-  } else {
+  } else if (v instanceof Map) {
+    const r = [];
+    for (const [k, w] of v.entries()) {
+      r.push((r, w, k));
+    }
+    return r;
+  } else if (isObject(v)) {
     const res = {};
     for (const k in v) {
       res[k] = f(v[k], k);
     }
     return res;
+  } else {
+    return f(v);
   }
 };
 
-export const range = (start, end, step = 1, closed = false) => {
-  if (end === undefined) {
-    end = start;
-    start = 0;
+export const each = (v, f) => {
+  if (v === undefined) {
+    return true;
+  } else if (v instanceof Array) {
+    let i = 0;
+    for (const w of v) {
+      if (f(w, i++) === false) {
+        return false;
+      }
+    }
+    return true;
+  } else if (v instanceof Map) {
+    for (const [k, w] of v.entries()) {
+      if (f(w, k) === false) {
+        return false;
+      }
+    }
+    return true;
+  } else if (isObject(v)) {
+    for (const k in v) {
+      if (f(v[k], k) === false) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return f(v) === false ? false : true;
   }
-  const n = Math.ceil(Math.max(0, (end - start) / step)) + (closed ? 1 : 0);
-  const r = new Array(n);
-  let v = start;
-  for (let i = 0; i < n; i++) {
-    r[i] = v;
-    v += step;
-  }
-  return r;
 };
 
+// FIXME: Should be iterator
 export const values = (v) => {
   if (v instanceof Array) {
     return v;
@@ -60,11 +100,51 @@ export const values = (v) => {
   }
 };
 
-export const each = (v, f) => {
-  // FIXME: Shouldn't that be of?
-  for (const k in v) {
-    f(v[k], k);
+// FIXME: Should be iterator
+export const keys = (v) => {
+  if (v instanceof Array) {
+    return range(v.lenght);
+  } else if (isObject(v)) {
+    return Object.keys(v);
+  } else if (v instanceof Map) {
+    return [...v.keys()];
+  } else if (v !== null && v !== undefined) {
+    return [];
+  } else {
+    return [];
   }
+};
+
+export function* items(v) {
+  if (v instanceof Array) {
+    let i = 0;
+    for (const _ of v) {
+      yield [i++, _];
+    }
+  } else if (isObject(v)) {
+    for (const k of v) {
+      yield [k, v[k]];
+    }
+  } else if (v instanceof Map) {
+    for (const kv of v.entries()) {
+      yield kv;
+    }
+  }
+}
+
+export const range = (start, end, step = 1, closed = false) => {
+  if (end === undefined) {
+    end = start;
+    start = 0;
+  }
+  const n = Math.ceil(Math.max(0, (end - start) / step)) + (closed ? 1 : 0);
+  const r = new Array(n);
+  let v = start;
+  for (let i = 0; i < n; i++) {
+    r[i] = v;
+    v += step;
+  }
+  return r;
 };
 
 export const copy = (value) =>
