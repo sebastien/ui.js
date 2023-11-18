@@ -3,6 +3,7 @@
 
 export const Empty = Symbol("Empty");
 export const Any = Symbol("Any");
+export const Stop = Symbol("Stop");
 export const RawObjectPrototype = Object.getPrototypeOf({});
 
 ("");

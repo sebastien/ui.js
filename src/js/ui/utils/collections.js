@@ -199,4 +199,15 @@ export const assign = (scope, path, value) => {
   return scope;
 };
 
+export const trigger = (handlers, ...value) => {
+  let i = 0;
+  for (const _ of values(handlers)) {
+    i++;
+    if (_(...value) === false) {
+      return i;
+    }
+  }
+  return i;
+};
+
 // EOF
