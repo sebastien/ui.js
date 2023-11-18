@@ -56,13 +56,6 @@ export class SelectorInput {
         ? format
         : Formats[format]
       : null;
-    if (this.format === undefined) {
-      onError(`SelectorInput: Format undefined '${format}'`, {
-        path,
-        format,
-        key,
-      });
-    }
     this.key = key;
     // TODO: Should freeze
   }
@@ -85,11 +78,9 @@ export class SelectorInput {
 //
 
 export class Selector {
-  constructor(inputs, event, stops, format = undefined) {
+  constructor(inputs, format = undefined) {
     this.inputs = inputs;
     this.format = format;
-    this.event = event;
-    this.stops = stops;
     this.isMany = inputs.length === 1 && inputs[0].isMany;
     this.type = inputs.reduce(
       (r, v) => (v.key ? SelectorType.Mapping : r),

@@ -6,6 +6,8 @@ import { makeKey } from "./utils/ids.js";
 import { getSlotBindings } from "./templates/slot.js";
 import { Controllers, createController } from "./controllers.js";
 
+// FIXME: This is redundant with the slot effector.
+//
 // ============================================================================
 // COMPONENTS
 // ============================================================================
@@ -36,7 +38,7 @@ export class Component {
     // should resolve from cells first, and if not from the store. Effect
     // scope should be from cells.
     // TODO: State really should be store.
-    this.scope = new EffectScope(undefined, undefined, store);
+    this.scope = new EffectScope(undefined, undefined, store).define(slots);
     this.controller = controller
       ? createController(controller, this.scope)
       : null;
@@ -79,7 +81,7 @@ const extractSlots = (node) => {
 // corresponding template in `Templates` and creates a new `Component`
 // replacing the given `node` and then rendering the component.
 export const createComponent = (node, store, templates = Templates) => {
-  const bindings = getSlotBindings(node);
+  const slots = Object.assign(getSlotBindings(node), extractSlots(node));
   const templateName = node.getAttribute("template");
   const id = node.getAttribute("id");
 
@@ -121,9 +123,8 @@ export const createComponent = (node, store, templates = Templates) => {
     template,
     Controllers.get(template.name),
     store,
-    // This should be the scope/state path
     undefined,
-    extractSlots(node),
+    slots,
     attributes
   );
 };

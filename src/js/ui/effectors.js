@@ -24,8 +24,13 @@ export class EffectScope extends Scope {
     this.handlers = new Map();
   }
 
-  derive(path, slots = undefined, key = undefined) {
-    return new EffectScope(this.get(path), key, this, path);
+  derive(path = this.path, slots = undefined, key = undefined) {
+    const res = new EffectScope(this.get(path), key, this, path);
+    if (slots) {
+      console.log("DERIVE SLOTS", slots);
+      res.define(slots);
+    }
+    return res;
   }
 
   triggerEvent(name, ...args) {
@@ -52,7 +57,6 @@ export class EffectScope extends Scope {
     if (k === "#") {
       return this.key;
     } else if (this.value && this.value[k] !== undefined) {
-      // FIXME: Not super clear why that is, it should be explained.
       // We resolve in the current value first
       return access(this.value[k], path, offset + 1);
     } else {
@@ -97,18 +101,22 @@ export class EffectScope extends Scope {
     if (!selector) {
       return null;
     }
-    switch (selector.type) {
-      case SelectorType.Atom:
-        return this.get(selector.inputs[0].path);
-      case SelectorType.List:
-        return selector.inputs.map((_) => this.get(_.path));
-      case SelectorType.Map:
-        return selector.inputs.reduce(
-          (r, _) => ((r[_.name] = this.get(_.path)), r),
-          {}
-        );
-      default:
-        onError("Unsupported selector type", selector.type, { selector });
+    if (selector.format) {
+      return selector.format(...selector.inputs.map((_) => this.get(_.path)));
+    } else {
+      switch (selector.type) {
+        case SelectorType.Atom:
+          return this.get(selector.inputs[0].path);
+        case SelectorType.List:
+          return selector.inputs.map((_) => this.get(_.path));
+        case SelectorType.Map:
+          return selector.inputs.reduce(
+            (r, _) => ((r[_.name] = this.get(_.path)), r),
+            {}
+          );
+        default:
+          onError("Unsupported selector type", selector.type, { selector });
+      }
     }
   }
 

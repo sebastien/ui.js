@@ -130,6 +130,7 @@ export class Value extends Cell {
   }
 
   set(value, path = null, offset = 0) {
+    console.log("Cell.set", value, path, "/", this.value);
     if (path) {
       throw NotImplementedError;
     }
@@ -290,7 +291,27 @@ export class Scope extends Cell {
     this.parent = parent instanceof Scope ? parent : null;
   }
 
+  define(slots, replace = true) {
+    if (slots) {
+      for (const k in slots) {
+        const v = slots[k];
+        // We only define the own slots
+        const slot = this.slots.hasOwnProperty(k) ? this.slots[k] : undefined;
+        // FIXME: This will  replace existing cells that are already
+        // defined.
+        if (replace || slot === undefined) {
+          this.slots[k] = v instanceof Cell ? v : new Value(v);
+        } else if (slot && slot.get() === undefined) {
+          // TODO: This may be a sub there?
+          slot.set(v instanceof Cell ? v.get() : v);
+        }
+      }
+    }
+    return this;
+  }
+
   get(path, offset = 0) {
+    path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.get(path, offset + 1) : undefined;
   }
@@ -309,26 +330,31 @@ export class Scope extends Cell {
   }
 
   subscribed(path, creates = false, offset = 0) {
+    path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.subscribed(path, creates, offset + 1) : undefined;
   }
 
   sub(path, handler, offset = 0) {
+    path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.sub(path, handler, offset + 1) : undefined;
   }
 
   topics(path, offset = 0) {
+    path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.topics(path, offset + 1) : undefined;
   }
 
   unsub(path, sub, offset = 0) {
+    path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.unsub(path, sub, offset + 1) : undefined;
   }
 
   trigger(path, bubbles, offset = 0) {
+    path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
   }

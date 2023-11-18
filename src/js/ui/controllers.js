@@ -87,24 +87,39 @@ export const Controllers = new Map();
 // ## Controllers
 //
 
-const onGetHandler = (target, property) => {
-  return (handler) => onSetHandler(target, property, handler);
-};
-
-const onSetHandler = (target, property, handler) => {
-  if (target.has(property)) {
-    target.get(property).push(handler);
-  } else {
-    target.set(property, [handler]);
+class EventProxy {
+  static get(target, property) {
+    return (handler) => EventProxy.set(target, property, handler);
   }
-  return handler;
-};
+
+  static set(target, property, handler) {
+    if (target.has(property)) {
+      target.get(property).push(handler);
+    } else {
+      target.set(property, [handler]);
+    }
+    return handler;
+  }
+}
+
+class StateProxy {
+  static get(scope, property) {
+    // FIXME: We should probably return something that manipulates the state at and
+    // given path
+    // NOTE: We use `_` as we can't have `_` in the name.
+    return scope.get(property.split("_"));
+  }
+  static set(scope, property, value) {
+    return scope.set(property.split("_"), value);
+  }
+}
 
 class Controller {
   constructor(events, cells) {
     this.events = events;
     this.cells = cells;
   }
+  // TODO: Trigger?
 }
 
 // --
@@ -118,32 +133,51 @@ export const createController = (definition, scope) => {
   }
 
   // `on` is a proxy object that will populate the `events` map
-  const events = new Map();
-  const on = new Proxy(events, { get: onGetHandler, set: onSetHandler });
+  const declared = {};
 
-  // `use` wraps the cells and scope
-  const use = new Use(scope);
+  // `use` wraps the cells and scope const use = new Use(scope);
 
   // Now we run the definition, which should populate the cells and events.
   // TODO: We may want to return something?
-  definition({ use, on, scope });
+  definition(
+    new Proxy(declared, {
+      get: (_, property) => {
+        switch (property) {
+          case "use":
+            declared.use = new Use(scope);
+            return declared.use;
+          case "on":
+            declared.events = new Map();
+            declared.on = new Proxy(declared.events, EventProxy);
+            return declared.on;
+          case "state":
+            declared.state = new Proxy(scope, StateProxy);
+            return declared.state;
+          case "scope":
+            return scope;
+          default:
+            throw new Error(`Unexpected controller argument: ${property}`);
+        }
+      },
+    })
+  );
 
   // We process the event handlers
-  for (const [name, handlers] of events.entries()) {
-    const eventName = `${name.charAt(0).toUpperCase()}${name.substring(1)}`;
-    scope.handlers.set(
-      eventName,
-      (scope.handlers.get(eventName) || []).concat(handlers)
-    );
-    // if (eventName === "Mount") {
-    //   console.log("MOUNT", eventName);
-    //   trigger(scope);
-    // } else {
-    //   console.log("HANDLER", { eventName });
-    //   // scope.state.bus.sub([...scope.localPath, eventName], trigger);
-    //   triggers.set(eventName, trigger);
-    // }
-  }
+  // for (const [name, handlers] of events.entries()) {
+  //   const eventName = `${name.charAt(0).toUpperCase()}${name.substring(1)}`;
+  //   scope.handlers.set(
+  //     eventName,
+  //     (scope.handlers.get(eventName) || []).concat(handlers)
+  //   );
+  //   // if (eventName === "Mount") {
+  //   //   console.log("MOUNT", eventName);
+  //   //   trigger(scope);
+  //   // } else {
+  //   //   console.log("HANDLER", { eventName });
+  //   //   // scope.state.bus.sub([...scope.localPath, eventName], trigger);
+  //   //   triggers.set(eventName, trigger);
+  //   // }
+  // }
 
   // TODO: On unmount, a component should:
   // - Cleanup its namespace
@@ -161,7 +195,7 @@ export const createController = (definition, scope) => {
   //   scope.state.bus.sub([...scope.localPath, "Unmount"], unmount);
   // }
 
-  return new Controller(events, use.cells);
+  return new Controller(declared?.events, declared?.use?.cells);
 };
 
 export const controller = (controller, controllers = Controllers) => {
