@@ -14,7 +14,6 @@ export class AttributeEffector extends Effector {
 
 class AttributeEffect extends Effect {
   unify(value, previous = this.value) {
-    console.log("ATTR", this.effector.name, "=", { value: value });
     if (value === Empty || value == undefined || value === null) {
       this.node.removeAttribute(this.effector.name);
     } else {

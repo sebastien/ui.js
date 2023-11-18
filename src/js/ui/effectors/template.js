@@ -1,6 +1,6 @@
 import Options from "../utils/options.js";
 import { onError, onWarning } from "../utils/logging.js";
-import { assign, each } from "../utils/collections.js";
+import { len, assign, reduce } from "../utils/collections.js";
 import { Value } from "../reactive.js";
 import { Effect, Effector } from "../effectors.js";
 import { pathNode } from "../path.js";
@@ -24,16 +24,27 @@ export class TemplateEffector extends Effector {
   }
 
   apply(node, scope, attributes) {
-    // TODO: We should probably create a new scope?
-    each(this.bindings, (v, k) => {
-      console.log("SETTING BINDING", v, k);
-      if (scope.slots[k]) {
-        scope.slots[k].set(v);
-      } else {
-        scope.slots[k] = new Value(v);
-      }
-    });
-    return new TemplateEffect(this, node, scope, attributes).init();
+    const slots = reduce(
+      this.bindings,
+      (r, v, k) => {
+        const cell = scope.slots[k];
+        if (cell) {
+          if (cell instanceof Value && cell.value === undefined) {
+            r[k] = v;
+          }
+        } else {
+          r[k] = v;
+        }
+        return r;
+      },
+      {}
+    );
+    return new TemplateEffect(
+      this,
+      node,
+      len(slots) > 0 ? scope.derive(undefined, slots) : scope,
+      attributes
+    ).init();
   }
 }
 

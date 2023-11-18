@@ -1,6 +1,8 @@
 import { onError } from "../utils/logging.js";
 import { isEmpty, isAtom } from "../utils/values.js";
 import { DOM, createComment } from "../utils/dom.js";
+import { trigger } from "../utils/collections.js";
+import { Controllers, createController } from "../controllers.js";
 import { Effector, Effect } from "../effectors.js";
 import { Selector } from "../selector.js";
 import { Templates } from "../templates.js";
@@ -20,6 +22,7 @@ export class SlotEffector extends Effector {
     this.bindings = bindings;
     // Note that template name can also be a selector here.
     this.templateName = templateName;
+    this._controller = undefined;
     if (!templateName) {
       onError(
         `SlotEffector: template is not specified, use ContentEffector instead`,
@@ -40,6 +43,15 @@ export class SlotEffector extends Effector {
         template: templateName,
       });
     }
+  }
+
+  get controller() {
+    // NOTE: There is an edge case where the component is rendered but
+    // the controller is not registered yet.
+    if (this._controller === undefined && this.templateName) {
+      this._controller = Controllers.get(this.templateName) || null;
+    }
+    return this._controller;
   }
 
   // -- doc
@@ -134,6 +146,15 @@ class SlotEffect extends Effect {
     super(effector, node, scope);
     this.handlers = {};
     this.template = template;
+    this.controller = undefined;
+
+    if (this.effector.bindings) {
+      this.scope.define(this.effector.bindings, false);
+    }
+    if (template && template.bindings) {
+      this.scope.define(this.effector.bindings, false);
+    }
+    console.log("DEFINED", this.effector.bindings, this.scope);
   }
   bind() {
     super.bind();
@@ -152,6 +173,11 @@ class SlotEffect extends Effect {
     //     scope.state.sub([...scope.localPath, k], h);
     //   }
     // }
+
+    if (!this.controller && this.effector.controller) {
+      this.controller = createController(this.effector.controller, this.scope);
+      trigger(this.controller.events.get("Bind"), this, scope);
+    }
   }
   unbind() {
     const res = super.unbind();
@@ -161,7 +187,25 @@ class SlotEffect extends Effect {
     //   const p = [...scope.localPath, k];
     //   scope.state.sub(p, this.handlers[k]);
     // }
+    if (this.controller) {
+      // TODO: Should call unbind
+      trigger(this.controller.events.get("Unbind"), this, scope);
+      this.controller = undefined;
+    }
     return res;
+  }
+  init(...args) {
+    trigger(this.effector.controller?.events?.get("Init"), this, ...args);
+    return super.init();
+  }
+  mount(...args) {
+    const res = super.mount(...args);
+    trigger(this.effector.controller?.events?.get("Mount"), this, ...args);
+    return res;
+  }
+  unmount(...args) {
+    trigger(this.effector.controller?.events?.get("Unmount"), this, ...args);
+    return super.unmount(...args);
   }
 }
 
