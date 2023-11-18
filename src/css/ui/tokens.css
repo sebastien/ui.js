@@ -110,6 +110,17 @@ variations).
   --link-color: var(--color-primary);
 
   /*
+   * ## Icons
+  */
+
+  --icon-size-smaller: 14px;
+  --icon-size-small: 16px;
+  --icon-size-regular: 24px;
+  --icon-size-large: 32px;
+  --icon-size-larger: 48px;
+  --icon-size: var(--icon-size-regular);
+
+  /*
    * ## Controls
   */
   --control-bd: #d9d9d9;

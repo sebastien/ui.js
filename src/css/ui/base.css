@@ -30,6 +30,8 @@ This defines base typographic settings.
     word-wrap: normal;
     white-space: nowrap;
     direction: ltr;
+    width: var(--icon-size);
+    height: var(--icon-size);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     -moz-osx-font-smoothing: grayscale;
@@ -159,6 +161,12 @@ This defines base typographic settings.
 
   .typography li {
     padding-left: 0.25em;
+  }
+
+  .filler,
+  .placeholder {
+    background-color: #03dac675;
+    border: 1px solid #03dac675;
   }
 }
 /* EOF */

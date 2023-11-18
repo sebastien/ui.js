@@ -34,6 +34,10 @@
     background-color: var(--control-bg-focused);
   }
 
+  .selected {
+    background-color: var(--control-bg-selected);
+  }
+
   /* Selectable labels typically don't have padding and therefore
    * should rely on border and text color instead */
   .label.selectable {
@@ -165,6 +169,8 @@
     gap: var(--gap-1);
   }
 
+  /* INPUTS */
+
   input,
   textarea,
   .input,
@@ -229,6 +235,12 @@
     left: unset;
   }
 
+  input[type="checkbox"] {
+    margin-right: var(--pad-1);
+  }
+
+  /* BUTTONS */
+
   button,
   .button {
     display: inline-flex;
@@ -240,10 +252,38 @@
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
     gap: var(--gap-2);
     transition-property: background-color, border-color, color;
     transition-duration: 0.15s;
     outline: 0px solid transparent;
+  }
+
+  button.as-icon,
+  .button.as-icon {
+    border-color: transparent;
+    background-color: transparent;
+    --icon-size: var(--icon-size-regular);
+    width: var(--icon-size);
+    height: var(--icon-size);
+    max-width: var(--icon-size);
+    max-height: var(--icon-size);
+    min-width: var(--icon-size);
+    min-height: var(--icon-size);
+    box-sizing: content-box;
+    padding: var(--pad-2);
+  }
+
+  button.as-icon.small,
+  .button.as-icon.small {
+    --icon-size: var(--icon-size-small);
+    padding: var(--pad-1);
+  }
+
+  button.as-icon.smaller,
+  .button.as-icon.smaller {
+    --icon-size: var(--icon-size-smaller);
+    padding: var(--pad-1);
   }
 
   button .icon,
@@ -251,6 +291,7 @@
     line-height: var(--font-control-line-height);
     font-size: var(--font-control-size);
   }
+
   button.default,
   .button.default {
     font-weight: bold;
@@ -269,10 +310,6 @@
   button.selected,
   .button.selected {
     background-color: var(--control-bg-selected);
-  }
-
-  button.default:hover,
-  .button.default:hover {
   }
 
   button:focus,
@@ -369,8 +406,14 @@
     opacity: 1;
   }
 
+  .select {
+    display: flex;
+    flex-direction: column;
+  }
+
   .select > button,
   .select > .button,
+  .select > .option,
   .select > button:hover,
   .select > button:focus,
   .select > .button:hover,
@@ -382,13 +425,32 @@
     border: 0px solid transparent;
   }
 
-  .floating {
-    box-shadow: var(--shadow-floating);
+  .field {
+    display: flex;
+    justify-items: stretch;
+  }
+  .field > .input,
+  .field > .button,
+  .field > .textarea,
+  .field > input[type=""],
+  .field > input[type="text"],
+  .field > label,
+  .field > button,
+  .field > textarea {
+    flex: 1;
   }
 
   .panel {
     border: 1px solid var(--control-bd);
     background-color: var(--control-bg);
+    padding: var(--pad-2);
+    border-radius: 4px;
+  }
+
+  /* MODIFIERS */
+
+  .floating {
+    box-shadow: var(--shadow-floating);
   }
 
   .pointer {
@@ -402,6 +464,7 @@
   .no-select {
     user-select: none;
   }
+
   .no-events {
     pointer-events: none;
   }

@@ -162,9 +162,26 @@
     align-items: center;
     gap: var(--gap-2);
   }
-
+  .row.fill > * {
+    flex: 1;
+  }
+  .row > .fill {
+    flex: 1;
+  }
+  .row > .stretch {
+    align-self: stretch;
+  }
   .row.right {
     justify-content: flex-end;
+  }
+  .row.top {
+    align-items: flex-start;
+  }
+  .row.middle {
+    align-items: center;
+  }
+  .row.stretch {
+    align-items: stretch;
   }
 
   .noshrink {
@@ -184,6 +201,10 @@
     gap: var(--gap-2);
   }
 
+  .stack.fill {
+    justify-content: stretch;
+  }
+
   .stack > .grow {
     flex-grow: 1;
   }
@@ -196,7 +217,8 @@
   .list-h {
     display: inline-flex;
     flex-wrap: wrap;
-    gap: var(--pad-0);
+    flex-direction: row;
+    gap: var(--pad-1);
   }
 
   .grid-1_1 {
@@ -673,7 +695,9 @@
     padding-left: var(--pad-9);
     padding-right: var(--pad-9);
   } /* @end */
-  .gap,
+  .gap-0 {
+    gap: 0px;
+  }
   /* @tmpl
    * range(8).map(_ => `\n  .gap-${_+1} { gap: var(--gap-${_+1}); }`)
    */
