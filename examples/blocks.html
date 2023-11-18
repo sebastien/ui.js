@@ -1,0 +1,91 @@
+<html lang="en-nz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UIjs − Block Based Notebook</title>
+    <link
+      rel="stylesheet"
+      href="../lib/css/ui.css"
+      type="text/css"
+      media="all"
+    />
+    <link
+      rel="stylesheet"
+      href="../lib/css/ui/theme/whitelabel.css"
+      type="text/css"
+      media="all"
+    />
+    <script type="importmap">
+      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+    </script>
+  </head>
+  <body>
+    <header>
+      <h1>Blocks</h1>
+      <p>Shows how to create a Jupyter-like notebook.</p>
+    </header>
+
+    <div class="Blocks">
+      <slot
+        template="Blocks"
+        cells="[{type:'text',data:'Hello, world from a text cell'},{type:'js',data:'Math.floor(Math.random() * 100)'}]"
+      />
+    </div>
+
+    <template name="Blocks" in:cells="">
+      <ul x:for="cells">
+        <li><slot template="Cell" /></li>
+      </ul>
+    </template>
+
+    <template name="Cell" in:type="text" in:source="">
+      <ul class="stack">
+        <li class="row">
+          <ul class="stack stretch bg-alt">
+            <li>
+              <button class="smaller as-icon">
+                <slot template="Icon" name="menu" />
+              </button>
+            </li>
+          </ul>
+          <div class="preview fill" out:content=".preview"></div>
+        </li>
+        <li class="row strech">
+          <ul class="stack stretch bg-alt">
+            <li>
+              <button class="smaller as-icon">
+                <slot template="Icon" name="code-brackets" />
+              </button>
+            </li>
+          </ul>
+          <div class="source fill">
+            <textarea class="fit" out:content="source"></textarea>
+          </div>
+        </li>
+      </ul>
+    </template>
+    <template name="Icon" in:base="24" in:source="EvaOutline">
+      <svg
+        class="icon"
+        out:height="size"
+        out:viewBox="base->{`0 0 ${base} ${base}`}"
+      >
+        <use out:href="name,source->{`#icon-${name}-${source||'generic'}`}" />
+      </svg>
+    </template>
+
+    <script type="module">
+      import { controller } from "@ui.js";
+      import { loadIcon } from "@ui/icons.js";
+      const Icon = ({ on, scope, state }) => {
+        loadIcon(state.name, state.source);
+      };
+      export default controller(Icon);
+    </script>
+
+    <script type="module">
+      import ui from "@ui.js";
+      ui();
+    </script>
+  </body>
+</html>
