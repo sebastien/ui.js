@@ -29,7 +29,7 @@ const FORMAT = seq(text("|"), or(capture("[a-zA-Z_0-9]+", "formatter"), CODE));
 const SELECTION = seq(or(EXPR, CODE, PATH), opt(list(FORMAT, "", "format")));
 
 const INPUT = seq(opt(capture("[a-zA-Z]+", "key"), text("=")), SELECTION);
-const PROCESSOR = seq(text("->{"), capture("[^\\}]+", "processor"), text("}"));
+const PROCESSOR = seq(text("->{"), capture(".+", "processor"), text("}"), "$");
 const SELECTOR = seq(list(INPUT, ",", "inputs"), opt(PROCESSOR));
 // ----------------------------------------------------------------------------
 // HIGH LEVEL API
@@ -56,14 +56,25 @@ export const parseSelector = (text) => {
   //   []
   // );
 
-  console.log("XXX PARSE SELCETOR", text, { p });
   // TODO: Support code and expr in selector input
-  return new Selector(
+  const res = new Selector(
     map(
       values(p.inputs),
       (_) => new SelectorInput(_.type, values(_.chunk), _.card === "*")
     )
   );
+  // We add the selector processor as a format
+  if (p.processor) {
+    res.format = new Function(
+      ...res.inputs
+        .map((v) => {
+          const k = v.path.at(-1);
+          return k === "#" ? "key" : k;
+        })
+        .concat([`return (${p.processor})`])
+    );
+  }
+  return res;
 };
 
 const RE_NUMBER = new RegExp("^\\d+(\\.\\d+)?$");

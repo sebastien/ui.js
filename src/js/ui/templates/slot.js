@@ -12,6 +12,11 @@ export const getSlotBindings = (node) => {
       const v = attr.value;
       if (v.startsWith("{") && v.endsWith("}")) {
         bindings[attr.name] = parseSelector(v.slice(1, -1));
+      } else if (
+        (v.startsWith("[") && v.endsWith("]")) ||
+        (v.startsWith("(") && v.endsWith(")"))
+      ) {
+        bindings[attr.name] = new Function(`return (${v})`)();
       } else {
         // This is a raw (static binding)
         bindings[attr.name] = attr.value;
