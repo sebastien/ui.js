@@ -9,7 +9,7 @@ This defines base typographic settings.
     font-family: var(--font-text);
     line-height: var(--font-text-lh);
     font-size: var(--font-text-size);
-    color: var(--color-text);
+    color: var(--text-color);
     accent-color: var(--color-accent);
     background-color: var(--page-bg);
     padding: var(--pad-4);
@@ -17,7 +17,7 @@ This defines base typographic settings.
   }
 
   .icon {
-    color: var(--color-icon);
+    color: var(--icon-color);
     font-family: var(--font-icon);
     font-variation-settings: var(--font-icon-variation);
     font-weight: normal;
@@ -36,6 +36,9 @@ This defines base typographic settings.
     text-rendering: optimizeLegibility;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "liga";
+    fill: none;
+    stroke-width: 1px;
+    stroke: var(--icon-color);
   }
   .icon.text {
     font-size: var(--font-text-size);
@@ -44,7 +47,7 @@ This defines base typographic settings.
 
   hr {
     border: 0px solid transparent;
-    border-bottom: 1px solid var(--color-text);
+    border-bottom: 1px solid var(--text-color);
   }
 
   p {
@@ -105,7 +108,7 @@ This defines base typographic settings.
     padding-top: 0.5em;
     padding-bottom: 0.5em;
     margin-bottom: var(--line-height);
-    border-left: 1px solid var(--color-text);
+    border-left: 1px solid var(--text-color);
   }
 
   button,

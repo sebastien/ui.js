@@ -47,12 +47,12 @@
   .label.selectable:hover {
     background-color: transparent;
     color: var(--color--accent);
-    border-color: var(--color-text);
+    border-color: var(--text-color);
   }
 
   .label.selectable:focus {
     background-color: transparent;
-    border-color: var(--color-text);
+    border-color: var(--text-color);
   }
 
   .label.selectable:active,
@@ -133,7 +133,7 @@
     display: block;
     flex-grow: 1;
     font-size: var(--font-size-1_5);
-    color: var(--color-text);
+    color: var(--text-color);
   }
 
   .menu > li > .label > .detail,
@@ -141,7 +141,7 @@
     display: block;
     font-weight: 400;
     font-size: var(--font-size-1);
-    color: var(--color-text-alt);
+    color: var(--text-color-alt);
   }
 
   /*

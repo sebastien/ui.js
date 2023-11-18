@@ -24,6 +24,7 @@ export class TemplateEffector extends Effector {
   }
 
   apply(node, scope, attributes) {
+    // These are the missing slots
     const slots = reduce(
       this.bindings,
       (r, v, k) => {

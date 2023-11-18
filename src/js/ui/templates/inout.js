@@ -24,7 +24,6 @@ export const onOutAttribute = (processor, attr, root, name) => {
     return null;
   }
   const directive = parseOutDirective(text);
-  console.log("DIRECTIVE", text, { directive });
   node.removeAttribute(attr.name);
   if (!directive) {
     onError(`templates.view: Could not parse 'out:' directive "${text}"`, {
@@ -73,7 +72,12 @@ export const onOutAttribute = (processor, attr, root, name) => {
   } else {
     // It's not an `out:content` attribute, then it's either a style, value
     // or attribute effector.
-    const nodeName = node.nodeName;
+    const nodeName = node.nodeName.toUpperCase();
+    // For some reason, `out:viewBox` gets normalized as `out:viewbox`, so we
+    // correct it here.
+    if (nodeName === "SVG" && name == "viewbox") {
+      name = "viewBox";
+    }
     return new (
       name === "style" || name.startsWith("style-")
         ? StyleEffector

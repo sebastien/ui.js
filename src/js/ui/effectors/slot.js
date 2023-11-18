@@ -80,7 +80,9 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
-    // NOTE: We leave the scope unchanged here
+    // If we have bindings, we need to derive a local scope, so that the
+    // bindings won't change a previous slot.
+    scope = this.bindings ? scope.derive() : scope;
     const effect = new (this.selector?.isMany
       ? MappingSlotEffect
       : SingleSlotEffect)(this, node, scope, this.template).init();
@@ -147,14 +149,14 @@ class SlotEffect extends Effect {
     this.handlers = {};
     this.template = template;
     this.controller = undefined;
-
     if (this.effector.bindings) {
-      this.scope.define(this.effector.bindings, false);
+      // We bindings do define a new slot
+      this.scope.define(this.effector.bindings, true);
     }
     if (template && template.bindings) {
-      this.scope.define(this.effector.bindings, false);
+      // And the templates complement it
+      this.scope.define(template.bindings, false);
     }
-    console.log("DEFINED", this.effector.bindings, this.scope);
   }
   bind() {
     super.bind();

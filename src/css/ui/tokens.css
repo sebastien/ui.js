@@ -91,12 +91,22 @@ variations).
 
   /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
   /* TODO: Should name the colors */
+  --color-text: #0000000;
   --color-accent: #03dac6;
   --color-primary: #6200ee;
   --color-primary-alt: #3700b3;
   --color-secondary: #03dac6;
   --color-secondary-variant: #03dac6;
   --color-secondary-variant: #03dac6;
+
+  /* 
+   *  ## Text Content
+  */
+  --link-color: var(--color-primary);
+  --icon-color: var(--color-text);
+  --text-color: var(--color-text);
+
+  --shadow-floating: 4px 4px 4px #0000000a;
 
   /*
    * ## Page
@@ -107,7 +117,6 @@ variations).
    * ## Boxes
   */
   --box-bd: #e0e0e0;
-  --link-color: var(--color-primary);
 
   /*
    * ## Icons
@@ -132,7 +141,5 @@ variations).
   --control-bg-selected: #cacaca;
   --control-line-height: 1.15em;
   --control-font-size: var(--font-size-3);
-
-  --shadow-floating: 4px 4px 4px #0000000a;
 }
 /* EOF */

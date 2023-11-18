@@ -41,7 +41,13 @@ export const Sources = {
 const sourceName = (source, sources = Sources) => {
   let sourceName = "generic";
   for (const k in sources) {
-    if (sources[k].url == source) {
+    if (source == k) {
+      sourceName = k;
+      break;
+    } else if (source === sources[k]) {
+      sourceName = k;
+      break;
+    } else if (sources[k].url == source) {
       sourceName = k;
       break;
     }
@@ -51,7 +57,6 @@ const sourceName = (source, sources = Sources) => {
 
 export const loadIcon = (name, source = Sources.Iconoir, container = Icons) => {
   const iconId = `icon-${name}-${sourceName(source)}`;
-  console.log("LOAD ICON", iconId);
   const existing = container.getElementById(iconId);
   if (typeof source === "string") {
     source = Sources[source] || Sources.Iconoir;

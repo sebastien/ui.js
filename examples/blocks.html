@@ -64,13 +64,15 @@
         </li>
       </ul>
     </template>
-    <template name="Icon" in:base="24" in:source="EvaOutline">
+    <template name="Icon" in:base="24" in:source="Iconoir">
       <svg
         class="icon"
         out:height="size"
         out:viewBox="base->{`0 0 ${base} ${base}`}"
       >
-        <use out:href="name,source->{`#icon-${name}-${source||'generic'}`}" />
+        <use
+          out:href="name,source->{`#icon-${name}-${(source||'generic').toLowerCase()}`}"
+        />
       </svg>
     </template>
 

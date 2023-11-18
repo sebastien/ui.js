@@ -26,8 +26,8 @@ export class EffectScope extends Scope {
 
   derive(path = this.path, slots = undefined, key = undefined) {
     const res = new EffectScope(this.get(path), key, this, path);
+    // TODO: WE should explain how that works
     if (slots) {
-      console.log("DERIVE SLOTS", slots);
       res.define(slots);
     }
     return res;
