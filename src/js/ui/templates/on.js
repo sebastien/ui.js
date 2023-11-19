@@ -9,38 +9,28 @@ export const onOnAttribute = (processor, attr, root, name) => {
   if (!node) {
     return null;
   }
-  console.log("ON", attr.value);
   const directive = parseOnDirective(attr.value);
-  let handler = null;
   if (!directive) {
     onError("Unsupported directive", attr.value);
-  } else if (directive.expr) {
-    handler = new Function(
-      "event",
-      "scope",
-      "node",
-      `{const _=event;const v=(${directive.expr});scope.set("${directive.slot}", v);return v}`
-    );
-  } else {
-    onError("Unsupported directive", { value: attr.value, directive });
   }
+  const handler =
+    directive.slot || directive.expr
+      ? new Function(
+          "event",
+          "scope",
+          "node",
+          directive.slot
+            ? `{const _=event;const v=(${directive.expr || "_"});scope.set("${
+                directive.slot
+              }", v);return v}`
+            : `{const _=event;return (${directive.expr || "v"});}`
+        )
+      : undefined;
   node.removeAttribute(attr.name);
-  // A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
+  // FIXME: A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
   // case they've already been processed at that point.
   if (node && node.parentNode) {
-    const directive = parseOnDirective(attr.value);
-    if (!directive) {
-      return onError(
-        `templates.view: Could not parse on 'on:*' directive '${attr.value}'`,
-        {
-          name,
-          attr,
-          root,
-        }
-      );
-    } else {
-      return new EventEffector(nodePath(node, root), name, directive, handler);
-    }
+    return new EventEffector(nodePath(node, root), name, directive, handler);
   }
   return null;
 };

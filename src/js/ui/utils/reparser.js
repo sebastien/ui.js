@@ -72,6 +72,9 @@ const array = (length) => {
 export const opt = (...expr) => `(${expr.join("")})?`;
 export const seq = (...args) => args.join("");
 export const or = (...args) => `(${args.join("|")})`;
+// `(?:` is non-capturing, `(?!` is negative look-ahead
+export const not = (exclude, ...include) =>
+  `(?:(?!${exclude})${include.join("")})`;
 
 export const STRING_DQ = `"([^"]|\\")+"`;
 

@@ -1,5 +1,14 @@
-import { parse, seq, capture, text, or, opt, list } from "../utils/reparser.js";
-import { map, reduce, values } from "../utils/collections.js";
+import {
+  parse,
+  seq,
+  capture,
+  text,
+  or,
+  opt,
+  not,
+  list,
+} from "../utils/reparser.js";
+import { map, values } from "../utils/collections.js";
 import { Selector, SelectorInput } from "../selector.js";
 import { onError } from "../utils/logging.js";
 
@@ -98,17 +107,31 @@ export const parseExpression = (text) => {
     : null;
 };
 
-const RE_INLINE_ON = new RegExp(
+const RE_ON = new RegExp(
   seq(
+    // Slot is like, "asdsasd="
     opt(seq(capture("[A-Za-z_0-9]+", "slot"), text("="))),
-    seq(text("{"), capture("[^}]+", "expr"), text("}"))
+    opt(
+      // There's an optional input a,b,c->
+      opt(list("[a-zA-Z]", ",", "input"), "->"),
+      // With an expression like `{....}`
+      seq(
+        text("{"),
+        capture(not(or(text("}!"), "}$"), ".+"), "handler"),
+        text("}")
+      )
+    ),
+    opt(
+      // The event itself
+      seq(text("!"), capture("[A-Za-z]+", "event")),
+      // And a event processor
+      opt(text("|{"), capture(not("}$", ".+"), "eventProcessor"), text("}"))
+    ),
+    "$"
   )
 );
-export const parseOnDirective = (text) => {
-  // Case 1: It's an inline expression
-  // (assign?=){expression})
-  const p = parse(text, RE_INLINE_ON);
-  return p;
+export const parseOnDirective = (value) => {
+  return parse(value, RE_ON);
 };
 
 export const parseForDirective = (text) => {
