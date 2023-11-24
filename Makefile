@@ -9,8 +9,8 @@ SOURCES_ALL=$(foreach T,JS CSS XML XSL HTML,$(SOURCES_$T))
 RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%) $(EXAMPLES_ALL:%=run/%)
 DIST_ALL=\
 	$(patsubst src/js/%,dist/%,$(filter %.js,$(SOURCES_JS)))\
-	$(patsubst src/css/%,dist/%,$(filter %.js,$(SOURCES_CSS)))\
-	$(patsubst src/xml/%,dist/%,$(filter %.js,$(SOURCES_XSL)))
+	$(patsubst src/css/%,dist/%,$(filter %.css,$(SOURCES_CSS)))\
+	$(patsubst src/xml/%,dist/%,$(filter %.xsl,$(SOURCES_XSL)))
 
 
 # --
@@ -22,6 +22,19 @@ use-bin=$1
 
 run: $(RUN_ALL)
 	@$(call use-bin,env) -C run $(call use-bin,python) -m http.server $(PORT)
+
+update-css: FORCE  run/.has-cmd-bun run/.has-cmd-prettier
+	@for FILE in $(SOURCES_CSS); do
+		if [ ! -z "$$(grep @tmpl $$FILE)" ]; then
+			bun src/js/ui/ssr/cssgen.js "$$FILE" | prettier --stdin-filepath="$$FILE" --parser css > "$$FILE".tmp
+			if [ -e "$$FILE".tmp ]; then
+				echo "... File $$FILE updated"
+				mv "$$FILE".tmp "$$FILE"
+			else
+				echo "!!! File $$FILE NOT updated"
+			fi
+		fi
+	done
 
 clean:
 	@test -e dist && rm -rf dist
@@ -88,6 +101,8 @@ run/.has-cmd-%:
 
 print-%:
 	@echo $($*)
+
+FORCE:
 
 .ONESHELL:
 # EOF

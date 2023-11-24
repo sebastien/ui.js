@@ -52,6 +52,8 @@ variations).
   /*
    * ## Colors
   */
+  --color-black: #000000;
+  --color-white: #ffffff;
   --color-cyan: #00aeb3;
   --color-blue: #00a0dc;
   --color-purple: #8d6cab;
@@ -62,70 +64,30 @@ variations).
   --color-green: #7cb82f;
   --color-grey: #86888a;
 
+  --color-value: var(--color-primary);
   --color-high: var(--color-white);
   --color-low: var(--color-black);
 
-  --shade-blend: in srgb;
-  --shade-0: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-low) 100%
-  );
-  --shade-1: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-low) 80%
-  );
-  --shade-2: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-low) 60%
-  );
-  --shade-3: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-low) 40%
-  );
-  --shade-4: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-low) 20%
-  );
-  --shade-5: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-low) 0%
-  );
-  --shade-6: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-high) 20%
-  );
-  --shade-7: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-high) 40%
-  );
-  --shade-8: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-high) 60%
-  );
-  --shade-9: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-high) 80%
-  );
-  --shade-10: color-mix(
-    var(--shade-blend),
-    var(--color-value),
-    var(--color-high) 100%
-  );
+  /* @tmpl
+   * ('oklab hwb srgb lab lsrgb xyz oklch lch'.split(' ')).map(_ =>
+   * `--blend-${_}: in ${_};\n`
+   * )
+ */
+  --blend-oklab: in oklab;
+  --blend-hwb: in hwb;
+  --blend-srgb: in srgb;
+  --blend-lab: in lab;
+  --blend-lsrgb: in srgb-linear;
+  --blend-xyz: in xyz;
+  --blend-oklch: in oklch;
+  --blend-lch: in lch;
+  /* @end */
 
+  --shade-blend: var(--blend-srgb);
   /* @tmpl
    * ["cyan", "blue", "purple", "red", "orange", "yellow", "pink", "green", "grey"].reduce(
-   * 	(r,color)=> r.concat(range(6).map( shade => `--color-${color}-${shade}: color-mix(var(--color-blend),var(--color-${color}),var(--color-low), ${100 - (shade * 20)}%);\n`)).concat(
-    	 range(5).map( shade => `--color-${color}-${shade+6}: color-mix(var(--color-blend),var(--color-${color}),var(--color-high), ${((shade + 1) * 20)}%);\n`)
+   * 	(r,color)=> r.concat(range(6).map( shade => `--color-${color}-${shade}: color-mix(var(--color-blend),var(--color-${color}),var(--color-low) ${100 - (shade * 20)}%);\n`)).concat(
+    	 range(5).map( shade => `--color-${color}-${shade+6}: color-mix(var(--color-blend),var(--color-${color}),var(--color-high) ${((shade + 1) * 20)}%);\n`)
    * 	)
    * 	, [])
    *
@@ -133,596 +95,497 @@ variations).
   --color-cyan-0: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-cyan-1: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-cyan-2: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-cyan-3: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-cyan-4: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-cyan-5: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-cyan-6: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-cyan-7: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-cyan-8: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-cyan-9: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-cyan-10: color-mix(
     var(--color-blend),
     var(--color-cyan),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-blue-0: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-blue-1: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-blue-2: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-blue-3: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-blue-4: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-blue-5: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-blue-6: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-blue-7: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-blue-8: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-blue-9: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-blue-10: color-mix(
     var(--color-blend),
     var(--color-blue),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-purple-0: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-purple-1: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-purple-2: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-purple-3: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-purple-4: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-purple-5: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-purple-6: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-purple-7: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-purple-8: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-purple-9: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-purple-10: color-mix(
     var(--color-blend),
     var(--color-purple),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-red-0: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-red-1: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-red-2: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-red-3: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-red-4: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-red-5: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-red-6: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-red-7: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-red-8: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-red-9: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-red-10: color-mix(
     var(--color-blend),
     var(--color-red),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-orange-0: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-orange-1: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-orange-2: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-orange-3: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-orange-4: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-orange-5: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-orange-6: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-orange-7: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-orange-8: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-orange-9: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-orange-10: color-mix(
     var(--color-blend),
     var(--color-orange),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-yellow-0: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-yellow-1: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-yellow-2: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-yellow-3: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-yellow-4: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-yellow-5: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-yellow-6: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-yellow-7: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-yellow-8: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-yellow-9: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-yellow-10: color-mix(
     var(--color-blend),
     var(--color-yellow),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-pink-0: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-pink-1: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-pink-2: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-pink-3: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-pink-4: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-pink-5: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-pink-6: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-pink-7: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-pink-8: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-pink-9: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-pink-10: color-mix(
     var(--color-blend),
     var(--color-pink),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-green-0: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-green-1: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-green-2: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-green-3: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-green-4: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-green-5: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-green-6: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-green-7: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-green-8: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-green-9: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-green-10: color-mix(
     var(--color-blend),
     var(--color-green),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   --color-grey-0: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-low),
-    100%
+    var(--color-low) 100%
   );
   --color-grey-1: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-low),
-    80%
+    var(--color-low) 80%
   );
   --color-grey-2: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-low),
-    60%
+    var(--color-low) 60%
   );
   --color-grey-3: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-low),
-    40%
+    var(--color-low) 40%
   );
   --color-grey-4: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-low),
-    20%
+    var(--color-low) 20%
   );
   --color-grey-5: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-low),
-    0%
+    var(--color-low) 0%
   );
   --color-grey-6: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-high),
-    20%
+    var(--color-high) 20%
   );
   --color-grey-7: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-high),
-    40%
+    var(--color-high) 40%
   );
   --color-grey-8: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-high),
-    60%
+    var(--color-high) 60%
   );
   --color-grey-9: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-high),
-    80%
+    var(--color-high) 80%
   );
   --color-grey-10: color-mix(
     var(--color-blend),
     var(--color-grey),
-    var(--color-high),
-    100%
+    var(--color-high) 100%
   );
   /* @end */
 

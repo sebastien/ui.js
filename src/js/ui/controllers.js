@@ -68,7 +68,7 @@ class Use {
       }
       cell = new MapReducer(inputs, functor);
     } else {
-      throw ValueError;
+      throw ValueError(inputs);
     }
     if (cell) {
       this.cells.push(cell);

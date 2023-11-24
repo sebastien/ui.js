@@ -132,6 +132,9 @@ class DynamicTemplateEffect extends Effect {
 
   unify(current, previous = this.value) {
     if (current !== previous) {
+      if (this.selector.target) {
+        this.scope.set(this.selector.target, current);
+      }
       this.value = current;
       // The template has changed
       this.effect.dispose();
@@ -218,6 +221,9 @@ class SingleSlotEffect extends SlotEffect {
   }
 
   unify(current, previous = this.value) {
+    if (this.selector.target) {
+      this.scope.set(this.selector.target, current);
+    }
     if (!this.view) {
       const node = createComment(
         // FIXME: add a better description of that part
@@ -265,7 +271,7 @@ class MappingSlotEffect extends SlotEffect {
     const isPreviousEmpty = isEmpty(previous);
     const isCurrentAtom = isAtom(current);
 
-    const path = this.effector.selector.path;
+    const { target, path } = this.effector.selector;
 
     // FIXME: This should be moved to the slot effector. We also need
     // to retrieve the key.
@@ -288,13 +294,16 @@ class MappingSlotEffect extends SlotEffect {
         if (item) {
           // Nothing to do, the item effectors will already be subscribed
           // to the change.
+          if (target) {
+            item.scope.set(target, current);
+          }
         } else {
           items.set(
             null,
             this.createItem(
               this.template,
               node, // node
-              scope.derive(path), // scope
+              scope.derive(path, target ? { target: current } : undefined), // scope
               true // isEmpty
             )
           );
@@ -306,19 +315,25 @@ class MappingSlotEffect extends SlotEffect {
       for (let i = 0; i < current.length; i++) {
         const item = items.get(i);
         if (!item) {
+          const subscope = scope.derive([...path, i], scope.slots, i);
+          if (target) {
+            subscope.set(target, current[i]);
+          }
           items.set(
             i,
             this.createItem(
               this.template,
               node, // node
-              // FIXME: We probably want to change the local path
-              scope.derive([...path, i], scope.slots, i),
+              subscope,
               undefined,
               i
             )
           );
         } else {
           if (!previous || current[i] !== previous[i]) {
+            if (target) {
+              item.scope.set(target, current[i]);
+            }
             item.apply();
           } else {
             // No change in item
@@ -340,19 +355,26 @@ class MappingSlotEffect extends SlotEffect {
       for (const k in current) {
         const item = items.get(k);
         if (!item) {
+          const subscope = scope.derive([...path, k], scope.slots, k);
+          if (target) {
+            subscope.set(target, current[k]);
+          }
+
           items.set(
             k,
             this.createItem(
               this.template,
               node, // node
-              // FIXME: We probably want to change the local path
-              scope.derive([...path, k], scope.slots, k),
+              subscope,
               undefined,
               k
             )
           );
         } else {
           if (!previous || current[k] !== previous[k]) {
+            if (target) {
+              item.scope.set(target, current[k]);
+            }
             item.apply();
           }
         }

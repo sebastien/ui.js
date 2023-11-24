@@ -118,7 +118,7 @@ export class Cell extends Subscribable {
   }
 
   get(path) {
-    throw NotImplementedError;
+    throw NotImplementedError();
   }
 }
 
@@ -132,7 +132,7 @@ export class Value extends Cell {
   set(value, path = null, offset = 0) {
     console.log("Cell.set", value, path, "/", this.value);
     if (path) {
-      throw NotImplementedError;
+      throw NotImplementedError();
     }
     const previous = this.value;
     this.value = value;
@@ -144,15 +144,15 @@ export class Value extends Cell {
   }
 
   put(path) {
-    throw NotImplementedError;
+    throw NotImplementedError();
   }
 
   patch(path) {
-    throw NotImplementedError;
+    throw NotImplementedError();
   }
 
   delete(path) {
-    throw NotImplementedError;
+    throw NotImplementedError();
   }
 }
 
@@ -202,11 +202,11 @@ export class Reducer extends Cell {
   }
 
   evaluateInputs() {
-    throw NotImplementedError;
+    throw NotImplementedError();
   }
 
   evaluate() {
-    throw NotImplementedError;
+    throw NotImplementedError();
   }
 
   _set(value) {
@@ -325,7 +325,7 @@ export class Scope extends Cell {
         this.slots[path] = new Value(value);
       }
     } else {
-      throw NotImplementedError;
+      throw NotImplementedError();
     }
   }
 

@@ -219,7 +219,7 @@ const extractNodes = (node, remove = true) => {
         // Nodes marked as `data-skip` are skipped.
         if (!_.getAttribute("data-skip")) {
           collection.push(_);
-          remove && _.parentElement.removeChild(_);
+          remove && _.parentElement?.removeChild(_);
         }
       });
     }

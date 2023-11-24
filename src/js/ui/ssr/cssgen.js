@@ -1,6 +1,8 @@
 import { map, range } from "../utils/collections.js";
-if (!Bun) {
-  throw new Exception("Bun is required to run this");
+import { unlink } from "node:fs/promises";
+
+if (!globalThis.Bun) {
+  throw new Error("Bun is required to run this");
 }
 
 const RE_TMPL_START = new RegExp("/\\*\\s*@tmpl", "g");
@@ -91,13 +93,15 @@ const process = function* (text) {
 };
 
 const rewrite = async (path) => {
-  const file = Bun.file(path);
-  const text = await file.text();
-  const out = file.writer();
+  const input = Bun.file(path);
+  const text = await input.text();
+  const output = Bun.file(`${path}.tmp`);
+  const out = output.writer();
   for (const chunk of process(text)) {
-    out.write(chunk);
+    await Bun.write(Bun.stdout, chunk);
+    await out.write(chunk);
   }
-  out.flush();
+  await out.flush();
 };
 
 // TODO: Should wrap this in a CLI

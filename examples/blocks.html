@@ -35,6 +35,7 @@
     <template name="Blocks" in:cells="">
       <ul x:for="cells">
         <li><slot template="Cell" /></li>
+        <li><slot template="Divider" /></li>
       </ul>
     </template>
 
@@ -59,7 +60,11 @@
             </li>
           </ul>
           <div class="source fill">
-            <textarea class="fit" out:content="source"></textarea>
+            <textarea
+              class="fit"
+              out:content="source"
+              on:input="!Changed"
+            ></textarea>
           </div>
         </li>
       </ul>
@@ -76,13 +81,32 @@
       </svg>
     </template>
 
+    <template name="Divider">
+      <div class="row fill">
+        <button class="smaller as-icon">
+          <slot template="Icon" name="plus-circle" />
+        </button>
+        <hr />
+      </div>
+    </template>
+
     <script type="module">
       import { controller } from "@ui.js";
       import { loadIcon } from "@ui/icons.js";
       const Icon = ({ on, scope, state }) => {
         loadIcon(state.name, state.source);
       };
-      export default controller(Icon);
+      controller(Icon);
+    </script>
+
+    <script type="module">
+      import { controller } from "@ui.js";
+      const Cell = ({ on, scope, state }) => {
+        on.Changed((event) => {
+          cnsole.log("CHANGED CELL");
+        });
+      };
+      controller(Cell);
     </script>
 
     <script type="module">

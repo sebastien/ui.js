@@ -30,7 +30,6 @@ import { commonPath } from "./path.js";
 // which is a collection of inputs. Selector inputs can select from
 // the local state (`@` prefixed, like `@status`), or from the global state
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
-const RE_PATH = /^(?<type>[#@/]?)(?<prefix>\.*)(?<rest>.*)/;
 
 export const SelectorScope = Object.freeze({
   Local: "@",
@@ -78,7 +77,7 @@ export class SelectorInput {
 //
 
 export class Selector {
-  constructor(inputs, format = undefined) {
+  constructor(inputs, format = undefined, target = undefined) {
     this.inputs = inputs;
     this.format = format;
     this.isMany = inputs.length === 1 && inputs[0].isMany;
@@ -87,6 +86,7 @@ export class Selector {
       inputs.length > 1 ? SelectorType.List : SelectorType.Atom
     );
     this.fields = inputs.map((_) => _.key || _.path.at(-1));
+    this.target = target;
     switch (this.type) {
       case SelectorType.Atom:
         this.path = this.inputs[0].path;

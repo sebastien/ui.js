@@ -35,13 +35,14 @@ const CODE = seq(text("{"), capture("[^\\}]+", "code"), text("}"));
 const EXPR = seq(text("("), capture("[^\\)]+", "expr"), text(")"));
 const FORMAT = seq(text("|"), or(capture("[a-zA-Z_0-9]+", "formatter"), CODE));
 
+const TARGET = seq(capture("[a-zA-Z_0-9]+", "target"), text("="));
 const SELECTION = seq(or(EXPR, CODE, PATH), opt(list(FORMAT, "", "format")));
 
 const INPUT = seq(opt(capture("[a-zA-Z]+", "key"), text("=")), SELECTION);
 const PROCESSOR = seq(text("->{"), capture(".+", "processor"), text("}"), "$");
-const SELECTOR = seq(list(INPUT, ",", "inputs"), opt(PROCESSOR));
-// ----------------------------------------------------------------------------
-// HIGH LEVEL API
+const SELECTOR = seq(opt(TARGET), list(INPUT, ",", "inputs"), opt(PROCESSOR));
+
+// ---------------------------------------------------------------------------- HIGH LEVEL API
 // ----------------------------------------------------------------------------
 
 export const parseDirective = (text) => {
@@ -66,31 +67,38 @@ export const parseSelector = (text) => {
   // );
 
   // TODO: Support code and expr in selector input
-  const res = new Selector(
-    map(
-      values(p.inputs),
-      (_) => new SelectorInput(_.type, values(_.chunk), _.card === "*")
-    )
+  const inputs = map(
+    values(p.inputs),
+    (_) => new SelectorInput(_.type, values(_.chunk), _.card === "*")
   );
-  // We add the selector processor as a format
-  if (p.processor) {
-    res.format = new Function(
-      ...res.inputs
-        .map((v) => {
-          const k = v.path.at(-1);
-          return k === "#" ? "key" : k;
-        })
-        .concat([`return (${p.processor})`])
-    );
-  }
-  return res;
+  return new Selector(
+    // Inputs
+    inputs,
+    // Format
+    p.processor
+      ? new Function(
+          ...inputs
+            .map((v) => {
+              const k = v.path.at(-1);
+              return k === "#" ? "key" : k;
+            })
+            .concat(["$", `return (${p.processor})`])
+        )
+      : null,
+    // Target
+    p.target
+  );
 };
 
 const RE_NUMBER = new RegExp("^\\d+(\\.\\d+)?$");
 // A literal can be directly converted to JavaScript and does not use
 export const parseLiteral = (text) => {
-  return text && text.startsWith("(") && text.endsWith(")")
+  return text &&
+    ((text.startsWith("[") && text.endsWith("]")) ||
+      (text.startsWith("{") && text.endsWith("}")))
     ? JSON.parse(text.slice(1, -1))
+    : text && text.startsWith("(") && text.endsWith(")")
+    ? new Function(`{return ${text}}`)()
     : RE_NUMBER.test(text)
     ? parseFloat(text)
     : text === "true"

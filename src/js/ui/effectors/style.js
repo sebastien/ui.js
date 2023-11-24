@@ -34,9 +34,13 @@ class StyleEffect extends Effect {
         this.node.style[this.property] = value;
       }
     } else {
-      value === Empty
-        ? (this.node.style = null)
-        : Object.assign(this.node.style, value);
+      if (value === Empty) {
+        this.node.style = null;
+      } else if (typeof value === "string") {
+        this.node.setAttribute("style", value);
+      } else {
+        Object.assign(this.node.style, value);
+      }
     }
     return this;
   }

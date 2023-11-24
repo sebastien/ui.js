@@ -2,6 +2,11 @@ import { onError } from "./utils/logging.js";
 import { access } from "./utils/collections.js";
 import { SelectorType } from "./selector.js";
 import { Scope } from "./reactive.js";
+import { range, map, reduce, filter, len } from "./utils/collections.js";
+import { lerp } from "./utils/math.js";
+
+// This is mapped to `$` in formatters
+const FormatAPI = { range, map, reduce, filter, len, lerp };
 
 // --
 // ## Effectors
@@ -25,7 +30,14 @@ export class EffectScope extends Scope {
   }
 
   derive(path = this.path, slots = undefined, key = undefined) {
-    const res = new EffectScope(this.get(path), key, this, path);
+    const res = new EffectScope(
+      // NOTE: There's a bit of a risk here as if value is change from the
+      // parent, it won't be changed here.
+      path ? this.get(path) : this.value,
+      key,
+      this,
+      path
+    );
     // TODO: WE should explain how that works
     if (slots) {
       res.define(slots);
@@ -102,7 +114,17 @@ export class EffectScope extends Scope {
       return null;
     }
     if (selector.format) {
-      return selector.format(...selector.inputs.map((_) => this.get(_.path)));
+      const inputs = selector.inputs.map((_) => this.get(_.path));
+      try {
+        return selector.format(...[...inputs, FormatAPI]);
+      } catch (exception) {
+        onError(`Selector formatter failed: ${selector.toString()}`, {
+          input: inputs,
+          selector,
+          exception,
+        });
+        return null;
+      }
     } else {
       switch (selector.type) {
         case SelectorType.Atom:
@@ -116,6 +138,7 @@ export class EffectScope extends Scope {
           );
         default:
           onError("Unsupported selector type", selector.type, { selector });
+          return null;
       }
     }
   }

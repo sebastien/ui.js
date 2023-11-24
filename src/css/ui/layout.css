@@ -1,5 +1,4 @@
-Rewriting template: src/css/ui/layout.css
-rewritingtemplate: src/css/ui/layout.css @layer layout {
+@layer layout {
   /**
    * ## Box Model
 */

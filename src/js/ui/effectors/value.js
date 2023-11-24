@@ -1,5 +1,6 @@
 import { Effect } from "../effectors.js";
 import { AttributeEffector } from "./attribute.js";
+import { Empty } from "../utils/values.js";
 
 class ValueEffect extends Effect {
   unify(value, previous = this.value) {

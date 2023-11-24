@@ -13,11 +13,22 @@ export class AttributeEffector extends Effector {
 }
 
 class AttributeEffect extends Effect {
+  constructor(...args) {
+    super(...args);
+    // TODO: We should detect which is first, so that we can preserve the roder
+    this.existing = this.node.getAttribute(this.effector.name);
+  }
+
   unify(value, previous = this.value) {
     if (value === Empty || value == undefined || value === null) {
-      this.node.removeAttribute(this.effector.name);
+      this.existing
+        ? this.node.setAttribute(this.effector.name, this.existing)
+        : this.node.removeAttribute(this.effector.name);
     } else {
-      this.node.setAttribute(this.effector.name, value);
+      this.node.setAttribute(
+        this.effector.name,
+        this.existing ? `${this.existing} ${value}` : value
+      );
     }
     return this;
   }

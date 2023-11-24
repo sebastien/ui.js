@@ -39,15 +39,42 @@ export const map = (v, f) => {
   } else if (v instanceof Array) {
     return v.map(f);
   } else if (v instanceof Map) {
-    const r = [];
+    const r = new Map();
     for (const [k, w] of v.entries()) {
-      r.push((r, w, k));
+      r.set(k, f(w, k));
     }
     return r;
   } else if (isObject(v)) {
     const res = {};
     for (const k in v) {
       res[k] = f(v[k], k);
+    }
+    return res;
+  } else {
+    return f(v);
+  }
+};
+
+export const filter = (v, f) => {
+  if (v === undefined) {
+    return v;
+  } else if (v instanceof Array) {
+    return v.filter(f);
+  } else if (v instanceof Map) {
+    const r = new Map();
+    for (const [k, w] of v.entries()) {
+      if (f(w, k)) {
+        r.set(k, w);
+      }
+    }
+    return r;
+  } else if (isObject(v)) {
+    const res = {};
+    for (const k in v) {
+      const w = v[k];
+      if (f(w, k)) {
+        res[k] = w;
+      }
     }
     return res;
   } else {
