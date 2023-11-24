@@ -50,6 +50,79 @@ variations).
   --text-max-width: 55ch;
 
   /*
+   * ## Colors
+  */
+  --color-cyan: #00aeb3;
+  --color-blue: #00a0dc;
+  --color-purple: #8d6cab;
+  --color-red: #dd5143;
+  --color-orange: #e68523;
+  --color-yellow: #edb220;
+  --color-pink: #dc4b89;
+  --color-green: #7cb82f;
+  --color-grey: #86888a;
+
+  --color-high: var(--color-white);
+  --color-low: var(--color-black);
+
+  --shade-blend: in srgb;
+  --shade-0: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-low) 100%
+  );
+  --shade-1: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-low) 80%
+  );
+  --shade-2: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-low) 60%
+  );
+  --shade-3: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-low) 40%
+  );
+  --shade-4: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-low) 20%
+  );
+  --shade-5: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-low) 0%
+  );
+  --shade-6: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-high) 20%
+  );
+  --shade-7: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-high) 40%
+  );
+  --shade-8: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-high) 60%
+  );
+  --shade-9: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-high) 80%
+  );
+  --shade-A: color-mix(
+    var(--shade-blend),
+    var(--color-value),
+    var(--color-high) 100%
+  );
+
+  /*
    * ## Padding 
   */
   --pad-0: calc(1px * 2);
@@ -91,12 +164,13 @@ variations).
 
   /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
   /* TODO: Should name the colors */
-  --color-text: #0000000;
-  --color-accent: #03dac6;
-  --color-primary: #6200ee;
-  --color-primary-alt: #3700b3;
-  --color-secondary: #03dac6;
-  --color-secondary-variant: #03dac6;
+  --color-text: var(--color-black);
+  --color-accent: var(--color-cyan-5);
+  --color-primary: var(--color-blue-5);
+  /* FIXME: What is alt ? */
+  --color-primary-alt: var(--color-blue-8);
+  --color-secondary: var(--color-yellow);
+  /* FIXME: WHat is variant ? */
   --color-secondary-variant: #03dac6;
 
   /* 
@@ -141,5 +215,9 @@ variations).
   --control-bg-selected: #cacaca;
   --control-line-height: 1.15em;
   --control-font-size: var(--font-size-3);
+  /* @tmpl
+   * range(10).map(_ => `\n  .col-${_+1} { width: calc(var(--col-width) * ${_+1}); }`)
+  */
+  /* @end */
 }
 /* EOF */

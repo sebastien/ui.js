@@ -1,9 +1,45 @@
-:root {
-  --palette-grey-20: #393930;
-  --palette-grey-40: #595950;
-  --palette-grey-60: #797970;
-  --palette-grey-80: #999990;
-  --palette-ivory-70: #efeee7;
-  --palette-ivory-90: #fffef7;
-  --palette-gold-60: #fcd647;
+@layer base {
+  .blend-oklch {
+    --color-blend: in oklch;
+  }
+  .blend-srgb {
+    --color-blend: in srgb;
+  }
+  .blend-lsrgb {
+    --color-blend: in srgb-linear;
+  }
+  .blend-lab {
+    --color-blend: in lab;
+  }
+  .blend-lch {
+    --color-blend: in lch;
+  }
+  .blend-hwb {
+    --color-blend: in hwb;
+  }
+  .blend-xyz {
+    --color-blend: in xyz;
+  }
+
+  /* @tmpl
+   * ["cyan", "blue", "purple", "red", "orange", "yellow", "pink", "green", "grey"].reduce(
+   * 	(r,color)=> r.concat(range(6).map( shade => `--color-${color}-${shade}: color-mix(var(--color-blend),var(--color-${color}),var(--color-low), ${100 - (shade * 20)}%);\n`)).concat(
+    	 range(5).map( shade => `--color-${color}-${shade+6}: color-mix(var(--color-blend),var(--color-${color}),var(--color-high), ${((shade + 1) * 20)}%);\n`)
+   * 	)
+   * 	, [])
+   *
+   */
+  /* @end */
+
+  /* @tmpl
+   * range(10).map(_=>`.S${_} {--color: var(--shade-${_});}\n`)
+ */
+  /* @end */
+
+  /* @tmpl
+   * ["cyan", "blue", "purple", "red", "orange", "yellow", "pink", "green", "grey"].reduce((r,color)=>r.concat(range(10).map(
+   * 	_ => `.${color}-${_} {--color-value:var(--color-${color});--color: var(--shade-${_});}\n`
+   * )), [])
+ */
+  /* @end */
 }
