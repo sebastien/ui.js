@@ -186,6 +186,7 @@
     border: 2px solid red;
     /*appearance: none;*/
   }
+
   input[type="text"],
   .input,
   textarea,
@@ -193,6 +194,12 @@
     min-width: 15ch;
     background: var(--control-input-bg);
   }
+
+  input[type="color"] {
+    padding: 0px;
+    width: 3ch;
+  }
+
   input:hover,
   textarea:hover,
   .input:hover,

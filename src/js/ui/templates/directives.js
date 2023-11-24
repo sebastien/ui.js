@@ -116,26 +116,29 @@ export const parseExpression = (text) => {
 };
 
 const RE_ON = new RegExp(
-  seq(
-    // Slot is like, "asdsasd="
-    opt(seq(capture("[A-Za-z_0-9]+", "slot"), text("="))),
-    opt(
-      // There's an optional input a,b,c->
-      opt(list("[a-zA-Z]", ",", "input"), "->"),
-      // With an expression like `{....}`
-      seq(
-        text("{"),
-        capture(not(or(text("}!"), "}$"), ".+"), "handler"),
-        text("}")
-      )
+  or(
+    seq(
+      // Slot is like, "asdsasd="
+      opt(seq(capture("[A-Za-z_0-9]+", "slot"), text("="))),
+      opt(
+        // There's an optional input a,b,c->
+        opt(list("[a-zA-Z]", ",", "input"), "->"),
+        // With an expression like `{....}`
+        seq(
+          text("{"),
+          capture(not(or(text("}!"), "}$"), ".+"), "handler"),
+          text("}")
+        )
+      ),
+      opt(
+        // The event itself
+        seq(text("!"), capture("[A-Za-z]+", "event")),
+        // And a event processor
+        opt(text("|{"), capture(not("}$", ".+"), "eventProcessor"), text("}"))
+      ),
+      "$"
     ),
-    opt(
-      // The event itself
-      seq(text("!"), capture("[A-Za-z]+", "event")),
-      // And a event processor
-      opt(text("|{"), capture(not("}$", ".+"), "eventProcessor"), text("}"))
-    ),
-    "$"
+    seq(capture("[A-Za-z_0-9]+", "assign"))
   )
 );
 export const parseOnDirective = (value) => {

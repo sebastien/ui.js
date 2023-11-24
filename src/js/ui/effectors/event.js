@@ -26,10 +26,21 @@ class EventEffect extends Effect {
   }
 
   handle(event) {
-    const h = this.effector.handler;
-    const v = h ? h(event, this.scope, this.node) : null;
+    const { handler, directive } = this.effector;
+    const v = handler ? handler(event, this.scope, this.node) : null;
+    if (directive.assign) {
+      this.scope.set(directive.assign, event.target.value);
+    }
+    if (directive.slot) {
+      this.scope.set(directive.slot, v);
+    }
     // TODO: Do something about that
-    console.log("HANDLING", { event, handler: h, scope: this.scope, value: v });
+    console.log("HANDLING", {
+      event,
+      handler: handler,
+      scope: this.scope,
+      value: v,
+    });
   }
 
   unify(current, previous = this.value) {

@@ -1,7 +1,7 @@
 import { onError } from "./utils/logging.js";
 import { access } from "./utils/collections.js";
 import { SelectorType } from "./selector.js";
-import { Scope } from "./reactive.js";
+import { Scope, Reducer } from "./reactive.js";
 import { range, map, reduce, filter, len } from "./utils/collections.js";
 import { lerp } from "./utils/math.js";
 
@@ -75,14 +75,6 @@ export class EffectScope extends Scope {
       // Otherwise we resolve in the current scope
       return super.get(path, offset);
     }
-  }
-
-  sub(path, handler, offset = 0) {
-    console.warn("SUB NOT IMPLEMENTED");
-  }
-
-  unsub(path, sub, offset = 0) {
-    console.warn("UNSUB NOT IMPLEMENTED");
   }
 
   trigger(event, scope, node, bubbles = true) {
@@ -168,6 +160,20 @@ export class Effect {
 
     // TODO: We need to do the binding
     this.selection = selector && scope ? scope.select(selector) : null;
+    const handler = (i) => (_) => {
+      console.log("INPUT UPDATED", { index: i, selector, value: _ });
+    };
+
+    this.subs = selector
+      ? selector.inputs.map((_, i) => this.scope.sub(_.path, handler(i)))
+      : null;
+    // FIXME: We should defer that so that we support bind/unbind
+    //this.cell = selector
+    //  ? new Reducer(
+    //      selector.inputs.map((_) => this.scope.sub(_.path)),
+    //      selector.processor
+    //    )
+    //  : null;
     // this.selection = selector
     //   ? selector.apply(scope, this.onChange.bind(this))
     //   : null;
@@ -175,6 +181,7 @@ export class Effect {
 
   bind() {
     // TODO: Subscribe to the selection
+
     return this;
   }
 

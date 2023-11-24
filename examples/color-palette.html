@@ -28,15 +28,15 @@
     <template
       name="Palette"
       in:color="#008BFD"
-      in:modes="('oklab hwb srgb lab lsrgb xyz oklch lch'.split(' '))"
+      in:modes="('oklab srgb lab lsrgb xyz oklch lch hwb'.split(' '))"
       in:shades="5"
       in:low="#000000"
       in:high="#FFFFFF"
       in:greyscale="false"
     >
-      <input type="color" name="low" out:value="low" />
-      <input type="color" name="color" out:value="color" />
-      <input type="color" name="high" out:value="high" />
+      <input type="color" name="low" out:value="low" on:input="low" />
+      <input type="color" name="color" out:value="color" on:input="color" />
+      <input type="color" name="high" out:value="high" on:input="high" />
 
       <div
         out:style="color,low,high->{`--color-value:${color};--color-low:${low};--color-high:${high}`}"
@@ -44,6 +44,7 @@
         <ul x:for="mode=modes">
           <li class="row" out:title="mode->{`mode=${mode}`}">
             <span class="w-8c" out:content="mode">…</span>
+
             <ul
               class="row gap-0"
               x:for="shades->{$.range(shades)}"

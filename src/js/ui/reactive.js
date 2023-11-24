@@ -65,17 +65,20 @@ export class Subscribable {
     let subs = this.subscriptions;
     if (!subs) {
       return res;
-    }
-    const n = path.length;
-    for (let i = offset; i < n; i++) {
-      const chunk = path[i];
-      if (subs.has(chunk)) {
-        const p = subs.get(chunk);
-        res.splice(0, 0, p.get(null));
-        subs = p;
+    } else if (!path) {
+      return subs;
+    } else {
+      const n = path.length;
+      for (let i = offset; i < n; i++) {
+        const chunk = path[i];
+        if (subs.has(chunk)) {
+          const p = subs.get(chunk);
+          res.splice(0, 0, p.get(null));
+          subs = p;
+        }
       }
+      return res;
     }
-    return res;
   }
 
   unsub(sub, path = null, offset = 0) {
@@ -88,13 +91,15 @@ export class Subscribable {
   }
 
   trigger(value, path = null, offset = 0, bubbles = true) {
+    console.log("TRIGGER", { value, path, offset });
     let count = 0;
     if (!this.subscriptions) {
       return count;
     }
     if (bubbles) {
-      for (const p in this.topics(path, offset)) {
-        for (const s of p.get(Subscription) || []) {
+      console.log("TOPICS", [...this.topics(path, offset)]);
+      for (const p of this.topics(path, offset)) {
+        for (const s of p.get(null) || []) {
           s.trigger(value);
           count += 1;
         }
@@ -102,7 +107,7 @@ export class Subscribable {
     } else {
       const p = this.subscribed(path, offset, false);
       if (p) {
-        for (const s of p.get(Subscription) || []) {
+        for (const s of p.get(null) || []) {
           s.trigger(value);
           count += 1;
         }
@@ -157,14 +162,16 @@ export class Value extends Cell {
 }
 
 export class Reducer extends Cell {
-  constructor(input, reducer, value = undefined, comparator = cmp) {
+  constructor(input, reducer = undefined, value = undefined, comparator = cmp) {
     super();
     this.input = input;
     this.reducer = reducer;
     this.subscribed =
       input instanceof Cell
         ? input.sub(this.update)
-        : map(input, (_, k) => _.sub(null, (_) => this.update(_, k)));
+        : input
+        ? map(input, (_, k) => _.sub(null, (_) => this.update(_, k)))
+        : null;
     this.value = value;
     this.inputValue = undefined;
     this.revision = -1;
@@ -197,7 +204,7 @@ export class Reducer extends Cell {
     } else {
       // TODO: We may want to compare the previous input value.
       this.inputValue = value;
-      this._set(this.reducer(value));
+      this._set(this.reducer ? this.reducer(value) : value);
     }
   }
 
