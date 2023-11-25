@@ -155,28 +155,15 @@ export class Effect {
     // We perform some checks
     !node && onError("Effect(): effector should have a node", { node });
 
-    // We apply the selector to the scope and register a selection.
-    // The selection will be updated as the contents changes.
-
     // TODO: We need to do the binding
-    this.selection = selector && scope ? scope.select(selector) : null;
+    // this.selection = selector && scope ? scope.select(selector) : null;
     const handler = (i) => (_) => {
-      console.log("INPUT UPDATED", { index: i, selector, value: _ });
+      // FIXME: We should optimize this, as this will extract  all the values
+      this.apply();
     };
-
     this.subs = selector
       ? selector.inputs.map((_, i) => this.scope.sub(handler(i), _.path))
       : null;
-    // FIXME: We should defer that so that we support bind/unbind
-    //this.cell = selector
-    //  ? new Reducer(
-    //      selector.inputs.map((_) => this.scope.sub(_.path)),
-    //      selector.processor
-    //    )
-    //  : null;
-    // this.selection = selector
-    //   ? selector.apply(scope, this.onChange.bind(this))
-    //   : null;
   }
 
   bind() {
