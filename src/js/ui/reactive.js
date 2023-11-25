@@ -1,6 +1,6 @@
-import { map, each, access } from "./utils/collections.js";
+import { map, last, access } from "./utils/collections.js";
 import { cmp } from "./utils/delta.js";
-import { NotImplementedError } from "./utils/errors.js";
+import { RuntimeError, NotImplementedError } from "./utils/errors.js";
 
 // Wraps a subscription
 export class Subscription {
@@ -15,101 +15,113 @@ export class Subscription {
 
 // A hierarchical set of subscriptions
 export class Subscribable {
+  static Count = 0;
   constructor() {
-    this.subscriptions = null;
+    // Subscriptions is a tree of subscribed paths, where `Subscription` entries
+    // are the actual subscriptions, and the string/int entries are
+    // path keys.
+    this.id = Subscribable.Count++;
+    this._topics = null;
   }
 
-  subscribed(path = null, offset = 0, creates = false) {
-    if (!this.subscriptions) {
-      if (creates) {
-        this.subscriptions = new Map();
-      } else {
-        return null;
-      }
+  *topics(path = null, offset = 0, creates = false) {
+    if (!this._topics && creates) {
+      this._topics = new Map();
     }
-    let subs = this.subscriptions;
-    const n = path ? path.length : 0;
-    for (let i = offset; i < n; i++) {
-      const chunk = path[i];
-      if (!subs.has(chunk)) {
-        if (creates) {
-          const s = new Map();
-          // We bind the parent to the `Map` key
-          s.set(Map, subs);
-          subs.set(chunk, s);
-          subs = s;
-        } else {
-          return undefined;
-        }
-      } else {
-        subs = subs.get(chunk);
-      }
-    }
-    if (creates && !subs.has(null)) {
-      const res = [];
-      subs.set(null, res);
-      return res;
+    let topic = this._topics;
+    const n = topic && path ? path.length : 0;
+    // For each element of the path, we try to retrieve the corresponding
+    // Map
+
+    if (offset === n) {
+      yield topic;
     } else {
-      return subs.get(null);
+      for (let i = offset; i < n; i++) {
+        const chunk = path[i];
+        if (!topic.has(chunk)) {
+          if (creates) {
+            const s = new Map();
+            topic.set(chunk, s);
+            topic = s;
+            yield s;
+          } else {
+            break;
+          }
+        } else {
+          topic = topic.get(chunk);
+          yield topic;
+        }
+      }
     }
+  }
+
+  topic(path = null, offset = 0, creates = false) {
+    return last(this.topic(path, offset, creates));
   }
 
   sub(handler, path, offset = 0) {
-    const res = new Subscription(handler, path);
-    this.subscribed(path, offset, true).push(res);
-    return res;
-  }
-
-  topics(path, offset = 0) {
-    const res = [];
-    let subs = this.subscriptions;
-    if (!subs) {
-      return res;
-    } else if (!path) {
-      return subs;
+    let topic = null;
+    for (const _ of this.topics(path, offset, true)) {
+      topic = _;
+    }
+    if (!topic) {
+      throw RuntimeError();
     } else {
-      const n = path.length;
-      for (let i = offset; i < n; i++) {
-        const chunk = path[i];
-        if (subs.has(chunk)) {
-          const p = subs.get(chunk);
-          res.splice(0, 0, p.get(null));
-          subs = p;
-        }
+      const sub = new Subscription(handler, path);
+      if (!topic.has(null)) {
+        topic.set(Subscription, [sub]);
+      } else {
+        topic.get(Subscription).push(sub);
       }
-      return res;
+      return sub;
     }
   }
 
   unsub(sub, path = null, offset = 0) {
-    if (!this.subscriptions) {
+    if (!this._topics) {
       return null;
     }
-    const p = this.subscribed(path, offset, false);
-    const i = p ? p.indexOf(sub) : -1;
-    return i >= 0 ? (p.splice(i, 1), sub) : null;
+    const topic = this.topic(path, offset, false);
+    const subs = topic ? topic.get(Subscription) : null;
+    if (subs) {
+      const i = subs ? subs.indexOf(sub) : -1;
+      return i >= 0 ? (subs.splice(i, 1), sub) : null;
+    } else {
+      return null;
+    }
   }
 
   trigger(value, path = null, offset = 0, bubbles = true) {
-    console.log("TRIGGER", { value, path, offset });
     let count = 0;
-    if (!this.subscriptions) {
+    if (!this._topics) {
       return count;
     }
     if (bubbles) {
-      console.log("TOPICS", [...this.topics(path, offset)]);
-      for (const p of this.topics(path, offset)) {
-        for (const s of p.get(null) || []) {
-          s.trigger(value);
-          count += 1;
+      const topics = [...this.topics(path, offset)];
+      // We need to start with last one
+      for (let i = topics.length - 1; i >= 0; i--) {
+        const subs = topics[i].get(Subscription);
+        if (subs) {
+          for (const s of subs) {
+            if (s.trigger(value) === false) {
+              return count + 1;
+            } else {
+              count += 1;
+            }
+          }
         }
       }
     } else {
-      const p = this.subscribed(path, offset, false);
-      if (p) {
-        for (const s of p.get(null) || []) {
-          s.trigger(value);
-          count += 1;
+      // We only get the last one
+      const topic = last(this.topics(path, offset, false));
+      const subs = topic ? topic.get(Subscription) : null;
+      if (subs) {
+        for (const s of subs) {
+          if (s.trigger(value) === false) {
+            return count + 1;
+          } else {
+            count += 1;
+          }
         }
       }
     }
@@ -135,7 +147,6 @@ export class Value extends Cell {
   }
 
   set(value, path = null, offset = 0) {
-    console.log("Cell.set", value, path, "/", this.value);
     if (path) {
       throw NotImplementedError();
     }
@@ -166,12 +177,12 @@ export class Reducer extends Cell {
     super();
     this.input = input;
     this.reducer = reducer;
-    this.subscribed =
-      input instanceof Cell
-        ? input.sub(this.update)
-        : input
-        ? map(input, (_, k) => _.sub(null, (_) => this.update(_, k)))
-        : null;
+    // this.subscribed =
+    //   input instanceof Cell
+    //     ? input.sub(this.update)
+    //     : input
+    //     ? map(input, (_, k) => _.sub(null, (_) => this.update(_, k)))
+    //     : null;
     this.value = value;
     this.inputValue = undefined;
     this.revision = -1;
@@ -189,9 +200,11 @@ export class Reducer extends Cell {
 
   unbind() {
     if (this.input instanceof Cell) {
-      this.subscribed && this.input.unsub(null, this.subscribed);
+      // this.subscribed && this.input.unsub(null, this.subscribed);
+      console.log("FIXME");
     } else {
-      each(this.input, (_, k) => this.input[k].unsub(null, _));
+      console.log("FIXME");
+      // each(this.input, (_, k) => this.input[k].unsub(null, _));
     }
   }
 
@@ -342,22 +355,22 @@ export class Scope extends Cell {
     return slot ? slot.subscribed(path, creates, offset + 1) : undefined;
   }
 
-  sub(path, handler, offset = 0) {
+  sub(handler, path, offset = 0) {
     path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
-    return slot ? slot.sub(path, handler, offset + 1) : undefined;
+    return slot ? slot.sub(handler, path, offset + 1) : undefined;
   }
 
-  topics(path, offset = 0) {
-    path = typeof path === "string" ? path.split(".") : path;
-    const slot = this.slots[path[offset]];
-    return slot ? slot.topics(path, offset + 1) : undefined;
-  }
+  // topics(path, offset = 0) {
+  //   path = typeof path === "string" ? path.split(".") : path;
+  //   const slot = this.slots[path[offset]];
+  //   return slot ? slot.topics(path, offset + 1) : undefined;
+  // }
 
-  unsub(path, sub, offset = 0) {
+  unsub(sub, path, offset = 0) {
     path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
-    return slot ? slot.unsub(path, sub, offset + 1) : undefined;
+    return slot ? slot.unsub(sub, path, offset + 1) : undefined;
   }
 
   trigger(path, bubbles, offset = 0) {

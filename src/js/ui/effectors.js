@@ -165,7 +165,7 @@ export class Effect {
     };
 
     this.subs = selector
-      ? selector.inputs.map((_, i) => this.scope.sub(_.path, handler(i)))
+      ? selector.inputs.map((_, i) => this.scope.sub(handler(i), _.path))
       : null;
     // FIXME: We should defer that so that we support bind/unbind
     //this.cell = selector

@@ -35,12 +35,12 @@ class EventEffect extends Effect {
       this.scope.set(directive.slot, v);
     }
     // TODO: Do something about that
-    console.log("HANDLING", {
-      event,
-      handler: handler,
-      scope: this.scope,
-      value: v,
-    });
+    // console.log("HANDLING", {
+    //   event,
+    //   handler: handler,
+    //   scope: this.scope,
+    //   value: v,
+    // });
   }
 
   unify(current, previous = this.value) {

@@ -226,6 +226,14 @@ export const assign = (scope, path, value) => {
   return scope;
 };
 
+export const last = (stream) => {
+  let res = null;
+  for (const _ of stream) {
+    res = _;
+  }
+  return res;
+};
+
 export const trigger = (handlers, ...value) => {
   let i = 0;
   for (const _ of values(handlers)) {
