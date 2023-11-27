@@ -22,9 +22,8 @@ This defines base typographic settings.
     font-variation-settings: var(--font-icon-variation);
     font-weight: normal;
     font-style: normal;
-    font-size: 24px; /* Preferred icon size */
+    font-size: var(--icon-font-size);
     display: inline-block;
-    line-height: 1;
     text-transform: none;
     letter-spacing: normal;
     word-wrap: normal;
@@ -117,53 +116,6 @@ This defines base typographic settings.
     font-family: var(--font-control);
     line-height: var(--font-control-lh);
     font-size: var(--font-control-size);
-  }
-
-  .typography h1,
-  .typography h2,
-  .typography h3,
-  .typography h4,
-  .typography h5,
-  .typography h6,
-  h1.typography,
-  h2.typography,
-  h3.typography,
-  h4.typography,
-  h5.typography,
-  h6.typography {
-    margin-top: calc(var(--line-height) * 2);
-    margin-bottom: calc(var(--line-height) * 1);
-  }
-
-  .typography p {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-  }
-
-  .typography ul,
-  .typography ol {
-    padding-left: var(--pad-2);
-    margin-top: 0.75em;
-    margin-bottom: 0.75em;
-  }
-
-  .typography li > p:first-child {
-    margin-top: 0em;
-  }
-  .typography li > p:last-child {
-    margin-bottom: 0em;
-  }
-
-  .typography ul > li {
-    list-style-type: bullet;
-  }
-
-  .typography ol > li {
-    list-style-type: number;
-  }
-
-  .typography li {
-    padding-left: 0.25em;
   }
 
   .filler,

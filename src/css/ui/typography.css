@@ -1,0 +1,54 @@
+@layer base {
+  .typography.page,
+  .typography .page {
+    padding: var(--pad-4);
+    margin: var(--pad-4);
+  }
+
+  .typography h1,
+  .typography h2,
+  .typography h3,
+  .typography h4,
+  .typography h5,
+  .typography h6,
+  h1.typography,
+  h2.typography,
+  h3.typography,
+  h4.typography,
+  h5.typography,
+  h6.typography {
+    margin-top: calc(var(--line-height) * 2);
+    margin-bottom: calc(var(--line-height) * 1);
+  }
+
+  .typography p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .typography ul,
+  .typography ol {
+    padding-left: var(--pad-2);
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+  }
+
+  .typography li > p:first-child {
+    margin-top: 0em;
+  }
+  .typography li > p:last-child {
+    margin-bottom: 0em;
+  }
+
+  .typography ul > li {
+    list-style-type: bullet;
+  }
+
+  .typography ol > li {
+    list-style-type: number;
+  }
+
+  .typography li {
+    padding-left: 0.25em;
+  }
+}

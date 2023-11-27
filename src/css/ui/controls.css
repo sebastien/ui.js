@@ -62,6 +62,21 @@
     border-color: var(--color-accent);
   }
 
+  /** ## Items */
+  .item {
+    display: flex;
+    align-items: center;
+    padding: var(--pad-2);
+    gap: var(--pad-1);
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 4px;
+  }
+  .item > .fill {
+    flex-grow: 1;
+  }
+
+  /** ## Pills */
   .pill {
     display: inline-flex;
     align-items: center;
@@ -181,6 +196,60 @@
     background-color: var(--control-input-bg);
   }
 
+  input,
+  textarea,
+  .input,
+  .textarea {
+    border: 1px solid transparent;
+  }
+
+  input:hover,
+  textarea:hover,
+  .input:hover,
+  .textarea:hover,
+  .input.hover,
+  .textarea.hover {
+    border-color: var(--control-bg-hover);
+  }
+
+  input:focus,
+  textarea:focus,
+  input:active,
+  textarea:active,
+  .input:focus,
+  .textarea:focus,
+  .input.focus,
+  .textarea.focus,
+  .input:active,
+  .textarea:active,
+  .input.active,
+  .textarea.active {
+    outline: 0px solid transparent;
+    border-color: var(--control-bg-focused);
+  }
+
+  input.transparent[type="text"],
+  input.transparent[type="text"]:active,
+  input.transparent[type="text"]:focus,
+  input.transparent[type="text"]:hover,
+  textarea.transparent,
+  textarea.transparent:active,
+  textarea.transparent:focus,
+  textarea.transparent:hover,
+  .textarea.transparent,
+  .textarea.transparent:active,
+  .textarea.transparent:focus,
+  .textarea.transparent:hover {
+    background-color: transparent;
+    box-shadow: unset;
+    top: unset;
+    left: unset;
+  }
+
+  input[type="checkbox"] {
+    margin-right: var(--pad-1);
+  }
+
   input[type="checkbox"] {
     display: inline-block;
     border: 2px solid red;
@@ -198,52 +267,6 @@
   input[type="color"] {
     padding: 0px;
     width: 3ch;
-  }
-
-  input:hover,
-  textarea:hover,
-  .input:hover,
-  .textarea:hover,
-  .input.hover,
-  .textarea.hover {
-    outline: 0px solid transparent;
-  }
-  input:focus,
-  textarea:focus,
-  input:active,
-  textarea:active,
-  .input:focus,
-  .textarea:focus,
-  .input.focus,
-  .textarea.focus,
-  .input:active,
-  .textarea:active,
-  .input.active,
-  .textarea.active {
-    outline: 0px solid transparent;
-  }
-
-  input.transparent[type="text"],
-  input.transparent[type="text"]:active,
-  input.transparent[type="text"]:focus,
-  input.transparent[type="text"]:hover,
-  textarea.transparent,
-  textarea.transparent:active,
-  textarea.transparent:focus,
-  textarea.transparent:hover,
-  .textarea.transparent,
-  .textarea.transparent:active,
-  .textarea.transparent:focus,
-  .textarea.transparent:hover {
-    background-color: transparent;
-    border: 0px solid transparent;
-    box-shadow: unset;
-    top: unset;
-    left: unset;
-  }
-
-  input[type="checkbox"] {
-    margin-right: var(--pad-1);
   }
 
   /* BUTTONS */
@@ -396,8 +419,7 @@
   button.x-small,
   .button.x-small {
     font-size: var(--font-size-1);
-    padding: var(--pad-0);
-    border-radius: 0px;
+    padding: var(--pad-0) var(--pad-1);
   }
   button.noborder,
   .button.noborder {
@@ -429,7 +451,43 @@
     box-shadow: unset;
     left: unset;
     top: unset;
+    padding: var(--pad-1) var(--pad-2);
+  }
+
+  .select.as-underline > button,
+  .select.as-underline > .button,
+  .select.as-underline > .option,
+  .select.as-underline > button:hover,
+  .select.as-underline > button:focus,
+  .select.as-underline > .button:hover,
+  .select.as-underline > .button:focus {
     border: 0px solid transparent;
+    border-bottom: 1px solid transparent;
+  }
+
+  .select.as-underline > .option:hover,
+  .select.as-underline > .button:hover,
+  .select.as-underline > button:hover {
+    background-color: transparent;
+    color: var(--color-accent);
+    border-color: color-mix(
+      in srgb,
+      var(--color-accent),
+      rgba(var(--color-high-transparent), 0) 50%
+    );
+  }
+
+  .select.as-underline > .option.selected,
+  .select.as-underline > .button.selected,
+  .select.as-underline > button.selected,
+  .select.as-underline > button:active {
+    background-color: transparent;
+    color: var(--color-accent);
+    border-color: color-mix(
+      in srgb,
+      var(--color-accent),
+      rgba(var(--color-high-transparent), 0) 75%
+    );
   }
 
   .field {
@@ -449,9 +507,13 @@
 
   .panel {
     border: 1px solid var(--control-bd);
-    background-color: var(--control-bg);
+    background-color: var(--page-bg-alt);
     padding: var(--pad-2);
     border-radius: 4px;
+  }
+
+  .panel > header {
+    font-weight: bold;
   }
 
   /* MODIFIERS */

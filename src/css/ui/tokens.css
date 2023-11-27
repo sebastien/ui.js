@@ -53,7 +53,9 @@ variations).
    * ## Colors
   */
   --color-black: #000000;
+  --color-black-0p: #00000000;
   --color-white: #ffffff;
+  --color-white-0p: #ffffff00;
   --color-cyan: #00aeb3;
   --color-blue: #00a0dc;
   --color-purple: #8d6cab;
@@ -66,7 +68,9 @@ variations).
 
   --color-value: var(--color-primary);
   --color-high: var(--color-white);
+  --color-high-0p: var(--color-white-0p);
   --color-low: var(--color-black);
+  --color-low-0p: var(--color-low-0p);
 
   /* @tmpl
    * ('oklab hwb srgb lab lsrgb xyz oklch lch'.split(' ')).map(_ =>
@@ -83,7 +87,7 @@ variations).
   --blend-lch: in lch;
   /* @end */
 
-  --shade-blend: var(--blend-srgb);
+  --color-blend: var(--blend-srgb);
   /* @tmpl
    * ["cyan", "blue", "purple", "red", "orange", "yellow", "pink", "green", "grey"].reduce(
    * 	(r,color)=> r.concat(range(6).map( shade => `--color-${color}-${shade}: color-mix(var(--color-blend),var(--color-${color}),var(--color-low) ${100 - (shade * 20)}%);\n`)).concat(
@@ -631,7 +635,7 @@ variations).
 
   /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
   /* TODO: Should name the colors */
-  --color-text: var(--color-black);
+  --text-color: var(--color-black);
   --color-accent: var(--color-cyan-5);
   --color-primary: var(--color-blue-5);
   /* FIXME: What is alt ? */
@@ -644,15 +648,16 @@ variations).
    *  ## Text Content
   */
   --link-color: var(--color-primary);
-  --icon-color: var(--color-text);
-  --text-color: var(--color-text);
+  --text-color: var(--color-black);
 
   --shadow-floating: 4px 4px 4px #0000000a;
 
   /*
    * ## Page
   */
-  --page-bg: #ffffff;
+  --page-bg: var(--color-high);
+  --page-bg-0p: var(--color-high-0p);
+  --page-bg-alt: color-mix(in srgb, var(--page-bg), var(--text-color) 5%);
 
   /*
    * ## Boxes
@@ -663,6 +668,7 @@ variations).
    * ## Icons
   */
 
+  --icon-color: var(--text-color);
   --icon-size-smaller: 14px;
   --icon-size-small: 16px;
   --icon-size-regular: 24px;
@@ -673,15 +679,28 @@ variations).
   /*
    * ## Controls
   */
-  --control-bd: #d9d9d9;
-  --control-color: #000000;
-  --control-bg: #fafafa;
-  --control-input-bg: var(--page-bg);
-  --control-bg-focused: #e0e0e0;
-  --control-bg-hover: #eaeaea;
-  --control-bg-selected: #cacaca;
+  --control-color: var(--text-color);
+  --control-bd: color-mix(in srgb, var(--text-color), var(--page-bg0p) 50%);
+  --control-bg: color-mix(in srgb, var(--color-primary), var(--page-bg-0p) 50%);
+  --control-bg-focused: color-mix(
+    in srgb,
+    var(--color-primary),
+    var(--page-bg-0p) 50%
+  );
+  --control-bg-hover: color-mix(
+    in srgb,
+    var(--color-primary),
+    var(--page-bg-0p) 60%
+  );
+  --control-bg-selected: color-mix(
+    in srgb,
+    var(--color-primary),
+    var(--page-bg-0p) 75%
+  );
   --control-line-height: 1.15em;
   --control-font-size: var(--font-size-3);
+
+  --control-input-bg: var(--page-bg);
   /* @tmpl
    * range(10).map(_ => `\n  .col-${_+1} { width: calc(var(--col-width) * ${_+1}); }`)
   */

@@ -19,6 +19,9 @@
     overflow-y: hidden;
   }
 
+  .compact {
+    width: min-content;
+  }
   /**
 	* ## Text
 	*/
@@ -261,6 +264,10 @@
   .pad-7 {
     padding: var(--pad-7);
   }
+  .pad-8 {
+    padding: var(--pad-8);
+  }
+
   .pad-r {
     padding-right: var(--pad-1);
   }
