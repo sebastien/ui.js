@@ -1,54 +1,94 @@
-@layer base {
-  .typography.page,
-  .typography .page {
-    padding: var(--pad-4);
-    margin: var(--pad-4);
-  }
+.typography.page,
+.typography .page {
+  padding: var(--pad-4);
+  margin: var(--pad-4);
+}
 
-  .typography h1,
-  .typography h2,
-  .typography h3,
-  .typography h4,
-  .typography h5,
-  .typography h6,
-  h1.typography,
-  h2.typography,
-  h3.typography,
-  h4.typography,
-  h5.typography,
-  h6.typography {
-    margin-top: calc(var(--line-height) * 2);
-    margin-bottom: calc(var(--line-height) * 1);
-  }
+.typography h1,
+.typography h2,
+.typography h3,
+.typography h4,
+.typography h5,
+.typography h6,
+h1.typography,
+h2.typography,
+h3.typography,
+h4.typography,
+h5.typography,
+h6.typography {
+  margin-top: calc(var(--line-height) * 2);
+  margin-bottom: calc(var(--line-height) * 1);
+}
 
-  .typography p {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-  }
+.typography p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
 
-  .typography ul,
-  .typography ol {
-    padding-left: var(--pad-2);
-    margin-top: 0.75em;
-    margin-bottom: 0.75em;
-  }
+.typography ul,
+.typography ol {
+  padding-left: var(--pad-2);
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  margin-left: 0.75em;
+}
 
-  .typography li > p:first-child {
-    margin-top: 0em;
-  }
-  .typography li > p:last-child {
-    margin-bottom: 0em;
-  }
+.typography ul ul,
+.typography ul ol,
+.typography ol ol,
+.typography ol ul {
+  margin-top: 0em;
+  margin-bottom: 0em;
+}
 
-  .typography ul > li {
-    list-style-type: bullet;
-  }
+.typography ul > li {
+  list-style-type: disc;
+}
 
-  .typography ol > li {
-    list-style-type: number;
-  }
+.typography ol > li {
+  list-style-type: numeric;
+}
 
-  .typography li {
-    padding-left: 0.25em;
-  }
+.typography li {
+  padding-left: 0.25em;
+}
+
+.typography li > p:first-child {
+  margin-top: 0em;
+}
+
+.typography li > p:last-child {
+  margin-bottom: 0em;
+}
+
+.typography .smaller {
+  font-size: var(--font-size-1);
+}
+.typography .small {
+  font-size: var(--font-size-2);
+}
+.typography .large {
+  font-size: var(--font-size-4);
+}
+.typography .larger {
+  font-size: var(--font-size-6);
+}
+.typography .largest {
+  font-size: var(--font-size-8);
+}
+
+.typography .serif {
+  font-family: var(--font-serif);
+}
+
+.typography .sans {
+  font-family: var(--font-sans);
+}
+
+.typography .mono {
+  font-family: var(--font-mono);
+}
+
+.typography .upper {
+  text-transform: uppercase;
 }

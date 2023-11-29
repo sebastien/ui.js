@@ -26,7 +26,8 @@
     <section>
       <h2>Text</h2>
       <div class="stack gap-4">
-        <div class="panel" data-template="Card" data-title="Headings">
+        <h3>Headers</h3>
+        <div class="panel rounded pad-4 typography" data-template="Card" data-title="Headings">
           <h1>Header 1</h1>
           <h2>Header 2</h2>
           <h3>Header 3</h3>
@@ -34,100 +35,182 @@
           <h5>Header 5</h5>
           <h6>Header 6</h6>
         </div>
-        <div class="panel" data-template="Card" data-title="Copy">
-          <p>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam dignissimos repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
-
+        <h3>Paragraphs</h3>
+        <div class="panel rounded pad-4 typography" data-template="Card" data-title="Copy">
+          <p class="t-large">
+            Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
+            nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam dignissimos
+            repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
+          
+          <p>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
+            nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam dignissimos
+            repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
+          
           <p>
-            <small>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam dignissimos repudiandae soluta. Nihil et vitae sapiente optio iusto.</small></p>
+            <small>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo.
+              Temporibus nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam
+              dignissimos repudiandae soluta. Nihil et vitae sapiente optio iusto.</small>
+          </p>
         </div>
-        <div class="panel" data-template="Card" data-title="Label">
-          <label>A label</label>
-        </div>
-        <div class="panel" data-template="Card" data-title="Icon">
-          <p>An icon: <span class="icon">×</span>.</p>
-        </div>
-        <div class="panel" data-template="Card" data-title="Pill">
-          Pills:
-          <ul class="row-h">
-            <li class="pill">ready</li>
-            <li class="pill warning">warning</li>
-            <li class="pill error">error</li>
+        <h3>Lists</h3>
+        <div class="rounded panel pad-4 typography" data-template="Card">
+          <ul>
+            <li>Buy cheese</li>
+            <li>Buy wine</li>
+            <ul>
+              <li>Buy cheese</li>
+              <li>Buy wine</li>
+            </ul>
           </ul>
+          <ol>
+            <li>Buy cheese</li>
+            <li>Buy wine</li>
+          </ol>
+          <dl>
+            <dt>Term</dt>
+            <dd>Definition</dd>
+            <dt>Term</dt>
+            <dd>Definition</dd>
+            <dt>Term</dt>
+            <dd>Definition</dd>
+          </dl>
         </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Palette</h2>
+      <div>
+        <ul class="row t-larger">
+          <li class="fg-cyan-1">◼</li>
+          <li class="fg-cyan-2">◼</li>
+          <li class="fg-cyan-3">◼</li>
+          <li class="fg-cyan-4">◼</li>
+          <li class="fg-cyan-5">◼</li>
+          <li class="fg-cyan-6">◼</li>
+          <li class="fg-cyan-7">◼</li>
+          <li class="fg-cyan-8">◼</li>
+          <li class="fg-cyan-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-blue-1">◼</li>
+          <li class="fg-blue-2">◼</li>
+          <li class="fg-blue-3">◼</li>
+          <li class="fg-blue-4">◼</li>
+          <li class="fg-blue-5">◼</li>
+          <li class="fg-blue-6">◼</li>
+          <li class="fg-blue-7">◼</li>
+          <li class="fg-blue-8">◼</li>
+          <li class="fg-blue-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-purple-1">◼</li>
+          <li class="fg-purple-2">◼</li>
+          <li class="fg-purple-3">◼</li>
+          <li class="fg-purple-4">◼</li>
+          <li class="fg-purple-5">◼</li>
+          <li class="fg-purple-6">◼</li>
+          <li class="fg-purple-7">◼</li>
+          <li class="fg-purple-8">◼</li>
+          <li class="fg-purple-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-red-1">◼</li>
+          <li class="fg-red-2">◼</li>
+          <li class="fg-red-3">◼</li>
+          <li class="fg-red-4">◼</li>
+          <li class="fg-red-5">◼</li>
+          <li class="fg-red-6">◼</li>
+          <li class="fg-red-7">◼</li>
+          <li class="fg-red-8">◼</li>
+          <li class="fg-red-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-orange-1">◼</li>
+          <li class="fg-orange-2">◼</li>
+          <li class="fg-orange-3">◼</li>
+          <li class="fg-orange-4">◼</li>
+          <li class="fg-orange-5">◼</li>
+          <li class="fg-orange-6">◼</li>
+          <li class="fg-orange-7">◼</li>
+          <li class="fg-orange-8">◼</li>
+          <li class="fg-orange-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-yellow-1">◼</li>
+          <li class="fg-yellow-2">◼</li>
+          <li class="fg-yellow-3">◼</li>
+          <li class="fg-yellow-4">◼</li>
+          <li class="fg-yellow-5">◼</li>
+          <li class="fg-yellow-6">◼</li>
+          <li class="fg-yellow-7">◼</li>
+          <li class="fg-yellow-8">◼</li>
+          <li class="fg-yellow-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-pink-1">◼</li>
+          <li class="fg-pink-2">◼</li>
+          <li class="fg-pink-3">◼</li>
+          <li class="fg-pink-4">◼</li>
+          <li class="fg-pink-5">◼</li>
+          <li class="fg-pink-6">◼</li>
+          <li class="fg-pink-7">◼</li>
+          <li class="fg-pink-8">◼</li>
+          <li class="fg-pink-9">◼</li>
+        </ul>
+        <ul class="row t-larger">
+          <li class="fg-green-1">◼</li>
+          <li class="fg-green-2">◼</li>
+          <li class="fg-green-3">◼</li>
+          <li class="fg-green-4">◼</li>
+          <li class="fg-green-5">◼</li>
+          <li class="fg-green-6">◼</li>
+          <li class="fg-green-7">◼</li>
+          <li class="fg-green-8">◼</li>
+          <li class="fg-green-9">◼</li>
+        </ul>
       </div>
     </section>
     <section>
       <h2>Buttons</h2>
       <div class="stack gap-4">
-        <div class="panel" data-template="Card" data-title="Button">
-          <div class="row">
-          <button>Regular</button>
-          <button class="medium">Medium</button>
-          <button class="small">Small</button>
-          <button class="x-small">X-Small</button>
-          </div>
-        </div>
-        <div class="panel" data-template="Card" data-title="Default Button">
-          <button class="default">OK</button>
-        </div>
-        <div class="panel" data-template="Card" data-title="Button">
-          <button class="square">Square</button>
-        </div>
-        <div class="panel" data-template="Card" data-title="Button">
+        <h3>Shapes</h3>
+        <div class="rounded panel row distribute gap-4 pad-4" data-template="Card" data-title="Button">
+          <button class="rectangle">Rectangle</button>
+          <button class="rounded">Rounded</button>
           <button class="pill">Pill</button>
+          <button class="square">□</button>
+          <button class="circle">○</button>
         </div>
-        <div class="panel" data-template="Card" data-title="Button">
+
+        <h3>Sizes</h3>
+        <div class="rounded panel row distribute gap-4 pad-4" data-template="Card" data-title="Button">
+          <button class="larger">Larger</button>
+          <button class="large">Large</button>
+          <button>Regular</button>
+          <button class="small">Small</button>
+          <button class="smaller">Smaller</button>
+        </div>
+        <h3>Variants</h3>
+        <div class="rounded panel row distribute distribute gap-4 pad-4" data-template="Card" data-title="Button">
+          <button class="default">Default</button>
+          <button class="outline">Outline</button>
           <button class="label">Label</button>
+          <button class="selectable">Selectable</button>
         </div>
-        <div class="panel" data-template="Card" data-title="Icon button">
-          <button class="icon">×</button>
+        <h3>Styles</h3>
+        <div class="rounded panel row distribute gap-4 pad-4" data-template="Card" data-title="Default Button">
+          <button class="basic">Basic</button>
+          <button class="primary">Primary</button>
+          <button class="success">Success</button>
+          <button class="info">Info</button>
+          <button class="warning">Warning</button>
+          <button class="danger">Danger</button>
         </div>
+
       </div>
     </section>
-    <section>
-      <h2>Layout</h2>
-      <div class="stack gap-4">
-        <div class="row fill">
-          <div class="stack gap-0">
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler"  style="height:2em;"></div>
-          </div>
-          <div class="stack gap-1">
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler"  style="height:2em;"></div>
-          </div>
-          <div class="stack gap-2">
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler"  style="height:2em;"></div>
-          </div>
-        </div>
-        <div class="stack fill">
-          <div class="row fill gap-0">
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler"  style="height:2em;"></div>
-          </div>
-          <div class="row fill gap-1">
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler"  style="height:2em;"></div>
-          </div>
-          <div class="row fill gap-2">
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler" style="height:2em;" ></div>
-            <div class="filler"  style="height:2em;"></div>
-          </div>
-        </div>
-      </div>
-      </div>
-    </section>
-    <section>
-      <h2>Palette</h2>
-      <div>TODO: Contrast</div>
-    </section>
+
     <section>
       <h2>Variants</h2>
       <div>TODO: Contrast</div>
@@ -156,7 +239,7 @@
     <section>
       <h2>Inputs</h2>
       <div class="stack gap-4">
-        <div class="panel" data-template="Card" data-title="Input">
+        <div class="rounded panel stack gap-4 pad-4" data-template="Card" data-title="Input">
           <span class="field">
             <input type="text" placeholder="Text field…" />
           </span>
@@ -174,12 +257,12 @@
           </span>
 
         </div>
-        <div class="panel" data-template="Card" data-title="Icon button">
+        <div class="rounded panel" data-template="Card" data-title="Icon button">
           <span class="field">
             <textarea placeholder="Textarea…"></textarea>
           </span>
         </div>
-        <div class="panel" data-template="Card" data-title="Checkbox">
+        <div class="rounded panel" data-template="Card" data-title="Checkbox">
           <ul class="select">
             <li class="field">
               <span class="item selectable">
@@ -194,7 +277,7 @@
           <ul>
         </div>
         <div
-          class="panel"
+          class="rounded panel"
           data-template="Card"
           data-title="Select (horizontal)"
         >
@@ -207,9 +290,9 @@
             </ul>
           </span>
         </div>
-        <div class="panel" data-template="Card" data-title="Select (vertical)">
+        <div class="rounded panel" data-template="Card" data-title="Select (vertical)">
           <span class="field">
-            <ul class="select list-v">
+            <ul class="select list lined">
               <li class="option selectable">Paris</li>
               <li class="option selectable selected">New York</li>
               <li class="option selectable">Copenhagen</li>
@@ -221,9 +304,83 @@
     </section>
     <section>
       <h2>Collections</h2>
+      <div>
+        <h3>Lists</h3>
+        <div class="rounded panel stack">
+          <div class="list lined">
+            <div class="item selectable">
+              <span class="start">
+              </span>
+              <span class="fill stretch stack gap-0">
+                <span class="title">Item name</span>
+              </span>
+              <span class="end">
+                10
+              </span>
+            </div>
+            <div class="item selectable">
+              <span class="start">
+                <input type="checkbox" />
+              </span>
+              <span class="fill stretch stack gap-0">
+                <span class="title">Item name</span>
+                <span class="small">Item description</span>
+              </span>
+              <span class="end">
+                <button class="small circle">x</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>Cards</h3>
+        <div class="stack gap-4">
+          <div class="row gap-4">
+            <div class="rounded panel fill">
+              <div class="squared rounded">
+                <div class="centered">
+                    <button class="default large">Click Me!</button>
+                </div>
+              </div>
+            </div>
+            <div class="rounded panel fill">
+              <div class="squared rounded">
+                <div class="centered typography">
+                  <span class="largest serif">Hello, World!</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row gap-4">
+            <div class="rounded panel fill rounded">
+              <div class="squared">
+                <div class="centered typography">
+                  <span class="larger upper sans">One</span>
+                </div>
+              </div>
+            </div>
+            <div class="rounded panel fill rounder">
+              <div class="squared">
+                <div class="centered typography">
+                  <span class="larger upper serif">Two</span>
+                </div>
+              </div>
+            </div>
+            <div class="rounded panel fill circled">
+              <div class="squared">
+                <div class="centered typography">
+                  <span class="larger upper mono">Three</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
       <div class="stack gap-4">
         <h3>Menu</h3>
-        <div class="panel row">
+        <div class="rounded panel row">
         <menu class="col-1">
           <li><span class="label">Open…</span></li>
           <li><span class="label">Save as…</span></li>

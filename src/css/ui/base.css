@@ -4,124 +4,138 @@
 This defines base typographic settings.
 */
 
-@layer base {
-  body {
-    font-family: var(--font-text);
-    line-height: var(--font-text-lh);
-    font-size: var(--font-text-size);
-    color: var(--text-color);
-    accent-color: var(--color-accent);
-    background-color: var(--page-bg);
-    padding: var(--pad-4);
-    --line-height: var(--font-text-lh);
-  }
+body {
+  font-family: var(--font-text);
+  line-height: var(--font-text-lh);
+  font-size: var(--font-text-size);
+  color: var(--text-color);
+  accent-color: var(--color-accent);
+  background-color: var(--page-bg);
+  padding: var(--pad-4);
+  --line-height: var(--font-text-lh);
+}
 
-  .icon {
-    color: var(--icon-color);
-    font-family: var(--font-icon);
-    font-variation-settings: var(--font-icon-variation);
-    font-weight: normal;
-    font-style: normal;
-    font-size: var(--icon-font-size);
-    display: inline-block;
-    text-transform: none;
-    letter-spacing: normal;
-    word-wrap: normal;
-    white-space: nowrap;
-    direction: ltr;
-    width: var(--icon-size);
-    height: var(--icon-size);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "liga";
-    fill: none;
-    stroke-width: 1px;
-    stroke: var(--icon-color);
-  }
-  .icon.text {
-    font-size: var(--font-text-size);
-    line-height: var(--font-line-height);
-  }
+.icon {
+  color: var(--icon-color);
+  font-family: var(--font-icon);
+  font-variation-settings: var(--font-icon-variation);
+  font-weight: normal;
+  font-style: normal;
+  font-size: var(--icon-font-size);
+  display: inline-block;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "liga";
+  fill: none;
+  stroke-width: 1px;
+  stroke: var(--icon-color);
+}
+.icon.text {
+  font-size: var(--font-text-size);
+  line-height: var(--font-line-height);
+}
 
-  hr {
-    border: 0px solid transparent;
-    border-bottom: 1px solid var(--text-color);
-  }
+hr {
+  border: 0px solid transparent;
+  border-bottom: 1px solid var(--text-color);
+}
 
-  p {
-    max-width: var(--text-max-width);
-  }
+p {
+  max-width: var(--text-max-width);
+}
 
-  .code,
-  code,
-  pre {
-    font-family: var(--font-code);
-    font-size: var(--font-code-size);
-    line-height: var(--font-code-lh);
-    color: var(--color-code);
-  }
+.code,
+code,
+pre {
+  font-family: var(--font-code);
+  font-size: var(--font-code-size);
+  line-height: var(--font-code-lh);
+  color: var(--color-code);
+}
 
-  .hx,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-heading);
-    font-size: var(--font-heading-size);
-    line-height: var(--font-heading-lh);
-    font-weight: 600;
-    margin-top: var(--pad-2);
-    margin-bottom: var(--pad-0);
-    max-width: var(--text-max-width);
-  }
-  h1 {
-    font-size: var(--font-size-8);
-  }
-  h2 {
-    font-size: var(--font-size-7);
-  }
-  h3 {
-    font-size: var(--font-size-6);
-  }
-  h4 {
-    font-size: var(--font-size-5);
-  }
-  h5 {
-    font-size: var(--font-size-4);
-  }
-  h6 {
-    font-size: var(--font-size-3);
-  }
-  dt {
-    font-weight: bold;
-    margin-top: 1.25em;
-    max-width: var(--text-max-width);
-  }
-  dd {
-    max-width: var(--text-max-width);
-    margin-left: 0.5ch;
-    padding-left: 1.25em;
-    padding-top: 0.5em;
-    padding-bottom: 0.5em;
-    margin-bottom: var(--line-height);
-    border-left: 1px solid var(--text-color);
-  }
+.hx,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-size: var(--font-heading-size);
+  line-height: var(--font-heading-lh);
+  font-weight: 600;
+  margin-top: var(--pad-2);
+  margin-bottom: var(--pad-0);
+  max-width: var(--text-max-width);
+}
+h1 {
+  font-size: var(--font-size-8);
+}
+h2 {
+  font-size: var(--font-size-7);
+}
+h3 {
+  font-size: var(--font-size-6);
+}
+h4 {
+  font-size: var(--font-size-5);
+}
+h5 {
+  font-size: var(--font-size-4);
+}
+h6 {
+  font-size: var(--font-size-3);
+}
+dt {
+  font-weight: bold;
+  margin-top: 1.25em;
+  max-width: var(--text-max-width);
+}
+dd {
+  max-width: var(--text-max-width);
+  margin-left: 0.5ch;
+  padding-left: 1.25em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  margin-bottom: var(--line-height);
+  border-left: 1px solid var(--text-color);
+}
 
-  button,
-  input,
-  textarea {
-    font-family: var(--font-control);
-    line-height: var(--font-control-lh);
-    font-size: var(--font-control-size);
-  }
+button,
+input,
+textarea {
+  font-family: var(--font-control);
+  line-height: var(--font-control-lh);
+  font-size: var(--font-control-size);
+}
 
-  .filler,
-  .placeholder {
-    background-color: #03dac675;
-    border: 1px solid #03dac675;
-  }
+.t-larger {
+  font-size: 160%;
+}
+
+.t-large {
+  font-size: 125%;
+}
+
+.t-small {
+  font-size: 80%;
+}
+
+.t-smaller {
+  font-size: 60%;
+}
+
+.filler,
+.placeholder {
+  background-color: #03dac675;
+  border: 1px solid #03dac675;
 }
 /* EOF */

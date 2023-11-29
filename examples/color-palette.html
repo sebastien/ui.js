@@ -34,10 +34,6 @@
       in:high="#FFFFFF"
       in:greyscale="false"
     >
-      <input type="color" name="low" out:value="low" on:input="low" />
-      <input type="color" name="color" out:value="color" on:input="color" />
-      <input type="color" name="high" out:value="high" on:input="high" />
-
       <div
         out:style="color,low,high->{`--color-value:${color};--color-low:${low};--color-high:${high}`}"
       >
@@ -75,6 +71,10 @@
             </ul>
           </li>
         </ul>
+        <!-- FIXME: Moving these down breaks the reactivity -->
+        <input type="color" name="low" out:value="low" on:input="low" />
+        <input type="color" name="color" out:value="color" on:input="color" />
+        <input type="color" name="high" out:value="high" on:input="high" />
       </div>
       <style>
         .swatch {
