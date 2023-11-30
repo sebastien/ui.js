@@ -8,3 +8,24 @@
   text-shadow: none;
   color: default;
 }
+.nolink,
+.nolink:hover {
+  text-decoration: none;
+  color: unset;
+}
+
+.nogap {
+  --gap: 0px;
+  gap: 0px;
+}
+
+.nopad {
+  padding: 0px;
+}
+
+.nopad-h {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+/* EOF */

@@ -100,13 +100,14 @@ textarea,
   font-size: var(--font-input-size);
   line-height: var(--font-input-line-height);
   background-color: var(--control-input-bg);
+  min-height: 2lh;
 }
 
 input,
 textarea,
 .input,
 .textarea {
-  border: 2px solid var(--control-input-bg);
+  border: 2px solid var(--control-bd-ltr);
 }
 
 input:hover,
@@ -145,6 +146,7 @@ textarea.transparent:hover,
 .textarea.transparent:focus,
 .textarea.transparent:hover {
   background-color: transparent;
+  border-color: transparent;
   box-shadow: unset;
   top: unset;
   left: unset;
@@ -249,7 +251,6 @@ button.square,
 .button.square {
   width: 2.25em;
   height: 2.25em;
-  border-radius: 0px;
   padding: 0px;
 }
 
@@ -295,6 +296,11 @@ button.larger,
 /**
  * ### Button Colors
 */
+.button.transparent,
+button.transparent {
+  --button-bg: transparent;
+  --button-bd: transparent;
+}
 .button.primary,
 button.primary {
   --button-bg-hover: var(--color-blue-8);
@@ -354,6 +360,7 @@ button.label,
   background-color: transparent;
   border-color: transparent;
   outline-color: transparent;
+  min-width: unset;
 }
 
 button.selectable,
@@ -466,25 +473,37 @@ button.label:active,
 .field {
   display: flex;
   justify-items: stretch;
+  align-items: center;
 }
-.field > .input,
-.field > .button,
-.field > .textarea,
-.field > input[type=""],
-.field > input[type="text"],
-.field > label,
-.field > button,
-.field > textarea {
-  flex: 1;
+.field > .fill {
+  flex-grow: 1;
+}
+
+.input {
+  display: flex;
+  justify-items: stretch;
+  align-items: center;
 }
 
 .panel {
-  border: 1px solid var(--control-bd);
   background-color: var(--page-bg-alt);
+}
+
+.panel.bd {
+  border: 1px solid var(--control-bd);
 }
 
 .panel > header {
   font-weight: bold;
+}
+
+.hsep {
+  display: inline-block;
+  width: 0px;
+  margin-right: var(--gap);
+  margin-left: var(--gap);
+  height: 1lh;
+  border-right: 1px solid var(--control-bd-dkr);
 }
 
 .menu,
@@ -492,7 +511,7 @@ menu {
   display: block;
   font-size: var(--control-font-size);
   background-color: var(--page-bg);
-  border: 1px solid var(--control-bd);
+  border: 1px solid var(--control-bd-ltr);
   border-radius: 4px;
   padding: 8px 0px;
   text-align: left;

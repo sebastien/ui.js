@@ -61,6 +61,30 @@ h6.typography {
   margin-bottom: 0em;
 }
 
+.typography mark {
+  background-color: color-mix(
+    in srgb,
+    var(--color-yellow-7),
+    var(--page-bg-0p) 65%
+  );
+}
+.typography mark.red {
+  background-color: color-mix(in srgb, var(--color-red), var(--page-bg-0p) 85%);
+}
+.typography mark.green {
+  background-color: color-mix(
+    in srgb,
+    var(--color-green),
+    var(--page-bg-0p) 65%
+  );
+}
+.typography mark.blue {
+  background-color: color-mix(
+    in srgb,
+    var(--color-blue),
+    var(--page-bg-0p) 65%
+  );
+}
 .typography .smaller {
   font-size: var(--font-size-1);
 }

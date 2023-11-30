@@ -39,15 +39,15 @@
         <div class="panel rounded pad-4 typography" data-template="Card" data-title="Copy">
           <p class="t-large">
             Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
-            nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam dignissimos
+            nihil ea voluptate eaque exercitationem. Deleniti <em>labore rerum</em> quos. Ipsum <strong>explicabo ut quisquam</strong> quam dignissimos
             repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
           
           <p>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
-            nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam dignissimos
+            nihil <mark>ea voluptate eaque exercitationem</mark>. Deleniti <del>labore rerum</del> quos. Ipsum explicabo ut quisquam quam dignissimos
             repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
           
           <p>
-            <small>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo.
+            <small>Rem omnis ea est deleniti omnis occaecati est. <mark class="red">Rerum facilis tempore</mark> ut culpa aut quaerat ratione quo.
               Temporibus nihil ea voluptate eaque exercitationem. Deleniti labore rerum quos. Ipsum explicabo ut quisquam quam
               dignissimos repudiandae soluta. Nihil et vitae sapiente optio iusto.</small>
           </p>
@@ -175,7 +175,7 @@
       <h2>Buttons</h2>
       <div class="stack gap-4">
         <h3>Shapes</h3>
-        <div class="rounded panel row distribute gap-4 pad-4" data-template="Card" data-title="Button">
+        <div class="rounded panel row distribute gap-4 pad-8" data-template="Card" data-title="Button">
           <button class="rectangle">Rectangle</button>
           <button class="rounded">Rounded</button>
           <button class="pill">Pill</button>
@@ -200,6 +200,7 @@
         </div>
         <h3>Styles</h3>
         <div class="rounded panel row distribute gap-4 pad-4" data-template="Card" data-title="Default Button">
+          <button class="transparent">Transparent</button>
           <button class="basic">Basic</button>
           <button class="primary">Primary</button>
           <button class="success">Success</button>
@@ -239,13 +240,53 @@
     <section>
       <h2>Inputs</h2>
       <div class="stack gap-4">
+
+        <h3>Text Inputs</h3>
         <div class="rounded panel stack gap-4 pad-4" data-template="Card" data-title="Input">
           <span class="field">
             <input type="text" placeholder="Text field…" />
           </span>
           <span class="field">
-            <input type="password" placeholder="Text field…" />
+            <input type="password" placeholder="Password…" value="1234" />
           </span>
+          <span class="row gap-4">
+            <label>Search:</label>
+            <span class="input nopad" tabindex="0">
+              <span class="circle dimmer">✎</span>
+              <input class="transparent fill nopad" type="text" />
+              <button class="circle small transparent">➔</button>
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <h3>Input Sizes</h3>
+        <div class="rounded panel" data-template="Card" data-title="Icon button">
+          <span class="row gap-2">
+            <input class="larger" type="text" placeholder="Text field…" />
+            <input class="large" type="text" placeholder="Text field…" />
+            <input type="text" placeholder="Text field…" />
+            <input class="small" type="text" placeholder="Text field…" />
+            <input class="smaller" type="text" placeholder="Text field…" />
+          </span>
+        </div>
+      </div>
+
+
+
+      <div>
+        <h3>Full Text Inputs</h3>
+        <div class="rounded panel pad-4" data-template="Card" data-title="Icon button">
+          <span class="field fill">
+            <textarea class="fill" placeholder="Textarea…"></textarea>
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <h3>Data Inputs</h3>
+        <div class="rounded panel" data-template="Card" data-title="Icon button">
           <span class="field">
             <input type="number" />
           </span>
@@ -255,13 +296,10 @@
           <span class="field">
             <input type="date" />
           </span>
+      </div>
 
-        </div>
-        <div class="rounded panel" data-template="Card" data-title="Icon button">
-          <span class="field">
-            <textarea placeholder="Textarea…"></textarea>
-          </span>
-        </div>
+
+        <h3>Checklist</h3>
         <div class="rounded panel" data-template="Card" data-title="Checkbox">
           <ul class="select">
             <li class="field">
@@ -377,30 +415,52 @@
           </div>
         </div>
       </div>
+
+      <div class="stack gap-4">
+        <h3>Breadcrumbs</h3>
+              <ul class="list-h sep-slash">
+                <li><a class="nolink button label nopad-h" href="#">Tasklist</a></li>
+                <li><a class="nolink button label nopad-h" href="#">Images</a></li>
+                <li><a class="nolink button label nopad-h" href="#">Equations</a></li>
+                <li><a class="nolink button label nopad-h" href="#">10</a></li>
+                <li><a class="nolink button label nopad-h active" href="#">Home</a></li>
+              </ul>
+      </div>
  
+      <div class="stack gap-4">
+        <h3>Toolbar</h3>
+            <div class="row">
+              <button class="square rounded transparent">✀</button>
+              <button class="square rounded transparent">✉</button>
+              <span class="hsep" ></span>
+              <button class="square rounded transparent">✎</button>
+              <button class="square rounded transparent">✚</button>
+              <button class="square rounded transparent">✖</button>
+            </div>
+      </div>
       <div class="stack gap-4">
         <h3>Menu</h3>
         <div class="rounded panel row">
-        <menu class="col-1">
-          <li><span class="label">Open…</span></li>
-          <li><span class="label">Save as…</span></li>
-          <hr>
-          <li><span class="label">Export…</span></li>
-        </menu>
-        <div>
-          <div class="pos-rel">
-            <span>Hover me</span>
-            <menu class="popup">
-              <li><span class="label">Open…</span></li>
-              <li><span class="label">Save as…</span></li>
-              <hr>
-              <li><span class="label">Export…</span></li>
-            </menu>
+          <menu class="col-1">
+            <li><span class="label">Open…</span></li>
+            <li><span class="label">Save as…</span></li>
+            <hr>
+            <li><span class="label">Export…</span></li>
+          </menu>
+          <div>
+            <div class="pos-rel">
+              <span>Hover me</span>
+              <menu class="popup">
+                <li><span class="label">Open…</span></li>
+                <li><span class="label">Save as…</span></li>
+                <hr>
+                <li><span class="label">Export…</span></li>
+              </menu>
+            </div>
           </div>
         </div>
-        </div>
-
       </div>
+
     </section>
  
 

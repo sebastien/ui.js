@@ -17,13 +17,12 @@ variations).
   --font-mono: "DM Mono", monospace;
   --font-mono-line-height: 1.25em;
 
-
   --font-heading: var(--font-sans);
-  --font-heading-line-height: var(--font-sans-line-height)
+  --font-heading-line-height: var(--font-sans-line-height);
   --font-heading-size: var(--font-size-4);
 
   --font-code: var(--font-mono);
-  --font-code-line-height: var(--font-mono)
+  --font-code-line-height: var(--font-mono);
   --font-code-size: calc(10.5 / 14 * 1rem);
 
   --font-control: "Jost", sans-serif;
@@ -196,7 +195,19 @@ variations).
    * ## Controls
   */
   --control-color: var(--text-color);
-  --control-bd: color-mix(in srgb, var(--text-color), var(--page-bg0p) 50%);
+  --control-bd-ltr: color-mix(
+    in srgb,
+    var(--text-color),
+    var(--page-bg-0p) 93%
+  );
+  --control-bd-lt: color-mix(in srgb, var(--text-color), var(--page-bg-0p) 83%);
+  --control-bd: color-mix(in srgb, var(--text-color), var(--page-bg-0p) 75%);
+  --control-bd-dk: color-mix(in srgb, var(--text-color), var(--page-bg-0p) 65%);
+  --control-bd-dkr: color-mix(
+    in srgb,
+    var(--text-color),
+    var(--page-bg-0p) 50%
+  );
   --control-bg: var(--color-primary);
   --control-bg-focused: color-mix(
     in srgb,
