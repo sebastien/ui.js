@@ -82,7 +82,7 @@
   font-weight: 300;
 }
 
-.regular {
+.noweight {
   font-weight: 400;
 }
 
@@ -142,16 +142,16 @@
  * ## Opacity
  */
 
-.dimmed {
+.dim {
   opacity: 0.65;
 }
 
 .dimmer {
-  opacity: 0.75;
+  opacity: 0.45;
 }
 
 .dimmest {
-  opacity: 0.85;
+  opacity: 0.25;
 }
 
 /**
@@ -160,6 +160,41 @@
 
 .shadow {
   box-shadow: 0px 2px 2px #0000000a;
+}
+
+.smaller {
+  font-size: var(--font-size-1);
+}
+.small {
+  font-size: var(--font-size-2);
+}
+.regular {
+  font-size: var(--font-size-3);
+}
+.large {
+  font-size: var(--font-size-4);
+}
+.larger {
+  font-size: var(--font-size-6);
+}
+.largest {
+  font-size: var(--font-size-8);
+}
+
+.serif {
+  font-family: var(--font-serif);
+}
+
+.sans {
+  font-family: var(--font-sans);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.upper {
+  text-transform: uppercase;
 }
 
 /* EOF */

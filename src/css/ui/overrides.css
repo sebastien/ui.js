@@ -7,11 +7,9 @@
   box-shadow: none;
   text-shadow: none;
   color: default;
-}
-.nolink,
-.nolink:hover {
-  text-decoration: none;
-  color: unset;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: unset;
 }
 
 .nogap {

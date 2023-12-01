@@ -8,7 +8,7 @@ body {
   font-family: var(--font-text);
   line-height: var(--font-text-lh);
   font-size: var(--font-text-size);
-  color: var(--text-color);
+  color: var(--color-text);
   accent-color: var(--color-accent);
   background-color: var(--page-bg);
   padding: var(--pad-4);
@@ -45,7 +45,7 @@ body {
 
 hr {
   border: 0px solid transparent;
-  border-bottom: 1px solid var(--text-color);
+  border-bottom: 1px solid var(--color-text);
 }
 
 p {
@@ -72,9 +72,6 @@ h6 {
   font-size: var(--font-heading-size);
   line-height: var(--font-heading-lh);
   font-weight: 600;
-  margin-top: var(--pad-2);
-  margin-bottom: var(--pad-0);
-  max-width: var(--text-max-width);
 }
 h1 {
   font-size: var(--font-size-8);
@@ -106,7 +103,7 @@ dd {
   padding-top: 0.5em;
   padding-bottom: 0.5em;
   margin-bottom: var(--line-height);
-  border-left: 1px solid var(--text-color);
+  border-left: 1px solid var(--color-text);
 }
 
 button,
@@ -117,25 +114,35 @@ textarea {
   font-size: var(--font-control-size);
 }
 
-hr.hsep {
-  display: inline-block;
-  border-right: 1px solid var(--control-bd);
+a[href],
+.link {
+  text-decoration: none;
+  color: var(--color-text);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-accent), var(--page-bg-0p) 60%);
+  background-color: color-mix(
+    in srgb,
+    var(--color-text),
+    var(--page-bg-0p) 98%
+  );
 }
 
-.t-larger {
-  font-size: 160%;
+a[href]:hover,
+.link:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent),
+    var(--page-bg-0p) 90%
+  );
 }
 
-.t-large {
-  font-size: 125%;
-}
-
-.t-small {
-  font-size: 80%;
-}
-
-.t-smaller {
-  font-size: 60%;
+a[href].nolink,
+a[href].nolink:hover {
+  text-decoration: none;
+  color: unset;
+  border: unset;
+  background-color: unset;
+  border-color: unset;
 }
 
 .filler,

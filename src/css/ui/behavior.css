@@ -19,6 +19,11 @@
 .no-events {
   pointer-events: none;
 }
+
+.resize-v {
+  cursor: row-resize;
+}
+
 /*
    * ## Hover Behaviour
   */
@@ -51,6 +56,13 @@
 
 .hover:hover .hovered {
   background-color: var(--control-bg-hover);
+}
+
+.focus-undim {
+  transition: opacity 0.25s;
+}
+.focus-undim:hover {
+  opacity: 1;
 }
 
 /* EOF */

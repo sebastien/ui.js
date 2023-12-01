@@ -9,11 +9,6 @@ label {
   display: block;
 }
 
-a[href],
-.link {
-  color: var(--link-color);
-}
-
 .selectable {
   cursor: pointer;
   user-select: none;
@@ -21,7 +16,18 @@ a[href],
 }
 
 .selectable:hover {
-  background-color: var(--selectable-bg-hover);
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--page-bg-0p) 95%
+  );
+}
+.selectable.selected {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--page-bg-0p) 90%
+  );
 }
 
 .editable[data-placeholder]:before {
@@ -38,12 +44,12 @@ a[href],
 .label.selectable:hover {
   background-color: transparent;
   color: var(--color--accent);
-  border-color: var(--text-color);
+  border-color: var(--color-text);
 }
 
 .label.selectable:focus {
   background-color: transparent;
-  border-color: var(--text-color);
+  border-color: var(--color-text);
 }
 
 .label.selectable:active,
@@ -57,12 +63,31 @@ a[href],
 .item {
   display: flex;
   align-items: center;
-  padding: var(--pad-2);
+  --item-indent: var(--pad-2);
+  --item-depth: 1;
+  padding: var(--item-pad);
+  padding-left: calc(var(--item-depth) * var(--item-indent));
   gap: var(--pad-1);
   width: 100%;
   box-sizing: border-box;
   border-radius: 4px;
 }
+
+.items {
+  margin-top: var(--pad-1);
+  margin-bottom: var(--pad-1);
+}
+
+.items .items .item {
+  --item-depth: 3;
+}
+.items .items .items .item {
+  --item-depth: 4;
+}
+.items .items .items .items .item {
+  --item-depth: 5;
+}
+
 .item > .fill {
   flex-grow: 1;
 }
@@ -133,6 +158,42 @@ textarea:active,
   border-color: var(--color-primary);
 }
 
+/**
+ * ### Input Sizes
+*/
+
+textarea.smaller,
+.textarea.smaller,
+input.smaller,
+.input.smaller {
+  font-size: var(--font-size-1);
+  padding: var(--pad-0) var(--pad-1);
+}
+
+textarea.small,
+.textarea.small,
+input.small,
+.input.small {
+  font-size: var(--font-size-2);
+  padding: var(--pad-1) var(--pad-2);
+}
+
+textarea.large,
+.textarea.large,
+input.large,
+.input.large {
+  font-size: var(--font-size-3);
+  padding: var(--pad-3) var(--pad-4);
+}
+
+textarea.larger,
+.textarea.larger,
+input.larger,
+.input.larger {
+  font-size: var(--font-size-4);
+  padding: var(--pad-3) var(--pad-5);
+}
+
 input.transparent[type="text"],
 input.transparent[type="text"]:active,
 input.transparent[type="text"]:focus,
@@ -184,11 +245,27 @@ button,
   --button-bg-hover: var(--color-grey-9);
   --button-bg: var(--color-grey-8);
   --button-bg-active: var(--color-grey-5);
-  --button-bd: var(--color-bg);
-  --button-bd-hover: var(--color-bg-active);
+
+  --button-bd-active: color-mix(
+    in srgb,
+    var(--color-bg-active),
+    var(--page-bg-0p) 50%
+  );
+  --button-bd: color-mix(in srgb, var(--button-bg), var(--color-low) 10%);
+  --button-bd-hover: color-mix(
+    in srgb,
+    var(--button-bg-hover),
+    var(--color-low) 10%
+  );
+
   --button-ol-hover: var(--color-grey-7);
-  --button-ol: transaprent;
+  --button-ol: transparent;
   --button-ol-focus: var(--color-grey-7);
+
+  --button-txt-active: var(--button-txt);
+  --button-txt: var(--color-text);
+  --button-txt-hover: var(--button-txt);
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -211,32 +288,33 @@ button,
 }
 
 button:focus,
+button.focus,
 .button:focus,
 .button.focus {
   background-color: var(--button-bg-focus);
   border-color: var(--button-bd-focus);
   outline-color: var(--button-ol-focus);
+  color: var(--button-txt-focus);
 }
 button:hover,
+button.hover,
 .button:hover,
 .button.hover {
   background-color: var(--button-bg-hover);
   border-color: var(--button-bd-hover);
   outline-color: var(--button-ol-hover);
-}
-button:focus,
-.button:focus,
-.button.focus {
-  background-color: var(--button-bg-focus);
-  border-color: var(--button-bd-focus);
-  outline-color: var(--button-ol-focus);
+  color: var(--button-txt-hover);
 }
 button:active,
+button.active,
+button.selected,
 .button:active,
-.button.active {
+.button.active,
+.button.selected {
   background-color: var(--button-bg-active);
   border-color: var(--button-bd-active);
   outline-color: var(--button-ol-active);
+  color: var(--button-txt-active);
 }
 
 /**
@@ -300,6 +378,8 @@ button.larger,
 button.transparent {
   --button-bg: transparent;
   --button-bd: transparent;
+  --button-bd-active: transparent;
+  --button-bd-hover: transparent;
 }
 .button.primary,
 button.primary {
@@ -307,6 +387,7 @@ button.primary {
   --button-bg: var(--color-blue-7);
   --button-bd: var(--color-blue-5);
   --button-ol: var(--color-blue-3);
+  --button-text-hover: var(--color-blue-5);
 }
 .button.success,
 button.success {
@@ -314,6 +395,7 @@ button.success {
   --button-bg: var(--color-green-7);
   --button-bd: var(--color-green-5);
   --button-ol: var(--color-green-3);
+  --button-txt-hover: var(--color-green-5);
 }
 .button.info,
 button.info {
@@ -321,6 +403,7 @@ button.info {
   --button-bg: var(--color-yellow-7);
   --button-bd: var(--color-yellow-5);
   --button-ol: var(--color-yellow-3);
+  --button-txt-hover: var(--color-yellow-5);
 }
 .button.warning,
 button.warning {
@@ -328,6 +411,7 @@ button.warning {
   --button-bg: var(--color-orange-7);
   --button-bd: var(--color-orange-5);
   --button-ol: var(--color-orange-3);
+  --button-txt-hover: var(--color-yellow-5);
 }
 .button.danger,
 button.danger {
@@ -336,6 +420,7 @@ button.danger {
   --button-bd: var(--color-red-5);
   --button-ol: var(--color-red-3);
 }
+
 /**
  * ### Button Variants
 */
@@ -361,11 +446,24 @@ button.label,
   border-color: transparent;
   outline-color: transparent;
   min-width: unset;
+  --button-txt-hover: color-mix(
+    in srgb,
+    var(--button-txt),
+    var(--page-bg-0p) 50%
+  );
 }
 
-button.selectable,
-.button.selectable {
-  --button-bd-hover: var(--button-bd-hover);
+.button.primary.label {
+  --button-txt-hover: var(--color-blue-6);
+  --button-txt-active: var(--color-blue-4);
+}
+
+button.selector,
+.button.selector {
+  --button-bd: transparent;
+  border-left-width: 0px;
+  border-top-width: 0px;
+  border-right: 0px;
   border-bottom-width: 2px;
   border-bottom-style: solid;
   background-color: transparent !important;
@@ -374,6 +472,13 @@ button.selectable,
   border-radius: 0px;
   padding-left: 0px;
   padding-right: 0px;
+}
+
+button.selector.left,
+.button.selector.left {
+  padding-left: var(--pad-2);
+  border-left-width: 2px;
+  border-bottom-width: 0px;
 }
 
 /**
@@ -498,6 +603,15 @@ button.label:active,
 }
 
 .hsep {
+  display: block;
+  width: 100%;
+  margin-top: var(--gap-3);
+  margin-bottom: var(--gap-3);
+  height: 0px;
+  border-bottom: 1px solid var(--control-bd-dkr);
+}
+
+.vsep {
   display: inline-block;
   width: 0px;
   margin-right: var(--gap);
@@ -565,7 +679,7 @@ menu > li > .label {
   display: block;
   flex-grow: 1;
   font-size: var(--font-size-1_5);
-  color: var(--text-color);
+  color: var(--color-text);
 }
 
 .menu > li > .label > .detail,
@@ -573,5 +687,5 @@ menu > li > .label > .detail {
   display: block;
   font-weight: 400;
   font-size: var(--font-size-1);
-  color: var(--text-color-alt);
+  color: var(--color-text-alt);
 }

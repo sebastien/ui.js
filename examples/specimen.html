@@ -37,12 +37,12 @@
         </div>
         <h3>Paragraphs</h3>
         <div class="panel rounded pad-4 typography" data-template="Card" data-title="Copy">
-          <p class="t-large">
+          <p class="large">
             Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
             nihil ea voluptate eaque exercitationem. Deleniti <em>labore rerum</em> quos. Ipsum <strong>explicabo ut quisquam</strong> quam dignissimos
             repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
           
-          <p>Rem omnis ea est deleniti omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
+          <p>Rem <a href="//github.com/sebastien/ui.js">omnis ea est deleniti</a> omnis occaecati est. Rerum facilis tempore ut culpa aut quaerat ratione quo. Temporibus
             nihil <mark>ea voluptate eaque exercitationem</mark>. Deleniti <del>labore rerum</del> quos. Ipsum explicabo ut quisquam quam dignissimos
             repudiandae soluta. Nihil et vitae sapiente optio iusto.</p>
           
@@ -81,7 +81,7 @@
     <section>
       <h2>Palette</h2>
       <div>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-cyan-1">◼</li>
           <li class="fg-cyan-2">◼</li>
           <li class="fg-cyan-3">◼</li>
@@ -92,7 +92,7 @@
           <li class="fg-cyan-8">◼</li>
           <li class="fg-cyan-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-blue-1">◼</li>
           <li class="fg-blue-2">◼</li>
           <li class="fg-blue-3">◼</li>
@@ -103,7 +103,7 @@
           <li class="fg-blue-8">◼</li>
           <li class="fg-blue-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-purple-1">◼</li>
           <li class="fg-purple-2">◼</li>
           <li class="fg-purple-3">◼</li>
@@ -114,7 +114,7 @@
           <li class="fg-purple-8">◼</li>
           <li class="fg-purple-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-red-1">◼</li>
           <li class="fg-red-2">◼</li>
           <li class="fg-red-3">◼</li>
@@ -125,7 +125,7 @@
           <li class="fg-red-8">◼</li>
           <li class="fg-red-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-orange-1">◼</li>
           <li class="fg-orange-2">◼</li>
           <li class="fg-orange-3">◼</li>
@@ -136,7 +136,7 @@
           <li class="fg-orange-8">◼</li>
           <li class="fg-orange-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-yellow-1">◼</li>
           <li class="fg-yellow-2">◼</li>
           <li class="fg-yellow-3">◼</li>
@@ -147,7 +147,7 @@
           <li class="fg-yellow-8">◼</li>
           <li class="fg-yellow-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-pink-1">◼</li>
           <li class="fg-pink-2">◼</li>
           <li class="fg-pink-3">◼</li>
@@ -158,7 +158,7 @@
           <li class="fg-pink-8">◼</li>
           <li class="fg-pink-9">◼</li>
         </ul>
-        <ul class="row t-larger">
+        <ul class="row larger">
           <li class="fg-green-1">◼</li>
           <li class="fg-green-2">◼</li>
           <li class="fg-green-3">◼</li>
@@ -196,7 +196,7 @@
           <button class="default">Default</button>
           <button class="outline">Outline</button>
           <button class="label">Label</button>
-          <button class="selectable">Selectable</button>
+          <button class="selector">Selector</button>
         </div>
         <h3>Styles</h3>
         <div class="rounded panel row distribute gap-4 pad-4" data-template="Card" data-title="Default Button">
@@ -260,18 +260,7 @@
         </div>
       </div>
 
-      <div>
-        <h3>Input Sizes</h3>
-        <div class="rounded panel" data-template="Card" data-title="Icon button">
-          <span class="row gap-2">
-            <input class="larger" type="text" placeholder="Text field…" />
-            <input class="large" type="text" placeholder="Text field…" />
-            <input type="text" placeholder="Text field…" />
-            <input class="small" type="text" placeholder="Text field…" />
-            <input class="smaller" type="text" placeholder="Text field…" />
-          </span>
-        </div>
-      </div>
+
 
 
 
@@ -281,6 +270,26 @@
           <span class="field fill">
             <textarea class="fill" placeholder="Textarea…"></textarea>
           </span>
+        </div>
+      </div>
+
+      <div>
+        <h3>Input Sizes</h3>
+        <div class="rounded panel" data-template="Card" data-title="Icon button">
+          <span class="row gap-4 pad-4">
+            <input class="larger" type="text" placeholder="Text field…" />
+            <input class="large" type="text" placeholder="Text field…" />
+            <input type="text" placeholder="Text field…" />
+            <input class="small" type="text" placeholder="Text field…" />
+            <input class="smaller" type="text" placeholder="Text field…" />
+          </span>
+          <div class="stack gap-4 fill pad-4">
+            <textarea class="larger fit"  placeholder="Text field…" ></textarea>
+            <textarea class="large fit"  placeholder="Text field…" ></textarea>
+            <textarea class="fit" placeholder="Text field…" ></textarea>
+            <textarea class="small fit"  placeholder="Text field…"></textarea> 
+            <textarea class="smaller fit"  placeholder="Text field…" ></textarea>
+          </div>
         </div>
       </div>
 
@@ -418,13 +427,54 @@
 
       <div class="stack gap-4">
         <h3>Breadcrumbs</h3>
-              <ul class="list-h sep-slash">
-                <li><a class="nolink button label nopad-h" href="#">Tasklist</a></li>
-                <li><a class="nolink button label nopad-h" href="#">Images</a></li>
-                <li><a class="nolink button label nopad-h" href="#">Equations</a></li>
-                <li><a class="nolink button label nopad-h" href="#">10</a></li>
-                <li><a class="nolink button label nopad-h active" href="#">Home</a></li>
+        <ul class="list-h sep-slash">
+          <li><a class="nolink button label nopad-h" href="#">Tasklist</a></li>
+          <li><a class="nolink button label nopad-h" href="#">Images</a></li>
+          <li><a class="nolink button label nopad-h" href="#">Equations</a></li>
+          <li><a class="nolink button label nopad-h" href="#">10</a></li>
+          <li><a class="nolink button label nopad-h active" href="#">Home</a></li>
+        </ul>
+      </div>
+
+      <div class="stack gap-4">
+        <h3>Tabs</h3>
+        <div class="panel pad-4">
+          <ul class="list-h gap-4">
+            <li><a class="nolink button selector nopad-h small" href="#"><span class="icon">🏡</span>Home</a></li>
+            <li><a class="nolink button selector nopad-h small selected" href="#"><span class="icon">🏡</span>Projects</a></li>
+            <li><a class="nolink button selector nopad-h small" href="#"><span class="icon">🏡</span>Settings</a></li>
+            <li><a class="nolink button selector nopad-h small" href="#"><span class="icon">🏡</span>Help</a></li>
+          </ul>
+        </div>
+        <div class="panel pad-4">
+          <ul class="list-v">
+            <li><a class="nolink button selector left small" href="#"><span class="icon">🏡</span>Home</a></li>
+            <li><a class="nolink button selector left small selected" href="#"><span class="icon">🏡</span>Projects</a></li>
+            <li><a class="nolink button selector left small" href="#"><span class="icon">🏡</span>Settings</a></li>
+            <li><a class="nolink button selector left small" href="#"><span class="icon">🏡</span>Help</a></li>
+          </ul>
+        </div>
+      </div>
+ 
+      <div class="stack gap-4">
+        <h3>Navigation</h3>
+        <ul class="panel pad-4">
+          <li><a class="nolink nested item" href="#">About</a></li>
+          <li class="hsep">
+          <li class="item">
+            <label class="smaller bold dimmed">Guides</label>
+          </li>
+          <ul class="items">
+            <li><a class="nolink nested item" href="#">Introduction</a></li>
+            <li>
+              <a class="nolink nested item" href="#">Quickstart</a>
+              <ul class="items">
+                <li><a class="nolink selected nested item" href="#">Install</a></li>
+                <li><a class="nolink selected nested item" href="#">Configure</a></li>
               </ul>
+            </li>
+          </ul>
+        </div>
       </div>
  
       <div class="stack gap-4">

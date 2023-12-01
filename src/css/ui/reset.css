@@ -79,6 +79,9 @@ label,
   box-sizing: border-box;
   margin: 0px;
   padding: 0px;
+  margin-block: unset;
+  font-size: 1rem;
+  line-height: unset;
   border: 0px solid transparent;
   outline: 0px solid transparent;
   vertical-align: baseline;

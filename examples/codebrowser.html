@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Browser</title>
+    <link
+      rel="stylesheet"
+      href="../lib/css/ui.css"
+      type="text/css"
+      media="all"
+    />
+    <script type="importmap">
+      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+    </script>
+  </head>
+  <body class="">
+    <div class="fit-screen stack fill">
+      <header class="row bd-b pad-4">
+        <h1 class="regular">Smalltalk Browser</h1>
+        <div class="fill"></div>
+        <ul class="list-h">
+          <li>Help</li>
+        </ul>
+      </header>
+      <div class="row h-3bl w-3bl bd-r">
+        <div class="stack fill w-2col scroll-v fit-h">
+          <div class="row item fit-w bd-b dimmest focus-undim">
+            <span class="circle">✎</span>
+            <input class="transparent fill nopad" type="text" />
+            <button class="small circle small transparent">➔</button>
+          </div>
+          <ul>
+            <li>
+              <a href="" class="nolink item selectable"
+                ><span class="circle">≡</span><span class="label fill">Xyz</span
+                ><span class="actions square">…</span></a
+              >
+            </li>
+            <li>
+              <a href="" class="nolink item selectable selected"
+                ><span class="circle">⊙</span><span class="label fill">Xyz</span
+                ><span class="actions square">…</span></a
+              >
+            </li>
+            <li>
+              <a href="" class="nolink item selectable"
+                ><span class="circle">λ</span><span class="label fill">Xyz</span
+                ><span class="actions square">…</span></a
+              >
+            </li>
+            <li>
+              <a href="" class="nolink item selectable"
+                ><span class="circle">𝑓</span><span class="label fill">Xyz</span
+                ><span class="actions square">…</span></a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="bd-t bd-b pad-1 selectable resize-v"></div>
+      <div class="stack fill pad-4 gap-4">
+        <ul class="list-h sep-slash">
+          <li>src</li>
+          <li>js</li>
+          <li>ui</li>
+          <li>selector.js</li>
+        </ul>
+        <h1 class="larger"><code>●</code> <code>SelectorScope</code></h1>
+        <div class="row">
+          <div class="typography">
+            <p>
+              A selector input represents one specific selection in a
+              <mark>selector</mark>, which is a collection of inputs. Selector
+              inputs can select from the local state (<code>@</code> prefixed,
+              like <code>@status</code>), or from the global state either in an
+              absolute way (no prefix like <code>application.name</code>) or
+              relative (<code>.</code> prefix like <code>.label</code>).
+            </p>
+          </div>
+          <div class="bd-l ml-4">
+            <pre>
+    export const SelectorScope = Object.freeze({
+      Local: "@",
+      Relative: ".",
+      Absolute: "/",
+      Key: "#",
+    });</pre
+            >
+          </div>
+        </div>
+        <div class="row gap-4 fit-w mt-4">
+          <div class="stack w-1col">
+            <h3 class="regular pb-1 mb-1 bd-b">Uses</h3>
+            <ul>
+              <li><code class="nowrap">● Object</code></li>
+            </ul>
+          </div>
+          <div class="stack w-1col">
+            <h3 class="regular pb-1 mb-1 bd-b">Used by</h3>
+            <ul>
+              <li><code class="nowrap">□ SelectorInput()</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+      import ui from "@ui.js";
+      ui();
+    </script>
+  </body>
+</html>

@@ -1,4 +1,3 @@
-import { Empty } from "./utils/values.js";
 import { onError } from "./utils/logging.js";
 import { Formats } from "./formats.js";
 import { commonPath } from "./path.js";

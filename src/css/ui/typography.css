@@ -85,34 +85,3 @@ h6.typography {
     var(--page-bg-0p) 65%
   );
 }
-.typography .smaller {
-  font-size: var(--font-size-1);
-}
-.typography .small {
-  font-size: var(--font-size-2);
-}
-.typography .large {
-  font-size: var(--font-size-4);
-}
-.typography .larger {
-  font-size: var(--font-size-6);
-}
-.typography .largest {
-  font-size: var(--font-size-8);
-}
-
-.typography .serif {
-  font-family: var(--font-serif);
-}
-
-.typography .sans {
-  font-family: var(--font-sans);
-}
-
-.typography .mono {
-  font-family: var(--font-mono);
-}
-
-.typography .upper {
-  text-transform: uppercase;
-}
