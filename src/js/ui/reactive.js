@@ -8,8 +8,8 @@ export class Subscription {
     this.handler = handler;
     this.path = path;
   }
-  trigger() {
-    return this.handler();
+  trigger(...value) {
+    return this.handler(...value);
   }
 }
 
@@ -68,7 +68,7 @@ export class Subscribable {
       throw RuntimeError();
     } else {
       const sub = new Subscription(handler, path);
-      if (!topic.has(null)) {
+      if (!topic.has(Subscription)) {
         topic.set(Subscription, [sub]);
       } else {
         topic.get(Subscription).push(sub);
