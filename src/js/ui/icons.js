@@ -30,11 +30,11 @@ export const Sources = {
   },
   EvaOutline: {
     url: "https://unpkg.com/eva-icons@1.1.3/outline/svg/${name}.svg",
-    style: { stroke: "transparent", fill: "current-color" },
+    style: { stroke: "transparent", fill: "var(--color-text)" },
   },
   EvaFill: {
     url: "https://unpkg.com/eva-icons@1.1.3/fill/svg/${name}.svg",
-    style: { stroke: "transparent", fill: "current-color" },
+    style: { stroke: "transparent", fill: "var(--color-text)" },
   },
 };
 
@@ -83,6 +83,9 @@ export const loadIcon = (name, source = Sources.Iconoir, container = Icons) => {
         } else {
           console.error(`Icon "${name}" should have a content, got:`, text);
         }
+        Object.entries(source.style).forEach(([k, v]) =>
+          icon.setAttribute(k, `${v}`)
+        );
         if (!container.parentElement) {
           document.body.appendChild(container);
         }
