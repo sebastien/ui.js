@@ -141,7 +141,13 @@ const RE_ON = new RegExp(
         // The event itself
         seq(text("!"), capture("[A-Za-z]+", "event")),
         // And a event processor
-        opt(text("|{"), capture(not("}$", ".+"), "eventProcessor"), text("}"))
+        opt(
+          text("|"),
+          opt(list(or("[a-zA-Z]+", text("#")), ",", "eventInputs"), "->"),
+          text("{"),
+          capture(not("}$", ".+"), "eventProcessor"),
+          text("}")
+        )
       ),
       "$"
     ),

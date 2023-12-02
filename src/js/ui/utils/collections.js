@@ -180,9 +180,39 @@ export const copy = (value) =>
     : typeof value === "object"
     ? value instanceof Array
       ? [...value]
+      : value instanceof Map
+      ? new Map(value)
       : { ...value }
     : value;
 
+export const append = (value, item) => {
+  if (value instanceof Array) {
+    return [...value, item];
+  } else {
+    return value;
+  }
+};
+
+export const removeAt = (value, key) => {
+  console.log("REMOVE AT", value, key);
+  if (value === null) {
+    return null;
+  } else if (value instanceof Array) {
+    const res = [...value];
+    res.splice(value, key);
+    return res;
+  } else if (value instanceof Map) {
+    const res = new Map(value);
+    res.clear(key);
+    return res;
+  } else if (typeof value === "object") {
+    const res = { ...res };
+    delete res[key];
+    return res;
+  } else {
+    return value;
+  }
+};
 export const access = (context, path, offset = 0) => {
   if (path && path.length && context !== undefined) {
     const n = path.length;

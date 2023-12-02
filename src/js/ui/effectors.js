@@ -1,12 +1,22 @@
 import { onError } from "./utils/logging.js";
-import { access } from "./utils/collections.js";
+import { access, append, removeAt, copy } from "./utils/collections.js";
 import { SelectorType } from "./selector.js";
-import { Scope, Reducer } from "./reactive.js";
+import { Scope } from "./reactive.js";
 import { range, map, reduce, filter, len } from "./utils/collections.js";
 import { lerp } from "./utils/math.js";
 
 // This is mapped to `$` in formatters
-const FormatAPI = { range, map, reduce, filter, len, lerp };
+export const EffectorAPI = {
+  range,
+  map,
+  reduce,
+  filter,
+  len,
+  lerp,
+  copy,
+  append,
+  removeAt,
+};
 
 // --
 // ## Effectors
@@ -108,7 +118,7 @@ export class EffectScope extends Scope {
     if (selector.format) {
       const inputs = selector.inputs.map((_) => this.get(_.path));
       try {
-        return selector.format(...[...inputs, FormatAPI]);
+        return selector.format(...[...inputs, EffectorAPI]);
       } catch (exception) {
         onError(`Selector formatter failed: ${selector.toString()}`, {
           input: inputs,

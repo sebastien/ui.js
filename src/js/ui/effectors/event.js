@@ -1,4 +1,4 @@
-import { Effect, Effector } from "../effectors.js";
+import { Effect, Effector, EffectorAPI } from "../effectors.js";
 
 export class EventEffector extends Effector {
   // -- doc
@@ -26,7 +26,17 @@ class EventEffect extends Effect {
 
   handle(event) {
     const { handler, directive } = this.effector;
-    const v = handler ? handler(event, this.scope, this.node) : null;
+    const v = handler
+      ? handler(event, this.scope, this.node, EffectorAPI)
+      : null;
+    // TODO: Do something about that
+    console.log("HANDLING", {
+      event,
+      directive,
+      handler: handler,
+      scope: this.scope,
+      value: v,
+    });
     if (directive.assign) {
       this.scope.set(directive.assign, v, directive.force ? true : false);
     }
@@ -37,14 +47,17 @@ class EventEffect extends Effect {
         directive.force ? true : false
       );
     }
-    // TODO: Do something about that
-    console.log("HANDLING", {
-      event,
-      directive,
-      handler: handler,
-      scope: this.scope,
-      value: v,
-    });
+    if (directive.event) {
+      this.node.dispatchEvent(
+        new CustomEvent(directive.event, {
+          bubbles: true,
+          detail: {
+            scope: this.scope,
+            event: event,
+          },
+        })
+      );
+    }
   }
 
   unify(current, previous = this.value) {

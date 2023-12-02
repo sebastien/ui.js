@@ -18,8 +18,13 @@ export const onOnAttribute = (processor, attr, root, name) => {
         "event",
         "scope",
         "node",
+        "$",
         `${Object.values(directive.inputs)
-          .map((_) => `const ${_}=scope.get("${_}");`)
+          .map((_) =>
+            _ === "key" || _ === "#"
+              ? `const key=scope.key !== undefined ? scope.key : scope.path ? scope.path.at(-1) : null;`
+              : `const ${_}=scope.get("${_}");`
+          )
           .join("")}; return (${directive.handler})`
       )
     : // NOTE: expr is not really there, but maybe we want to support it?
@@ -28,6 +33,7 @@ export const onOnAttribute = (processor, attr, root, name) => {
         "event",
         "scope",
         "node",
+        "$",
         directive.slot
           ? `{const _=event;const v=(${directive.expr || "_"});scope.set("${
               directive.slot

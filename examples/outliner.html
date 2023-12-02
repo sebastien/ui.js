@@ -18,7 +18,7 @@
   </head>
   <body>
     <div class="row fit-screen stretched lined nogap">
-      <div class="fill bd-r">
+      <div class="stack fill bd-r">
         <slot template="Outliner" items="([{label:'One'}])" />
       </div>
       <div class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3">
@@ -44,19 +44,21 @@
 
     ----------------------------------------------------------------------- -->
     <template name="Outliner" in:items>
-      <div class="stack lined">
+      <div class="stack fill lined fit-h">
         <div class="pad-4">
           <h3>Outliner</h3>
         </div>
-        <ul class="stack pad-4" x:for="items">
-          <slot
-            template="Outline"
-            item="."
-            on:Remove="items!=items,key->{items.splice(key,1),items}"
-          />
-        </ul>
+        <div class="fill scroll-v">
+          <ul
+            class="stack pad-4"
+            x:for="items"
+            on:Remove="items=items,key->{$.removeAt(items, 0)}"
+          >
+            <slot template="Outline" item="." />
+          </ul>
+        </div>
         <div class="pad-4">
-          <button on:click="items!=items->{items.push({}),items}">New</button>
+          <button on:click="items=items->{$.append(items, {})}">New</button>
         </div>
       </div>
     </template>
@@ -71,7 +73,7 @@
             placeholder="Type something"
             out:value=".label"
           />
-          <button on:click="!Remove">Remove</button>
+          <button on:click="!remove|key->{{key}}">Remove</button>
         </div>
         <ul class="stack" x:for="item.children">
           <slot template="Outline" item="." />
