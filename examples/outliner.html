@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!--
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/uijs.css" type="text/css" media="all">
+    -->
+    <title>Outliner</title>
+    <link
+      rel="stylesheet"
+      href="../lib/css/ui.css"
+      type="text/css"
+      media="all"
+    />
+    <script type="importmap">
+      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+    </script>
+  </head>
+  <body>
+    <div class="row fit-screen stretched lined nogap">
+      <div class="fill bd-r">
+        <slot template="Outliner" items="([{label:'One'}])" />
+      </div>
+      <div class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3">
+        <div class="row pad-4">
+          <div class="field fill input small roundest">
+            <input class="transparent fill" type="text" placeholder="Search…" />
+            <button class="small roundest transparent">clear</button>
+          </div>
+        </div>
+        <div class="typography small pad-4">
+          <h3>Outliner</h3>
+          <h4>Navigation</h4>
+          <ul>
+            <li><span class="key small">Up</span></li>
+            <li><span class="key small">Down</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- ----------------------------------------------------------------------
+
+    TEMPLATES
+
+    ----------------------------------------------------------------------- -->
+    <template name="Outliner" in:items>
+      <div class="stack lined">
+        <div class="pad-4">
+          <h3>Outliner</h3>
+        </div>
+        <ul class="stack pad-4" x:for="items">
+          <slot
+            template="Outline"
+            item="."
+            on:Remove="items!=items,key->{items.splice(key,1),items}"
+          />
+        </ul>
+        <div class="pad-4">
+          <button on:click="items!=items->{items.push({}),items}">New</button>
+        </div>
+      </div>
+    </template>
+
+    <template name="Outline" in:item>
+      <li>
+        <div class="row">
+          <div class="movable button square transparent">☰</div>
+          <input
+            class="fill"
+            type="text"
+            placeholder="Type something"
+            out:value=".label"
+          />
+          <button on:click="!Remove">Remove</button>
+        </div>
+        <ul class="stack" x:for="item.children">
+          <slot template="Outline" item="." />
+        </ul>
+      </li>
+    </template>
+
+    <!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+    <script type="module">
+      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+      import ui from "@ui.js";
+      ui();
+    </script>
+  </body>
+</html>

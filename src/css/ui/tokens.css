@@ -90,7 +90,7 @@ variations).
   --blend-hwb: in hwb;
   --blend-srgb: in srgb;
   --blend-lab: in lab;
-  --blend-lsrgb: in srgb-linear;
+  --blend-lsrgb: in lsrgb;
   --blend-xyz: in xyz;
   --blend-oklch: in oklch;
   --blend-lch: in lch;
@@ -170,6 +170,9 @@ variations).
 
   --shadow-depth: 1;
   --shadow-low: calc(1.5px * var(--shadow-depth))
+    calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
+    color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
+  --shadow-low-left: calc(-1.5px * var(--shadow-depth))
     calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
     color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
 

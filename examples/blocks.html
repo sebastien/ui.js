@@ -42,19 +42,19 @@
     <template name="Cell" in:type="text" in:source="">
       <ul class="stack">
         <li class="row">
-          <ul class="stack stretch bg-alt">
+          <ul class="stack stretch">
             <li>
-              <button class="smaller as-icon">
+              <button class="square small transparent move">
                 <slot template="Icon" name="menu" />
               </button>
             </li>
           </ul>
-          <div class="preview fill" out:content=".preview"></div>
+          <div class="preview fill" out:content=".preview">Preview…</div>
         </li>
         <li class="row strech">
-          <ul class="stack stretch bg-alt">
+          <ul class="stack stretch">
             <li>
-              <button class="smaller as-icon">
+              <button class="square small transparent nopad">
                 <slot template="Icon" name="code-brackets" />
               </button>
             </li>
@@ -69,6 +69,7 @@
         </li>
       </ul>
     </template>
+
     <template name="Icon" in:base="24" in:source="Iconoir">
       <svg
         class="icon"
@@ -82,11 +83,11 @@
     </template>
 
     <template name="Divider">
-      <div class="row fill">
-        <button class="smaller as-icon">
+      <div class="row with-hover">
+        <button class="small circle transparent">
           <slot template="Icon" name="plus-circle" />
         </button>
-        <hr />
+        <hr class="faint fill on-hover" />
       </div>
     </template>
 

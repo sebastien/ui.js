@@ -132,10 +132,12 @@
 
 .lined > * {
   border-bottom: 1px solid var(--box-bd);
+  padding-bottom: var(--gap);
 }
 
 .lined > *:last-child {
   border-width: 0px;
+  padding-bottom: 0px;
 }
 
 /**
@@ -152,6 +154,16 @@
 
 .dimmest {
   opacity: 0.25;
+}
+
+.faint {
+  opacity: 0.15;
+}
+.fainter {
+  opacity: 0.1;
+}
+.faintest {
+  opacity: 0.05;
 }
 
 /**
@@ -239,4 +251,82 @@
   --shadow-depth: 10;
   box-shadow: var(--shadow-low);
 } /* @end */
+
+.shadow-left {
+  box-shadow: var(--shadow-low-left);
+}
+/* @tmpl
+   * range(10).map(_ => `\n  .bg-${_} {background-color:color-mix(in srgb, var(--color-current), var(--color-background-t) ${Math.floor(100-(25*_/10))}%);  }`)
+   */
+.bg-0 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 100%
+  );
+}
+.bg-1 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 97%
+  );
+}
+.bg-2 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 95%
+  );
+}
+.bg-3 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 92%
+  );
+}
+.bg-4 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 90%
+  );
+}
+.bg-5 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 87%
+  );
+}
+.bg-6 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 85%
+  );
+}
+.bg-7 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 82%
+  );
+}
+.bg-8 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 80%
+  );
+}
+.bg-9 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-current),
+    var(--color-background-t) 77%
+  );
+} /* @end */
+
 /* EOF */

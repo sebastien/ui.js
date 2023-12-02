@@ -85,3 +85,14 @@ h6.typography {
     var(--page-bg-0p) 65%
   );
 }
+
+.typography .key {
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-text), var(--page-bg-0p) 85%);
+  background-color: color-mix(
+    in srgb,
+    var(--color-text),
+    var(--page-bg-0p) 95%
+  );
+}

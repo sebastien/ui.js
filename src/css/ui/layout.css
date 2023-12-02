@@ -359,6 +359,10 @@
   gap: var(--gap-2);
 }
 
+.row.stretched {
+  align-items: stretch;
+}
+
 .row.distribute {
   justify-content: space-between;
 }
@@ -924,31 +928,39 @@
   gap: 0px;
 }
 /* @tmpl
-   * range(8).map(_ => `\n  .gap-${_+1} { gap: var(--gap-${_+1}); }`)
+   * range(8).map(_ => `\n  .gap-${_+1} { --gap: var(--gap-${_+1}); gap: var(--gap);}`)
    */
 .gap-1 {
-  gap: var(--gap-1);
+  --gap: var(--gap-1);
+  gap: var(--gap);
 }
 .gap-2 {
-  gap: var(--gap-2);
+  --gap: var(--gap-2);
+  gap: var(--gap);
 }
 .gap-3 {
-  gap: var(--gap-3);
+  --gap: var(--gap-3);
+  gap: var(--gap);
 }
 .gap-4 {
-  gap: var(--gap-4);
+  --gap: var(--gap-4);
+  gap: var(--gap);
 }
 .gap-5 {
-  gap: var(--gap-5);
+  --gap: var(--gap-5);
+  gap: var(--gap);
 }
 .gap-6 {
-  gap: var(--gap-6);
+  --gap: var(--gap-6);
+  gap: var(--gap);
 }
 .gap-7 {
-  gap: var(--gap-7);
+  --gap: var(--gap-7);
+  gap: var(--gap);
 }
 .gap-8 {
-  gap: var(--gap-8);
+  --gap: var(--gap-8);
+  gap: var(--gap);
 } /* @end */
 .no-gap {
   gap: 0px;

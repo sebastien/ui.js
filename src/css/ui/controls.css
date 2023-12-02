@@ -125,7 +125,6 @@ textarea,
   font-size: var(--font-input-size);
   line-height: var(--font-input-line-height);
   background-color: var(--control-input-bg);
-  min-height: 2lh;
 }
 
 input,
@@ -133,6 +132,11 @@ textarea,
 .input,
 .textarea {
   border: 2px solid var(--control-bd-ltr);
+}
+
+textarea,
+.textarea {
+  min-height: 2lh;
 }
 
 input:hover,
@@ -194,10 +198,10 @@ input.larger,
   padding: var(--pad-3) var(--pad-5);
 }
 
-input.transparent[type="text"],
-input.transparent[type="text"]:active,
-input.transparent[type="text"]:focus,
-input.transparent[type="text"]:hover,
+input.transparent,
+input.transparent:active,
+input.transparent:focus,
+input.transparent:hover,
 textarea.transparent,
 textarea.transparent:active,
 textarea.transparent:focus,
@@ -211,6 +215,9 @@ textarea.transparent:hover,
   box-shadow: unset;
   top: unset;
   left: unset;
+  padding: unset;
+  border: unset;
+  outline: unset;
 }
 
 input[type="checkbox"] {
@@ -234,6 +241,25 @@ textarea,
 input[type="color"] {
   padding: 0px;
   width: 3ch;
+}
+
+/**
+ * # Input Style
+*/
+
+input.rounded,
+.input.rounded {
+  border-radius: var(--rounded-2);
+}
+
+input.rounder,
+.input.rounder {
+  border-radius: var(--rounded-4);
+}
+
+input.roundest,
+.input.roundest {
+  border-radius: 3em;
 }
 
 /**
@@ -344,6 +370,21 @@ button.pill,
 .button.pill {
   border-radius: 1lh;
   min-width: 5ch;
+}
+
+button.rounded,
+.button.rounded {
+  border-radius: var(--rounded-2);
+}
+
+button.rounder,
+.button.rounder {
+  border-radius: var(--rounded-4);
+}
+
+button.roundest,
+.button.roundest {
+  border-radius: 3em;
 }
 
 /**
