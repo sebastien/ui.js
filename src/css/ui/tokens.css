@@ -90,7 +90,7 @@ variations).
   --blend-hwb: in hwb;
   --blend-srgb: in srgb;
   --blend-lab: in lab;
-  --blend-lsrgb: in lsrgb;
+  --blend-lsrgb: in srgb-linear;
   --blend-xyz: in xyz;
   --blend-oklch: in oklch;
   --blend-lch: in lch;
@@ -150,6 +150,7 @@ variations).
   --color-current: var(--color-grey-2);
   --color-accent: var(--color-cyan-5);
   --color-primary: var(--color-blue-5);
+  --color-background-t: var(--page-bg-0p);
   /* FIXME: What is alt ? */
   --color-primary-alt: var(--color-blue-8);
   --color-secondary: var(--color-yellow);
@@ -162,7 +163,15 @@ variations).
   --link-color: var(--color-primary);
   --color-text: var(--color-black);
 
+  /*
+   * ## Shadows
+   */
   --shadow-floating: 4px 4px 4px #0000000a;
+
+  --shadow-depth: 1;
+  --shadow-low: calc(1.5px * var(--shadow-depth))
+    calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
+    color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
 
   /*
    * ## Page

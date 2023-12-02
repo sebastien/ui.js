@@ -82,6 +82,9 @@
   height: 100%;
   max-height: 100%;
 }
+.fit-content {
+  width: min-content;
+}
 .bl {
   display: block;
 }
@@ -260,7 +263,7 @@
   height: calc(var(--block-size) * 10);
 } /* @end */
 /* @tmpl
-   * range(10).map(_ => `\n  .w-${_}c { width: ${_}ch; }`)
+   * range(20).map(_ => `\n  .w-${_}c { width: ${_}ch; }`)
    */
 .w-0c {
   width: 0ch;
@@ -291,6 +294,36 @@
 }
 .w-9c {
   width: 9ch;
+}
+.w-10c {
+  width: 10ch;
+}
+.w-11c {
+  width: 11ch;
+}
+.w-12c {
+  width: 12ch;
+}
+.w-13c {
+  width: 13ch;
+}
+.w-14c {
+  width: 14ch;
+}
+.w-15c {
+  width: 15ch;
+}
+.w-16c {
+  width: 16ch;
+}
+.w-17c {
+  width: 17ch;
+}
+.w-18c {
+  width: 18ch;
+}
+.w-19c {
+  width: 19ch;
 } /* @end */
 
 /**

@@ -1,5 +1,4 @@
 import { Effect, Effector } from "../effectors.js";
-import { parsePath } from "../path.js";
 
 export class EventEffector extends Effector {
   // -- doc

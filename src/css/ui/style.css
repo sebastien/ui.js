@@ -196,5 +196,47 @@
 .upper {
   text-transform: uppercase;
 }
-
+/* @tmpl
+   * range(10).map(_ => `\n  .shadow-${_} { --shadow-depth: ${_+1}; box-shadow: var(--shadow-low); }`)
+   */
+.shadow-0 {
+  --shadow-depth: 1;
+  box-shadow: var(--shadow-low);
+}
+.shadow-1 {
+  --shadow-depth: 2;
+  box-shadow: var(--shadow-low);
+}
+.shadow-2 {
+  --shadow-depth: 3;
+  box-shadow: var(--shadow-low);
+}
+.shadow-3 {
+  --shadow-depth: 4;
+  box-shadow: var(--shadow-low);
+}
+.shadow-4 {
+  --shadow-depth: 5;
+  box-shadow: var(--shadow-low);
+}
+.shadow-5 {
+  --shadow-depth: 6;
+  box-shadow: var(--shadow-low);
+}
+.shadow-6 {
+  --shadow-depth: 7;
+  box-shadow: var(--shadow-low);
+}
+.shadow-7 {
+  --shadow-depth: 8;
+  box-shadow: var(--shadow-low);
+}
+.shadow-8 {
+  --shadow-depth: 9;
+  box-shadow: var(--shadow-low);
+}
+.shadow-9 {
+  --shadow-depth: 10;
+  box-shadow: var(--shadow-low);
+} /* @end */
 /* EOF */

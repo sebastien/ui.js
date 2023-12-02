@@ -123,7 +123,7 @@ a[href],
   background-color: color-mix(
     in srgb,
     var(--color-text),
-    var(--page-bg-0p) 98%
+    var(--page-bg-0p) 100%
   );
 }
 
