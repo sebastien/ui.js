@@ -221,7 +221,7 @@ class SingleSlotEffect extends SlotEffect {
   }
 
   unify(current, previous = this.value) {
-    if (this.selector.target) {
+    if (this.selector?.target) {
       this.scope.set(this.selector.target, current);
     }
     if (!this.view) {

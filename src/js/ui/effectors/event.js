@@ -28,18 +28,23 @@ class EventEffect extends Effect {
     const { handler, directive } = this.effector;
     const v = handler ? handler(event, this.scope, this.node) : null;
     if (directive.assign) {
-      this.scope.set(directive.assign, event.target.value);
+      this.scope.set(directive.assign, v, directive.force ? true : false);
     }
     if (directive.slot) {
-      this.scope.set(directive.slot, v);
+      this.scope.set(
+        directive.slot,
+        event.target.value,
+        directive.force ? true : false
+      );
     }
     // TODO: Do something about that
-    // console.log("HANDLING", {
-    //   event,
-    //   handler: handler,
-    //   scope: this.scope,
-    //   value: v,
-    // });
+    console.log("HANDLING", {
+      event,
+      directive,
+      handler: handler,
+      scope: this.scope,
+      value: v,
+    });
   }
 
   unify(current, previous = this.value) {

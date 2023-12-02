@@ -1,5 +1,6 @@
 import {
   parse,
+  makematch,
   seq,
   capture,
   text,
@@ -118,11 +119,17 @@ export const parseExpression = (text) => {
 const RE_ON = new RegExp(
   or(
     seq(
-      // Slot is like, "asdsasd="
-      opt(seq(capture("[A-Za-z_0-9]+", "slot"), text("="))),
+      // Slot is like, "asdsasd=" or "slot!=" to force an assignment
+      opt(
+        seq(
+          capture("[A-Za-z_0-9]+", "assign"),
+          opt(capture(text("!"), "force")),
+          text("=")
+        )
+      ),
       opt(
         // There's an optional input a,b,c->
-        opt(list("[a-zA-Z]", ",", "input"), "->"),
+        opt(list(or("[a-zA-Z]+", text("#")), ",", "inputs"), "->"),
         // With an expression like `{....}`
         seq(
           text("{"),
@@ -138,11 +145,25 @@ const RE_ON = new RegExp(
       ),
       "$"
     ),
-    seq(capture("[A-Za-z_0-9]+", "assign"))
+    seq(capture("[A-Za-z_0-9]+", "slot"))
   )
 );
 export const parseOnDirective = (value) => {
-  return parse(value, RE_ON);
+  const match = parse(value, RE_ON, true);
+  if (!match) {
+    onError("Could not parse this 'on' directive", { directive: value });
+    return null;
+  } else if (match.index !== 0 || match[0].length !== value.length) {
+    onError("Could not fully parse this 'on' directive", {
+      matched: value.substring(0, match[0].length),
+      unrecognized: value.substring(match[0].length),
+      directive: value,
+    });
+    return null;
+  } else {
+    const res = makematch(match);
+    return res;
+  }
 };
 
 export const parseForDirective = (text) => {

@@ -146,13 +146,13 @@ export class Value extends Cell {
     this.comparator = comparator;
   }
 
-  set(value, path = null, offset = 0) {
+  set(value, path = null, offset = 0, force = false) {
     if (path) {
       throw NotImplementedError();
     }
     const previous = this.value;
     this.value = value;
-    this.comparator(value, previous) && this.trigger(value);
+    (force || this.comparator(value, previous)) && this.trigger(value);
   }
 
   get(path = null, offset = 0) {
@@ -336,11 +336,11 @@ export class Scope extends Cell {
     return slot ? slot.get(path, offset + 1) : undefined;
   }
 
-  set(path, value) {
+  set(path, value, force = false) {
     if (typeof path === "string") {
       const slot = this.slots[path];
       if (slot) {
-        slot.set(value);
+        slot.set(value, undefined, undefined, force);
       } else {
         this.slots[path] = new Value(value);
       }

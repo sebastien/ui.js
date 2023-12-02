@@ -13,19 +13,28 @@ export const onOnAttribute = (processor, attr, root, name) => {
   if (!directive) {
     onError("Unsupported directive", attr.value);
   }
-  const handler =
+  const handler = directive.handler
+    ? new Function(
+        "event",
+        "scope",
+        "node",
+        `${Object.values(directive.inputs)
+          .map((_) => `const ${_}=scope.get("${_}");`)
+          .join("")}; return (${directive.handler})`
+      )
+    : // NOTE: expr is not really there, but maybe we want to support it?
     directive.slot || directive.expr
-      ? new Function(
-          "event",
-          "scope",
-          "node",
-          directive.slot
-            ? `{const _=event;const v=(${directive.expr || "_"});scope.set("${
-                directive.slot
-              }", v);return v}`
-            : `{const _=event;return (${directive.expr || "v"});}`
-        )
-      : undefined;
+    ? new Function(
+        "event",
+        "scope",
+        "node",
+        directive.slot
+          ? `{const _=event;const v=(${directive.expr || "_"});scope.set("${
+              directive.slot
+            }", v);return v}`
+          : `{const _=event;return (${directive.expr || "v"});}`
+      )
+    : undefined;
   node.removeAttribute(attr.name);
   // FIXME: A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
   // case they've already been processed at that point.
