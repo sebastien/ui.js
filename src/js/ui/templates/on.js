@@ -28,17 +28,13 @@ export const onOnAttribute = (processor, attr, root, name) => {
           .join("")}; return (${directive.handler})`
       )
     : // NOTE: expr is not really there, but maybe we want to support it?
-    directive.slot || directive.expr
+    directive.expr
     ? new Function(
         "event",
         "scope",
         "node",
         "$",
-        directive.slot
-          ? `{const _=event;const v=(${directive.expr || "_"});scope.set("${
-              directive.slot
-            }", v);return v}`
-          : `{const _=event;return (${directive.expr || "v"});}`
+        `{const _=event;return (${directive.expr});}`
       )
     : undefined;
   node.removeAttribute(attr.name);

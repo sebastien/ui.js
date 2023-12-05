@@ -30,20 +30,13 @@ class EventEffect extends Effect {
       ? handler(event, this.scope, this.node, EffectorAPI)
       : null;
     // TODO: Do something about that
-    console.log("HANDLING", {
-      event,
-      directive,
-      handler: handler,
-      scope: this.scope,
-      value: v,
-    });
     if (directive.assign) {
       this.scope.set(directive.assign, v, directive.force ? true : false);
     }
     if (directive.slot) {
       this.scope.set(
         directive.slot,
-        event.target.value,
+        handler ? v : event.target.value,
         directive.force ? true : false
       );
     }
