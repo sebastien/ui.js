@@ -5,60 +5,60 @@ This defines base typographic settings.
 */
 
 body {
-  font-family: var(--font-text);
-  line-height: var(--font-text-lh);
-  font-size: var(--font-text-size);
-  color: var(--color-text);
-  accent-color: var(--color-accent);
-  background-color: var(--page-bg);
-  padding: var(--pad-4);
-  --line-height: var(--font-text-lh);
+	font-family: var(--font-text);
+	line-height: var(--font-text-lh);
+	font-size: var(--font-text-size);
+	color: var(--color-text);
+	accent-color: var(--color-accent);
+	background-color: var(--page-bg);
+	padding: var(--pad-4);
+	--line-height: var(--font-text-lh);
 }
 
 .icon {
-  color: var(--icon-color);
-  font-family: var(--font-icon);
-  font-variation-settings: var(--font-icon-variation);
-  font-weight: normal;
-  font-style: normal;
-  font-size: var(--icon-font-size);
-  display: inline-block;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
-  width: var(--icon-size);
-  height: var(--icon-size);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "liga";
-  fill: none;
-  stroke-width: 1px;
-  stroke: var(--icon-color);
+	color: var(--icon-color);
+	font-family: var(--font-icon);
+	font-variation-settings: var(--font-icon-variation);
+	font-weight: normal;
+	font-style: normal;
+	font-size: var(--icon-font-size);
+	display: inline-block;
+	text-transform: none;
+	letter-spacing: normal;
+	word-wrap: normal;
+	white-space: nowrap;
+	direction: ltr;
+	width: var(--icon-size);
+	height: var(--icon-size);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+	-moz-osx-font-smoothing: grayscale;
+	font-feature-settings: "liga";
+	fill: none;
+	stroke-width: 1px;
+	stroke: var(--icon-color);
 }
 .icon.text {
-  font-size: var(--font-text-size);
-  line-height: var(--font-line-height);
+	font-size: var(--font-text-size);
+	line-height: var(--font-line-height);
 }
 
 hr {
-  border: 0px solid transparent;
-  border-bottom: 1px solid var(--color-text);
+	border: 0px solid transparent;
+	border-bottom: 1px solid var(--color-text);
 }
 
 p {
-  max-width: var(--text-max-width);
+	max-width: var(--text-max-width);
 }
 
 .code,
 code,
 pre {
-  font-family: var(--font-code);
-  font-size: var(--font-code-size);
-  line-height: var(--font-code-lh);
-  color: var(--color-code);
+	font-family: var(--font-code);
+	font-size: var(--font-code-size);
+	line-height: var(--font-code-lh);
+	color: var(--color-code);
 }
 
 .hx,
@@ -68,106 +68,106 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-heading);
-  font-size: var(--font-heading-size);
-  line-height: var(--font-heading-lh);
-  font-weight: 600;
+	font-family: var(--font-heading);
+	font-size: var(--font-heading-size);
+	line-height: var(--font-heading-lh);
+	font-weight: 600;
 }
 h1 {
-  font-size: var(--font-size-8);
+	font-size: var(--font-size-8);
 }
 h2 {
-  font-size: var(--font-size-7);
+	font-size: var(--font-size-7);
 }
 h3 {
-  font-size: var(--font-size-6);
+	font-size: var(--font-size-6);
 }
 h4 {
-  font-size: var(--font-size-5);
+	font-size: var(--font-size-5);
 }
 h5 {
-  font-size: var(--font-size-4);
+	font-size: var(--font-size-4);
 }
 h6 {
-  font-size: var(--font-size-3);
+	font-size: var(--font-size-3);
 }
 dt {
-  font-weight: bold;
-  margin-top: 1.25em;
-  max-width: var(--text-max-width);
+	font-weight: bold;
+	margin-top: 1.25em;
+	max-width: var(--text-max-width);
 }
 dd {
-  max-width: var(--text-max-width);
-  margin-left: 0.5ch;
-  padding-left: 1.25em;
-  padding-top: 0.5em;
-  padding-bottom: 0.5em;
-  margin-bottom: var(--line-height);
-  border-left: 1px solid var(--color-text);
+	max-width: var(--text-max-width);
+	margin-left: 0.5ch;
+	padding-left: 1.25em;
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
+	margin-bottom: var(--line-height);
+	border-left: 1px solid var(--color-text);
 }
 
 button,
 input,
 textarea {
-  font-family: var(--font-control);
-  line-height: var(--font-control-lh);
-  font-size: var(--font-control-size);
+	font-family: var(--font-control);
+	line-height: var(--font-control-lh);
+	font-size: var(--font-control-size);
 }
 
 a[href],
 .link {
-  text-decoration: none;
-  color: var(--color-text);
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--color-accent), var(--page-bg-0p) 60%);
-  background-color: color-mix(
-    in srgb,
-    var(--color-text),
-    var(--page-bg-0p) 100%
-  );
+	text-decoration: none;
+	color: var(--color-text);
+	border-bottom: 1px solid
+		color-mix(in srgb, var(--color-accent), var(--page-bg-0p) 60%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 100%
+	);
 }
 
 a[href]:hover,
 .link:hover {
-  background-color: color-mix(
-    in srgb,
-    var(--color-accent),
-    var(--page-bg-0p) 90%
-  );
+	background-color: color-mix(
+		in srgb,
+		var(--color-accent),
+		var(--page-bg-0p) 90%
+	);
 }
 
 a[href].nolink,
 a[href].nolink:hover {
-  text-decoration: none;
-  color: unset;
-  border: unset;
-  background-color: unset;
-  border-color: unset;
+	text-decoration: none;
+	color: unset;
+	border: unset;
+	background-color: unset;
+	border-color: unset;
 }
 
 .filler,
 .placeholder {
-  background-color: #03dac675;
-  border: 1px solid #03dac675;
+	background-color: #03dac675;
+	border: 1px solid #03dac675;
 }
 /* NOTE: We leave the padding units after the definition 
    * of the main layout classes so that we can overridde. 
 */
 .nowrap {
-  white-space: nowrap;
+	white-space: nowrap;
 }
 /**
 	* ## Text
 	*/
 
 .tr {
-  text-align: right;
+	text-align: right;
 }
 .tl {
-  text-align: left;
+	text-align: left;
 }
 .tt {
-  align-self: flex-start;
+	align-self: flex-start;
 }
 
 /* EOF */

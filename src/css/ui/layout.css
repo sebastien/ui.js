@@ -2,45 +2,45 @@
    * ## Box Model
 */
 .pos-rel {
-  position: relative;
+	position: relative;
 }
 .pos-abs {
-  position: absolute;
+	position: absolute;
 }
 .pos-lr {
-  bottom: 0px;
-  right: 0px;
+	bottom: 0px;
+	right: 0px;
 }
 .scroll-h {
-  overflow-x: auto;
+	overflow-x: auto;
 }
 .noscroll-h {
-  overflow-x: hidden;
+	overflow-x: hidden;
 }
 .scroll-v {
-  overflow-y: auto;
+	overflow-y: auto;
 }
 .noscroll-v {
-  overflow-y: hidden;
+	overflow-y: hidden;
 }
 
 .compact {
-  width: min-content;
+	width: min-content;
 }
 
 .squared {
-  width: 100%;
-  padding-top: 100%;
-  position: relative;
+	width: 100%;
+	padding-top: 100%;
+	position: relative;
 }
 
 .squared > * {
-  position: absolute;
-  top: 0px;
-  bottom: 0px;
-  left: 0px;
-  right: 0px;
-  overflow: auto;
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	left: 0px;
+	right: 0px;
+	overflow: auto;
 }
 
 /**
@@ -52,264 +52,264 @@
    * do this for the width and height.
 	*/
 .fit {
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	max-width: 100%;
+	max-height: 100%;
 }
 .fit-w {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
 }
 .fit-h {
-  box-sizing: border-box;
-  height: 100%;
-  max-height: 100%;
+	box-sizing: border-box;
+	height: 100%;
+	max-height: 100%;
 }
 .fit-content {
-  width: min-content;
+	width: min-content;
 }
 .bl {
-  display: block;
+	display: block;
 }
 .ibl {
-  display: inline-block;
+	display: inline-block;
 }
 .fl {
-  display: inline;
+	display: inline;
 }
 .ifl {
-  display: inline-flex;
+	display: inline-flex;
 }
 /* @tmpl
    * range(10).map(_ => `\n  .w-${_+1}col { width: calc(var(--col-width) * ${_+1}); }`)
   */
 .w-1col {
-  width: calc(var(--col-width) * 1);
+	width: calc(var(--col-width) * 1);
 }
 .w-2col {
-  width: calc(var(--col-width) * 2);
+	width: calc(var(--col-width) * 2);
 }
 .w-3col {
-  width: calc(var(--col-width) * 3);
+	width: calc(var(--col-width) * 3);
 }
 .w-4col {
-  width: calc(var(--col-width) * 4);
+	width: calc(var(--col-width) * 4);
 }
 .w-5col {
-  width: calc(var(--col-width) * 5);
+	width: calc(var(--col-width) * 5);
 }
 .w-6col {
-  width: calc(var(--col-width) * 6);
+	width: calc(var(--col-width) * 6);
 }
 .w-7col {
-  width: calc(var(--col-width) * 7);
+	width: calc(var(--col-width) * 7);
 }
 .w-8col {
-  width: calc(var(--col-width) * 8);
+	width: calc(var(--col-width) * 8);
 }
 .w-9col {
-  width: calc(var(--col-width) * 9);
+	width: calc(var(--col-width) * 9);
 }
 .w-10col {
-  width: calc(var(--col-width) * 10);
+	width: calc(var(--col-width) * 10);
 } /* @end */
 /* @tmpl
    * range(10).map(_ => `\n  .wmax-${_+1}col { max-width: calc(var(--col-width) * ${_+1}); }`)
   */
 .wmax-1col {
-  max-width: calc(var(--col-width) * 1);
+	max-width: calc(var(--col-width) * 1);
 }
 .wmax-2col {
-  max-width: calc(var(--col-width) * 2);
+	max-width: calc(var(--col-width) * 2);
 }
 .wmax-3col {
-  max-width: calc(var(--col-width) * 3);
+	max-width: calc(var(--col-width) * 3);
 }
 .wmax-4col {
-  max-width: calc(var(--col-width) * 4);
+	max-width: calc(var(--col-width) * 4);
 }
 .wmax-5col {
-  max-width: calc(var(--col-width) * 5);
+	max-width: calc(var(--col-width) * 5);
 }
 .wmax-6col {
-  max-width: calc(var(--col-width) * 6);
+	max-width: calc(var(--col-width) * 6);
 }
 .wmax-7col {
-  max-width: calc(var(--col-width) * 7);
+	max-width: calc(var(--col-width) * 7);
 }
 .wmax-8col {
-  max-width: calc(var(--col-width) * 8);
+	max-width: calc(var(--col-width) * 8);
 }
 .wmax-9col {
-  max-width: calc(var(--col-width) * 9);
+	max-width: calc(var(--col-width) * 9);
 }
 .wmax-10col {
-  max-width: calc(var(--col-width) * 10);
+	max-width: calc(var(--col-width) * 10);
 } /* @end */
 /* @tmpl
    * range(10).map(_ => `\n  .wmin-${_+1}col { min-width: calc(var(--col-width) * ${_+1}); }`)
   */
 .wmin-1col {
-  min-width: calc(var(--col-width) * 1);
+	min-width: calc(var(--col-width) * 1);
 }
 .wmin-2col {
-  min-width: calc(var(--col-width) * 2);
+	min-width: calc(var(--col-width) * 2);
 }
 .wmin-3col {
-  min-width: calc(var(--col-width) * 3);
+	min-width: calc(var(--col-width) * 3);
 }
 .wmin-4col {
-  min-width: calc(var(--col-width) * 4);
+	min-width: calc(var(--col-width) * 4);
 }
 .wmin-5col {
-  min-width: calc(var(--col-width) * 5);
+	min-width: calc(var(--col-width) * 5);
 }
 .wmin-6col {
-  min-width: calc(var(--col-width) * 6);
+	min-width: calc(var(--col-width) * 6);
 }
 .wmin-7col {
-  min-width: calc(var(--col-width) * 7);
+	min-width: calc(var(--col-width) * 7);
 }
 .wmin-8col {
-  min-width: calc(var(--col-width) * 8);
+	min-width: calc(var(--col-width) * 8);
 }
 .wmin-9col {
-  min-width: calc(var(--col-width) * 9);
+	min-width: calc(var(--col-width) * 9);
 }
 .wmin-10col {
-  min-width: calc(var(--col-width) * 10);
+	min-width: calc(var(--col-width) * 10);
 } /* @end */
 /* @tmpl
    * range(10).map(_ => `\n  .w-${_+1}bl { width: calc(var(--block-size) * ${_+1}); }`)
   */
 .w-1bl {
-  width: calc(var(--block-size) * 1);
+	width: calc(var(--block-size) * 1);
 }
 .w-2bl {
-  width: calc(var(--block-size) * 2);
+	width: calc(var(--block-size) * 2);
 }
 .w-3bl {
-  width: calc(var(--block-size) * 3);
+	width: calc(var(--block-size) * 3);
 }
 .w-4bl {
-  width: calc(var(--block-size) * 4);
+	width: calc(var(--block-size) * 4);
 }
 .w-5bl {
-  width: calc(var(--block-size) * 5);
+	width: calc(var(--block-size) * 5);
 }
 .w-6bl {
-  width: calc(var(--block-size) * 6);
+	width: calc(var(--block-size) * 6);
 }
 .w-7bl {
-  width: calc(var(--block-size) * 7);
+	width: calc(var(--block-size) * 7);
 }
 .w-8bl {
-  width: calc(var(--block-size) * 8);
+	width: calc(var(--block-size) * 8);
 }
 .w-9bl {
-  width: calc(var(--block-size) * 9);
+	width: calc(var(--block-size) * 9);
 }
 .w-10bl {
-  width: calc(var(--block-size) * 10);
+	width: calc(var(--block-size) * 10);
 } /* @end */
 /* @tmpl
    * range(10).map(_ => `\n  .h-${_+1}bl { height: calc(var(--block-size) * ${_+1}); }`)
   */
 .h-1bl {
-  height: calc(var(--block-size) * 1);
+	height: calc(var(--block-size) * 1);
 }
 .h-2bl {
-  height: calc(var(--block-size) * 2);
+	height: calc(var(--block-size) * 2);
 }
 .h-3bl {
-  height: calc(var(--block-size) * 3);
+	height: calc(var(--block-size) * 3);
 }
 .h-4bl {
-  height: calc(var(--block-size) * 4);
+	height: calc(var(--block-size) * 4);
 }
 .h-5bl {
-  height: calc(var(--block-size) * 5);
+	height: calc(var(--block-size) * 5);
 }
 .h-6bl {
-  height: calc(var(--block-size) * 6);
+	height: calc(var(--block-size) * 6);
 }
 .h-7bl {
-  height: calc(var(--block-size) * 7);
+	height: calc(var(--block-size) * 7);
 }
 .h-8bl {
-  height: calc(var(--block-size) * 8);
+	height: calc(var(--block-size) * 8);
 }
 .h-9bl {
-  height: calc(var(--block-size) * 9);
+	height: calc(var(--block-size) * 9);
 }
 .h-10bl {
-  height: calc(var(--block-size) * 10);
+	height: calc(var(--block-size) * 10);
 } /* @end */
 /* @tmpl
    * range(20).map(_ => `\n  .w-${_}c { width: ${_}ch; }`)
    */
 .w-0c {
-  width: 0ch;
+	width: 0ch;
 }
 .w-1c {
-  width: 1ch;
+	width: 1ch;
 }
 .w-2c {
-  width: 2ch;
+	width: 2ch;
 }
 .w-3c {
-  width: 3ch;
+	width: 3ch;
 }
 .w-4c {
-  width: 4ch;
+	width: 4ch;
 }
 .w-5c {
-  width: 5ch;
+	width: 5ch;
 }
 .w-6c {
-  width: 6ch;
+	width: 6ch;
 }
 .w-7c {
-  width: 7ch;
+	width: 7ch;
 }
 .w-8c {
-  width: 8ch;
+	width: 8ch;
 }
 .w-9c {
-  width: 9ch;
+	width: 9ch;
 }
 .w-10c {
-  width: 10ch;
+	width: 10ch;
 }
 .w-11c {
-  width: 11ch;
+	width: 11ch;
 }
 .w-12c {
-  width: 12ch;
+	width: 12ch;
 }
 .w-13c {
-  width: 13ch;
+	width: 13ch;
 }
 .w-14c {
-  width: 14ch;
+	width: 14ch;
 }
 .w-15c {
-  width: 15ch;
+	width: 15ch;
 }
 .w-16c {
-  width: 16ch;
+	width: 16ch;
 }
 .w-17c {
-  width: 17ch;
+	width: 17ch;
 }
 .w-18c {
-  width: 18ch;
+	width: 18ch;
 }
 .w-19c {
-  width: 19ch;
+	width: 19ch;
 } /* @end */
 
 /**
@@ -317,129 +317,129 @@
    * to `fixed'.
    */
 .fit-screen {
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  width: 100vw;
-  height: 100vh;
-  max-width: 100vw;
-  max-height: 100vh;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	width: 100vw;
+	height: 100vh;
+	max-width: 100vw;
+	max-height: 100vh;
 }
 
 .columns {
-  display: flex;
-  align-items: flex-start;
+	display: flex;
+	align-items: flex-start;
 }
 
 .centered {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
 }
 
 .row {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-2);
+	display: flex;
+	align-items: center;
+	gap: var(--gap-2);
 }
 
 .row.stretched {
-  align-items: stretch;
+	align-items: stretch;
 }
 
 .row.distribute {
-  justify-content: space-between;
+	justify-content: space-between;
 }
 
 .row.fill > * {
-  flex: 1;
+	flex: 1;
 }
 .row > .fill {
-  flex: 1;
+	flex: 1;
 }
 .row > .stretch {
-  align-self: stretch;
+	align-self: stretch;
 }
 .row.right {
-  justify-content: flex-end;
+	justify-content: flex-end;
 }
 .row.top {
-  align-items: flex-start;
+	align-items: flex-start;
 }
 .row.middle {
-  align-items: center;
+	align-items: center;
 }
 .row.stretch {
-  align-items: stretch;
+	align-items: stretch;
 }
 
 .noshrink {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 .grow {
-  flex-grow: 1;
+	flex-grow: 1;
 }
 .fixed {
-  flex-shrink: 0;
-  flex-grow: 0;
+	flex-shrink: 0;
+	flex-grow: 0;
 }
 
 .stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-2);
+	display: flex;
+	flex-direction: column;
+	gap: var(--gap-2);
 }
 
 .stack.fill {
-  justify-content: stretch;
+	justify-content: stretch;
 }
 
 .stack > .grow,
 .stack > .fill {
-  flex-grow: 1;
+	flex-grow: 1;
 }
 
 .stack {
-  display: flex;
-  flex-direction: column;
+	display: flex;
+	flex-direction: column;
 }
 
 .list-h {
-  --gap: var(--pad-1);
-  display: inline-flex;
-  flex-wrap: wrap;
-  flex-direction: row;
-  gap: var(--gap);
+	--gap: var(--pad-1);
+	display: inline-flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+	gap: var(--gap);
 }
 
 .list-v {
-  --gap: var(--pad-1);
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
+	--gap: var(--pad-1);
+	display: flex;
+	flex-direction: column;
+	gap: var(--gap);
 }
 
 .sep-slash > *:after {
-  display: inline-block;
-  padding-left: var(--gap);
-  content: "/";
+	display: inline-block;
+	padding-left: var(--gap);
+	content: "/";
 }
 .sep-slash > *:last-child:after {
-  display: none;
-  padding-left: 0px;
-  content: "/";
+	display: none;
+	padding-left: 0px;
+	content: "/";
 }
 
 .grid-1_1 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
 }
 
 .grid-1_2 {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
+	display: grid;
+	grid-template-columns: 1fr 2fr;
 }
 
 /* EOF */

@@ -1,29 +1,29 @@
 .reset {
-  margin: 0px;
-  padding: 0px;
-  border: 0px solid transparent;
-  outline: 0px solid transparent;
-  background-color: transparent;
-  box-shadow: none;
-  text-shadow: none;
-  color: default;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: unset;
+	margin: 0px;
+	padding: 0px;
+	border: 0px solid transparent;
+	outline: 0px solid transparent;
+	background-color: transparent;
+	box-shadow: none;
+	text-shadow: none;
+	color: default;
+	font-size: 1rem;
+	font-weight: 400;
+	line-height: unset;
 }
 
 .nogap {
-  --gap: 0px;
-  gap: 0px;
+	--gap: 0px;
+	gap: 0px;
 }
 
 .nopad {
-  padding: 0px;
+	padding: 0px;
 }
 
 .nopad-h {
-  padding-left: 0px;
-  padding-right: 0px;
+	padding-left: 0px;
+	padding-right: 0px;
 }
 
 /* EOF */

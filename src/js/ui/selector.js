@@ -31,38 +31,38 @@ import { commonPath } from "./path.js";
 // either in an absolute way (no prefix like `application.name`) or relative (`.` prefix like `.label`).
 
 export const SelectorScope = Object.freeze({
-  Local: "@",
-  Relative: ".",
-  Absolute: "/",
-  Key: "#",
+	Local: "@",
+	Relative: ".",
+	Absolute: "/",
+	Key: "#",
 });
 
 export const SelectorType = Object.freeze({
-  Atom: "A",
-  List: "L",
-  Mapping: "M",
+	Atom: "A",
+	List: "L",
+	Mapping: "M",
 });
 
 export class SelectorInput {
-  constructor(type, path, isMany, format, key) {
-    this.type = type || SelectorScope.Relative;
-    this.path = path || [];
-    Object.freeze(path);
-    this.isMany = isMany;
-    this.format = format
-      ? format instanceof Function
-        ? format
-        : Formats[format]
-      : null;
-    this.key = key;
-    // TODO: Should freeze
-  }
+	constructor(type, path, isMany, format, key) {
+		this.type = type || SelectorScope.Relative;
+		this.path = path || [];
+		Object.freeze(path);
+		this.isMany = isMany;
+		this.format = format
+			? format instanceof Function
+				? format
+				: Formats[format]
+			: null;
+		this.key = key;
+		// TODO: Should freeze
+	}
 
-  toString() {
-    const key = this.key ? `${this.key}=` : "";
-    const format = this.format ? `|${this.format}` : "";
-    return `${key}${this.type}${this.path.join(".")}${format}`;
-  }
+	toString() {
+		const key = this.key ? `${this.key}=` : "";
+		const format = this.format ? `|${this.format}` : "";
+		return `${key}${this.type}${this.path.join(".")}${format}`;
+	}
 }
 
 // --
@@ -76,38 +76,40 @@ export class SelectorInput {
 //
 
 export class Selector {
-  constructor(inputs, format = undefined, target = undefined) {
-    this.inputs = inputs;
-    this.format = format;
-    this.isMany = inputs.length === 1 && inputs[0].isMany;
-    this.type = inputs.reduce(
-      (r, v) => (v.key ? SelectorType.Mapping : r),
-      inputs.length > 1 ? SelectorType.List : SelectorType.Atom
-    );
-    this.fields = inputs.map((_) => _.key || _.path.at(-1));
-    this.target = target;
-    switch (this.type) {
-      case SelectorType.Atom:
-        this.path = this.inputs[0].path;
-        break;
-      case SelectorType.List:
-      case SelectorType.Mapping:
-        this.path = commonPath(this.inputs.map((_) => _.path));
-        break;
-      default:
-        // ERROR
-        this.path = null;
-        onError(`Selector.path: Unknown selector type: ${this.type}`, {
-          type: this.type,
-        });
-    }
-    Object.freeze(this.path);
-  }
+	constructor(inputs, format = undefined, target = undefined) {
+		this.inputs = inputs;
+		this.format = format;
+		this.isMany = inputs.length === 1 && inputs[0].isMany;
+		this.type = inputs.reduce(
+			(r, v) => (v.key ? SelectorType.Mapping : r),
+			inputs.length > 1 ? SelectorType.List : SelectorType.Atom
+		);
+		this.fields = inputs.map((_) => _.key || _.path.at(-1));
+		this.target = target;
+		switch (this.type) {
+			case SelectorType.Atom:
+				this.path = this.inputs[0].path;
+				break;
+			case SelectorType.List:
+			case SelectorType.Mapping:
+				this.path = commonPath(this.inputs.map((_) => _.path));
+				break;
+			default:
+				// ERROR
+				this.path = null;
+				onError(`Selector.path: Unknown selector type: ${this.type}`, {
+					type: this.type,
+				});
+		}
+		Object.freeze(this.path);
+	}
 
-  toString() {
-    const event = this.event ? `!${this.event}${this.stops ? "." : ""}` : "";
-    return `${this.inputs.map((_) => _.toString()).join(",")}${event}`;
-  }
+	toString() {
+		const event = this.event
+			? `!${this.event}${this.stops ? "." : ""}`
+			: "";
+		return `${this.inputs.map((_) => _.toString()).join(",")}${event}`;
+	}
 }
 
 // EOF

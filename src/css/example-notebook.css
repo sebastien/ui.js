@@ -3,7 +3,7 @@
 	.Notebook {
 		border: 1px solid var(--control-bd);
 		display: flex;
-		flex-direction:  column;
+		flex-direction: column;
 	}
 	.Notebook > header {
 		padding-bottom: 0px;
@@ -19,32 +19,31 @@
 		margin: 0px;
 		line-height: 1.25em;
 		font-size: var(--font-size-2);
-
 	}
 	.Notebook > main {
 		flex-grow: 1;
 	}
-	.Document  > header {
+	.Document > header {
 		padding: 8px;
 		border-bottom: 1px solid var(--color-page-bg-alt);
 	}
-	.Document  > main > section {
+	.Document > main > section {
 		padding: 8px;
 		padding-top: 0.5em;
 		padding-bottom: 0.5em;
 		word-break: break-all;
 	}
-	.Document  > footer {
+	.Document > footer {
 		font-size: var(--font-size-1);
 		padding: 4px 8px;
 		background-color: var(--color-page-bg-alt);
 	}
-	.Document  h1 {
+	.Document h1 {
 		font-size: var(--font-size-5);
 		margin: 0px;
 		padding: 0px;
 	}
-	.Document  ul > li{
+	.Document ul > li {
 		list-style-type: disc;
 		margin-left: 1.5ch;
 	}
@@ -72,14 +71,14 @@
 		display: flex;
 		flex-direction: column;
 	}
-	.Sandwich >  main {
+	.Sandwich > main {
 		flex-grow: 1;
 	}
 	/* ## Sidebar */
-	.Sidebar  {
+	.Sidebar {
 		display: flex;
 	}
-	.Sidebar > *  {
+	.Sidebar > * {
 		flex-grow: 1;
 	}
 	.Sidebar > aside {
@@ -106,7 +105,7 @@
 		margin: 3px;
 	}
 	.Toolbar > hr {
-		width: 0.px;
+		width: 0px;
 		background: transparent;
 		border: 0px solid none;
 		height: 0px;
@@ -133,7 +132,7 @@
 	}
 	.BlockCreator:before,
 	.BlockCreator:after {
-		content:"";
+		content: "";
 		display: block;
 		height: 1px;
 		width: 8px;
@@ -159,14 +158,12 @@
 		border: 1px solid var(--control-bd);
 		border-right: 0px solid var(--control-bd);
 		background-color: var(--color-page-bg);
-
 	}
 	.Breadcrumbs > li a.active {
 		background-color: var(--color-accent);
 		color: var(--color-accent-txt);
-
 	}
-	.Breadcrumbs > li:first-child > a{
+	.Breadcrumbs > li:first-child > a {
 		border-top-left-radius: 4px;
 		border-bottom-left-radius: 4px;
 	}
@@ -199,17 +196,17 @@
 	.Tree > div:before {
 		content: attr(data-count);
 		display: inline-block;
-		content:"▸";
+		content: "▸";
 		flex-basis: 1em;
 		flex-grow: 0;
 		display: block;
 		width: 1.25em;
 		height: 1.25em;
 	}
-	.Tree > div[data-state~=empty]:before {
-		opacity: 0.0;
+	.Tree > div[data-state~="empty"]:before {
+		opacity: 0;
 	}
-	.Tree > div[data-state~=open]:before {
+	.Tree > div[data-state~="open"]:before {
 		transform: rotate(90deg);
 	}
 	.Tree > div:after {
@@ -219,10 +216,8 @@
 		opacity: 0.5;
 		flex-grow: 0;
 	}
-	.Tree > div[data-state~=selected] {
+	.Tree > div[data-state~="selected"] {
 		background-color: var(--color-accent);
 		color: var(--color-accent-txt);
 	}
-
-
 }

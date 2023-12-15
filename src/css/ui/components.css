@@ -2,57 +2,57 @@
 }
 
 .Columns {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  grid-gap: 10px;
-  /overflow-x: auto;
+	width: 100%;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	grid-gap: 10px;
+	/overflow-x: auto;
 }
 
 .Columns article {
-  max-height: 20em * 1.25em;
-  overflow: auto;
+	max-height: 20em * 1.25em;
+	overflow: auto;
 }
 
 .Tree details {
-  display: block;
+	display: block;
 }
 .Tree .name {
-  font-weight: bold;
+	font-weight: bold;
 }
 .Tree .class {
-  opacity: 0.65;
-  padding-left: 6px;
-  display: inline-block;
+	opacity: 0.65;
+	padding-left: 6px;
+	display: inline-block;
 }
 .Tree .attribute,
 .Tree .child {
-  padding-left: 16px;
+	padding-left: 16px;
 }
 .Tree details > .attributes > .attribute:before {
-  display: inline-block;
-  padding-left: 16px;
-  padding-right: 6px;
-  content: "@";
-  opacity: 0.5;
+	display: inline-block;
+	padding-left: 16px;
+	padding-right: 6px;
+	content: "@";
+	opacity: 0.5;
 }
 .Tree summary {
-  display: list-item;
-  cursor: pointer;
+	display: list-item;
+	cursor: pointer;
 }
 .Tree summary:hover::before {
-  color: var(--color-accent);
+	color: var(--color-accent);
 }
 .Tree summary::before {
-  content: "\25B6"; /* right-pointing arrow */
-  padding-right: 8px;
-  font-size: 70%;
+	content: "\25B6"; /* right-pointing arrow */
+	padding-right: 8px;
+	font-size: 70%;
 }
 .Tree details[open] summary::before {
-  content: "\25BC"; /* down-pointing arrow */
+	content: "\25BC"; /* down-pointing arrow */
 }
 
 #Template {
-  display: none;
+	display: none;
 }
 /* EOF */

@@ -4,246 +4,254 @@ JavaScript, so that variants can be easily created (faded version, OKLab
 variations).
  */
 :root {
-  --font-text: "Jost", sans-serif;
-  --font-text-line-height: 1.45em;
-  --font-text-size: var(--font-size-3);
+	--font-text: "Jost", sans-serif;
+	--font-text-line-height: 1.45em;
+	--font-text-size: var(--font-size-3);
 
-  --font-sans: "Jost", sans-serif;
-  --font-sans-line-height: 1.45em;
+	--font-sans: "Jost", sans-serif;
+	--font-sans-line-height: 1.45em;
 
-  --font-serif: "Hedvig Letters Serif", serif;
-  --font-serif-line-height: 1.45em;
+	--font-serif: "Hedvig Letters Serif", serif;
+	--font-serif-line-height: 1.45em;
 
-  --font-mono: "DM Mono", monospace;
-  --font-mono-line-height: 1.25em;
+	--font-mono: "DM Mono", monospace;
+	--font-mono-line-height: 1.25em;
 
-  --font-heading: var(--font-sans);
-  --font-heading-line-height: var(--font-sans-line-height);
-  --font-heading-size: var(--font-size-4);
+	--font-heading: var(--font-sans);
+	--font-heading-line-height: var(--font-sans-line-height);
+	--font-heading-size: var(--font-size-4);
 
-  --font-code: var(--font-mono);
-  --font-code-line-height: var(--font-mono);
-  --font-code-size: calc(10.5 / 14 * 1em);
+	--font-code: var(--font-mono);
+	--font-code-line-height: var(--font-mono);
+	--font-code-size: calc(10.5 / 14 * 1em);
 
-  --font-control: "Jost", sans-serif;
-  --font-control-line-height: 1.25em;
-  --font-control-size: var(--font-size-2);
+	--font-control: "Jost", sans-serif;
+	--font-control-line-height: 1.25em;
+	--font-control-size: var(--font-size-2);
 
-  --font-input: "Jost", sans-serif;
-  --font-input-line-height: 1.25em;
-  --font-input-size: var(--font-size-3);
+	--font-input: "Jost", sans-serif;
+	--font-input-line-height: 1.25em;
+	--font-input-size: var(--font-size-3);
 
-  /** ### Icons */
-  --font-icon: "Material Symbols Outlined", sans-serif;
-  --font-icon-size: 24px;
-  --font-icon-variation: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+	/** ### Icons */
+	--font-icon: "Material Symbols Outlined", sans-serif;
+	--font-icon-size: 24px;
+	--font-icon-variation: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
 
-  /** ### Font Size */
-  --font-base: 13;
-  --font-size: 13;
-  --font-ratio: calc(var(--font-size) / var(--font-base));
-  --font-size-0: calc(9 * var(--font-ratio) / 16 * 1em);
-  --font-size-1: calc(11 * var(--font-ratio) / 16 * 1em);
-  --font-size-2: calc(13 * var(--font-ratio) / 16 * 1em);
-  --font-size-3: calc(16 * var(--font-ratio) / 16 * 1em);
-  --font-size-4: calc(18 * var(--font-ratio) / 16 * 1em);
-  --font-size-5: calc(22 * var(--font-ratio) / 16 * 1em);
-  --font-size-6: calc(26 * var(--font-ratio) / 16 * 1em);
-  --font-size-7: calc(32 * var(--font-ratio) / 16 * 1em);
-  --font-size-8: calc(40 * var(--font-ratio) / 16 * 1em);
-  --font-size-9: calc(48 * var(--font-ratio) / 16 * 1em);
+	/** ### Font Size */
+	--font-base: 13;
+	--font-size: 13;
+	--font-ratio: calc(var(--font-size) / var(--font-base));
+	--font-size-0: calc(9 * var(--font-ratio) / 16 * 1em);
+	--font-size-1: calc(11 * var(--font-ratio) / 16 * 1em);
+	--font-size-2: calc(13 * var(--font-ratio) / 16 * 1em);
+	--font-size-3: calc(16 * var(--font-ratio) / 16 * 1em);
+	--font-size-4: calc(18 * var(--font-ratio) / 16 * 1em);
+	--font-size-5: calc(22 * var(--font-ratio) / 16 * 1em);
+	--font-size-6: calc(26 * var(--font-ratio) / 16 * 1em);
+	--font-size-7: calc(32 * var(--font-ratio) / 16 * 1em);
+	--font-size-8: calc(40 * var(--font-ratio) / 16 * 1em);
+	--font-size-9: calc(48 * var(--font-ratio) / 16 * 1em);
 
-  /**
+	/**
 	 * ## Typography
 	*/
-  --text-max-width: 55ch;
+	--text-max-width: 55ch;
 
-  /*
+	/*
    * ## Colors
   */
-  --color-black: #000000;
-  --color-black-0p: #00000000;
-  --color-white: #ffffff;
-  --color-white-0p: #ffffff00;
-  --color-cyan: #00aeb3;
-  --color-blue: #00a0dc;
-  --color-purple: #8d6cab;
-  --color-red: #dd5143;
-  --color-orange: #e68523;
-  --color-yellow: #edb220;
-  --color-pink: #dc4b89;
-  --color-green: #7cb82f;
-  --color-grey: #86888a;
+	--color-black: #000000;
+	--color-black-0p: #00000000;
+	--color-white: #ffffff;
+	--color-white-0p: #ffffff00;
+	--color-cyan: #00aeb3;
+	--color-blue: #00a0dc;
+	--color-purple: #8d6cab;
+	--color-red: #dd5143;
+	--color-orange: #e68523;
+	--color-yellow: #edb220;
+	--color-pink: #dc4b89;
+	--color-green: #7cb82f;
+	--color-grey: #86888a;
 
-  --color-value: var(--color-primary);
-  --color-high: var(--color-white);
-  --color-high-0p: var(--color-white-0p);
-  --color-low: var(--color-black);
-  --color-low-0p: var(--color-low-0p);
+	--color-value: var(--color-primary);
+	--color-high: var(--color-white);
+	--color-high-0p: var(--color-white-0p);
+	--color-low: var(--color-black);
+	--color-low-0p: var(--color-low-0p);
 
-  /* @tmpl
+	/* @tmpl
    * ('oklab hwb srgb lab lsrgb xyz oklch lch'.split(' ')).map(_ =>
    * `--blend-${_}: in ${_};\n`
    * )
  */
-  --blend-oklab: in oklab;
-  --blend-hwb: in hwb;
-  --blend-srgb: in srgb;
-  --blend-lab: in lab;
-  --blend-lsrgb: in lsrgb;
-  --blend-xyz: in xyz;
-  --blend-oklch: in oklch;
-  --blend-lch: in lch;
-  /* @end */
+	--blend-oklab: in oklab;
+	--blend-hwb: in hwb;
+	--blend-srgb: in srgb;
+	--blend-lab: in lab;
+	--blend-lsrgb: in lsrgb;
+	--blend-xyz: in xyz;
+	--blend-oklch: in oklch;
+	--blend-lch: in lch;
+	/* @end */
 
-  --color-blend: var(--blend-srgb);
+	--color-blend: var(--blend-srgb);
 
-  /*
+	/*
    * ## Padding 
   */
-  --pad-0: calc(1px * 2);
-  --pad-1: calc(1px * 4);
-  --pad-2: calc(1px * 8);
-  --pad-3: calc(1px * 12);
-  --pad-4: calc(1px * 16);
-  --pad-5: calc(1px * 20);
-  --pad-6: calc(1px * 24);
-  --pad-7: calc(1px * 28);
-  --pad-8: calc(1px * 32);
+	--pad-0: calc(1px * 2);
+	--pad-1: calc(1px * 4);
+	--pad-2: calc(1px * 8);
+	--pad-3: calc(1px * 12);
+	--pad-4: calc(1px * 16);
+	--pad-5: calc(1px * 20);
+	--pad-6: calc(1px * 24);
+	--pad-7: calc(1px * 28);
+	--pad-8: calc(1px * 32);
 
-  --gap-1: var(--pad-0);
-  --gap-2: var(--pad-1);
-  --gap-3: var(--pad-2);
-  --gap-4: var(--pad-3);
-  --gap-5: var(--pad-4);
-  --gap-6: var(--pad-6);
-  --gap-7: var(--pad-7);
-  --gap-8: var(--pad-8);
-  --gap: var(--gap-1);
+	--gap-1: var(--pad-0);
+	--gap-2: var(--pad-1);
+	--gap-3: var(--pad-2);
+	--gap-4: var(--pad-3);
+	--gap-5: var(--pad-4);
+	--gap-6: var(--pad-6);
+	--gap-7: var(--pad-7);
+	--gap-8: var(--pad-8);
+	--gap: var(--gap-1);
 
-  --rounded-1: 2px;
-  --rounded-2: 4px;
-  --rounded-3: 8px;
-  --rounded-4: 12px;
-  --rounded-5: 16px;
-  --rounded-6: 24px;
-  --rounded: var(--rounded-1);
-  /*
+	--rounded-1: 2px;
+	--rounded-2: 4px;
+	--rounded-3: 8px;
+	--rounded-4: 12px;
+	--rounded-5: 16px;
+	--rounded-6: 24px;
+	--rounded: var(--rounded-1);
+	/*
    * ## Layout
   */
-  --col-width: 160px;
-  --block-size: 80px;
+	--col-width: 160px;
+	--block-size: 80px;
 
-  /*
+	/*
    * ## Overlay
   */
-  --z-popup: 50;
-  --z-overlay: 20;
+	--z-popup: 50;
+	--z-overlay: 20;
 
-  /*
+	/*
    * ## Color basics
   */
 
-  /* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
-  /* TODO: Should name the colors */
-  --color-text: var(--color-black);
-  --color-current: var(--color-grey-2);
-  --color-accent: var(--color-cyan-5);
-  --color-primary: var(--color-blue-5);
-  --color-background-t: var(--page-bg-0p);
-  /* FIXME: What is alt ? */
-  --color-primary-alt: var(--color-blue-8);
-  --color-secondary: var(--color-yellow);
-  /* FIXME: WHat is variant ? */
-  --color-secondary-variant: #03dac6;
+	/* SEE https://m2.material.io/design/color/the-color-system.html#color-theme-creation */
+	/* TODO: Should name the colors */
+	--color-text: var(--color-black);
+	--color-current: var(--color-grey-2);
+	--color-accent: var(--color-cyan-5);
+	--color-primary: var(--color-blue-5);
+	--color-background-t: var(--page-bg-0p);
+	/* FIXME: What is alt ? */
+	--color-primary-alt: var(--color-blue-8);
+	--color-secondary: var(--color-yellow);
+	/* FIXME: WHat is variant ? */
+	--color-secondary-variant: #03dac6;
 
-  /* 
+	/* 
    *  ## Text Content
   */
-  --link-color: var(--color-primary);
-  --color-text: var(--color-black);
+	--link-color: var(--color-primary);
+	--color-text: var(--color-black);
 
-  /*
+	/*
    * ## Shadows
    */
-  --shadow-floating: 4px 4px 4px #0000000a;
+	--shadow-floating: 4px 4px 4px #0000000a;
 
-  --shadow-depth: 1;
-  --shadow-low: calc(1.5px * var(--shadow-depth))
-    calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
-    color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
-  --shadow-low-left: calc(-1.5px * var(--shadow-depth))
-    calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
-    color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
+	--shadow-depth: 1;
+	--shadow-low: calc(1.5px * var(--shadow-depth))
+		calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
+		color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
+	--shadow-low-left: calc(-1.5px * var(--shadow-depth))
+		calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
+		color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
 
-  /*
+	/*
    * ## Page
   */
-  --page-bg: var(--color-high);
-  --page-bg-0p: var(--color-high-0p);
-  --page-bg-alt: color-mix(in srgb, var(--page-bg-0p), var(--color-low) 5%);
+	--page-bg: var(--color-high);
+	--page-bg-0p: var(--color-high-0p);
+	--page-bg-alt: color-mix(in srgb, var(--page-bg-0p), var(--color-low) 5%);
 
-  /*
+	/*
    * ## Boxes
   */
-  --box-bd: #e0e0e0;
+	--box-bd: #e0e0e0;
 
-  /*
+	/*
    * ## Icons
   */
 
-  --icon-color: var(--color-text);
-  --icon-size-smaller: 14px;
-  --icon-size-small: 16px;
-  --icon-size-regular: 24px;
-  --icon-size-large: 32px;
-  --icon-size-larger: 48px;
-  --icon-size: var(--icon-size-regular);
+	--icon-color: var(--color-text);
+	--icon-size-smaller: 14px;
+	--icon-size-small: 16px;
+	--icon-size-regular: 24px;
+	--icon-size-large: 32px;
+	--icon-size-larger: 48px;
+	--icon-size: var(--icon-size-regular);
 
-  /*
+	/*
    * ## Selectable
   */
 
-  --selectable-bg-hover: var(--page-bg-alt);
+	--selectable-bg-hover: var(--page-bg-alt);
 
-  --item-indent: var(--pad-2);
+	--item-indent: var(--pad-2);
 
-  /*
+	/*
    * ## Controls
   */
-  --control-color: var(--color-text);
-  --control-bd-ltr: color-mix(
-    in srgb,
-    var(--color-text),
-    var(--page-bg-0p) 93%
-  );
-  --control-bd-lt: color-mix(in srgb, var(--color-text), var(--page-bg-0p) 83%);
-  --control-bd: color-mix(in srgb, var(--color-text), var(--page-bg-0p) 75%);
-  --control-bd-dk: color-mix(in srgb, var(--color-text), var(--page-bg-0p) 65%);
-  --control-bd-dkr: color-mix(
-    in srgb,
-    var(--color-text),
-    var(--page-bg-0p) 50%
-  );
-  --control-bg: var(--color-primary);
-  --control-bg-focused: color-mix(
-    in srgb,
-    var(--color-primary),
-    var(--page-bg-0p) 50%
-  );
-  --control-bg-hover: color-mix(
-    in srgb,
-    var(--color-primary),
-    var(--page-bg-0p) 60%
-  );
-  --control-bg-selected: color-mix(
-    in srgb,
-    var(--color-primary),
-    var(--page-bg-0p) 75%
-  );
-  --control-line-height: 1.15em;
-  --control-font-size: var(--font-size-3);
+	--control-color: var(--color-text);
+	--control-bd-ltr: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 93%
+	);
+	--control-bd-lt: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 83%
+	);
+	--control-bd: color-mix(in srgb, var(--color-text), var(--page-bg-0p) 75%);
+	--control-bd-dk: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 65%
+	);
+	--control-bd-dkr: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 50%
+	);
+	--control-bg: var(--color-primary);
+	--control-bg-focused: color-mix(
+		in srgb,
+		var(--color-primary),
+		var(--page-bg-0p) 50%
+	);
+	--control-bg-hover: color-mix(
+		in srgb,
+		var(--color-primary),
+		var(--page-bg-0p) 60%
+	);
+	--control-bg-selected: color-mix(
+		in srgb,
+		var(--color-primary),
+		var(--page-bg-0p) 75%
+	);
+	--control-line-height: 1.15em;
+	--control-font-size: var(--font-size-3);
 
-  --control-input-bg: var(--page-bg);
+	--control-input-bg: var(--page-bg);
 }
 /* EOF */

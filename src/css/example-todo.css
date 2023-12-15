@@ -2,7 +2,7 @@
 @layer ui {
 	.TodoItem {
 		display: flex;
-		align-items:  center;
+		align-items: center;
 		margin: 10px;
 		gap: 6px;
 	}
@@ -12,5 +12,4 @@
 		height: 32px;
 		box-sizing: border-box;
 	}
-
 }

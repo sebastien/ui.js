@@ -16,9 +16,9 @@
 @import url("./ui/overrides.css") layer(theme);
 
 @layer loading {
-  body {
-    opacity: 1;
-  }
+	body {
+		opacity: 1;
+	}
 }
 
 /* --
@@ -28,12 +28,12 @@
  * are defined as `UPPERCASE` for readability.
  */
 @layer debug {
-  /* -- 
+	/* -- 
    * Removes the element.
   */
-  .REMOVED {
-    display: none !important;
-  }
+	.REMOVED {
+		display: none !important;
+	}
 }
 
 /* FIXME: This does not work */

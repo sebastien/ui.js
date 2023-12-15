@@ -1,11 +1,11 @@
 .hljs {
-  display: block;
-  overflow-x: auto;
-  padding: 0.5em;
+	display: block;
+	overflow-x: auto;
+	padding: 0.5em;
 }
 
 .hljs {
-  color: #000000;
+	color: #000000;
 }
 
 .hljs-keyword,
@@ -15,11 +15,11 @@
 .hljs-doctag,
 .hljs-name,
 .hljs-strong {
-  font-weight: bold;
+	font-weight: bold;
 }
 
 .hljs-comment {
-  color: #2a93a1;
+	color: #2a93a1;
 }
 
 .hljs-string,
@@ -34,7 +34,7 @@
 .hljs-name,
 .hljs-selector-id,
 .hljs-selector-class {
-  color: #888888;
+	color: #888888;
 }
 
 .hljs-meta,
@@ -47,9 +47,9 @@
 .hljs-template-variable,
 .hljs-link,
 .hljs-bullet {
-  color: #bd9800;
+	color: #bd9800;
 }
 
 .hljs-emphasis {
-  font-weight: bold;
+	font-weight: bold;
 }

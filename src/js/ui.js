@@ -35,63 +35,65 @@ import tokens from "./ui/tokens.js";
 //
 // This is the main function used to instantiate a set of components in a context.
 export const ui = (
-  scope = document,
-  data = {},
-  styles = undefined,
-  options = undefined
+	scope = document,
+	data = {},
+	styles = undefined,
+	options = undefined
 ) => {
-  const style = undefined;
-  const store = data;
-  if (options) {
-    Object.assign(Options, options);
-  }
+	const style = undefined;
+	const store = data;
+	if (options) {
+		Object.assign(Options, options);
+	}
 
-  // NOTE: This is a side-effect and will register the styles as tokens.
-  tokens(styles);
+	// NOTE: This is a side-effect and will register the styles as tokens.
+	tokens(styles);
 
-  return loadTemplates(scope).then(
-    async ({ templates, stylesheets, scripts }) => {
-      const components = [];
-      scripts.forEach((_) => {
-        // NOTE: Adding a script node doesn't quite work. We could do
-        // it in SSR, though.
-        const type = _.getAttribute("type");
-        switch (type) {
-          case "importmap":
-            break;
-          case "javascript":
-          case "module":
-          case undefined:
-            // TOOD: Shouldn't we do something with the script her?
-            createModule(_.innerText);
-            break;
-          default:
-            onWarning(`Unsupported script type in template: ${type}`);
-            break;
-        }
-      });
+	return loadTemplates(scope).then(
+		async ({ templates, stylesheets, scripts }) => {
+			const components = [];
+			scripts.forEach((_) => {
+				// NOTE: Adding a script node doesn't quite work. We could do
+				// it in SSR, though.
+				const type = _.getAttribute("type");
+				switch (type) {
+					case "importmap":
+						break;
+					case "javascript":
+					case "module":
+					case undefined:
+						// TOOD: Shouldn't we do something with the script her?
+						createModule(_.innerText);
+						break;
+					default:
+						onWarning(
+							`Unsupported script type in template: ${type}`
+						);
+						break;
+				}
+			});
 
-      // TODO: This should probably be handled by loading?
-      stylesheets.forEach((_) => document.body.appendChild(_));
+			// TODO: This should probably be handled by loading?
+			stylesheets.forEach((_) => document.body.appendChild(_));
 
-      // FIXME: WE need to rework that to use the Loader
-      if (!scope?.querySelectorAll) {
-        onWarning("Could not expand template of scope", scope);
-      } else {
-        // We make sure that we wait for any pending loading request to resolve
-        // beofre we proceed with the creation of the component.
-        while (Loader.pending) {
-          await Loader.join();
-        }
-        // And here we detect components and we instanciate them
-        for (const node of scope.querySelectorAll("slot[template]")) {
-          const c = createComponent(node, store);
-          c && components.push(c);
-        }
-      }
-      return { templates, components, stylesheets, style, store };
-    }
-  );
+			// FIXME: WE need to rework that to use the Loader
+			if (!scope?.querySelectorAll) {
+				onWarning("Could not expand template of scope", scope);
+			} else {
+				// We make sure that we wait for any pending loading request to resolve
+				// beofre we proceed with the creation of the component.
+				while (Loader.pending) {
+					await Loader.join();
+				}
+				// And here we detect components and we instanciate them
+				for (const node of scope.querySelectorAll("slot[template]")) {
+					const c = createComponent(node, store);
+					c && components.push(c);
+				}
+			}
+			return { templates, components, stylesheets, style, store };
+		}
+	);
 };
 ui.options = Options;
 

@@ -76,25 +76,25 @@ select,
 textarea,
 label,
 .reset {
-  box-sizing: border-box;
-  margin: 0px;
-  padding: 0px;
-  margin-block: unset;
-  font-size: 1rem;
-  line-height: unset;
-  border: 0px solid transparent;
-  outline: 0px solid transparent;
-  vertical-align: baseline;
-  list-style-type: none;
-  text-rendering: optimizeLegibility;
-  background-color: transparent;
-  box-shadow: none;
-  text-shadow: none;
-  color: default;
+	box-sizing: border-box;
+	margin: 0px;
+	padding: 0px;
+	margin-block: unset;
+	font-size: 1rem;
+	line-height: unset;
+	border: 0px solid transparent;
+	outline: 0px solid transparent;
+	vertical-align: baseline;
+	list-style-type: none;
+	text-rendering: optimizeLegibility;
+	background-color: transparent;
+	box-shadow: none;
+	text-shadow: none;
+	color: default;
 }
 
 *[contenteditable] {
-  outline: 0px solid transparent;
+	outline: 0px solid transparent;
 }
 
 input,
@@ -112,6 +112,6 @@ textarea:focus,
 label,
 label:active,
 label:focus {
-  outline: 0px solid transparent;
+	outline: 0px solid transparent;
 }
 /* EOF */

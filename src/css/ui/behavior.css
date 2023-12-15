@@ -1,27 +1,27 @@
 /* MODIFIERS */
 
 .floating {
-  box-shadow: var(--shadow-floating);
+	box-shadow: var(--shadow-floating);
 }
 
 .pointer {
-  cursor: pointer;
+	cursor: pointer;
 }
 
 .movable {
-  cursor: move;
+	cursor: move;
 }
 
 .no-select {
-  user-select: none;
+	user-select: none;
 }
 
 .no-events {
-  pointer-events: none;
+	pointer-events: none;
 }
 
 .resize-v {
-  cursor: row-resize;
+	cursor: row-resize;
 }
 
 /*
@@ -29,40 +29,40 @@
   */
 .show-menu,
 .with-hover {
-  position: relative;
+	position: relative;
 }
 .show-menu > .menu,
 .with-hover .on-hover {
-  visibility: hidden;
-  pointer-events: none;
-  opacity: 0;
-  transition-property: opacity;
-  transition-delay: 0.1s;
-  transition-duration: 0.25s;
+	visibility: hidden;
+	pointer-events: none;
+	opacity: 0;
+	transition-property: opacity;
+	transition-delay: 0.1s;
+	transition-duration: 0.25s;
 }
 .with-hover:hover .on-hover,
 .show-menu:hover > .menu,
 .with-hover .on-hover:hover {
-  visibility: visible;
-  pointer-events: auto;
-  opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	opacity: 1;
 }
 
 .show-menu:hover > .menu {
-  bottom: 0px;
-  left: 0px;
-  transform: translateY(100%);
+	bottom: 0px;
+	left: 0px;
+	transform: translateY(100%);
 }
 
 .hover:hover .hovered {
-  background-color: var(--control-bg-hover);
+	background-color: var(--control-bg-hover);
 }
 
 .focus-undim {
-  transition: opacity 0.25s;
+	transition: opacity 0.25s;
 }
 .focus-undim:hover {
-  opacity: 1;
+	opacity: 1;
 }
 
 /* EOF */

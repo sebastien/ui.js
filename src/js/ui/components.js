@@ -19,31 +19,31 @@ import { Controllers, createController } from "./controllers.js";
 // The `Component` class encapsulates an anchor node, a template effector,
 // and state context
 export class Component {
-  constructor(
-    id,
-    anchor,
-    template,
-    controller,
-    store,
-    path,
-    slots,
-    attributes
-  ) {
-    this.id = id;
-    this.anchor = anchor;
-    this.template = template;
-    this.store = store;
-    // TODO: We should really initialize a component with "slots" as bindings.
-    // Each binding is then mapped into a local component scope. The scope
-    // should resolve from cells first, and if not from the store. Effect
-    // scope should be from cells.
-    // TODO: State really should be store.
-    this.scope = new EffectScope(store).define(slots);
-    this.controller = controller
-      ? createController(controller, this.scope)
-      : null;
-    this.effect = template.apply(this.anchor, this.scope, attributes);
-  }
+	constructor(
+		id,
+		anchor,
+		template,
+		controller,
+		store,
+		path,
+		slots,
+		attributes
+	) {
+		this.id = id;
+		this.anchor = anchor;
+		this.template = template;
+		this.store = store;
+		// TODO: We should really initialize a component with "slots" as bindings.
+		// Each binding is then mapped into a local component scope. The scope
+		// should resolve from cells first, and if not from the store. Effect
+		// scope should be from cells.
+		// TODO: State really should be store.
+		this.scope = new EffectScope(store).define(slots);
+		this.controller = controller
+			? createController(controller, this.scope)
+			: null;
+		this.effect = template.apply(this.anchor, this.scope, attributes);
+	}
 }
 
 // --
@@ -51,22 +51,22 @@ export class Component {
 // node, and returns them as an object if defined. Otherwise returns null. This
 // also removes the nodes as they are added to the object.
 const extractSlots = (node) => {
-  const slots = {};
-  let hasSlots = false;
-  for (const _ of node.querySelectorAll("*[slot]")) {
-    const n = _.getAttribute("slot") || "children";
-    const l = slots[n];
-    if (!l) {
-      slots[n] = _;
-    } else if (l instanceof Array) {
-      l.push(_);
-    } else {
-      slots[n] = [l, _];
-    }
-    _.parentElement.removeChild(_);
-    hasSlots = true;
-  }
-  return hasSlots ? slots : null;
+	const slots = {};
+	let hasSlots = false;
+	for (const _ of node.querySelectorAll("*[slot]")) {
+		const n = _.getAttribute("slot") || "children";
+		const l = slots[n];
+		if (!l) {
+			slots[n] = _;
+		} else if (l instanceof Array) {
+			l.push(_);
+		} else {
+			slots[n] = [l, _];
+		}
+		_.parentElement.removeChild(_);
+		hasSlots = true;
+	}
+	return hasSlots ? slots : null;
 };
 
 // --
@@ -74,52 +74,52 @@ const extractSlots = (node) => {
 // corresponding template in `Templates` and creates a new `Component`
 // replacing the given `node` and then rendering the component.
 export const createComponent = (node, store, templates = Templates) => {
-  const slots = Object.assign(extractBindings(node), extractSlots(node));
-  const templateName = node.getAttribute("template");
-  const id = node.getAttribute("id");
+	const slots = Object.assign(extractBindings(node), extractSlots(node));
+	const templateName = node.getAttribute("template");
+	const id = node.getAttribute("id");
 
-  // --
-  // We validate that the template exists.
-  const template = templates.get(templateName);
-  if (!template) {
-    onError(
-      `ui.render: Could not find template '${templateName}', available templates are ${[
-        ...templates.keys(),
-      ].join(", ")}`,
-      {
-        node,
-        templateName,
-        templates,
-      }
-    );
-    return null;
-  }
+	// --
+	// We validate that the template exists.
+	const template = templates.get(templateName);
+	if (!template) {
+		onError(
+			`ui.render: Could not find template '${templateName}', available templates are ${[
+				...templates.keys(),
+			].join(", ")}`,
+			{
+				node,
+				templateName,
+				templates,
+			}
+		);
+		return null;
+	}
 
-  // We create an anchor component, and replace the node with the anchor.
-  const key = id ? id : makeKey(templateName);
-  const anchor = createComment(`${key}|Component|${templateName}`);
-  const attributes = [...node.attributes].reduce((r, v) => {
-    if (!v.name.startsWith("data-")) {
-      r.set(v.name, v.value);
-    }
-    return r;
-  }, new Map());
+	// We create an anchor component, and replace the node with the anchor.
+	const key = id ? id : makeKey(templateName);
+	const anchor = createComment(`${key}|Component|${templateName}`);
+	const attributes = [...node.attributes].reduce((r, v) => {
+		if (!v.name.startsWith("data-")) {
+			r.set(v.name, v.value);
+		}
+		return r;
+	}, new Map());
 
-  // TODO: We should probably move the  node to a fragment an render
-  // the fragment separately before mounting it, so that we minimize DOM
-  // changes.
-  node.parentElement.replaceChild(anchor, node);
+	// TODO: We should probably move the  node to a fragment an render
+	// the fragment separately before mounting it, so that we minimize DOM
+	// changes.
+	node.parentElement.replaceChild(anchor, node);
 
-  return new Component(
-    key,
-    anchor,
-    template,
-    Controllers.get(template.name),
-    store,
-    undefined,
-    slots,
-    attributes
-  );
+	return new Component(
+		key,
+		anchor,
+		template,
+		Controllers.get(template.name),
+		store,
+		undefined,
+		slots,
+		attributes
+	);
 };
 
 // EOF
