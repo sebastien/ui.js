@@ -1,5 +1,4 @@
 import { Effector, Effect } from "../effectors.js";
-import Options from "../utils/options.js";
 
 export class MatchEffector extends Effector {
   constructor(nodePath, selector, branches) {
@@ -46,6 +45,7 @@ class MatchEffect extends Effect {
       //     { value }
       //   );
       this.states[index] = branch.template.apply(this.node, this.scope);
+      this.states[index].init();
     }
     if (index !== this.currentBranchIndex) {
       // Options.debug &&
@@ -53,11 +53,13 @@ class MatchEffect extends Effect {
       //     `MatchEffector: mounting matched branch ${index}/${this.currentBranchIndex}`,
       //     { value }
       //   );
-      this.states[index].init().mount();
+      // FIXME: Why do we call init?
+      this.states[index].mount();
       const previousState = this.states[this.currentBranchIndex];
       // NOTE: We could cleanup the previous state if we wanted to
       if (previousState) {
         previousState.unmount();
+        // TODO: We may want to deinit?
       }
       this.currentBranchIndex = index;
     }

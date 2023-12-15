@@ -71,7 +71,11 @@ export const createView = (processor, root, templateName = undefined) => {
 
   for (const { name, attr } of attrs["x"] || []) {
     let e = null;
+    // FIXME: We should support different attributes
     switch (name) {
+      case "if":
+        e = processor.If(processor, attr, root, name);
+        break;
       case "for":
         e = processor.For(processor, attr, root, name);
         break;

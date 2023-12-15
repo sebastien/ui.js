@@ -5,6 +5,7 @@ import { onTemplateNode } from "./templates/template.js";
 import { onOutAttribute } from "./templates/inout.js";
 import { onForAttribute } from "./templates/for.js";
 import { onOnAttribute } from "./templates/on.js";
+import { onIfAttribute } from "./templates/if.js";
 import { onMatchAttribute } from "./templates/match.js";
 
 export const Templates = new Map();
@@ -15,6 +16,7 @@ class TemplateProcessor {
     this.Out = onOutAttribute;
     this.On = onOnAttribute;
     this.Match = onMatchAttribute;
+    this.If = onIfAttribute;
     this.For = onForAttribute;
     this.Template = onTemplateNode;
     this.templates = templates;

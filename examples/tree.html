@@ -19,7 +19,7 @@
   <body>
     <div class="row fit-screen stretched lined nogap">
       <div
-        class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3 scroll-v"
+        class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3 pad-4 scroll-v"
       >
         <slot
           template="Tree"
@@ -34,25 +34,28 @@
     ----------------------------------------------------------------------- -->
     <template name="Tree" in:items>
       <div class="stack fill lined fit-h indent-2">
-        <ul class="stack pad-4" x:for="item=items">
-          <slot template="Node" item="item" />
+        <ul class="stack" x:for="item=items">
+          <slot template="Node" item="item"></slot>
         </ul>
       </div>
     </template>
 
     <template name="Node" in:item>
-      <li>
-        <div class="row item selectable pad-2">
-          <slot x:match="children=item.children">
+      <li x:match="children=item.children">
+        <slot x:when="{children?.length}">
+          <div class="row item selectable pad-2">
             <span class="icon" x:when="{children?.length}">📂</span>
-            <span class="icon" x:otherwise>📄</span>
-          </slot>
-          <span class="label" out:content="item.label|debug">…</span>
-        </div>
-        <slot x:if="item.children">
+            <span class="label" out:content="item.label|debug">…</span>
+          </div>
           <ul class="stack items" x:for="item.children">
-            <slot template="Node" item="." />
+            <slot template="Node" item="."></slot>
           </ul>
+        </slot>
+        <slot x:otherwise>
+          <div class="row item selectable pad-2">
+            <span class="icon" x:otherwise>📄</span>
+            <span class="label" out:content="item.label|debug">…</span>
+          </div>
         </slot>
       </li>
     </template>
