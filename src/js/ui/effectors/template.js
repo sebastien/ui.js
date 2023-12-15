@@ -24,13 +24,27 @@ export class TemplateEffector extends Effector {
   }
 
   apply(node, scope, attributes) {
-    // These are the missing slots
+    // When the template is applied, it may come with default bindings
+    // that override the parent context binding. The slots here define
+    // these values.
     const slots = reduce(
+      // The bindings here are defined at the template level.
       this.bindings,
       (r, v, k) => {
         const cell = scope.slots[k];
+        // There is a cell in the given scope
         if (cell) {
-          if (cell instanceof Value && cell.value === undefined) {
+          if (v === undefined) {
+            // If the value is undefined, we inherit that cell
+            //
+          } else if (cell instanceof Value && cell.revision !== -1) {
+            // If the value is not undefined, but the parent cell is undefined
+            // we set the parent to the value.
+            // NOTE: This may not be the best option, it/s likely OK to just
+            // create a new cell in the current scope.
+            cell.set(v);
+          } else {
+            // We create a new value, which will be wrapped in a new cell.
             r[k] = v;
           }
         } else {
@@ -43,7 +57,7 @@ export class TemplateEffector extends Effector {
     return new TemplateEffect(
       this,
       node,
-      len(slots) > 0 ? scope.derive(undefined, slots) : scope,
+      len(slots) > 0 ? scope.derive(slots) : scope,
       attributes
     ).init();
   }
@@ -222,7 +236,16 @@ class TemplateEffect extends Effect {
   }
 
   unmount() {
+    console.log(
+      "UNMOUNTING TEMPLATE NODE",
+      this.effector,
+      this.node,
+      this.scope.path
+    );
     for (const view of this.views) {
+      for (const state of view.states) {
+        state?.unmount();
+      }
       view.root?.parentNode?.removeChild(view.root);
     }
     this.effector.isComponent &&

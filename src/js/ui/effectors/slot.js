@@ -80,17 +80,29 @@ export class SlotEffector extends Effector {
   }
 
   apply(node, scope) {
-    // If we have bindings, we need to derive a local scope, so that the
-    // bindings won't change a previous slot.
-    scope = this.bindings ? scope.derive() : scope;
+    // If we have bindings, we may need to derive a local scope, so that
+    // new slots can be crated without affecting the parent and that
+    // parent slots are not overriden. The exception, however, being
+    // that the bindings are all defined in the parent scope.
+    let should_derive = this.selector?.target ? true : false;
+    if (this.bindings) {
+      for (const k in this.bindings) {
+        const v = this.bindings[k];
+        if (v !== undefined || !this.scope.slots[k]) {
+          should_derive = true;
+          break;
+        }
+      }
+    }
+    const effect_scope = should_derive ? scope.derive() : scope;
     const effect = new (this.selector?.isMany
       ? MappingSlotEffect
-      : SingleSlotEffect)(this, node, scope, this.template).init();
+      : SingleSlotEffect)(this, node, effect_scope, this.template).init();
     return this.templateType === "sel"
       ? new DynamicTemplateEffect(
           this,
           node,
-          scope,
+          effect_scope,
           this.templateName,
           effect
         ).init()
@@ -217,14 +229,14 @@ class SlotEffect extends Effect {
 class SingleSlotEffect extends SlotEffect {
   constructor(effector, node, scope, template) {
     super(effector, node, scope, template);
-    this.view = undefined;
+    this.effect = undefined;
   }
 
   unify(current, previous = this.value) {
     if (this.selector?.target) {
       this.scope.set(this.selector.target, current);
     }
-    if (!this.view) {
+    if (!this.effect) {
       const node = createComment(
         // FIXME: add a better description of that part
         `_|SingleSlotEffect`
@@ -236,16 +248,28 @@ class SingleSlotEffect extends SlotEffect {
       //   scope.updateLocal(this.effector.bindings);
       // }
 
-      this.view = this.template
+      this.effect = this.template
         ?.apply(
           node, // node
           this.scope
         )
         ?.init();
-      return this.view;
+      return this.effect;
     } else if (current !== previous) {
-      this.view.unify(current, previous);
+      this.effect.unify(current, previous);
     }
+  }
+  mount(...args) {
+    this.effect.mount(...args);
+    return super.mount(...args);
+  }
+  unmount(...args) {
+    this.effect.unmount(...args);
+    return super.unmount(...args);
+  }
+  dispose(...args) {
+    this.effect.dispose(...args);
+    return super.dispose(...args);
   }
 }
 
@@ -303,7 +327,8 @@ class MappingSlotEffect extends SlotEffect {
             this.createItem(
               this.template,
               node, // node
-              scope.derive(path, target ? { target: current } : undefined), // scope
+              // FIXME: Should we set the key to null?
+              scope.derive(target ? { target: current } : undefined, path), // scope
               true // isEmpty
             )
           );
@@ -315,7 +340,8 @@ class MappingSlotEffect extends SlotEffect {
       for (let i = 0; i < current.length; i++) {
         const item = items.get(i);
         if (!item) {
-          const subscope = scope.derive([...path, i], scope.slots, i);
+          // FIXME: Why are we giving the scope.slots here?
+          const subscope = scope.derive(scope.slots, [...path, i], i);
           if (target) {
             subscope.set(target, current[i]);
           }
@@ -355,7 +381,8 @@ class MappingSlotEffect extends SlotEffect {
       for (const k in current) {
         const item = items.get(k);
         if (!item) {
-          const subscope = scope.derive([...path, k], scope.slots, k);
+          // FIXME: Why do we given the scope.slots here?
+          const subscope = scope.derive(scope.slots, [...path, k], k);
           if (target) {
             subscope.set(target, current[k]);
           }
@@ -405,7 +432,6 @@ class MappingSlotEffect extends SlotEffect {
     if (!node.parentNode) {
       onError("MappingSlotEffect.createItem: node has no parent element", {
         node,
-        value: scope.value,
         path: scope.path,
       });
     } else {
@@ -418,6 +444,18 @@ class MappingSlotEffect extends SlotEffect {
           scope
         )
       : null;
+  }
+  mount(...args) {
+    console.warn("TODO: MultipleSlotEffect.mount");
+    return super.mount(...args);
+  }
+  unmount(...args) {
+    console.warn("TODO: MultipleSlotEffect.unmount");
+    return super.unmount(...args);
+  }
+  dispose(...args) {
+    console.warn("TODO: MultipleSlotEffect.dispose");
+    return super.dispose(...args);
   }
 }
 

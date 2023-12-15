@@ -1,22 +1,6 @@
 import { onError } from "./utils/logging.js";
-import { access, append, removeAt, copy } from "./utils/collections.js";
-import { SelectorType } from "./selector.js";
+import { access } from "./utils/collections.js";
 import { Scope } from "./reactive.js";
-import { range, map, reduce, filter, len } from "./utils/collections.js";
-import { lerp } from "./utils/math.js";
-
-// This is mapped to `$` in formatters
-export const EffectorAPI = {
-  range,
-  map,
-  reduce,
-  filter,
-  len,
-  lerp,
-  copy,
-  append,
-  removeAt,
-};
 
 // --
 // ## Effectors
@@ -28,25 +12,30 @@ export const EffectorAPI = {
 // where it gets its data from.
 
 export class EffectScope extends Scope {
-  constructor(value, key, parent, path) {
+  constructor(parent, path, key) {
     super(parent);
+    this.path = path;
     this.key = key;
     // This is the path for this scope in the parent scope
-    this.path = path;
-    // This is the value extracted from the parent scope
-    // FIXME: Value needs to be subscribed to
-    this.value = value;
     this.handlers = new Map();
   }
 
-  derive(path = this.path, slots = undefined, key = undefined) {
+  set value(value) {
+    onError("Should not set scope.value", { value });
+  }
+
+  get value() {
+    onError("Should not get scope.value");
+    return null;
+  }
+
+  derive(slots = undefined, path = this.path, key = this.key) {
     const res = new EffectScope(
       // NOTE: There's a bit of a risk here as if value is change from the
       // parent, it won't be changed here.
-      path ? this.get(path) : this.value,
-      key,
       this,
-      path
+      path,
+      key
     );
     // TODO: WE should explain how that works
     if (slots) {
@@ -78,9 +67,6 @@ export class EffectScope extends Scope {
     const k = path[offset];
     if (k === "#") {
       return this.key;
-    } else if (this.value && this.value[k] !== undefined) {
-      // We resolve in the current value first
-      return access(this.value[k], path, offset + 1);
     } else {
       // Otherwise we resolve in the current scope
       return super.get(path, offset);
@@ -110,41 +96,6 @@ export class EffectScope extends Scope {
     console.warn("SUBS NOT IMPLEMENTED");
   }
 
-  // FIXME: A subscription is actually a dervied cell
-  select(selector) {
-    if (!selector) {
-      return null;
-    }
-    if (selector.format) {
-      const inputs = selector.inputs.map((_) => this.get(_.path));
-      try {
-        return selector.format(...[...inputs, EffectorAPI]);
-      } catch (exception) {
-        onError(`Selector formatter failed: ${selector.toString()}`, {
-          input: inputs,
-          selector,
-          exception,
-        });
-        return null;
-      }
-    } else {
-      switch (selector.type) {
-        case SelectorType.Atom:
-          return this.get(selector.inputs[0].path);
-        case SelectorType.List:
-          return selector.inputs.map((_) => this.get(_.path));
-        case SelectorType.Map:
-          return selector.inputs.reduce(
-            (r, _) => ((r[_.name] = this.get(_.path)), r),
-            {}
-          );
-        default:
-          onError("Unsupported selector type", selector.type, { selector });
-          return null;
-      }
-    }
-  }
-
   toString() {
     return `EffectScope(path="${this.path.join(".")}", key="${this.key}")`;
   }
@@ -168,7 +119,8 @@ export class Effect {
     // TODO: We need to do the binding
     // this.selection = selector && scope ? scope.select(selector) : null;
     const handler = (i) => (_) => {
-      // FIXME: We should optimize this, as this will extract  all the values
+      // FIXME: We should optimize this, as this will extract  all the values, otherwise
+      // the selector will run again, and this is really not necessary.
       this.apply();
     };
     this.subs = selector
@@ -196,6 +148,12 @@ export class Effect {
   apply() {
     // We extract the latest value from the selection
     const value = this.scope.select(this.selector);
+    // If the current selector has a target, we assign the target. Note that
+    // this could also be done at the scope level by creating a reducer or
+    // just assigning the node there.
+    if (this.selector?.target) {
+      this.scope.set(this.selector.target, value);
+    }
     return this.unify(value, this.value);
   }
 

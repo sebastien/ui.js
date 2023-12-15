@@ -150,4 +150,24 @@ a[href].nolink:hover {
   background-color: #03dac675;
   border: 1px solid #03dac675;
 }
+/* NOTE: We leave the padding units after the definition 
+   * of the main layout classes so that we can overridde. 
+*/
+.nowrap {
+  white-space: nowrap;
+}
+/**
+	* ## Text
+	*/
+
+.tr {
+  text-align: right;
+}
+.tl {
+  text-align: left;
+}
+.tt {
+  align-self: flex-start;
+}
+
 /* EOF */

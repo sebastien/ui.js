@@ -52,7 +52,7 @@
           <ul
             class="stack pad-4"
             x:for="items"
-            on:Remove="items=items,key->{$.removeAt(items, 0)}"
+            on:Remove="items=items,key->{$.removeAt(items, key)}"
           >
             <slot template="Outline" item="." />
           </ul>

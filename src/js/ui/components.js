@@ -3,7 +3,7 @@ import { EffectScope } from "./effectors.js";
 import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
 import { makeKey } from "./utils/ids.js";
-import { getSlotBindings } from "./templates/slot.js";
+import { extractBindings } from "./templates/directives.js";
 import { Controllers, createController } from "./controllers.js";
 
 // FIXME: This is redundant with the slot effector.
@@ -38,17 +38,10 @@ export class Component {
     // should resolve from cells first, and if not from the store. Effect
     // scope should be from cells.
     // TODO: State really should be store.
-    this.scope = new EffectScope(undefined, undefined, store).define(slots);
+    this.scope = new EffectScope(store).define(slots);
     this.controller = controller
       ? createController(controller, this.scope)
       : null;
-    // this.scope = new EffectScope(
-    //   state,
-    //   path || localPath,
-    //   localPath,
-    //   state.get(path || localPath),
-    //   state.get(localPath)
-    // );
     this.effect = template.apply(this.anchor, this.scope, attributes);
   }
 }
@@ -81,7 +74,7 @@ const extractSlots = (node) => {
 // corresponding template in `Templates` and creates a new `Component`
 // replacing the given `node` and then rendering the component.
 export const createComponent = (node, store, templates = Templates) => {
-  const slots = Object.assign(getSlotBindings(node), extractSlots(node));
+  const slots = Object.assign(extractBindings(node), extractSlots(node));
   const templateName = node.getAttribute("template");
   const id = node.getAttribute("id");
 

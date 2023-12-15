@@ -1,4 +1,5 @@
-import { Effect, Effector, EffectorAPI } from "../effectors.js";
+import { Effect, Effector } from "../effectors.js";
+import { API } from "../reactive.js";
 
 export class EventEffector extends Effector {
   // -- doc
@@ -26,9 +27,7 @@ class EventEffect extends Effect {
 
   handle(event) {
     const { handler, directive } = this.effector;
-    const v = handler
-      ? handler(event, this.scope, this.node, EffectorAPI)
-      : null;
+    const v = handler ? handler(event, this.scope, this.node, API) : null;
     // TODO: Do something about that
     if (directive.assign) {
       this.scope.set(directive.assign, v, directive.force ? true : false);

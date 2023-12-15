@@ -1,12 +1,41 @@
-import { map, last, access } from "./utils/collections.js";
 import { cmp } from "./utils/delta.js";
 import { RuntimeError, NotImplementedError } from "./utils/errors.js";
+import { Selector } from "./selector.js";
+import { SelectorType } from "./selector.js";
+import {
+  range,
+  map,
+  last,
+  reduce,
+  filter,
+  len,
+  access,
+  append,
+  removeAt,
+  copy,
+} from "./utils/collections.js";
+import { lerp } from "./utils/math.js";
+import { onError } from "./utils/logging.js";
+
+// This is mapped to `$` in formatters
+export const API = {
+  range,
+  map,
+  reduce,
+  filter,
+  len,
+  lerp,
+  copy,
+  append,
+  removeAt,
+};
 
 // Wraps a subscription
 export class Subscription {
-  constructor(handler, path) {
+  constructor(handler, path, origin) {
     this.handler = handler;
     this.path = path;
+    this.origin = origin;
   }
   trigger(...value) {
     return this.handler(...value);
@@ -67,7 +96,7 @@ export class Subscribable {
     if (!topic) {
       throw RuntimeError();
     } else {
-      const sub = new Subscription(handler, path);
+      const sub = new Subscription(handler, path, this);
       if (!topic.has(Subscription)) {
         topic.set(Subscription, [sub]);
       } else {
@@ -142,8 +171,11 @@ export class Cell extends Subscribable {
 export class Value extends Cell {
   constructor(value, comparator = cmp) {
     super();
-    this.value = value;
+    this.value = undefined;
     this.comparator = comparator;
+    this.revision = -1;
+    this._pending = undefined;
+    this.set(value);
   }
 
   set(value, path = null, offset = 0, force = false) {
@@ -151,8 +183,31 @@ export class Value extends Cell {
       throw NotImplementedError();
     }
     const previous = this.value;
-    this.value = value;
-    (force || this.comparator(value, previous)) && this.trigger(value);
+    if (value instanceof Promise) {
+      // We increment the revision number, to denote that we're waiting
+      // on a result.
+      this.revision += 1;
+      const r = this.revision;
+      const cell = this;
+      this._pending = value;
+      const updater = (_) => {
+        cell.revision === r &&
+          (_ instanceof Promise ? _.then(updater) : cell.set(_));
+      };
+      value.then(updater);
+      return undefined;
+    } else if (force || this.comparator(value, previous) !== 0) {
+      // Once we have a result, we clear the pending value
+      this.value = value;
+      this._pending = null;
+      this.revision += 1;
+      this.trigger(value);
+      return true;
+    } else {
+      // Event if the value was absorbed, we clear the pending value.
+      this._pending = null;
+      return false;
+    }
   }
 
   get(path = null, offset = 0) {
@@ -177,6 +232,7 @@ export class Reducer extends Cell {
     super();
     this.input = input;
     this.reducer = reducer;
+    // // TODO
     // this.subscribed =
     //   input instanceof Cell
     //     ? input.sub(this.update)
@@ -185,9 +241,6 @@ export class Reducer extends Cell {
     //     : null;
     this.value = value;
     this.inputValue = undefined;
-    this.revision = -1;
-    this._pending = undefined;
-    this.comparator = comparator;
   }
 
   get(path = null, offset = 0) {
@@ -227,25 +280,6 @@ export class Reducer extends Cell {
 
   evaluate() {
     throw NotImplementedError();
-  }
-
-  _set(value) {
-    if (value instanceof Promise) {
-      const r = this.revision;
-      const cell = this;
-      const updater = (_) =>
-        cell.revision === r && (_ instanceof Promise ? _.then(updater) : _);
-      value.then(updater);
-      return undefined;
-    } else {
-      if (this.comparator(value, this.value) !== 0) {
-        this.value = value;
-        this.revision += 1;
-        return true;
-      } else {
-        return false;
-      }
-    }
   }
 }
 
@@ -311,10 +345,25 @@ export class Scope extends Cell {
     this.parent = parent instanceof Scope ? parent : null;
   }
 
+  get parents() {
+    return [...this.ancestors()];
+  }
+
+  *ancestors() {
+    let node = this;
+    while (node.parent) {
+      node = node.parent;
+      yield node;
+    }
+  }
+
   define(slots, replace = true) {
     if (slots) {
       for (const k in slots) {
-        const v = slots[k];
+        // We retrieve the slot, and if the slot is a selector, then
+        // we apply it and resolve the actuall cell that is attached to it.
+        const w = slots[k];
+        const v = w instanceof Selector ? this.select(w) : w;
         // We only define the own slots
         const slot = this.slots.hasOwnProperty(k) ? this.slots[k] : undefined;
         // FIXME: This will  replace existing cells that are already
@@ -377,6 +426,40 @@ export class Scope extends Cell {
     path = typeof path === "string" ? path.split(".") : path;
     const slot = this.slots[path[offset]];
     return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
+  }
+
+  select(selector) {
+    if (!selector) {
+      return this.get("_");
+    }
+    if (selector.format) {
+      const inputs = selector.inputs.map((_) => this.get(_.path));
+      try {
+        return selector.format(...[...inputs, API]);
+      } catch (exception) {
+        onError(`Selector formatter failed: ${selector.toString()}`, {
+          input: inputs,
+          selector,
+          exception,
+        });
+        return null;
+      }
+    } else {
+      switch (selector.type) {
+        case SelectorType.Atom:
+          return this.get(selector.inputs[0].path);
+        case SelectorType.List:
+          return selector.inputs.map((_) => this.get(_.path));
+        case SelectorType.Map:
+          return selector.inputs.reduce(
+            (r, _) => ((r[_.name] = this.get(_.path)), r),
+            {}
+          );
+        default:
+          onError("Unsupported selector type", selector.type, { selector });
+          return null;
+      }
+    }
   }
 
   // TODO: Cell

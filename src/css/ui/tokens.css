@@ -206,6 +206,8 @@ variations).
 
   --selectable-bg-hover: var(--page-bg-alt);
 
+  --item-indent: var(--pad-2);
+
   /*
    * ## Controls
   */

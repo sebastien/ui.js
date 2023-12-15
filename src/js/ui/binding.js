@@ -1,6 +1,7 @@
 import { URLHash } from "./url.js";
 import { onError } from "./utils.js";
 
+// FIXME: Should be rounting
 const parseRoute = (text) => {
   const m = text.match(/^((?<scheme>[a-z]+):)?(?<path>.+)$/);
   return m ? { scheme: m.groups.scheme || "state", path: m.groups.path } : null;

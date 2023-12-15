@@ -260,10 +260,6 @@
         </div>
       </div>
 
-
-
-
-
       <div>
         <h3>Full Text Inputs</h3>
         <div class="rounded panel pad-4" data-template="Card" data-title="Icon button">
@@ -460,21 +456,67 @@
         <h3>Navigation</h3>
         <ul class="panel pad-4">
           <li><a class="nolink nested item" href="#">About</a></li>
-          <li class="hsep">
-          <li class="item">
-            <label class="smaller bold dimmed">Guides</label>
+          <li class="hsep"></li>
+          <li>
+            <label class="item smaller bold dimmed">Guides</label>
+            <ul class="items">
+              <li><a class="nolink nested item" href="#">Introduction</a></li>
+              <li>
+                <a class="nolink nested item" href="#">Quickstart</a>
+                <ul class="items">
+                  <li><a class="nolink selected nested item" href="#">Install</a></li>
+                  <li><a class="nolink selected nested item" href="#">Configure</a></li>
+                </ul>
+              </li>
+            </ul>
           </li>
-          <ul class="items">
-            <li><a class="nolink nested item" href="#">Introduction</a></li>
-            <li>
-              <a class="nolink nested item" href="#">Quickstart</a>
-              <ul class="items">
-                <li><a class="nolink selected nested item" href="#">Install</a></li>
-                <li><a class="nolink selected nested item" href="#">Configure</a></li>
-              </ul>
-            </li>
+        </ul>
+      </div>
+
+      <div class="stack gap-4">
+        <h3>Tree</h3>
+        <ul class="panel pad-4 indent-4">
+          <li><a class="selectable nolink nested item pad-2" href="#">
+              <span class="icon">📄</span>
+              <span class="label">ui.js</span>
+            </a></li>
+          <li >
+            <span class="selectable nested item pad-2">
+              <span class="icon">📂</span>
+              <span class="label">ui</span>
+            </span>
+            <ul class="items">
+              <li><a class="selectable nolink nested item pad-2" href="#">
+              <span class="icon">📄</span>
+              <span class="label">components.js</span>
+               </a></li>
+              <li><a class="selectable nolink nested item pad-2" href="#">
+              <span class="icon">📄</span>
+              <span class="label">effectors</span>
+                </a></li>
+              <li>
+                <span class="selectable nested item pad-2">
+              <span class="icon">📂</span>
+              <span class="label">effectors</span>
+
+                  </span>
+                <ul class="items">
+                  <li><a class="selectable nolink nested item pad-2" href="#">
+
+              <span class="icon">📄</span>
+              <span class="label">attribute.js</span>
+                    </a></li>
+                  <li><a class="selectable nolink nested item pad-2" href="#">
+
+              <span class="icon">📄</span>
+              <span class="label">content.js</span>
+                    </a></li>
+                </ul>
+              </li>
+
+            </ul>
+          </li>
           </ul>
-        </div>
       </div>
  
       <div class="stack gap-4">

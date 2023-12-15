@@ -63,21 +63,44 @@ label {
 .item {
   display: flex;
   align-items: center;
-  --item-indent: var(--pad-2);
   --item-depth: 1;
-  padding: var(--item-pad);
   padding-left: calc(var(--item-depth) * var(--item-indent));
   gap: var(--pad-1);
   width: 100%;
   box-sizing: border-box;
   border-radius: 4px;
 }
-
-.items {
-  margin-top: var(--pad-1);
-  margin-bottom: var(--pad-1);
+/* @tmpl
+   * range(8).map(_ => `\n  .indent-${_+1} { --item-indent: var(--pad-${_+1});}`)
+*/
+.indent-1 {
+  --item-indent: var(--pad-1);
 }
+.indent-2 {
+  --item-indent: var(--pad-2);
+}
+.indent-3 {
+  --item-indent: var(--pad-3);
+}
+.indent-4 {
+  --item-indent: var(--pad-4);
+}
+.indent-5 {
+  --item-indent: var(--pad-5);
+}
+.indent-6 {
+  --item-indent: var(--pad-6);
+}
+.indent-7 {
+  --item-indent: var(--pad-7);
+}
+.indent-8 {
+  --item-indent: var(--pad-8);
+} /* @end */
 
+.items .item {
+  --item-depth: 2;
+}
 .items .items .item {
   --item-depth: 3;
 }

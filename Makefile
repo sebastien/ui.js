@@ -1,11 +1,12 @@
 PORT?=8001
 SOURCES_JS=$(call get-sources,src/js,js)
 SOURCES_CSS=$(call get-sources,src/css,css)
+SOURCES_JSON=$(call get-sources,src/json,json)
 SOURCES_XML=$(call get-sources,src/xml,xml)
 SOURCES_XSL=$(call get-sources,src/xml,xsl)
 SOURCES_HTML=$(call get-sources,src/html,html)
 EXAMPLES_ALL=$(call get-sources,examples,*)
-SOURCES_ALL=$(foreach T,JS CSS XML XSL HTML,$(SOURCES_$T))
+SOURCES_ALL=$(foreach T,JS CSS XML XSL JSON HTML,$(SOURCES_$T))
 RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%) $(EXAMPLES_ALL:%=run/%)
 DIST_ALL=\
 	$(patsubst src/js/%,dist/%,$(filter %.js,$(SOURCES_JS)))\

@@ -1,4 +1,4 @@
-import { parseLiteral } from "./directives.js";
+import { extractBindings } from "./directives.js";
 import { onError } from "../utils/logging.js";
 import { TemplateEffector } from "../effectors/template.js";
 import { createView } from "./view.js";
@@ -81,17 +81,8 @@ export const onTemplateNode = (
     viewsParent = root;
   }
 
-  const bindings =
-    node.attributes && node.attributes.length > 0 ? {} : undefined;
-  for (let i = 0; node.attributes && i < node.attributes.length; i++) {
-    const attr = node.attributes[i];
-    if (attr.namespaceURI === "in") {
-      bindings[attr.name] = parseLiteral(attr.value);
-    } else if (attr.name.startsWith("in:")) {
-      bindings[attr.name.substring(3)] = parseLiteral(attr.value);
-    }
-  }
-
+  const bindings = extractBindings(node);
+  //
   // FIXME: We some times register anonymous templates that we don/t really
   // care about.
   return processor.register(

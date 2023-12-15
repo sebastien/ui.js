@@ -1,30 +1,8 @@
-import { parseSelector } from "./directives.js";
+import { parseSelector, extractBindings } from "./directives.js";
 import { nodePath } from "../path.js";
 import { SlotEffector } from "../effectors/slot.js";
 import { replaceNodeWithPlaceholder } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
-
-export const getSlotBindings = (node) => {
-  // We extract the bindings from the attributes
-  const bindings = {};
-  for (const attr of node.attributes) {
-    if (attr.name !== "template" && attr.name !== "select") {
-      const v = attr.value;
-      if (v.startsWith("{") && v.endsWith("}")) {
-        bindings[attr.name] = parseSelector(v.slice(1, -1));
-      } else if (
-        (v.startsWith("[") && v.endsWith("]")) ||
-        (v.startsWith("(") && v.endsWith(")"))
-      ) {
-        bindings[attr.name] = new Function(`return (${v})`)();
-      } else {
-        // This is a raw (static binding)
-        bindings[attr.name] = attr.value;
-      }
-    }
-  }
-  return bindings;
-};
 
 // --
 // Processes a `<slot template=... select=.... >` node. The `select` attribute
@@ -37,7 +15,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
     ? parseSelector(node.getAttribute("selector"))
     : null;
 
-  const bindings = getSlotBindings(node);
+  const bindings = extractBindings(node);
 
   // If the node has a `template` node, then the contents will be interpreted
   // as the inputs to be given to the template upon rendering.

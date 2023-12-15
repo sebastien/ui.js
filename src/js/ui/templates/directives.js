@@ -26,10 +26,15 @@ import { onError } from "../utils/logging.js";
 // - No prefix means it's selecting from the current scope.
 //
 // The path is list of names/indices, like `user.0.name`.
-const PATH = seq(
-  opt(capture("[@/_\\.]", "type")),
-  list("([a-zA-Z_0-9]+|#)", text("."), "chunk"),
-  opt(capture(text("*"), "card"))
+const PATH = or(
+  seq(
+    opt(capture("[@/_\\.]", "type")),
+    list("([a-zA-Z_0-9]+|#)", text("."), "chunk"),
+    // FIXME: Not sure what the card is for
+    opt(capture(text("*"), "card"))
+  ),
+  capture(text("#"), "isKey"),
+  capture(text("."), "isCurrent")
 );
 
 const CODE = seq(text("{"), capture("[^\\}]+", "code"), text("}"));
@@ -70,7 +75,12 @@ export const parseSelector = (text) => {
   // TODO: Support code and expr in selector input
   const inputs = map(
     values(p.inputs),
-    (_) => new SelectorInput(_.type, values(_.chunk), _.card === "*")
+    (_) =>
+      new SelectorInput(
+        _.isCurrent ? "." : _.isKey ? "#" : _.type,
+        _.isCurrent ? ["_"] : _.isKey ? ["#"] : values(_.chunk),
+        _.card === "*"
+      )
   );
   return new Selector(
     // Inputs
@@ -106,7 +116,9 @@ export const parseLiteral = (text) => {
     ? true
     : text === "false"
     ? false
-    : text;
+    : text
+    ? text
+    : undefined;
 };
 
 // An expression makes use of the context
@@ -191,4 +203,34 @@ export const parseOutDirective = (text) => {
   return { selector: parseSelector(text), template: null };
 };
 
+// TODO: This is used to get the bindings in <slot binding=expr>, which
+// is also used in components.
+export const extractBindings = (node) => {
+  // We extract the bindings from the attributes
+  const bindings = {};
+  // TODO: That should be unified with the directives
+  for (const attr of node.attributes || []) {
+    if (attr.name !== "template" && attr.name !== "select") {
+      const v = attr.value;
+      if (!v.trim()) {
+        // Bindings will be inherited from scope
+        bindings[attr.name] = undefined;
+      } else if (
+        (v.startsWith("{") && v.endsWith("}")) ||
+        (v.startsWith("[") && v.endsWith("]"))
+      ) {
+        // Binding is a literal
+        bindings[attr.name] = parseLiteral(v);
+      } else if (v.startsWith("(") && v.endsWith(")")) {
+        // Binding is an expression
+        // TODO: This should go through the directives
+        bindings[attr.name] = new Function(`return (${v})`)();
+      } else {
+        // By default it's a selector
+        bindings[attr.name] = parseSelector(v);
+      }
+    }
+  }
+  return bindings;
+};
 // EOF

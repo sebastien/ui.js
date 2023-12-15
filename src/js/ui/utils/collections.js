@@ -195,11 +195,13 @@ export const append = (value, item) => {
 
 export const removeAt = (value, key) => {
   console.log("REMOVE AT", value, key);
-  if (value === null) {
+  if (key === undefined) {
+    return value;
+  } else if (value === null) {
     return null;
   } else if (value instanceof Array) {
     const res = [...value];
-    res.splice(value, key);
+    res.splice(key, 1);
     return res;
   } else if (value instanceof Map) {
     const res = new Map(value);

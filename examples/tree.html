@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!--
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/uijs.css" type="text/css" media="all">
+    -->
+    <title>Tree View</title>
+    <link
+      rel="stylesheet"
+      href="../lib/css/ui.css"
+      type="text/css"
+      media="all"
+    />
+    <script type="importmap">
+      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+    </script>
+  </head>
+  <body>
+    <div class="row fit-screen stretched lined nogap">
+      <div
+        class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3 scroll-v"
+      >
+        <slot
+          template="Tree"
+          items="(fetch('../lib/json/taxonomy.json').then(_=>_.json()))"
+        />
+      </div>
+    </div>
+    <!-- ----------------------------------------------------------------------
+
+    TEMPLATES
+
+    ----------------------------------------------------------------------- -->
+    <template name="Tree" in:items>
+      <div class="stack fill lined fit-h indent-2">
+        <ul class="stack pad-4" x:for="item=items">
+          <slot template="Node" item="item" />
+        </ul>
+      </div>
+    </template>
+
+    <template name="Node" in:item>
+      <li>
+        <div class="row item selectable pad-2">
+          <slot x:match="children=item.children">
+            <span class="icon" x:when="{children?.length}">📂</span>
+            <span class="icon" x:otherwise>📄</span>
+          </slot>
+          <span class="label" out:content="item.label|debug">…</span>
+        </div>
+        <slot x:if="item.children">
+          <ul class="stack items" x:for="item.children">
+            <slot template="Node" item="." />
+          </ul>
+        </slot>
+      </li>
+    </template>
+
+    <!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+    <script type="module">
+      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+      import ui from "@ui.js";
+      ui();
+    </script>
+  </body>
+</html>

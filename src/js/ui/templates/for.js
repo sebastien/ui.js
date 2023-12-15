@@ -8,10 +8,14 @@ export const onForAttribute = (processor, attr, root) => {
   const node = attr.ownerElement;
   const text = attr.name;
   const selector = parseForDirective(attr.value);
+  // For selectors are always many, and will assign to `_` in case
+  // of no explicit target.
   selector.isMany = true;
+  selector.target = selector.target || "_";
   node.removeAttribute(attr.name);
   // We retrieve the content
   const handlers = findEventHandlers(node);
+  // TODO: Should prune the content, there may be empty text nodes in there
   const content = contentAsFragment(node);
   // We create an anchor and add it as a child if it's not a slot
   // otherwise we replace the slot.
