@@ -40,15 +40,12 @@ class EventEffect extends Effect {
 			);
 		}
 		if (directive.event) {
-			this.node.dispatchEvent(
-				new CustomEvent(directive.event, {
-					bubbles: true,
-					detail: {
-						scope: this.scope,
-						event: event,
-					},
-				})
-			);
+			// NOTE: We use effect scope events, as they're not necessarily in the
+			// same layout as the DOM hiererachy
+			this.scope.triggerEvent(directive.event, {
+				scope: this.scope,
+				event: event,
+			});
 		}
 	}
 

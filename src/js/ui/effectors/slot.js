@@ -197,7 +197,8 @@ class SlotEffect extends Effect {
 		if (!this.controller && this.effector.controller) {
 			this.controller = createController(
 				this.effector.controller,
-				this.scope
+				this.scope,
+				this.node
 			);
 			trigger(this.controller.events.get("Bind"), this, scope);
 		}
@@ -223,15 +224,27 @@ class SlotEffect extends Effect {
 	}
 	mount(...args) {
 		const res = super.mount(...args);
-		trigger(this.effector.controller?.events?.get("Mount"), this, ...args);
+		const events = this.controller?.events;
+		if (events) {
+			trigger(events.get("Mount"), this, ...args);
+			for (const [name, handlers] of events.entries()) {
+				for (const h of handlers) {
+					this.scope.bindEvent(name, h);
+				}
+			}
+		}
 		return res;
 	}
 	unmount(...args) {
-		trigger(
-			this.effector.controller?.events?.get("Unmount"),
-			this,
-			...args
-		);
+		const events = this.effector.controller?.events;
+		if (events) {
+			trigger(events.get("Unmount"), this, ...args);
+			for (const [name, handlers] of events.entries()) {
+				for (const h of handlers) {
+					this.scope.unbindEvent(name, h);
+				}
+			}
+		}
 		return super.unmount(...args);
 	}
 }
@@ -263,14 +276,15 @@ class SingleSlotEffect extends SlotEffect {
 					node, // node
 					this.scope
 				)
-				?.init();
+				?.init()
+				?.mount();
 			return this.effect;
 		} else if (current !== previous) {
 			this.effect.unify(current, previous);
 		}
 	}
 	mount(...args) {
-		this.effect.mount(...args);
+		this.effect?.mount(...args);
 		return super.mount(...args);
 	}
 	unmount(...args) {
@@ -278,7 +292,7 @@ class SingleSlotEffect extends SlotEffect {
 		return super.unmount(...args);
 	}
 	dispose(...args) {
-		this.effect.dispose(...args);
+		this.effect?.dispose(...args);
 		return super.dispose(...args);
 	}
 }
@@ -455,22 +469,38 @@ class MappingSlotEffect extends SlotEffect {
 			node.parentNode.insertBefore(root, node);
 		}
 		return template
-			? template.apply(
-					root, // node
-					scope
-			  )
+			? template
+					.apply(
+						root, // node
+						scope
+					)
+					.init()
+					.mount()
 			: null;
 	}
 	mount(...args) {
-		console.warn("TODO: MultipleSlotEffect.mount");
+		if (this.items) {
+			for (const item of this.items.values()) {
+				item?.mount();
+			}
+		}
 		return super.mount(...args);
 	}
 	unmount(...args) {
-		console.warn("TODO: MultipleSlotEffect.unmount");
+		if (this.items) {
+			for (const item of this.items.values()) {
+				item?.unmount();
+			}
+		}
+
 		return super.unmount(...args);
 	}
 	dispose(...args) {
-		console.warn("TODO: MultipleSlotEffect.dispose");
+		if (this.items) {
+			for (const item of this.items.values()) {
+				item?.dispose();
+			}
+		}
 		return super.dispose(...args);
 	}
 }

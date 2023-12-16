@@ -235,32 +235,30 @@ class TemplateEffect extends Effect {
 
 	mount() {
 		super.mount();
-		const n = this.views.length;
 		let previous = this.node;
-		for (let i = 0; i < n; i++) {
-			const node = this.views[i].root;
-			if (node) {
-				DOM.after(previous, node);
-				previous = node;
+		for (const view of this.views) {
+			const { root, states } = view;
+			if (root) {
+				DOM.after(previous, root);
+				previous = root;
+			}
+			for (const state of states) {
+				state?.mount();
 			}
 		}
+		// FIXME: Why do we need this?
 		this.effector.isComponent &&
 			this.scope.trigger("Mount", this.scope, this.node, false);
 	}
 
 	unmount() {
-		console.log(
-			"UNMOUNTING TEMPLATE NODE",
-			this.effector,
-			this.node,
-			this.scope.path
-		);
 		for (const view of this.views) {
 			for (const state of view.states) {
 				state?.unmount();
 			}
 			view.root?.parentNode?.removeChild(view.root);
 		}
+		// FIXME: Why do we need this?
 		this.effector.isComponent &&
 			this.scope.trigger("Unmount", this.scope, this.node);
 	}

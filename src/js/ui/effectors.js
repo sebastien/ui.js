@@ -44,23 +44,61 @@ export class EffectScope extends Scope {
 		return res;
 	}
 
-	triggerEvent(name, ...args) {
-		console.warn("TRIGGER NOT IMPLEMENTED", { name, args });
-		// let scope = this;
-		// while (scope && !scope.handlers.has(name)) {
-		//   scope = scope.parent;
-		// }
-		// if (scope) {
-		//   const handlers = scope.handlers.get(name);
-		//   handlers &&
-		//     handlers.forEach((handler) => {
-		//       try {
-		//         handler(...args, this, scope);
-		//       } catch (exception) {
-		//         onError(`${name}: Handler failed`, { handler, exception, args });
-		//       }
-		//     });
-		// }
+	bindEvent(name, handler) {
+		return (
+			this.handlers.has(name)
+				? this.handlers.get(name).push(handler)
+				: this.handlers.set(name, [handler]),
+			this
+		);
+	}
+
+	unbindEvent(name, handler) {
+		const handlers = this.handlers.get(name);
+		if (!handlers) {
+			return this;
+		}
+		const i = handlers.indexOf(handler);
+		if (i !== -1) {
+			handlers.splice(i, 1);
+		}
+		if (handlers.length === 0) {
+			this.handlers.remove(name);
+		}
+		return this;
+	}
+	triggerEvent(name, data, bubbles = true) {
+		let scope = this;
+		let count = 0;
+		console.log("TRIGGER", name, { data });
+		while (scope) {
+			while (scope && !scope.handlers.has(name)) {
+				scope = scope.parent;
+			}
+			if (scope) {
+				const handlers = scope.handlers.get(name);
+				handlers &&
+					handlers.forEach((handler, i) => {
+						try {
+							console.log("TRIGGER HANDLER", i, { handler });
+							handler(data, this, scope);
+							count += 1;
+						} catch (exception) {
+							onError(`${name}: Handler failed`, {
+								handler,
+								exception,
+								data,
+							});
+						}
+					});
+				if (!bubbles) {
+					return count;
+				} else {
+					scope = scope.parent;
+				}
+			}
+		}
+		return count;
 	}
 
 	get(path, offset = 0) {
@@ -164,12 +202,17 @@ export class Effect {
 		});
 	}
 
-	mount() {}
-	unmount() {}
+	mount() {
+		return this;
+	}
+	unmount() {
+		return this;
+	}
 
 	dispose() {
 		this.unmount();
 		this.unbind();
+		return this;
 	}
 
 	onChange(value, event) {
