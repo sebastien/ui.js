@@ -39,6 +39,7 @@ export class Component {
 		// scope should be from cells.
 		// TODO: State really should be store.
 		this.scope = new EffectScope(store).define(slots);
+		this.scope.isComponentBoundary = true;
 		this.controller = controller
 			? createController(controller, this.scope)
 			: null;

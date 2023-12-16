@@ -41,7 +41,7 @@
 		<template name="Node" in:item>
 			<li x:match="children=item.children">
 				<slot x:when="{children?.length}">
-					<div class="row item selectable pad-2" on:click="!Toggle">
+					<div class="row item selectable pad-2" on:click="!Toggle.">
 						<span class="icon">📂</span>
 						<span class="label" out:content="item.label|debug"
 							>…</span

@@ -151,7 +151,11 @@ const RE_ON = new RegExp(
 			),
 			opt(
 				// The event itself
-				seq(text("!"), capture("[A-Za-z]+", "event")),
+				seq(
+					text("!"),
+					capture("[A-Za-z]+", "event"),
+					opt(capture(text("."), "stops"))
+				),
 				// And a event processor
 				opt(
 					text("|"),

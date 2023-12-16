@@ -20,7 +20,8 @@ export class TemplateEffector extends Effector {
 		this.bindings = bindings;
 		this.name = template.name;
 		this.rootName = rootName;
-		this.isComponent = false;
+		// This will be used to test if we need to generate Mount/Unmount events.
+		this.isComponent = isComponent;
 	}
 
 	apply(node, scope, attributes) {
@@ -54,12 +55,12 @@ export class TemplateEffector extends Effector {
 			},
 			{}
 		);
-		return new TemplateEffect(
-			this,
-			node,
-			len(slots) > 0 ? scope.derive(slots) : scope,
-			attributes
-		).init();
+		const subscope =
+			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
+		if (this.isComponent && subscope !== scope) {
+			subscope.isComponentBoundary = true;
+		}
+		return new TemplateEffect(this, node, subscope, attributes).init();
 	}
 }
 
@@ -197,13 +198,12 @@ class TemplateEffect extends Effect {
 						}),
 					};
 				} else {
-					// SEE: Comment in the else branch
+					// SEE: Commenting out the else branch
 					// for (const state of this.views[i].states) {
 					//   state.apply(this.scope.value);
 					// }
 				}
 			}
-			this.mount();
 		} else {
 			// NOTE: I'm not sure if we need to forward the changes downstream,
 			// I would assume that the subscription system would take care of
@@ -246,9 +246,14 @@ class TemplateEffect extends Effect {
 				state?.mount();
 			}
 		}
-		// FIXME: Why do we need this?
 		this.effector.isComponent &&
-			this.scope.trigger("Mount", this.scope, this.node, false);
+			this.scope.triggerEvent(
+				"Mount",
+				undefined,
+				this.scope,
+				this.node,
+				false
+			);
 	}
 
 	unmount() {
@@ -258,9 +263,14 @@ class TemplateEffect extends Effect {
 			}
 			view.root?.parentNode?.removeChild(view.root);
 		}
-		// FIXME: Why do we need this?
 		this.effector.isComponent &&
-			this.scope.trigger("Unmount", this.scope, this.node);
+			this.scope.triggerEvent(
+				"Unmount",
+				undefined,
+				this.scope,
+				this.node,
+				false
+			);
 	}
 
 	dispose() {

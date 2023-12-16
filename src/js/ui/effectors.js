@@ -18,6 +18,7 @@ export class EffectScope extends Scope {
 		this.key = key;
 		// This is the path for this scope in the parent scope
 		this.handlers = new Map();
+		this.isComponentBoundary = false;
 	}
 
 	set value(value) {
@@ -67,35 +68,34 @@ export class EffectScope extends Scope {
 		}
 		return this;
 	}
-	triggerEvent(name, data, bubbles = true) {
+
+	triggerEvent(name, data, origin = this, node, bubbles = true) {
 		let scope = this;
 		let count = 0;
-		console.log("TRIGGER", name, { data });
 		while (scope) {
-			while (scope && !scope.handlers.has(name)) {
-				scope = scope.parent;
-			}
-			if (scope) {
-				const handlers = scope.handlers.get(name);
-				handlers &&
-					handlers.forEach((handler, i) => {
-						try {
-							console.log("TRIGGER HANDLER", i, { handler });
-							handler(data, this, scope);
-							count += 1;
-						} catch (exception) {
-							onError(`${name}: Handler failed`, {
-								handler,
-								exception,
-								data,
-							});
+			const handlers = scope.handlers.get(name);
+			handlers &&
+				handlers.forEach((handler) => {
+					try {
+						const res = handler(data, scope, origin, node);
+						count += 1;
+						// TODO: This could be stop
+						if (res === false) {
+							return count;
 						}
-					});
-				if (!bubbles) {
-					return count;
-				} else {
-					scope = scope.parent;
-				}
+					} catch (exception) {
+						onError(`${name}: Handler failed`, {
+							handler,
+							exception,
+							data,
+						});
+					}
+				});
+			scope = scope.parent;
+			// The scope is a boundary, and we don't bubble, this means
+			// an early exit.
+			if (scope && scope.isComponentBoundary && !bubbles) {
+				return count;
 			}
 		}
 		return count;
@@ -109,21 +109,6 @@ export class EffectScope extends Scope {
 			// Otherwise we resolve in the current scope
 			return super.get(path, offset);
 		}
-	}
-
-	trigger(event, scope, node, bubbles = true) {
-		// This is typically called when the component is mounted
-		console.log("TRIGGER", { event, scope, node, bubbles });
-		if (this.handlers.has(event)) {
-			for (const h of this.handlers.get(event)) {
-				if (h(event, scope, node) === false) {
-					return false;
-				}
-			}
-		}
-		return bubbles && this.parent
-			? this.parent.trigger(event, scope, bubbles)
-			: true;
 	}
 
 	topics(path, offset = 0) {
@@ -150,6 +135,7 @@ export class Effect {
 		this.node = node;
 		this.scope = scope;
 		this.value = undefined;
+		this.mounted = 0;
 
 		// We perform some checks
 		!node && onError("Effect(): effector should have a node", { node });
@@ -203,9 +189,25 @@ export class Effect {
 	}
 
 	mount() {
+		// NOTE: This is left for debuggigng
+		if (this.mounted !== 0) {
+			onError(`Effector mounted more than once: ${this.mounted}`, {
+				effector: this,
+			});
+		}
+		this.mounted += 1;
 		return this;
 	}
 	unmount() {
+		// NOTE: This is left for debuggigng
+		if (this.mounted === 0) {
+			onError(`Effector not mounted`, { effector: this });
+		} else if (this.mounted !== 1) {
+			onError(`Effector mounted more than once: ${this.mounted}`, {
+				effector: this,
+			});
+		}
+		this.mounted = 0;
 		return this;
 	}
 
