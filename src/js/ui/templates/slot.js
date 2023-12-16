@@ -15,7 +15,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		? parseSelector(node.getAttribute("selector"))
 		: null;
 
-	const bindings = extractBindings(node);
+	const bindings = extractBindings(node, ["template", "selector"]);
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.

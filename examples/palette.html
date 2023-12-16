@@ -1,137 +1,140 @@
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <!--
+	<head>
+		<meta charset="utf-8" />
+		<!--
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/uijs.css" type="text/css" media="all">
     -->
-    <title>Color Palette</title>
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui.css"
-      type="text/css"
-      media="all"
-    />
-    <script type="importmap">
-      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
-    </script>
-  </head>
-  <body>
-    <slot template="Palette" color="#008BFD" />
+		<title>Color Palette</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body>
+		<slot template="Palette" color="#008BFD" />
 
-    <!-- Displays a list of shade swatches for the given color -->
-    <template
-      name="Palette"
-      in:color="#008BFD"
-      in:modes="('oklab srgb lab lsrgb xyz oklch lch hwb'.split(' '))"
-      in:shades="5"
-      in:low="#000000"
-      in:high="#FFFFFF"
-      in:greyscale="false"
-    >
-      <div
-        class="panel rounded fit-content lined shadow-4"
-        out:style="color,low,high->{`--color-value:${color};--color-low:${low};--color-high:${high}`}"
-      >
-        <div class="mb-4 pad-4 typography">
-          <h1 class="larger">Color palette</h1>
-          <p>Shows color variants using CSS interpolation</p>
-        </div>
-        <div class="pt-4 pb-4">
-          <ul x:for="mode=modes" class="stack gap-1">
-            <li
-              class="row selectable pl-4 pr-4"
-              out:title="mode->{`mode=${mode}`}"
-            >
-              <span class="upper bold small label w-8c" out:content="mode"
-                >…</span
-              >
+		<!-- Displays a list of shade swatches for the given color -->
+		<template
+			name="Palette"
+			in:modes="('oklab srgb lab xyz oklch lch hwb'.split(' '))"
+			in:shades="5"
+			in:color="#008BFD"
+			in:low="#000000"
+			in:high="#FFFFFF"
+			in:greyscale="(false)"
+		>
+			<div
+				class="panel rounded fit-content lined shadow-4"
+				out:style="color,low,high->{`--color-value:${color};--color-low:${low};--color-high:${high}`}"
+			>
+				<div class="mb-4 pad-4 typography">
+					<h1 class="larger">Color palette</h1>
+					<p>Shows color variants using CSS interpolation</p>
+				</div>
+				<div class="pt-4 pb-4">
+					<ul x:for="mode=modes" class="stack gap-1">
+						<li
+							class="row selectable pl-4 pr-4"
+							out:title="mode->{`mode=${mode}`}"
+						>
+							<span
+								class="upper bold small label w-8c"
+								out:content="mode"
+								>…</span
+							>
 
-              <ul
-                class="row gap-0"
-                x:for="shades->{$.range(shades)}"
-                out:style="mode->{`--color-blend:var(--blend-${mode});`}"
-              >
-                <li
-                  class="square shadow-1"
-                  out:title="#->{key}"
-                  out:style="#,mode,shades->{`background-color:color-mix(var(--blend-${mode}),var(--color-low),var(--color-value) ${Math.floor($.lerp(0,100,(key+1)/(shades+2)))}%);`}"
-                ></li>
-              </ul>
-              <ul class="row gap-0">
-                <li
-                  class="square shadow-"
-                  style="background-color: var(--color-value)"
-                ></li>
-              </ul>
-              <ul
-                class="row gap-0"
-                x:for="shades->{$.range(shades)}"
-                out:style="mode->{`--color-blend:var(--blend-${mode});`}"
-              >
-                <li
-                  class="square shadow-1"
-                  out:title="#,shades->{key+shades}"
-                  out:style="#,mode,shades->{`background-color:color-mix(var(--blend-${mode}),var(--color-value),var(--color-high) ${Math.floor($.lerp(0,100,(key+1)/(shades+2)))}%);`}"
-                ></li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-        <div class="stack pad-4">
-          <h3 class="dim regular bold">Color Parameters</h3>
-          <ul class="stack">
-            <li class="field selectable">
-              <label class="fill">Low color</label>
-              <input
-                class="square"
-                type="color"
-                name="low"
-                out:value="low"
-                on:input="low"
-              />
-            </li>
-            <li class="field selectable">
-              <label class="fill">Main Color</label>
-              <input
-                class="square"
-                type="color"
-                name="color"
-                out:value="color"
-                on:input="color"
-              />
-            </li>
-            <li class="field selectable">
-              <label class="fill">High color</label>
-              <input
-                class="square"
-                type="color"
-                name="high"
-                out:value="high"
-                on:input="high"
-              />
-            </li>
-          </ul>
-        </div>
-        <div class="typography pad-4 small dim">
-          <p>
-            You can read more about the <code>color-mix</code> on
-            <a
-              href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix"
-              >MDN</a
-            >
-            and on
-            <a href="https://developer.chrome.com/articles/css-color-mix/"
-              >Google Chrome Developers</a
-            >.
-          </p>
-        </div>
-      </div>
-    </template>
+							<ul
+								class="row gap-0"
+								x:for="shades->{$.range(shades)}"
+								out:style="mode->{`--color-blend:var(--blend-${mode});`}"
+							>
+								<li
+									class="square shadow-1"
+									out:title="#->{key}"
+									out:style="#,mode,shades->{`background-color:color-mix(var(--blend-${mode}),var(--color-low),var(--color-value) ${Math.floor($.lerp(0,100,(key+1)/(shades+2)))}%);`}"
+								></li>
+							</ul>
+							<ul class="row gap-0">
+								<li
+									class="square shadow-"
+									style="background-color: var(--color-value)"
+								></li>
+							</ul>
+							<ul
+								class="row gap-0"
+								x:for="shades->{$.range(shades)}"
+								out:style="mode->{`--color-blend:var(--blend-${mode});`}"
+							>
+								<li
+									class="square shadow-1"
+									out:title="#,shades->{key+shades}"
+									out:style="#,mode,shades->{`background-color:color-mix(var(--blend-${mode}),var(--color-value),var(--color-high) ${Math.floor($.lerp(0,100,(key+1)/(shades+2)))}%);`}"
+								></li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+				<div class="stack pad-4">
+					<h3 class="dim regular bold">Color Parameters</h3>
+					<ul class="stack">
+						<li class="field selectable">
+							<label class="fill">Low color</label>
+							<input
+								class="square"
+								type="color"
+								name="low"
+								out:value="low"
+								on:input="low"
+							/>
+						</li>
+						<li class="field selectable">
+							<label class="fill">Main Color</label>
+							<input
+								class="square"
+								type="color"
+								name="color"
+								out:value="color"
+								on:input="color"
+							/>
+						</li>
+						<li class="field selectable">
+							<label class="fill">High color</label>
+							<input
+								class="square"
+								type="color"
+								name="high"
+								out:value="high"
+								on:input="high"
+							/>
+						</li>
+					</ul>
+				</div>
+				<div class="typography pad-4 small dim">
+					<p>
+						You can read more about the <code>color-mix</code> on
+						<a
+							href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/color-mix"
+							>MDN</a
+						>
+						and on
+						<a
+							href="https://developer.chrome.com/articles/css-color-mix/"
+							>Google Chrome Developers</a
+						>.
+					</p>
+				</div>
+			</div>
+		</template>
 
-    <script type="module">
-      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-      import ui from "@ui.js";
-      ui();
-    </script>
-  </body>
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
 </html>

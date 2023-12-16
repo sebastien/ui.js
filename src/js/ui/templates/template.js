@@ -84,7 +84,8 @@ export const onTemplateNode = (
 		viewsParent = root;
 	}
 
-	const bindings = extractBindings(node);
+	const bindings = extractBindings(node, ["name"]);
+
 	//
 	// FIXME: We some times register anonymous templates that we don/t really
 	// care about.

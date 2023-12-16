@@ -320,6 +320,7 @@ class MappingSlotEffect extends SlotEffect {
 		const isCurrentAtom = isAtom(current);
 
 		const { target, path } = this.effector.selector;
+		// NOTE: Target should not be null
 
 		// FIXME: This should be moved to the slot effector. We also need
 		// to retrieve the key.
@@ -342,9 +343,7 @@ class MappingSlotEffect extends SlotEffect {
 				if (item) {
 					// Nothing to do, the item effectors will already be subscribed
 					// to the change.
-					if (target) {
-						item.scope.set(target, current);
-					}
+					item.scope.set(target || "_", current);
 				} else {
 					items.set(
 						null,
@@ -352,10 +351,7 @@ class MappingSlotEffect extends SlotEffect {
 							this.template,
 							node, // node
 							// FIXME: Should we set the key to null?
-							scope.derive(
-								target ? { target: current } : undefined,
-								path
-							), // scope
+							scope.derive({ [target || "_"]: current }, path), // scope
 							true // isEmpty
 						)
 					);
@@ -367,11 +363,11 @@ class MappingSlotEffect extends SlotEffect {
 			for (let i = 0; i < current.length; i++) {
 				const item = items.get(i);
 				if (!item) {
-					// FIXME: Why are we giving the scope.slots here?
-					const subscope = scope.derive(scope.slots, [...path, i], i);
-					if (target) {
-						subscope.set(target, current[i]);
-					}
+					const subscope = scope.derive(
+						{ [target || "_"]: current[i] },
+						[...path, i],
+						i
+					);
 					items.set(
 						i,
 						this.createItem(
@@ -384,9 +380,7 @@ class MappingSlotEffect extends SlotEffect {
 					);
 				} else {
 					if (!previous || current[i] !== previous[i]) {
-						if (target) {
-							item.scope.set(target, current[i]);
-						}
+						item.scope.set(target || "_", current[i]);
 						item.apply();
 					} else {
 						// No change in item
@@ -408,12 +402,11 @@ class MappingSlotEffect extends SlotEffect {
 			for (const k in current) {
 				const item = items.get(k);
 				if (!item) {
-					// FIXME: Why do we given the scope.slots here?
-					const subscope = scope.derive(scope.slots, [...path, k], k);
-					if (target) {
-						subscope.set(target, current[k]);
-					}
-
+					const subscope = scope.derive(
+						{ [target || "_"]: current[k] },
+						[...path, k],
+						k
+					);
 					items.set(
 						k,
 						this.createItem(
@@ -426,9 +419,7 @@ class MappingSlotEffect extends SlotEffect {
 					);
 				} else {
 					if (!previous || current[k] !== previous[k]) {
-						if (target) {
-							item.scope.set(target, current[k]);
-						}
+						item.scope.set(target || "_", current[k]);
 						item.apply();
 					}
 				}

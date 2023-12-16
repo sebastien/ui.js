@@ -132,12 +132,10 @@
 
 .lined > * {
 	border-bottom: 1px solid var(--box-bd);
-	padding-bottom: var(--gap);
 }
 
 .lined > *:last-child {
 	border-width: 0px;
-	padding-bottom: 0px;
 }
 
 /**

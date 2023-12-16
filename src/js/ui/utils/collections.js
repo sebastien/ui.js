@@ -161,7 +161,7 @@ export function* items(v) {
 
 export const range = (start, end, step = 1, closed = false) => {
 	if (end === undefined) {
-		end = start;
+		end = start || 0;
 		start = 0;
 	}
 	const n = Math.ceil(Math.max(0, (end - start) / step)) + (closed ? 1 : 0);

@@ -7,8 +7,8 @@
 @import url("./ui/tokens.css") layer(base);
 @import url("./ui/colors.css") layer(base);
 @import url("./ui/base.css") layer(base);
-@import url("./ui/box.css") layer(base);
 @import url("./ui/typography.css") layer(base);
+@import url("./ui/box.css") layer(base);
 @import url("./ui/style.css") layer(base);
 @import url("./ui/controls.css") layer(ui);
 @import url("./ui/behavior.css") layer(ui);

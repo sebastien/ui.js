@@ -12,3 +12,7 @@ export const onInfo = (message, ...context) => {
 export const onDebug = (message, ...context) => {
 	Options.debug && console.log("[uijs]", message, ...context);
 };
+export const setTrace = (message, ...context) => {
+	console.log("[uijs]", message, ...context);
+	debugger;
+};

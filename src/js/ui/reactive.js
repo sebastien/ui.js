@@ -15,7 +15,7 @@ import {
 	copy,
 } from "./utils/collections.js";
 import { lerp } from "./utils/math.js";
-import { onError } from "./utils/logging.js";
+import { onError, setTrace } from "./utils/logging.js";
 
 // This is mapped to `$` in formatters
 export const API = {
@@ -28,6 +28,7 @@ export const API = {
 	copy,
 	append,
 	removeAt,
+	setTrace,
 };
 
 // Wraps a subscription
@@ -384,6 +385,37 @@ export class Scope extends Cell {
 			}
 		}
 		return this;
+	}
+
+	// Useful for debugging
+	all() {
+		const res = {};
+		for (const name in this.slots) {
+			res[name] = this.get([name]);
+		}
+		return res;
+	}
+
+	// Useful for debugging
+	defined(name = undefined) {
+		if (name) {
+			return (
+				this.slots.hasOwnProperty(name)
+					? [{ scope: this, value: this.get([name]) }]
+					: []
+			).concat(this.parent ? this.parent.defined(name) : []);
+		} else {
+			const res = {};
+			for (const _ in this.slots) {
+				res[_] = this.defined(_);
+			}
+			return res;
+		}
+	}
+
+	// Useful for debugging
+	scopes() {
+		return [...this.ancestors()].map(_.slots);
 	}
 
 	get(path, offset = 0) {

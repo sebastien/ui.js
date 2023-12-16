@@ -29,7 +29,7 @@ import { onError } from "../utils/logging.js";
 const PATH = or(
 	seq(
 		opt(capture("[@/_\\.]", "type")),
-		list("([a-zA-Z_0-9]+|#)", text("."), "chunk"),
+		list("([a-zA-Z_0-9]+|#)", text("."), "chunk", 0, 7),
 		// FIXME: Not sure what the card is for
 		opt(capture(text("*"), "card"))
 	),
@@ -42,11 +42,18 @@ const EXPR = seq(text("("), capture("[^\\)]+", "expr"), text(")"));
 const FORMAT = seq(text("|"), or(capture("[a-zA-Z_0-9]+", "formatter"), CODE));
 
 const TARGET = seq(capture("[a-zA-Z_0-9]+", "target"), text("="));
-const SELECTION = seq(or(EXPR, CODE, PATH), opt(list(FORMAT, "", "format")));
+const SELECTION = seq(
+	or(EXPR, CODE, PATH),
+	opt(list(FORMAT, "", "format", 0, 5))
+);
 
 const INPUT = seq(opt(capture("[a-zA-Z]+", "key"), text("=")), SELECTION);
 const PROCESSOR = seq(text("->{"), capture(".+", "processor"), text("}"), "$");
-const SELECTOR = seq(opt(TARGET), list(INPUT, ",", "inputs"), opt(PROCESSOR));
+const SELECTOR = seq(
+	opt(TARGET),
+	list(INPUT, ",", "inputs", 0, 7),
+	opt(PROCESSOR)
+);
 
 // ---------------------------------------------------------------------------- HIGH LEVEL API
 // ----------------------------------------------------------------------------
@@ -56,6 +63,9 @@ export const parseDirective = (text) => {
 };
 
 const RE_SELECTOR = new RegExp(SELECTOR);
+export const matchSelector = (text) =>
+	RE_SELECTOR.exec(text)[0]?.length === text.length;
+
 export const parseSelector = (text) => {
 	const p = parse(text, RE_SELECTOR);
 	// FIXME: Here it is not clear if we should have a format per input,
@@ -102,6 +112,23 @@ export const parseSelector = (text) => {
 };
 
 const RE_NUMBER = new RegExp("^\\d+(\\.\\d+)?$");
+const matchLiteral = (text) => {
+	const v = text;
+	const s = v.at(0);
+	const e = v.length > 1 ? v.at(-1) : null;
+	return (
+		v === "true" ||
+		v === "false" ||
+		v === "undefined" ||
+		v === "null" ||
+		(s === e && (s === "'" || s === '"' || s === "`")) ||
+		(s === "(" && e === ")") ||
+		(s === "{" && e === "}") ||
+		(s === "[" && e === "]") ||
+		RE_NUMBER.test(text)
+	);
+};
+
 // A literal can be directly converted to JavaScript and does not use
 export const parseLiteral = (text) => {
 	return text &&
@@ -110,6 +137,10 @@ export const parseLiteral = (text) => {
 		? JSON.parse(text.slice(1, -1))
 		: text && text.startsWith("(") && text.endsWith(")")
 		? new Function(`{return ${text}}`)()
+		: text &&
+		  ((text.startsWith("'") && text.endsWith("'")) ||
+				(text.startsWith('"') && text.endsWith('"')))
+		? text.substring(1, -1)
 		: RE_NUMBER.test(text)
 		? parseFloat(text)
 		: text === "true"
@@ -128,6 +159,8 @@ export const parseExpression = (text) => {
 		: null;
 };
 
+// NOTE: While this is nice to write, this produces horrendously big
+// expressions, which certainly create large objects, and therefore load
 const RE_ON = new RegExp(
 	or(
 		seq(
@@ -141,7 +174,10 @@ const RE_ON = new RegExp(
 			),
 			opt(
 				// There's an optional input a,b,c->
-				opt(list(or("[a-zA-Z]+", text("#")), ",", "inputs"), "->"),
+				opt(
+					list(or("[a-zA-Z]+", text("#")), ",", "inputs", 0, 7),
+					"->"
+				),
 				// With an expression like `{....}`
 				seq(
 					text("{"),
@@ -160,7 +196,11 @@ const RE_ON = new RegExp(
 				opt(
 					text("|"),
 					opt(
-						list(or("[a-zA-Z]+", text("#")), ",", "eventInputs"),
+						list(
+							or("[a-zA-Z]+", text("#"), 0, 5),
+							",",
+							"eventInputs"
+						),
 						"->"
 					),
 					text("{"),
@@ -212,30 +252,27 @@ export const parseOutDirective = (text) => {
 
 // TODO: This is used to get the bindings in <slot binding=expr>, which
 // is also used in components.
-export const extractBindings = (node) => {
+export const extractBindings = (node, blacklist) => {
 	// We extract the bindings from the attributes
 	const bindings = {};
 	// TODO: That should be unified with the directives
 	for (const attr of node.attributes || []) {
-		if (attr.name !== "template" && attr.name !== "select") {
-			const v = attr.value;
-			if (!v.trim()) {
-				// Bindings will be inherited from scope
-				bindings[attr.name] = undefined;
-			} else if (
-				(v.startsWith("{") && v.endsWith("}")) ||
-				(v.startsWith("[") && v.endsWith("]"))
-			) {
-				// Binding is a literal
-				bindings[attr.name] = parseLiteral(v);
-			} else if (v.startsWith("(") && v.endsWith(")")) {
-				// Binding is an expression
-				// TODO: This should go through the directives
-				bindings[attr.name] = new Function(`return (${v})`)();
-			} else {
-				// By default it's a selector
-				bindings[attr.name] = parseSelector(v);
-			}
+		if (blacklist && blacklist.indexOf(attr.name) !== -1) {
+			continue;
+		}
+		const name = attr.name.split(":").at(-1);
+		const v = attr.value;
+		if (!v.trim()) {
+			// Bindings will be inherited from scope
+			bindings[name] = undefined;
+		} else if (matchLiteral(v)) {
+			// This is a literal expression
+			bindings[name] = parseLiteral(v);
+		} else if (matchSelector(v)) {
+			bindings[name] = parseSelector(v);
+		} else {
+			// Otherwise it's a string
+			bindings[name] = v;
 		}
 	}
 	return bindings;
