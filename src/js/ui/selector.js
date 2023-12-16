@@ -65,7 +65,7 @@ export class SelectorInput {
 	toString() {
 		const key = this.key ? `${this.key}=` : "";
 		const format = this.format
-			? this.format.map((_) => `${_}`).join("|")
+			? this.format.map((_) => `|${_.name}`).join("")
 			: "";
 		return `${key}${this.type}${this.path.join(".")}${format}`;
 	}

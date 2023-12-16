@@ -106,13 +106,14 @@ export const parseSelector = (text) => {
 							r.push(f);
 						}
 					} else if (code) {
-						r.push(
-							new Function(
-								"value",
-								"scope",
-								`const _=value;return (${code})`
-							)
+						const f = new Function(
+							"value",
+							"scope",
+							`const _=value;return (${code})`
 						);
+						// This is for when printing selectors
+						f.name = code;
+						r.push(f);
 					}
 					return r;
 				},
