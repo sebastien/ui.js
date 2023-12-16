@@ -45,7 +45,7 @@ class MatchEffect extends Effect {
 			//     { value }
 			//   );
 			this.states[index] = branch.template.apply(this.node, this.scope);
-			this.states[index].init();
+			// NOTE: Apply already calls init()
 		}
 		if (index !== this.currentBranchIndex) {
 			// Options.debug &&
@@ -53,17 +53,40 @@ class MatchEffect extends Effect {
 			//     `MatchEffector: mounting matched branch ${index}/${this.currentBranchIndex}`,
 			//     { value }
 			//   );
-			// FIXME: Why do we call init?
-			this.states[index].mount();
+			this.mounted && this.states[index].mount();
 			const previousState = this.states[this.currentBranchIndex];
 			// NOTE: We could cleanup the previous state if we wanted to
 			if (previousState) {
-				previousState.unmount();
+				this.mounted && previousState.unmount();
 				// TODO: We may want to deinit?
 			}
 			this.currentBranchIndex = index;
 		}
 		return this;
+	}
+	mount() {
+		const branch = this.states[this.currentBranchIndex];
+		if (branch) {
+			branch.mount();
+		}
+		return super.mount();
+	}
+	unmount() {
+		const branch = this.states[this.currentBranchIndex];
+		if (branch) {
+			branch.unmount();
+		}
+		return super.mount();
+	}
+	dispose() {
+		for (let i = 0; i < this.states.length; i++) {
+			const branch = this.states[i];
+			branch.mounted && branch.unmount();
+			branch.dispose();
+			this.states[i] = undefined;
+		}
+		this.currentBranchIndex = undefined;
+		return super.dispose();
 	}
 }
 // EOF

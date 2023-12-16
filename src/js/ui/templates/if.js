@@ -12,6 +12,7 @@ export const onIfAttribute = (processor, attr, root, templateName) => {
 	const selector = parseSelector(attr.value);
 	const node = attr.ownerElement;
 	const key = makeKey("if");
+	const path = nodePath(node, root);
 	node.removeAttribute(attr.name);
 	replaceNodeWithPlaceholder(node, `${key}|If`);
 	const template = processor.Template(
@@ -23,5 +24,5 @@ export const onIfAttribute = (processor, attr, root, templateName) => {
 		null,
 		false /* we do not need to clone this node */
 	);
-	return new IfEffector(nodePath(node, root), selector, template);
+	return new IfEffector(path, selector, template);
 };

@@ -1,5 +1,4 @@
 import { onError } from "./utils/logging.js";
-import { access } from "./utils/collections.js";
 import { Scope } from "./reactive.js";
 
 // --
@@ -135,7 +134,10 @@ export class Effect {
 		this.node = node;
 		this.scope = scope;
 		this.value = undefined;
+		//NOTE: These are really for debugging only
 		this.mounted = 0;
+		this.bound = 0;
+		this.initialized = 0;
 
 		// We perform some checks
 		!node && onError("Effect(): effector should have a node", { node });
@@ -153,17 +155,37 @@ export class Effect {
 	}
 
 	bind() {
-		// TODO: Subscribe to the selection
-
+		// NOTE: This is left for debugging
+		if (this.bound !== 0) {
+			onError(`Effector bound more than once: ${this.mounted}`, {
+				effector: this,
+			});
+		}
+		this.bound += 1;
 		return this;
 	}
 
 	unbind() {
 		// TODO: Unscubscribe to the selection
+		// NOTE: This is left for debugging
+		if (this.bound === 0) {
+			onError(`Effector not previously bound`, { effector: this });
+		} else if (this.bound !== 1) {
+			onError(`Effector bound more than once: ${this.bound}`, {
+				effector: this,
+			});
+		}
+		this.bound = 0;
 		return this;
 	}
 
 	init() {
+		if (this.initialized !== 0) {
+			onError(`Effector already initialized: ${this.initialized}`, {
+				effector: this,
+			});
+		}
+		this.initialized += 1;
 		this.apply();
 		this.bind();
 		return this;

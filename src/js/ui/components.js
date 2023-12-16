@@ -4,7 +4,7 @@ import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
 import { makeKey } from "./utils/ids.js";
 import { extractBindings } from "./templates/directives.js";
-import { Controllers, createController } from "./controllers.js";
+import { Controllers } from "./controllers.js";
 
 // FIXME: This is redundant with the slot effector.
 //
@@ -18,7 +18,10 @@ import { Controllers, createController } from "./controllers.js";
 //
 // The `Component` class encapsulates an anchor node, a template effector,
 // and state context
+//
+//
 export class Component {
+	// FIXME: It's not clear what role componetns play
 	constructor(
 		id,
 		anchor,
@@ -39,11 +42,10 @@ export class Component {
 		// scope should be from cells.
 		// TODO: State really should be store.
 		this.scope = new EffectScope(store).define(slots);
-		this.scope.isComponentBoundary = true;
-		this.controller = controller
-			? createController(controller, this.scope)
-			: null;
+		this.scope.isComponentBoundary = id || template.name || true;
 		this.effect = template.apply(this.anchor, this.scope, attributes);
+		// TODO: Not sure we need to alias
+		this.controller = this.effect.controller;
 	}
 }
 

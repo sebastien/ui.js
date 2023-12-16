@@ -38,12 +38,19 @@
 			</div>
 		</template>
 
-		<template name="Node" in:item>
+		<template name="Node" in:item inout:is-expanded="true">
 			<li x:match="children=item.children">
 				<slot x:when="{children?.length}">
 					<div class="row item selectable pad-2" on:click="!Toggle.">
-						<span class="icon">📂</span>
-						<span class="label" out:content="item.label|debug"
+						<span class="icon" x:if="isExpanded">📂</span>
+						<span class="icon" x:if="isExpanded|not">📁</span>
+						<span class="label fill" out:content="item.label"
+							>…</span
+						>
+						<span
+							class="small"
+							x:if="isExpanded|not"
+							out:content="children|len"
 							>…</span
 						>
 					</div>
@@ -54,9 +61,7 @@
 				<slot x:otherwise>
 					<div class="row item selectable pad-2">
 						<span class="icon">📄</span>
-						<span class="label" out:content="item.label|debug"
-							>…</span
-						>
+						<span class="label" out:content="item.label">…</span>
 					</div>
 				</slot>
 			</li>
@@ -66,7 +71,8 @@
 			const Node = ({ use, on, scope }) => {
 				const isExpanded = use.local("isExpanded", true);
 				on.Toggle((event) => {
-					console.log("Toggle item");
+					console.log("GOT EVENT");
+					isExpanded.set(!isExpanded.value);
 				});
 			};
 			export default controller(Node);

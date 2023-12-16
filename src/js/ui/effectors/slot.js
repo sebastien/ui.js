@@ -1,8 +1,6 @@
 import { onError } from "../utils/logging.js";
 import { isEmpty, isAtom } from "../utils/values.js";
 import { DOM, createComment } from "../utils/dom.js";
-import { trigger } from "../utils/collections.js";
-import { Controllers, createController } from "../controllers.js";
 import { Effector, Effect } from "../effectors.js";
 import { Selector } from "../selector.js";
 import { Templates } from "../templates.js";
@@ -22,7 +20,6 @@ export class SlotEffector extends Effector {
 		this.bindings = bindings;
 		// Note that template name can also be a selector here.
 		this.templateName = templateName;
-		this._controller = undefined;
 		if (!templateName) {
 			onError(
 				`SlotEffector: template is not specified, use ContentEffector instead`,
@@ -46,15 +43,6 @@ export class SlotEffector extends Effector {
 				}
 			);
 		}
-	}
-
-	get controller() {
-		// NOTE: There is an edge case where the component is rendered but
-		// the controller is not registered yet.
-		if (this._controller === undefined && this.templateName) {
-			this._controller = Controllers.get(this.templateName) || null;
-		}
-		return this._controller;
 	}
 
 	// -- doc
@@ -166,7 +154,6 @@ class SlotEffect extends Effect {
 		super(effector, node, scope);
 		this.handlers = {};
 		this.template = template;
-		this.controller = undefined;
 		if (this.effector.bindings) {
 			// We bindings do define a new slot
 			this.scope.define(this.effector.bindings, true);
@@ -175,77 +162,6 @@ class SlotEffect extends Effect {
 			// And the templates complement it
 			this.scope.define(template.bindings, false);
 		}
-	}
-	bind() {
-		super.bind();
-		const scope = this.scope;
-		const handlers = this.effector.handlers;
-		// FIXME: We should put this back and explain
-		// const parentLocalPath = this.parentLocalPath;
-		// if (handlers) {
-		//   for (const k in handlers) {
-		//     const targetPath = composePaths(parentLocalPath, handlers[k]);
-		//     // We relay the event from the subscribed path to the parent path.
-		//     const h = (event) => {
-		//       scope.state.put(targetPath, event);
-		//     };
-		//     this.handlers[k] = h;
-		//     scope.state.sub([...scope.localPath, k], h);
-		//   }
-		// }
-
-		if (!this.controller && this.effector.controller) {
-			this.controller = createController(
-				this.effector.controller,
-				this.scope,
-				this.node
-			);
-			trigger(this.controller.events.get("Bind"), this, scope);
-		}
-	}
-	unbind() {
-		const res = super.unbind();
-		const scope = this.scope;
-		// FIXME: Implement this back
-		// for (const k in this.handlers) {
-		//   const p = [...scope.localPath, k];
-		//   scope.state.sub(p, this.handlers[k]);
-		// }
-		if (this.controller) {
-			// TODO: Should call unbind
-			trigger(this.controller.events.get("Unbind"), this, scope);
-			this.controller = undefined;
-		}
-		return res;
-	}
-	init(...args) {
-		trigger(this.effector.controller?.events?.get("Init"), this, ...args);
-		return super.init();
-	}
-	mount(...args) {
-		const res = super.mount(...args);
-		const events = this.controller?.events;
-		if (events) {
-			trigger(events.get("Mount"), this, ...args);
-			for (const [name, handlers] of events.entries()) {
-				for (const h of handlers) {
-					this.scope.bindEvent(name, h);
-				}
-			}
-		}
-		return res;
-	}
-	unmount(...args) {
-		const events = this.effector.controller?.events;
-		if (events) {
-			trigger(events.get("Unmount"), this, ...args);
-			for (const [name, handlers] of events.entries()) {
-				for (const h of handlers) {
-					this.scope.unbindEvent(name, h);
-				}
-			}
-		}
-		return super.unmount(...args);
 	}
 }
 
@@ -271,13 +187,12 @@ class SingleSlotEffect extends SlotEffect {
 			//   scope.updateLocal(this.effector.bindings);
 			// }
 
-			this.effect = this.template
-				?.apply(
-					node, // node
-					this.scope
-				)
-				?.init()
-				?.mount();
+			// NOTE: No need to call .init(), it's done by apply.
+			this.effect = this.template?.apply(
+				node, // node
+				this.scope
+			);
+			this.mounted && this.effect.mount();
 			return this.effect;
 		} else if (current !== previous) {
 			this.effect.unify(current, previous);
@@ -293,6 +208,7 @@ class SingleSlotEffect extends SlotEffect {
 	}
 	dispose(...args) {
 		this.effect?.dispose(...args);
+		this.effect = undefined;
 		return super.dispose(...args);
 	}
 }
@@ -345,16 +261,15 @@ class MappingSlotEffect extends SlotEffect {
 					// to the change.
 					item.scope.set(target || "_", current);
 				} else {
-					items.set(
-						null,
-						this.createItem(
-							this.template,
-							node, // node
-							// FIXME: Should we set the key to null?
-							scope.derive({ [target || "_"]: current }, path), // scope
-							true // isEmpty
-						)
+					const new_item = this.createItem(
+						this.template,
+						node, // node
+						// FIXME: Should we set the key to null?
+						scope.derive({ [target || "_"]: current }, path), // scope
+						true // isEmpty
 					);
+					items.set(null, new_item);
+					this.mounted && new_item.mount();
 				}
 			}
 		} else if (current instanceof Array) {
@@ -368,16 +283,15 @@ class MappingSlotEffect extends SlotEffect {
 						[...path, i],
 						i
 					);
-					items.set(
-						i,
-						this.createItem(
-							this.template,
-							node, // node
-							subscope,
-							undefined,
-							i
-						)
+					const new_item = this.createItem(
+						this.template,
+						node, // node
+						subscope,
+						undefined,
+						i
 					);
+					items.set(i, new_item);
+					this.mounted && new_item.mount();
 				} else {
 					if (!previous || current[i] !== previous[i]) {
 						item.scope.set(target || "_", current[i]);
@@ -391,7 +305,7 @@ class MappingSlotEffect extends SlotEffect {
 			let j = current.length;
 			let item = null;
 			while ((item = items.get(j))) {
-				item.unmount();
+				this.mounted && item.unmount();
 				item.dispose();
 				items.delete(j);
 				j++;
@@ -407,16 +321,15 @@ class MappingSlotEffect extends SlotEffect {
 						[...path, k],
 						k
 					);
-					items.set(
-						k,
-						this.createItem(
-							this.template,
-							node, // node
-							subscope,
-							undefined,
-							k
-						)
+					const new_item = this.createItem(
+						this.template,
+						node, // node
+						subscope,
+						undefined,
+						k
 					);
+					items.set(k, new_item);
+					this.mounted && new_item.mount();
 				} else {
 					if (!previous || current[k] !== previous[k]) {
 						item.scope.set(target || "_", current[k]);
@@ -428,7 +341,7 @@ class MappingSlotEffect extends SlotEffect {
 				if (current[k] === undefined) {
 					const item = items.get(k);
 					if (item) {
-						item.unmount();
+						this.mounted && item.unmount();
 						item.dispose();
 					}
 					this.items.delete(k);
@@ -459,14 +372,12 @@ class MappingSlotEffect extends SlotEffect {
 			// TODO: Should use DOM.after
 			node.parentNode.insertBefore(root, node);
 		}
+		// NOTE: We don't need to call init, it's done by apply
 		return template
-			? template
-					.apply(
-						root, // node
-						scope
-					)
-					.init()
-					.mount()
+			? template.apply(
+					root, // node
+					scope
+			  )
 			: null;
 	}
 	mount(...args) {
@@ -483,7 +394,6 @@ class MappingSlotEffect extends SlotEffect {
 				item?.unmount();
 			}
 		}
-
 		return super.unmount(...args);
 	}
 	dispose(...args) {

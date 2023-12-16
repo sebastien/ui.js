@@ -9,7 +9,8 @@ import {
 	not,
 	list,
 } from "../utils/reparser.js";
-import { map, values } from "../utils/collections.js";
+import { Formats } from "../formats.js";
+import { map, values, reduce } from "../utils/collections.js";
 import { Selector, SelectorInput } from "../selector.js";
 import { onError } from "../utils/logging.js";
 
@@ -67,47 +68,86 @@ export const matchSelector = (text) =>
 	RE_SELECTOR.exec(text)[0]?.length === text.length;
 
 export const parseSelector = (text) => {
-	const p = parse(text, RE_SELECTOR);
-	// FIXME: Here it is not clear if we should have a format per input,
-	// or an overall format. Maybe `||` should format the overall and `|` just
-	// one input?
-	// const formats = reduce(
-	//   p.inputs,
-	//   (r, { format }) =>
-	//     reduce(
-	//       format,
-	//       (r, { code, formatter }) => (r.push({ code, formatter }), r),
-	//       r
-	//     ),
-	//   []
-	// );
+	const parsed = parse(text, RE_SELECTOR, true);
+	if (!parsed || parsed.index !== 0) {
+		onError("Could not parse selector at all", { text });
+		return null;
+	}
+	const match = parsed && parsed.index === 0 ? makematch(parsed) : null;
+	if (!match) {
+		onError("Could not extract match from parsed data", { parsed });
+		return null;
+	}
+	const length = parsed[0]?.length || 0;
+	const expected = (text || "").length;
+	if (!parsed || !match || length !== expected) {
+		onError("Selector could not be parsed entirely", {
+			text,
+			parsed,
+			match,
+			length,
+			expected,
+		});
+	}
+	const formats = reduce(
+		match.inputs,
+		(r, { format }) =>
+			reduce(
+				format,
+				(r, { code, formatter }) => {
+					if (formatter) {
+						const f = Formats[formatter];
+						if (!f) {
+							onError("Unknown formatter in selector", {
+								formatter,
+								selector: text,
+							});
+						} else {
+							r.push(f);
+						}
+					} else if (code) {
+						r.push(
+							new Function(
+								"value",
+								"scope",
+								`const _=value;return (${code})`
+							)
+						);
+					}
+					return r;
+				},
+				r
+			),
+		[]
+	);
 
 	// TODO: Support code and expr in selector input
 	const inputs = map(
-		values(p.inputs),
-		(_) =>
+		values(match.inputs),
+		(_, i) =>
 			new SelectorInput(
 				_.isCurrent ? "." : _.isKey ? "#" : _.type,
 				_.isCurrent ? ["_"] : _.isKey ? ["#"] : values(_.chunk),
-				_.card === "*"
+				_.card === "*",
+				formats[i]
 			)
 	);
 	return new Selector(
 		// Inputs
 		inputs,
 		// Format
-		p.processor
+		match.processor
 			? new Function(
 					...inputs
 						.map((v) => {
 							const k = v.path.at(-1);
 							return k === "#" ? "key" : k;
 						})
-						.concat(["$", `return (${p.processor})`])
+						.concat(["$", `return (${match.processor})`])
 			  )
 			: null,
 		// Target
-		p.target
+		match.target
 	);
 };
 
@@ -260,7 +300,16 @@ export const extractBindings = (node, blacklist) => {
 		if (blacklist && blacklist.indexOf(attr.name) !== -1) {
 			continue;
 		}
-		const name = attr.name.split(":").at(-1);
+		// HTML attributes can't do camelCase.
+		const name = attr.name
+			.split(":")
+			.at(-1)
+			.split("-")
+			.map((v, i) =>
+				i === 0 ? v : `${v.charAt(0).toUpperCase()}${v.substring(1)}`
+			)
+			.join("");
+
 		const v = attr.value;
 		if (!v.trim()) {
 			// Bindings will be inherited from scope

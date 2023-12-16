@@ -6,6 +6,7 @@ import { Effect, Effector } from "../effectors.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
+import { Controllers, createController } from "../controllers.js";
 
 export class TemplateEffector extends Effector {
 	// -- doc
@@ -22,9 +23,20 @@ export class TemplateEffector extends Effector {
 		this.rootName = rootName;
 		// This will be used to test if we need to generate Mount/Unmount events.
 		this.isComponent = isComponent;
+		this.controller = undefined;
 	}
 
 	apply(node, scope, attributes) {
+		// If there's a controller attached to the template, we retrieve it.
+		// We don't do it earlier so that we leave a chance for the controller
+		// to be found.
+		if (this.isComponent && this.controller === undefined) {
+			this.controller = Controllers.has(this.isComponent)
+				? Controllers.get(this.isComponent)
+				: null;
+			// TODO: We should probably issue a warning if we get `null`, as its
+			// means the controller is not yet available.
+		}
 		// When the template is applied, it may come with default bindings
 		// that override the parent context binding. The slots here define
 		// these values.
@@ -58,8 +70,10 @@ export class TemplateEffector extends Effector {
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
 		if (this.isComponent && subscope !== scope) {
-			subscope.isComponentBoundary = true;
+			subscope.isComponentBoundary =
+				this.name || this.template.name || true;
 		}
+		// NOTE: There's a question where we should call init()
 		return new TemplateEffect(this, node, subscope, attributes).init();
 	}
 }
@@ -75,6 +89,10 @@ class TemplateEffect extends Effect {
 		// these would be class attributes from a top-level component instance.
 		this.attributes = attributes;
 		this.views = [];
+		// FIXME: We should make this lazy (ie only create on bind)
+		this.controller = this.effector.controller
+			? createController(this.effector.controller, this.scope)
+			: null;
 	}
 
 	unify() {
@@ -232,9 +250,38 @@ class TemplateEffect extends Effect {
 		}
 		return res;
 	}
+	bind() {
+		if (this.effector.controller) {
+			if (!this.controller) {
+				this.controller = createController(
+					this.effector.controller,
+					this.scope,
+					this.node
+				);
+			}
+			for (const [name, handlers] of this.controller.events.entries()) {
+				for (const h of handlers) {
+					this.scope.bindEvent(name, h);
+				}
+			}
+		}
+		// TODO: Should we trigger a bind event?
+		return super.bind();
+	}
+	unbind() {
+		if (this.controller) {
+			// TODO: SHould we trigger unbind?
+			for (const [name, handlers] of this.controller.events.entries()) {
+				for (const h of handlers) {
+					this.scope.unbindEvent(name, h);
+				}
+			}
+		}
+		return super.unbind();
+	}
 
 	mount() {
-		super.mount();
+		const res = super.mount();
 		let previous = this.node;
 		for (const view of this.views) {
 			const { root, states } = view;
@@ -254,6 +301,7 @@ class TemplateEffect extends Effect {
 				this.node,
 				false
 			);
+		return res;
 	}
 
 	unmount() {
@@ -271,10 +319,10 @@ class TemplateEffect extends Effect {
 				this.node,
 				false
 			);
+		return super.unmount();
 	}
 
 	dispose() {
-		super.dispose();
 		for (const view of this.views) {
 			for (const state of view.states) {
 				state?.dispose();
@@ -289,6 +337,7 @@ class TemplateEffect extends Effect {
 		//     scope: this.scope,
 		//   })
 		// );
+		return super.dispose();
 	}
 }
 

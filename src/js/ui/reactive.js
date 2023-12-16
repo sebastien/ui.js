@@ -472,7 +472,9 @@ export class Scope extends Cell {
 			return this.get("_");
 		}
 		if (selector.format) {
-			const inputs = selector.inputs.map((_) => this.get(_.path));
+			const inputs = selector.inputs.map((_) =>
+				_.formatted(this.get(_.path))
+			);
 			try {
 				return selector.format(...[...inputs, API]);
 			} catch (exception) {
@@ -486,12 +488,18 @@ export class Scope extends Cell {
 		} else {
 			switch (selector.type) {
 				case SelectorType.Atom:
-					return this.get(selector.inputs[0].path);
+					return selector.inputs[0].formatted(
+						this.get(selector.inputs[0].path)
+					);
 				case SelectorType.List:
-					return selector.inputs.map((_) => this.get(_.path));
+					return selector.inputs.map((_) =>
+						_.formatted(this.get(_.path))
+					);
 				case SelectorType.Map:
 					return selector.inputs.reduce(
-						(r, _) => ((r[_.name] = this.get(_.path)), r),
+						(r, _) => (
+							(r[_.name] = _.formatted(this.get(_.path))), r
+						),
 						{}
 					);
 				default:

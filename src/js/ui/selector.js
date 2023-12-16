@@ -50,17 +50,23 @@ export class SelectorInput {
 		Object.freeze(path);
 		this.isMany = isMany;
 		this.format = format
-			? format instanceof Function
+			? format instanceof Array
 				? format
-				: Formats[format]
+				: [format]
 			: null;
 		this.key = key;
 		// TODO: Should freeze
 	}
 
+	formatted(value) {
+		return this.format ? this.format.reduce((r, v) => v(r), value) : value;
+	}
+
 	toString() {
 		const key = this.key ? `${this.key}=` : "";
-		const format = this.format ? `|${this.format}` : "";
+		const format = this.format
+			? this.format.map((_) => `${_}`).join("|")
+			: "";
 		return `${key}${this.type}${this.path.join(".")}${format}`;
 	}
 }

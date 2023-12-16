@@ -99,7 +99,8 @@ export const onTemplateNode = (
 					(r, _) => (
 						// We only create views from text and element nodes, excluding
 						// style and script nodes.
-						_.nodeType === Node.TEXT_NODE ||
+						(_.nodeType === Node.TEXT_NODE &&
+							!/^\s*$/.test(_.data)) ||
 						(_.nodeType == Node.ELEMENT_NODE &&
 							_.nodeName.toLowerCase() !== "style" &&
 							_.nodeName.toLowerCase() !== "script")
@@ -119,7 +120,7 @@ export const onTemplateNode = (
 			bindings,
 			undefined,
 			// It is a component if it has a name
-			name ? true : false
+			name
 		)
 	);
 };
