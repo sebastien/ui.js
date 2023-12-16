@@ -306,10 +306,11 @@ class TemplateEffect extends Effect {
 
 	unmount() {
 		for (const view of this.views) {
-			for (const state of view.states) {
+			const { root, states } = view;
+			for (const state of states) {
 				state?.unmount();
 			}
-			view.root?.parentNode?.removeChild(view.root);
+			root?.parentNode?.removeChild(view.root);
 		}
 		this.effector.isComponent &&
 			this.scope.triggerEvent(

@@ -85,10 +85,8 @@ class ContentEffect extends Effect {
 		return this;
 	}
 
-	unmount() {
-		// TODO: Should use DOM.mount
-		DOM.unmount(this.textNode);
-	}
+	// TODO: mount/unmount here is probably a bit complicated, but
+	// should be implemented.
 }
 
 // EOF

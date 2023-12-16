@@ -37,12 +37,16 @@ class IfEffect extends Effect {
 					);
 					// NOTE: Apply already calls init()
 				}
+				if (!this.visible) {
+					this.state.mount();
+				}
 				this.visible = true;
-				this.state.mount();
 			} else {
 				if (this.state) {
+					if (this.visible) {
+						this.state.unmount();
+					}
 					this.visible = false;
-					this.state.unmount();
 					// We'll only dispose of the state when we dispose
 					// of the whole effect.
 				}
