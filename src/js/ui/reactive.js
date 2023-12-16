@@ -388,7 +388,7 @@ export class Scope extends Cell {
 	}
 
 	// Useful for debugging
-	all() {
+	defined() {
 		const res = {};
 		for (const name in this.slots) {
 			res[name] = this.get([name]);
@@ -397,17 +397,17 @@ export class Scope extends Cell {
 	}
 
 	// Useful for debugging
-	defined(name = undefined) {
+	declared(name = undefined) {
 		if (name) {
 			return (
 				this.slots.hasOwnProperty(name)
 					? [{ scope: this, value: this.get([name]) }]
 					: []
-			).concat(this.parent ? this.parent.defined(name) : []);
+			).concat(this.parent ? this.parent.declared(name) : []);
 		} else {
 			const res = {};
 			for (const _ in this.slots) {
-				res[_] = this.defined(_);
+				res[_] = this.declared(_);
 			}
 			return res;
 		}
@@ -424,9 +424,14 @@ export class Scope extends Cell {
 		return slot ? slot.get(path, offset + 1) : undefined;
 	}
 
-	set(path, value, force = false) {
+	set(path, value, force = false, update = false) {
 		if (typeof path === "string") {
-			const slot = this.slots[path];
+			// NOTE: We do need to override. If we set in a scope, we don't
+			// want to change a parent scope, unless update is true.
+			const slot =
+				update || this.slots.hasOwnProperty(path)
+					? this.slots[path]
+					: null;
 			if (slot) {
 				slot.set(value, undefined, undefined, force);
 			} else {
