@@ -9,9 +9,9 @@ EXAMPLES_ALL=$(call get-sources,examples,*)
 SOURCES_ALL=$(foreach T,JS CSS XML XSL JSON HTML,$(SOURCES_$T))
 RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%) $(EXAMPLES_ALL:%=run/%)
 DIST_ALL=\
-	$(patsubst src/js/%,dist/%,$(filter %.js,$(SOURCES_JS)))\
-	$(patsubst src/css/%,dist/%,$(filter %.css,$(SOURCES_CSS)))\
-	$(patsubst src/xml/%,dist/%,$(filter %.xsl,$(SOURCES_XSL)))
+	$(patsubst src/js/%,dist/js/%,$(filter %.js,$(SOURCES_JS)))\
+	$(patsubst src/css/%,dist/css/%,$(filter %.css,$(SOURCES_CSS)))\
+	$(patsubst src/xml/%,dist/xml/%,$(filter %.xsl,$(SOURCES_XSL)))
 
 
 # --
@@ -58,6 +58,7 @@ dist.tar.gz: $(DIST_ALL)
 stats: dist
 	@echo "Numbers of characters (source): $$(cat $(filter %.js,$(SOURCES_ALL)) | wc -c)"
 	echo  "Numbers of characters (dist)  : $$(cat $(DIST_ALL) | wc -c)"
+	du -hs dist/css dist/js
 
 fmt:
 	@nvim --headless +'ALEFix' +'wq' $(SOURCES_ALL)
@@ -71,12 +72,16 @@ run/%: %
 	@mkdir -p "$(dir $@)"
 	ln -sfr "$<" "$@"
 
-dist/%: src/js/% run/.has-npm-uglifyjs
+dist/%: src/%
+	@mkdir -p "$(dir $@)"
+	cp -a "$<" "$@"
+
+dist/js/%: src/js/% run/.has-npm-uglifyjs
 	@mkdir -p "$(dir $@)"
 	echo "--- Compressing $< into $@"
 	$(call use-bin,uglifyjs) --compress --module --no-annotations --mangle -o "$@" $<
 
-dist/%: src/css/% run/.has-npm-uglifycss
+dist/css/%: src/css/% run/.has-npm-uglifycss
 	@mkdir -p "$(dir $@)"
 	echo "--- Compressing $< into $@"
 	$(call use-bin,uglifycss) --ugly-comments --output "$@" $<
@@ -97,6 +102,9 @@ run/.has-cmd-%:
 	@if [ -z "$$(which $* 2> /dev/null)" ]; then
 		echo "ERR Could not find command: $*"
 		exit 1
+	else
+		mkdir -p "$(dir $@)"
+		touch "$@"
 	fi
 
 
