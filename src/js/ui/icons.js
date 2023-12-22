@@ -19,6 +19,13 @@ export const Sources = {
 			"vector-effect": "non-scaling-stroke",
 		},
 	},
+	Devicons: {
+		url: "https://unpkg.com/devicons@1.8.0/!SVG/${name}.svg",
+		style: {
+			stroke: "transparent",
+			fill: "var(--color-text)",
+		},
+	},
 	IconoirSolid: {
 		url: "https://unpkg.com/iconoir@7.0.2/icons/solid/${name}.svg",
 		style: {

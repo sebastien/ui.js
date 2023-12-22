@@ -1,118 +1,179 @@
+<!DOCTYPE html>
 <html lang="en-nz">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UIjs − Block Based Notebook</title>
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui.css"
-      type="text/css"
-      media="all"
-    />
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui/theme/whitelabel.css"
-      type="text/css"
-      media="all"
-    />
-    <script type="importmap">
-      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
-    </script>
-  </head>
-  <body>
-    <header>
-      <h1>Blocks</h1>
-      <p>Shows how to create a Jupyter-like notebook.</p>
-    </header>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>UIjs − Block Based Notebook</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body>
+		<header>
+			<h1>Blocks</h1>
+			<p>Shows how to create a Jupyter-like notebook.</p>
+		</header>
 
-    <div class="Blocks">
-      <slot
-        template="Blocks"
-        cells="[{type:'text',data:'Hello, world from a text cell'},{type:'js',data:'Math.floor(Math.random() * 100)'}]"
-      />
-    </div>
+		<div class="Blocks">
+			<slot
+				template="Blocks"
+				cells="([{type:'text',source:'Hello, world from a text cell'}])"
+			/>
+		</div>
 
-    <template name="Blocks" in:cells="">
-      <ul x:for="cells">
-        <li><slot template="Cell" /></li>
-        <li><slot template="Divider" /></li>
-      </ul>
-    </template>
+		<!-------------------------------------------------------------------------
 
-    <template name="Cell" in:type="text" in:source="">
-      <ul class="stack">
-        <li class="row">
-          <ul class="stack stretch">
-            <li>
-              <button class="square small transparent move">
-                <slot template="Icon" name="menu" />
-              </button>
-            </li>
-          </ul>
-          <div class="preview fill" out:content=".preview">Preview…</div>
-        </li>
-        <li class="row strech">
-          <ul class="stack stretch">
-            <li>
-              <button class="square small transparent nopad">
-                <slot template="Icon" name="code-brackets" />
-              </button>
-            </li>
-          </ul>
-          <div class="source fill">
-            <textarea
-              class="fit"
-              out:content="source"
-              on:input="!Changed"
-            ></textarea>
-          </div>
-        </li>
-      </ul>
-    </template>
+     BLOCKS
 
-    <template name="Icon" in:base="24" in:source="Iconoir">
-      <svg
-        class="icon"
-        out:height="size"
-        out:viewBox="base->{`0 0 ${base} ${base}`}"
-      >
-        <use
-          out:href="name,source->{`#icon-${name}-${(source||'generic').toLowerCase()}`}"
-        />
-      </svg>
-    </template>
+     ---------------------------------------------------------------------- -->
 
-    <template name="Divider">
-      <div class="row with-hover">
-        <button class="small circle transparent">
-          <slot template="Icon" name="plus-circle" />
-        </button>
-        <hr class="faint fill on-hover" />
-      </div>
-    </template>
+		<template name="Blocks" in:cells="">
+			<ul x:for="cell=cells">
+				<li><slot template="Cell" cell="cell" /></li>
+				<li><slot template="Divider" cell="cell" /></li>
+			</ul>
+		</template>
 
-    <script type="module">
-      import { controller } from "@ui.js";
-      import { loadIcon } from "@ui/icons.js";
-      const Icon = ({ on, scope, state }) => {
-        loadIcon(state.name, state.source);
-      };
-      controller(Icon);
-    </script>
+		<!-------------------------------------------------------------------------
 
-    <script type="module">
-      import { controller } from "@ui.js";
-      const Cell = ({ on, scope, state }) => {
-        on.Changed((event) => {
-          cnsole.log("CHANGED CELL");
-        });
-      };
-      controller(Cell);
-    </script>
+     CELL
 
-    <script type="module">
-      import ui from "@ui.js";
-      ui();
-    </script>
-  </body>
+     ---------------------------------------------------------------------- -->
+
+		<template name="Cell" cell>
+			<ul class="stack">
+				<!-- Preview -->
+				<li class="row">
+					<ul class="stack stretch">
+						<li>
+							<button
+								class="square small transparent move icon-smaller"
+							>
+								<slot template="Icon" name="'menu'" />
+							</button>
+						</li>
+					</ul>
+					<div class="preview fill" out:content=".preview|html">
+						Preview…
+					</div>
+					<div class="icon icon-small"></div>
+				</li>
+
+				<!-- Source code -->
+				<li class="row strech">
+					<div class="icon icon-small"></div>
+					<div class="source fill">
+						<textarea
+							class="fit"
+							out:content="cell.source"
+							on:input="!SourceChanged"
+						></textarea>
+					</div>
+					<ul class="stack stretch">
+						<li>
+							<div class="with-hover">
+								<button
+									class="square small transparent nopad icon-small"
+								>
+									<slot
+										template="Icon"
+										name="code-brackets"
+									/>
+								</button>
+								<!-- FIXME: Anything after the slot does not appear -->
+								<menu class="on-hover to-l to-t pos-abs shadow">
+									<li>
+										<span class="icon-small">
+											<slot template="Icon" name="'text'" source="'Devicons'">
+										</span>
+										<span>Text</span>
+									</li>
+									<li>
+										<span class="icon-small">
+											<slot template="Icon" name="'python'" source="'Devicons'">
+										</span>
+										<span>Python</span>
+									</li>
+									<li>
+										<span class="icon-small">
+											<slot template="Icon" name="'javascript'" source="'Devicons'">
+										</span>
+										<span>JavaScript</span>
+									</li>
+								</menu>
+							</div>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</template>
+
+		<script type="module">
+			import { controller } from "@ui.js";
+			import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
+			const Cell = ({ on, scope, state }) => {
+				on.SourceChanged((event) => {
+					state.preview = marked.parse(event.target.value);
+				});
+			};
+			controller(Cell);
+		</script>
+
+		<!-------------------------------------------------------------------------
+
+     ICONS
+
+     ---------------------------------------------------------------------- -->
+
+		<template name="Icon" base="24" in:name="help-square" in:source="Iconoir">
+			<svg
+				class="icon"
+				out:height="size"
+				out:viewBox="base->{`0 0 ${base} ${base}`}"
+			>
+				<use
+					out:href="name,source->{`#icon-${name}-${(source||'generic').toLowerCase()}`}"
+				/>
+			</svg>
+		</template>
+		<script type="module">
+			import { controller } from "@ui.js";
+			import { loadIcon } from "@ui/icons.js";
+			const Icon = ({ on, scope, state }) => {
+				loadIcon(state.name, state.source);
+			};
+			controller(Icon);
+		</script>
+
+		<!-------------------------------------------------------------------------
+
+     DIVIDER
+
+     ---------------------------------------------------------------------- -->
+		<template name="Divider">
+			<div class="row with-hover">
+				<button class="small circle transparent">
+					<slot template="Icon" name="plus-circle" />
+				</button>
+				<hr class="faint fill on-hover" />
+			</div>
+		</template>
+
+		<!-------------------------------------------------------------------------
+
+     MAIN
+
+     ---------------------------------------------------------------------- -->
+
+		<script type="module">
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
 </html>

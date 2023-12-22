@@ -15,6 +15,21 @@ body {
 	--line-height: var(--font-text-lh);
 }
 
+.icon-smaller {
+	--icon-size: var(--icon-size-smaller);
+}
+.icon-small {
+	--icon-size: var(--icon-size-small);
+}
+.icon-regular {
+	--icon-size: var(--icon-size-regular);
+}
+.icon-large {
+	--icon-size: var(--icon-size-large);
+}
+.icon-larger {
+	--icon-size: var(--icon-size-larger);
+}
 .icon {
 	color: var(--icon-color);
 	font-family: var(--font-icon);

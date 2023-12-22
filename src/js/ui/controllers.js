@@ -116,7 +116,8 @@ class StateProxy {
 		return scope.get(property.split("_"));
 	}
 	static set(scope, property, value) {
-		return scope.set(property.split("_"), value);
+		scope.set(property.split("_"), value);
+		return true;
 	}
 }
 

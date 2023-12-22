@@ -86,6 +86,7 @@ export const timetuple = (_) =>
 
 const htmlParser = new DOMParser();
 export const html = (value) => {
+	console.log("HTML VALUE", value);
 	const doc = htmlParser.parseFromString(value, "text/html");
 	const res = new DocumentFragment();
 	while (doc.body && doc.body.firstChild) {

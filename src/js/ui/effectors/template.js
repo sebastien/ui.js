@@ -50,12 +50,11 @@ export class TemplateEffector extends Effector {
 					if (v === undefined) {
 						// If the value is undefined, we inherit that cell
 						//
-					} else if (cell instanceof Value && cell.revision !== -1) {
+					} else if (cell instanceof Value && cell.revision === -1) {
 						// If the value is not undefined, but the parent cell is undefined
 						// we set the parent to the value.
 						// NOTE: This may not be the best option, it/s likely OK to just
 						// create a new cell in the current scope.
-						cell.set(v);
 					} else {
 						// We create a new value, which will be wrapped in a new cell.
 						r[k] = v;

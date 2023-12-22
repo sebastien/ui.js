@@ -181,7 +181,7 @@ export const parseLiteral = (text) => {
 		: text &&
 		  ((text.startsWith("'") && text.endsWith("'")) ||
 				(text.startsWith('"') && text.endsWith('"')))
-		? text.substring(1, -1)
+		? text.substring(1, text.length - 1)
 		: RE_NUMBER.test(text)
 		? parseFloat(text)
 		: text === "true"
@@ -291,9 +291,12 @@ export const parseOutDirective = (text) => {
 	return { selector: parseSelector(text), template: null };
 };
 
+export const extractLiteralBindings = (node, blacklist) =>
+	extractBindings(node, blacklist, false);
+
 // TODO: This is used to get the bindings in <slot binding=expr>, which
 // is also used in components.
-export const extractBindings = (node, blacklist) => {
+export const extractBindings = (node, blacklist, withSelectors = true) => {
 	// We extract the bindings from the attributes
 	const bindings = {};
 	// TODO: That should be unified with the directives
@@ -318,7 +321,7 @@ export const extractBindings = (node, blacklist) => {
 		} else if (matchLiteral(v)) {
 			// This is a literal expression
 			bindings[name] = parseLiteral(v);
-		} else if (matchSelector(v)) {
+		} else if (withSelectors && matchSelector(v)) {
 			bindings[name] = parseSelector(v);
 		} else {
 			// Otherwise it's a string

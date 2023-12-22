@@ -1,4 +1,4 @@
-import { extractBindings } from "./directives.js";
+import { extractLiteralBindings } from "./directives.js";
 import { onError } from "../utils/logging.js";
 import { TemplateEffector } from "../effectors/template.js";
 import { createView } from "./view.js";
@@ -84,9 +84,8 @@ export const onTemplateNode = (
 		viewsParent = root;
 	}
 
-	const bindings = extractBindings(node, ["name"]);
+	const bindings = extractLiteralBindings(node, ["name"]);
 
-	//
 	// FIXME: We some times register anonymous templates that we don/t really
 	// care about.
 	return processor.register(

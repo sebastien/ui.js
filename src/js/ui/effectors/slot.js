@@ -85,10 +85,13 @@ export class SlotEffector extends Effector {
 				}
 			}
 		}
-		const effect_scope = should_derive ? scope.derive() : scope;
+		const effect_scope = should_derive
+			? scope.derive(this.bindings)
+			: scope;
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
 			: SingleSlotEffect)(this, node, effect_scope, this.template).init();
+
 		return this.templateType === "sel"
 			? new DynamicTemplateEffect(
 					this,
@@ -154,13 +157,16 @@ class SlotEffect extends Effect {
 		super(effector, node, scope);
 		this.handlers = {};
 		this.template = template;
+		// We define local slots in the scope for each value
+		// in the bindings.
 		if (this.effector.bindings) {
-			// We bindings do define a new slot
 			this.scope.define(this.effector.bindings, true);
 		}
+		// We do t he same for the template, but only in case it's
+		// undefined.
 		if (template && template.bindings) {
 			// And the templates complement it
-			this.scope.define(template.bindings, false);
+			this.scope.defaults(template.bindings);
 		}
 	}
 }

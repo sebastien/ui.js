@@ -207,6 +207,7 @@ export class Value extends Cell {
 		} else {
 			// Event if the value was absorbed, we clear the pending value.
 			this._pending = null;
+			this.revision = this.revision < 0 ? 0 : this.revision;
 			return false;
 		}
 	}
@@ -363,7 +364,7 @@ export class Scope extends Cell {
 		}
 	}
 
-	define(slots, replace = true) {
+	define(slots, replace = true, skipDefined = false) {
 		if (slots) {
 			for (const k in slots) {
 				// We retrieve the slot, and if the slot is a selector, then
@@ -378,13 +379,20 @@ export class Scope extends Cell {
 				// defined.
 				if (replace || slot === undefined) {
 					this.slots[k] = v instanceof Cell ? v : new Value(v);
-				} else if (slot && slot.get() === undefined) {
+				} else if (skipDefined && slot.revision >= -1) {
+					// If we skip defined cells, then we won't override
+					// and already defined value.
+				} else {
 					// TODO: This may be a sub there?
 					slot.set(v instanceof Cell ? v.get() : v);
 				}
 			}
 		}
 		return this;
+	}
+
+	defaults(slots) {
+		return this.define(slots, false, true);
 	}
 
 	// Useful for debugging
@@ -437,6 +445,8 @@ export class Scope extends Cell {
 			} else {
 				this.slots[path] = new Value(value);
 			}
+		} else if (path.length == 1) {
+			return this.set(path[0], value, force, update);
 		} else {
 			throw NotImplementedError();
 		}

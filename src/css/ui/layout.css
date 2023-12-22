@@ -1,6 +1,7 @@
 /**
    * ## Box Model
 */
+
 .pos-rel {
 	position: relative;
 }
@@ -11,6 +12,21 @@
 	bottom: 0px;
 	right: 0px;
 }
+
+.to-t {
+	top: 0px;
+}
+.to-r {
+	left: 100%;
+}
+.to-b {
+	top: 100%;
+}
+.to-l {
+	left: 0;
+	transform: translateX(-100%);
+}
+
 .scroll-h {
 	overflow-x: auto;
 }
