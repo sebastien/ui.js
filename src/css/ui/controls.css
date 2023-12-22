@@ -63,13 +63,17 @@ label {
 .item {
 	display: flex;
 	align-items: center;
-	--item-depth: 1;
+	--item-depth: 0;
 	padding-left: calc(var(--item-depth) * var(--item-indent));
 	gap: var(--pad-1);
 	width: 100%;
 	box-sizing: border-box;
 	border-radius: 4px;
 }
+.indent-icon {
+	--item-indent: var(--icon-size);
+}
+
 /* @tmpl
    * range(8).map(_ => `\n  .indent-${_+1} { --item-indent: var(--pad-${_+1});}`)
 */
@@ -99,15 +103,18 @@ label {
 } /* @end */
 
 .items .item {
-	--item-depth: 2;
+	--item-depth: 1;
 }
 .items .items .item {
-	--item-depth: 3;
+	--item-depth: 2;
 }
 .items .items .items .item {
-	--item-depth: 4;
+	--item-depth: 3;
 }
 .items .items .items .items .item {
+	--item-depth: 4;
+}
+.items .items .items .items .items .item {
 	--item-depth: 5;
 }
 

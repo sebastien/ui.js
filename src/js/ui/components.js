@@ -44,6 +44,7 @@ export class Component {
 		this.scope = new EffectScope(store).define(slots);
 		this.scope.isComponentBoundary = id || template.name || true;
 		this.effect = template.apply(this.anchor, this.scope, attributes);
+		this.effect.mount();
 		// TODO: Not sure we need to alias
 		this.controller = this.effect.controller;
 	}

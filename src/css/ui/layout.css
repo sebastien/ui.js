@@ -339,6 +339,10 @@
 	text-align: center;
 }
 
+.centered.inline {
+	display: flex-flex;
+}
+
 .row {
 	display: flex;
 	align-items: center;

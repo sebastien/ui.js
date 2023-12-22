@@ -1,15 +1,20 @@
 import { EventEffector } from "../effectors/event.js";
 import { nodePath } from "../path.js";
 import { onError } from "../utils/logging.js";
+import { WebEvents } from "../utils/dom.js";
 import { parseOnDirective } from "../templates/directives.js";
 
 export const onOnAttribute = (processor, attr, root, name) => {
 	const node = attr.ownerElement;
-	// NOTE: If the attr has no owner, it has already been proccessed.
+	// NOTE: If the attr has no owner, it has already been processed.
 	if (!node) {
 		return null;
 	}
+	// TODO: Name should be turned to `camelCase`
 	const directive = parseOnDirective(attr.value);
+	directive.isWebEvent = WebEvents[attr.name.split(":").at(-1)]
+		? true
+		: false;
 	if (!directive) {
 		onError("Unsupported directive", attr.value);
 	}

@@ -282,6 +282,9 @@ class TemplateEffect extends Effect {
 
 	mount() {
 		const res = super.mount();
+		// NOTE: In practice, templates DOM nodes will already be mounted, as the
+		// unify() process requires that. however, what's important here is to
+		// call mount on the effectors.
 		let previous = this.node;
 		for (const view of this.views) {
 			const { root, states } = view;

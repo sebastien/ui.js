@@ -14,7 +14,7 @@ export class EventEffector extends Effector {
 	}
 
 	apply(node, scope) {
-		return new EventEffect(this, node, scope);
+		return new EventEffect(this, node, scope).init();
 	}
 }
 
@@ -22,7 +22,6 @@ class EventEffect extends Effect {
 	constructor(effector, node, scope) {
 		super(effector, node, scope);
 		this.handler = (...a) => this.handle(...a);
-		node.addEventListener(this.effector.event, this.handler);
 	}
 
 	handle(event) {
@@ -58,8 +57,27 @@ class EventEffect extends Effect {
 		}
 	}
 
-	dispose() {
-		this.node.removeEventListener(this.effector.event, this.handler);
+	mount() {
+		const res = super.mount();
+		const { directive, event } = this.effector;
+		// FIXME: This is not being called in Outline, but it should
+		if (directive.isWebEvent) {
+			this.node.addEventListener(event, this.handler);
+		} else {
+			this.scope.bindEvent(event, this.handler);
+		}
+		return res;
+	}
+
+	unmount() {
+		const { directive, event } = this.effector;
+		if (directive.isWebEvent) {
+			this.node.removeEventListener(event, this.handler);
+		} else {
+			this.scope.unbindEvent(event, this.handler);
+		}
+
+		return super.unmount();
 	}
 }
 

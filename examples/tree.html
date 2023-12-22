@@ -31,7 +31,7 @@
 		TEMPLATES
 		------------------------------------------------------------------- -->
 		<template name="Tree" in:items>
-			<div class="stack fill lined fit-h indent-2">
+			<div class="stack fill lined fit-h indent-icon">
 				<ul class="stack" x:for="item=items">
 					<slot template="Node" item="item"></slot>
 				</ul>
@@ -41,9 +41,15 @@
 		<template name="Node" in:item inout:is-expanded="true">
 			<li x:match="children=item.children">
 				<slot x:when="{children?.length}">
-					<div class="row item selectable pad-2" on:click="!Toggle.">
-						<span class="icon" x:if="isExpanded">📂</span>
-						<span class="icon" x:if="isExpanded|not">📁</span>
+					<div
+						class="row item middle selectable pad-2"
+						on:click="!Toggle."
+					>
+						<span
+							class="icon smaller centered"
+							out:content="isExpanded->{isExpanded ? '▼' : '▶'}"
+							>…</span
+						>
 						<span class="label fill" out:content="item.label"
 							>…</span
 						>
@@ -54,13 +60,15 @@
 							>…</span
 						>
 					</div>
-					<ul class="stack items" x:for="item.children">
-						<slot template="Node" item="."></slot>
-					</ul>
+					<slot x:if="isExpanded">
+						<ul class="stack items" x:for="item.children">
+							<slot template="Node" item="."></slot>
+						</ul>
+					</slot>
 				</slot>
 				<slot x:otherwise>
 					<div class="row item selectable pad-2">
-						<span class="icon">📄</span>
+						<span class="icon">○</span>
 						<span class="label" out:content="item.label">…</span>
 					</div>
 				</slot>
@@ -71,7 +79,6 @@
 			const Node = ({ use, on, scope }) => {
 				const isExpanded = use.local("isExpanded", true);
 				on.Toggle((event) => {
-					console.log("GOT EVENT");
 					isExpanded.set(!isExpanded.value);
 				});
 			};
