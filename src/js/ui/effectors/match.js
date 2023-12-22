@@ -76,7 +76,7 @@ class MatchEffect extends Effect {
 		if (branch) {
 			branch.unmount();
 		}
-		return super.mount();
+		return super.unmount();
 	}
 	dispose() {
 		for (let i = 0; i < this.states.length; i++) {

@@ -22,7 +22,7 @@ class IfEffect extends Effect {
 	constructor(effector, node, scope) {
 		super(effector, node, scope);
 		this.state = undefined;
-		this.visible = undefined;
+		this.visible = false;
 	}
 
 	unify(value, previous = this.value) {
@@ -37,47 +37,44 @@ class IfEffect extends Effect {
 					);
 					// NOTE: Apply already calls init()
 				}
-				if (!this.visible) {
+				// TODO: We should instead hide
+				if (!this.state.mounted) {
 					this.state.mount();
 				}
 				this.visible = true;
 			} else {
-				if (this.state) {
-					if (this.visible) {
-						this.state.unmount();
-					}
-					this.visible = false;
+				if (this.state?.mounted) {
+					this.state.unmount();
 					// We'll only dispose of the state when we dispose
 					// of the whole effect.
 				}
+				this.visible = false;
 			}
 		}
 		return this;
 	}
 	mount() {
-		if (this.visible === false) {
-			this.visible = true;
-			this.state.mount();
+		if (this.state?.mounted === 0) {
+			this.state?.mount();
 		}
 		return super.mount();
 	}
+
 	unmount() {
-		if (this.visible === true) {
-			this.visible = false;
-			this.state.unmount();
+		if (this.state?.mounted) {
+			this.state?.unmount();
 		}
-		return super.mount();
+		return super.unmount();
 	}
+
 	dispose() {
-		if (this.visible === true) {
-			this.state.unmount();
-			this.visible = false;
+		if (this.state?.mounted) {
+			this.state?.unmount();
 		}
-		if (this.state !== undefined) {
-			this.state.dispose();
-			this.state = undefined;
-			this.visible = undefined;
-		}
+		this.state?.dispose();
+
+		this.state = undefined;
+		this.visible = undefined;
 		return super.dispose();
 	}
 }

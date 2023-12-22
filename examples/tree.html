@@ -24,6 +24,7 @@
 				<slot
 					template="Tree"
 					items="(fetch('../lib/json/taxonomy.json').then(_=>_.json()))"
+					debug-items="([{label:'A',children:[{label:'B0',children:[{label:'C0'}]},{label:'B1'}]}])"
 				/>
 			</div>
 		</div>

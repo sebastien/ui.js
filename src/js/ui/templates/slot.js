@@ -40,6 +40,10 @@ export const onSlotNode = (processor, node, root, templateName) => {
 				node.removeChild(child);
 			}
 		}
+	} else if (node.childNodes.length === 0) {
+		// This is an empty slot node with no template, so we don/t needed
+		// to do anything, actually.
+		return null;
 	} else {
 		// If there is no template, then the slot contains the template.
 		console.warn("TODO: Slot", node.outerHTML);

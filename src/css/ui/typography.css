@@ -41,6 +41,12 @@ h6.typography {
 	margin-bottom: 0em;
 }
 
+.typography ul.gapped li,
+.typography ol.gapped li {
+	margin-top: 0.75em;
+	margin-bottom: 0.75em;
+}
+
 .typography ul > li {
 	list-style-type: disc;
 }

@@ -346,7 +346,7 @@
 .row {
 	display: flex;
 	align-items: center;
-	gap: var(--gap-2);
+	gap: var(--gap);
 }
 
 .row.stretched {

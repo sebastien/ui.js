@@ -1,105 +1,114 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <!--
+	<head>
+		<meta charset="utf-8" />
+		<!--
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/uijs.css" type="text/css" media="all">
     -->
-    <title>UI.js Website</title>
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui.css"
-      type="text/css"
-      media="all"
-    />
-    <script type="importmap">
-      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
-    </script>
-  </head>
-  <body class="reset">
-    <header class="row">
-      <div class="h-4b pad-8 mb-4 mt-4">
-        <h1>UI.js</h1>
-        <p class="larger">
-          Full-featured JavaScript &amp; CSS toolkit to build rich, interactive,
-          composable user interfaces.
-        </p>
-      </div>
-    </header>
-    <!-- TODO: Navigation should be sticky -->
-    <nav class="pv-4 ph-8 bd-t bd-b">
-      <ul class="row gap-8">
-        <li>Quickstart</li>
-        <li>Reference</li>
-        <li>Examples</li>
-        <li>Playground</li>
-        <li>About</li>
-      </ul>
-    </nav>
-    <div class="row gap-8 pad-8">
-      <div class="bd rounded pad-4 stack gap-4 w-5bl h-4bl shadow">
-        <h2>Reactivity</h2>
-        <pre class="bg-2 pad-4 rounded overflow-h">
+		<title>UI.js Website</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body class="reset">
+		<header class="row">
+			<div class="h-4b pad-8 mb-4 mt-4">
+				<h1>UI.js</h1>
+				<p class="larger mt-4">
+					Full-featured JavaScript &amp; CSS toolkit to build rich,
+					interactive, composable user interfaces.
+				</p>
+			</div>
+		</header>
+		<!-- TODO: Navigation should be sticky -->
+		<nav class="pv-4 ph-8 bd-t bd-b">
+			<ul class="row gap-8">
+				<li>Quickstart</li>
+				<li>Reference</li>
+				<li>Examples</li>
+				<li>Playground</li>
+				<li>About</li>
+			</ul>
+		</nav>
+		<div class="row gap-8 pad-8">
+			<div class="bd rounded pad-4 stack gap-4 w-5bl h-4bl shadow">
+				<h2>Reactivity</h2>
+				<pre class="bg-2 pad-4 rounded overflow-h">
 component(({on,use})=&gt;{
   const {items} = use.inputs;
   const count = use(items, items =&gt; items.length);
   return {count}
 })
-        </pre>
-        <p>
-          Components define a reactive, granular data model that supports
-          synchronous and asynchronous values.
-        </p>
-      </div>
-      <div class="bd rounded pad-4 stack gap-4 w-5bl h-4bl shadow">
-        <h2>CSS Library</h2>
-        <pre class="bg-2 pad-4 rounded overflow-h">
+        </pre
+				>
+				<p>
+					Components define a reactive, granular data model that
+					supports synchronous and asynchronous values.
+				</p>
+			</div>
+			<div class="bd rounded pad-4 stack gap-4 w-5bl h-4bl shadow">
+				<h2>CSS Library</h2>
+				<pre class="bg-2 pad-4 rounded overflow-h">
 .pad-1,gap-1,mar-1,
 .bd, bt, bb, bl, br
 .bg-0, bg-1, …
 .color-blue-0
 .color-green-5
 .button, .input, .select, .menu
-        </pre>
-        <p>
-          Utility classes and CSS variables are used to give you easy to learn
-          and easy to use primitives to quickly sketch out a themable UI.
-        </p>
-      </div>
-      <div class="bd rounded pad-4 stack gap-4 w-5bl h-4bl shadow">
-        <h2>HTML and XML</h2>
-        <pre class="bg-2 pad-4 rounded overflow-h"></pre>
-        <p>
-          Utility classes and CSS variables are used to give you easy to learn
-          and easy to use primitives to quickly sketch out a themable UI.
-        </p>
-      </div>
-    </div>
-    <div class="typograhy pad-8">
-      <p>What makes UI.js stand out?</p>
-      <ul>
-        <li>
-          <em>No transpiler or build step required</em>, UI.js is directly
-          usable from your browser by importing its script.
-        </li>
-        <li>
-          <em>Batteries included:</em> rendering, reactivity, state management,
-          css utilities, standard components and functional primivites are all
-          there by default.
-        </li>
-      </ul>
-    </div>
+        </pre
+				>
+				<p>
+					Utility classes and CSS variables are used to give you easy
+					to learn and easy to use primitives to quickly sketch out a
+					themable UI.
+				</p>
+			</div>
+			<div class="bd rounded pad-4 stack gap-4 w-5bl h-4bl shadow">
+				<h2>HTML and XML</h2>
+				<pre class="bg-2 pad-4 rounded overflow-h"></pre>
+				<p>
+					Utility classes and CSS variables are used to give you easy
+					to learn and easy to use primitives to quickly sketch out a
+					themable UI.
+				</p>
+			</div>
+		</div>
+		<div class="pad-4 gap-4 row">
+			<div class="typography fit">
+				<h4>What makes UI.js stand out?</h4>
+				<ul class="gapped">
+					<li>
+						<strong>No transpiler or build step required</strong>,
+						UI.js is directly usable from your browser by importing
+						its script.
+					</li>
+					<li>
+						<strong>Batteries included:</strong> rendering,
+						reactivity, state management, css utilities, standard
+						components and functional primivites are all there by
+						default.
+					</li>
+				</ul>
+			</div>
+			<div class="fit"></div>
+		</div>
 
-    <!-- ----------------------------------------------------------------------
+		<!-- ----------------------------------------------------------------------
 
     MAIN SCRIPT
 
     ----------------------------------------------------------------------- -->
 
-    <script type="module">
-      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-      import ui from "@ui.js";
-      ui();
-    </script>
-  </body>
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
 </html>
