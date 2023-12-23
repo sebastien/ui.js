@@ -65,4 +65,8 @@
 	opacity: 1;
 }
 
+.hidden {
+	visibility: hidden !important;
+}
+
 /* EOF */

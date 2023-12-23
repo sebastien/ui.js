@@ -67,6 +67,8 @@ const RE_SELECTOR = new RegExp(SELECTOR);
 export const matchSelector = (text) =>
 	RE_SELECTOR.exec(text)[0]?.length === text.length;
 
+const normInput = (value) => (value === "#" ? "key" : value);
+
 export const parseSelector = (text) => {
 	const parsed = parse(text, RE_SELECTOR, true);
 	if (!parsed || parsed.index !== 0) {
@@ -140,11 +142,13 @@ export const parseSelector = (text) => {
 		match.processor
 			? new Function(
 					...inputs
-						.map((v) => {
-							const k = v.path.at(-1);
-							return k === "#" ? "key" : k;
-						})
-						.concat(["$", `return (${match.processor})`])
+						.map((v) => normInput(v.path.at(-1)))
+						.concat([
+							"$",
+							`const _=${normInput(
+								inputs[0].path.at(-1)
+							)};return (${match.processor})`,
+						])
 			  )
 			: null,
 		// Target
@@ -214,6 +218,9 @@ const RE_ON = new RegExp(
 				)
 			),
 			opt(
+				// FIXME: Don't agree with that, it should be:
+				// expanded=expanded|not
+				// expanded=expanded->(!_)
 				// There's an optional input a,b,c->
 				opt(
 					list(or("[a-zA-Z]+", text("#")), ",", "inputs", 0, 7),

@@ -33,10 +33,10 @@
 
      ---------------------------------------------------------------------- -->
 
-		<template name="Blocks" in:cells="">
+		<template name="Blocks" inout:cells>
 			<ul x:for="cell=cells">
 				<li><slot template="Cell" cell="cell" /></li>
-				<li><slot template="Divider" cell="cell" /></li>
+				<li><slot template="Divider" cell="cell" cells="cells" /></li>
 			</ul>
 		</template>
 
@@ -46,7 +46,7 @@
 
      ---------------------------------------------------------------------- -->
 
-		<template name="Cell" in:cell="" out:preview="">
+		<template name="Cell" in:cell="" out:preview="" out:expanded="true">
 			<ul class="stack">
 				<!-- Preview -->
 				<li class="row">
@@ -54,25 +54,41 @@
 						<li>
 							<button
 								class="square small transparent move icon-smaller"
+								xxxon:click="expanded=expanded->{console.log('XXXX', _),_?false:true}"
 							>
-								<slot template="Icon" name="'menu'" />
+								<slot
+									template="Icon"
+									out:name="expanded->{_ ? 'nav-arrow-down' : 'nav-arrow-right'}"
+								/>
 							</button>
 						</li>
 					</ul>
-					<div class="preview fill" out:content=".preview|html">
+					<div
+						class="preview fill with-typography"
+						out:content=".preview|html"
+					>
 						Preview…
 					</div>
 					<div class="icon icon-small"></div>
 				</li>
 
 				<!-- Source code -->
-				<li class="row strech">
-					<div class="icon icon-small"></div>
+				<li class="row strech" x:if="expanded">
+					<ul class="stack stretch">
+						<li>
+							<button
+								class="square small transparent move icon-smaller hidden"
+							>
+								<slot template="Icon" name="'menu'" />
+							</button>
+						</li>
+					</ul>
 					<div class="source fill">
 						<textarea
 							class="fit"
 							out:content="cell.source"
 							on:input="!SourceChanged"
+							on:change="!SourceChanged"
 						></textarea>
 					</div>
 					<ul class="stack stretch">
@@ -127,9 +143,11 @@
 
 		<script type="module">
 			import { controller } from "@ui.js";
+			import { autoresize } from "@ui/interaction.js";
 			import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
 			const Cell = ({ on, scope, state }) => {
 				on.SourceChanged((event) => {
+					autoresize(event);
 					state.preview = marked.parse(event.target.value);
 				});
 			};
@@ -172,14 +190,24 @@
      DIVIDER
 
      ---------------------------------------------------------------------- -->
-		<template name="Divider">
+		<template name="Divider" inout:cells>
 			<div class="row with-hover">
-				<button class="small circle transparent">
+				<button class="small circle transparent" on:click="!AddCell">
 					<slot template="Icon" name="plus-circle" />
 				</button>
 				<hr class="faint fill on-hover" />
 			</div>
 		</template>
+		<script type="module">
+			import { controller } from "@ui.js";
+			const Divider = ({ on, scope, state }) => {
+				on.AddCell((event) => {
+					// FIXME: THis actually adds the cells, but the renderer does not update
+					state.cells = [...state.cells, { ...state.cells.at(-1) }];
+				});
+			};
+			controller(Divider);
+		</script>
 
 		<!-------------------------------------------------------------------------
 

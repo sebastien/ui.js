@@ -1,4 +1,4 @@
-import { list } from "./utils.js";
+import { list } from "./utils/collections.js";
 
 export const bind = (node, handlers) =>
 	(handlers &&
@@ -41,6 +41,16 @@ export const drag = (event, move, end) => {
 	event.target.style.userSelect = "none";
 	bind(window.document.body, handlers);
 	return () => unbind(window.document.body, handlers);
+};
+
+export const autoresize = (event) => {
+	const node = event.target;
+	node.style.height = "auto"; // First set height to auto to measure content
+	const style = window.getComputedStyle(node);
+	const border =
+		parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+	// That's if the box-sizing is border-box.
+	node.style.height = border + node.scrollHeight + "px"; // Adjust hei
 };
 
 // EOF
