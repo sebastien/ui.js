@@ -134,7 +134,7 @@ a[href],
 	text-decoration: none;
 	color: var(--color-text);
 	border-bottom: 1px solid
-		color-mix(in srgb, var(--color-accent), var(--page-bg-0p) 60%);
+		color-mix(in srgb, var(--color-primary), var(--page-bg-0p) 60%);
 	background-color: color-mix(
 		in srgb,
 		var(--color-text),

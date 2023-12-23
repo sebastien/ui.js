@@ -46,7 +46,7 @@
 
      ---------------------------------------------------------------------- -->
 
-		<template name="Cell" cell>
+		<template name="Cell" in:cell="" out:preview="">
 			<ul class="stack">
 				<!-- Preview -->
 				<li class="row">
@@ -84,25 +84,36 @@
 									<slot
 										template="Icon"
 										name="code-brackets"
-									/>
+									></slot>
 								</button>
 								<!-- FIXME: Anything after the slot does not appear -->
 								<menu class="on-hover to-l to-t pos-abs shadow">
-									<li>
+									<li class="selected">
 										<span class="icon-small">
-											<slot template="Icon" name="'text'" source="'Devicons'">
+											<slot
+												template="Icon"
+												name="'text'"
+											></slot>
 										</span>
 										<span>Text</span>
 									</li>
 									<li>
 										<span class="icon-small">
-											<slot template="Icon" name="'python'" source="'Devicons'">
+											<slot
+												template="Icon"
+												name="'python'"
+												source="'Devicons'"
+											></slot>
 										</span>
 										<span>Python</span>
 									</li>
 									<li>
 										<span class="icon-small">
-											<slot template="Icon" name="'javascript'" source="'Devicons'">
+											<slot
+												template="Icon"
+												name="'javascript'"
+												source="'Devicons'"
+											></slot>
 										</span>
 										<span>JavaScript</span>
 									</li>
@@ -131,11 +142,16 @@
 
      ---------------------------------------------------------------------- -->
 
-		<template name="Icon" base="24" in:name="help-square" in:source="Iconoir">
+		<template
+			name="Icon"
+			base="24"
+			in:name="help-square"
+			in:source="Iconoir"
+		>
 			<svg
 				class="icon"
 				out:height="size"
-				out:viewBox="base->{`0 0 ${base} ${base}`}"
+				out:viewbox="base->{`0 0 ${base} ${base}`}"
 			>
 				<use
 					out:href="name,source->{`#icon-${name}-${(source||'generic').toLowerCase()}`}"

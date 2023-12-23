@@ -138,6 +138,7 @@ variations).
    * ## Overlay
   */
 	--z-popup: 50;
+	--z-menu: 30;
 	--z-overlay: 20;
 
 	/*
@@ -148,8 +149,8 @@ variations).
 	/* TODO: Should name the colors */
 	--color-text: var(--color-black);
 	--color-current: var(--color-grey-2);
-	--color-accent: var(--color-cyan-5);
-	--color-primary: var(--color-blue-5);
+	--color-accent: var(--color-grey-4);
+	--color-primary: var(--color-grey-5);
 	--color-background-t: var(--page-bg-0p);
 	/* FIXME: What is alt ? */
 	--color-primary-alt: var(--color-blue-8);

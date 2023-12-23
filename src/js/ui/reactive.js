@@ -160,8 +160,9 @@ export class Subscribable {
 }
 
 export class Cell extends Subscribable {
-	constructor() {
+	constructor(name) {
 		super();
+		this.name = name;
 	}
 
 	get(path) {
@@ -170,8 +171,8 @@ export class Cell extends Subscribable {
 }
 
 export class Value extends Cell {
-	constructor(value, comparator = cmp) {
-		super();
+	constructor(value, name, comparator = cmp) {
+		super(name);
 		this.value = undefined;
 		this.comparator = comparator;
 		this.revision = -1;
@@ -342,11 +343,14 @@ export class MapReducer extends ListReducer {
 export class Scope extends Cell {
 	constructor(parent) {
 		super();
+		// Parent is either a scope, in which case the slots will
+		// inherit form the parent, or an object, in which case its
+		// values will be wrapped in cells.
 		this.slots = parent
 			? Object.create(
 					parent instanceof Scope
 						? parent.slots
-						: map(parent, (_) => new Value(_))
+						: map(parent, (_, k) => new Value(_, k))
 			  )
 			: {};
 		this.parent = parent instanceof Scope ? parent : null;
@@ -378,7 +382,7 @@ export class Scope extends Cell {
 				// FIXME: This will  replace existing cells that are already
 				// defined.
 				if (replace || slot === undefined) {
-					this.slots[k] = v instanceof Cell ? v : new Value(v);
+					this.slots[k] = v instanceof Cell ? v : new Value(v, k);
 				} else if (skipDefined && slot.revision >= -1) {
 					// If we skip defined cells, then we won't override
 					// and already defined value.
@@ -432,6 +436,12 @@ export class Scope extends Cell {
 		return slot ? slot.get(path, offset + 1) : undefined;
 	}
 
+	// Updates and existing slot
+	update(path, value, force = false) {
+		return this.set(path, value, force, true);
+	}
+
+	// Ensures that there is a local slot defined, unless `update` is false.
 	set(path, value, force = false, update = false) {
 		if (typeof path === "string") {
 			// NOTE: We do need to override. If we set in a scope, we don't
@@ -443,7 +453,7 @@ export class Scope extends Cell {
 			if (slot) {
 				slot.set(value, undefined, undefined, force);
 			} else {
-				this.slots[path] = new Value(value);
+				this.slots[path] = new Value(value, path);
 			}
 		} else if (path.length == 1) {
 			return this.set(path[0], value, force, update);

@@ -23,8 +23,9 @@ class Use {
 	// name, creating it if it does not exist. Unlike `local`, this will
 	// use cells defined in parent scopes.
 	input(name, value = undefined) {
+		console.warn("Deprecated");
 		if (this.scope.slots[name] === undefined) {
-			const cell = new Value(value);
+			const cell = new Value(value, name);
 			this.cells.push(cell);
 			this.scope.slots[name] = cell;
 			return cell;
@@ -39,8 +40,9 @@ class Use {
 	// Returns a local cell, overriding any cell with the same name defined
 	// in the parent scope.
 	local(name, value = undefined) {
+		console.warn("Deprecated");
 		if (!this.scope.slots.hasOwnProperty(name)) {
-			const cell = new Value(value);
+			const cell = new Value(value, name);
 			this.cells.push(cell);
 			this.scope.slots[name] = cell;
 			return cell;
@@ -50,6 +52,7 @@ class Use {
 	}
 
 	derived(inputs, functor) {
+		console.warn("Deprecated");
 		let cell = undefined;
 		if (inputs instanceof Cell) {
 			cell = new ValueReducer(inputs, functor);
@@ -116,7 +119,7 @@ class StateProxy {
 		return scope.get(property.split("_"));
 	}
 	static set(scope, property, value) {
-		scope.set(property.split("_"), value);
+		scope.update(property.split("_"), value);
 		return true;
 	}
 }

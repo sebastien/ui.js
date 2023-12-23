@@ -703,6 +703,7 @@ menu {
 	max-width: 260px;
 	line-height: var(--control-line-height);
 	user-select: none;
+	z-index: var(--z-menu);
 }
 .menu.popup,
 menu.popup {
@@ -741,9 +742,22 @@ menu > li {
 	color: var(--control-text);
 	cursor: pointer;
 }
+
 .menu > li:hover,
 menu > li:hover {
-	background-color: var(--control-bg-hover);
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 95%
+	);
+}
+.menu > li.selected,
+menu > li.selected {
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 90%
+	);
 }
 .menu > li > .label,
 menu > li > .label {

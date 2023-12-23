@@ -41,49 +41,51 @@ ui(document, { message: "Hello, world!" });
 
 ### Directives
 
--   `PATH`
--   `|TRANSFORM`
--   `!EVENT`
+- `PATH`
+- `|TRANSFORM`
+- `!EVENT`
 
 ### Attributes
 
 In component templates:
 
--   `out:ATTR=DIRECTIVE`, eg. `out:value=.label`
--   `in:EVENT=DIRECTIVE`, eg. `in:change=.label`
--   `on:EVENT=!HANDLER`, eg. `on:click=!Remove`
--   `when=DIRECTIVE`, eg. `when=empty|not`
+- `out:ATTR=DIRECTIVE`, eg. `out:value=.label`
+- `in:EVENT=DIRECTIVE`, eg. `in:change=.label`
+- `on:EVENT=!HANDLER`, eg. `on:click=!Remove`
+- `when=DIRECTIVE`, eg. `when=empty|not`
 
 In the document:
 
--   `data-component`
--   `data-state`
+- `data-component`
+- `data-state`
 
 ### Elements
 
--   `template`
--   `slot`
+- `template`
+- `slot`
 
 # Features
 
--   *Granular rendering*: an update to the data only triggers an update
-    to the specific components that represent the data. This is to be
-    put in contrast top VDOM-based renderes like React, where a change
-    in the data will likely lead to re-rendering more than necessary.
-    For applications where low latency is important (interactive
-    editors), having granular updates is a must.
+- *Granular rendering*: an update to the data only triggers an update to
+  the specific components that represent the data. This is to be put in
+  contrast top VDOM-based renderes like React, where a change in the
+  data will likely lead to re-rendering more than necessary. For
+  applications where low latency is important (interactive editors),
+  having granular updates is a must.
 
--  *Direct HTML, or XML/XSLT shorthands*: UI.js can be written using XML, 
-    which provides syntatic sugar and additional features to write self
-    documenting components and stylesheets.
-
+- *Direct HTML, or XML/XSLT shorthands*: UI.js can be written using XML,
+  which provides syntatic sugar and additional features to write self
+  documenting components and stylesheets.
 
 # References
 
--   [DIY UI](https://observablehq.com/@sebastien/diy-ui),
-    [styling](https://observablehq.com/@sebastien/diy-ui) and [design
-    tokens](https://observablehq.com/@sebastien/tokens) all served  
-    as the baseline for *UI.js*.
+- [DIY UI](https://observablehq.com/@sebastien/diy-ui),
+  [styling](https://observablehq.com/@sebastien/diy-ui) and [design
+  tokens](https://observablehq.com/@sebastien/tokens) all served  
+  as the baseline for *UI.js*.
 
--   [Alpine.js](https://alpinejs.dev) seems like a close relative in
-    terms of approach
+- [Alpine.js](https://alpinejs.dev) a close relative in terms of
+  approach, where the focus is on writing HTML.
+
+- [Design Kit](https://kit.design/), a CSS library that simplifies the
+  problem space.

@@ -45,21 +45,7 @@ export class TemplateEffector extends Effector {
 			this.bindings,
 			(r, v, k) => {
 				const cell = scope.slots[k];
-				// There is a cell in the given scope
-				if (cell) {
-					if (v === undefined) {
-						// If the value is undefined, we inherit that cell
-						//
-					} else if (cell instanceof Value && cell.revision === -1) {
-						// If the value is not undefined, but the parent cell is undefined
-						// we set the parent to the value.
-						// NOTE: This may not be the best option, it/s likely OK to just
-						// create a new cell in the current scope.
-					} else {
-						// We create a new value, which will be wrapped in a new cell.
-						r[k] = v;
-					}
-				} else {
+				if (v !== undefined && (!cell || cell.revision === -1)) {
 					r[k] = v;
 				}
 				return r;

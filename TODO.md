@@ -1,20 +1,14 @@
 ## Features
 
-- **tokens** for CSS styling
-- **granular update**
-- **direct loading**
+- Syntax: `{.sadasd}` for selectors, `([1,2,4])` for JavaScript,
+  otherwise literals.
+- Components: should be `x:Icon` or `x-icon` instead of
+  `slot name=Icon`.
 
 ## Fixes
 
 - `[ ]` Reduce the dependency on comments, or at least reduce the
   comment size, as it will add size to the HTML.
-
-- `[ ]` `<slot>` are copied into the output, they should not be there in
-  the rendered template. Instead they should be replaced by comment with
-  a start/end. This is still the case with `structured-editor`
-
-- `[ ]` Remove the evenBus and make it part of the main pubsub bus.
-  Events should just be values.
 
 - `[ ]` Support relaying of values from a renderes component local state
   to another path. For instance `on:value="#.value"` to remap the
@@ -27,10 +21,6 @@
   many unsub. However what we should probably do is call remove from the
   topmost, trigger and trigger a recursive dispose -- at least for the
   child views of a template.
-
-- `[ ]` Event handlers don't bind to nodes at template root
-
-- `[ ]` `SlotEffector` needs to mount the nodes in order
 
 - `[ ]` Measure the initial rendering of data, especially with nested
   content, it seems to be too many times.

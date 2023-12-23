@@ -10,8 +10,17 @@ export const Icons = Object.entries({
 }, document.createElementNS("http://www.w3.org/2000/svg", "svg"));
 
 export const Sources = {
+	Devicons: {
+		url: "https://unpkg.com/devicons@1.8.0/!SVG/${name}.svg",
+		size: [32, 32],
+		style: {
+			stroke: "transparent",
+			fill: "var(--color-text)",
+		},
+	},
 	Iconoir: {
 		url: "https://unpkg.com/iconoir@7.0.2/icons/regular/${name}.svg",
+		size: [24, 24],
 		style: {
 			fill: "none",
 			stroke: "current-color",
@@ -19,15 +28,9 @@ export const Sources = {
 			"vector-effect": "non-scaling-stroke",
 		},
 	},
-	Devicons: {
-		url: "https://unpkg.com/devicons@1.8.0/!SVG/${name}.svg",
-		style: {
-			stroke: "transparent",
-			fill: "var(--color-text)",
-		},
-	},
 	IconoirSolid: {
 		url: "https://unpkg.com/iconoir@7.0.2/icons/solid/${name}.svg",
+		size: [24, 24],
 		style: {
 			fill: "none",
 			stroke: "current-color",
@@ -81,8 +84,13 @@ export const loadIcon = (name, source = Sources.Iconoir, container = Icons) => {
 		return fetch(url)
 			.then((_) => _.text())
 			.then((text) => {
-				symbol.innerHTML = text;
+				// Some icons have extra information, like XML PI, comments, doctype.
+				// SEE: https://unpkg.com/devicons@1.8.0/!SVG/python.svg
+				const i = Math.max(0, text.indexOf("<svg"));
+				symbol.innerHTML = text.substring(i);
 				const icon = symbol.firstChild;
+				// TODO: Typically the main SVG node has `width`, `height` and
+				// `viewBox`, which we should use to get the ideal size.
 				if (icon && icon.attributes) {
 					["stroke-width", "fill", "stroke"].forEach(
 						(_) => icon.hasAttribute(_) && icon.setAttribute(_, "")
