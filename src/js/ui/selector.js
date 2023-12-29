@@ -67,7 +67,9 @@ export class SelectorInput {
 		const format = this.format
 			? this.format.map((_) => `|${_.name}`).join("")
 			: "";
-		return `${key}${this.type}${this.path.join(".")}${format}`;
+		return `${this.target ? `${this.target}=` : ""}${key}${
+			this.type
+		}${this.path.join(".")}${this.isMany ? "*" : ""}${format}`;
 	}
 }
 

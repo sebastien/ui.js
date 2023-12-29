@@ -194,7 +194,6 @@ export const append = (value, item) => {
 };
 
 export const removeAt = (value, key) => {
-	console.log("REMOVE AT", value, key);
 	if (key === undefined) {
 		return value;
 	} else if (value === null) {

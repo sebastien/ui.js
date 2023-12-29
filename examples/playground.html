@@ -1,57 +1,57 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Playground</title>
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui.css"
-      type="text/css"
-      media="all"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.css"
-    />
-    <!-- CodeMirror doesn't come with default exports, so we need to load it like that -->
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/javascript/javascript.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/xml/xml.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/css/css.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/htmlmixed/htmlmixed.js"></script>
+	<head>
+		<meta charset="utf-8" />
+		<title>Playground</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.css"
+		/>
+		<!-- CodeMirror doesn't come with default exports, so we need to load it like that -->
+		<script src="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/javascript/javascript.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/xml/xml.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/css/css.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/htmlmixed/htmlmixed.js"></script>
 
-    <script type="importmap">
-      {
-        "imports": {
-          "@ui.js": "/lib/js/ui.js",
-          "@ui/": "/lib/js/ui/"
-        }
-      }
-    </script>
-  </head>
-  <body>
-    <textarea id="editor"></textarea>
+		<script type="importmap">
+			{
+				"imports": {
+					"@ui.js": "/lib/js/ui.js",
+					"@ui/": "/lib/js/ui/"
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<textarea id="editor"></textarea>
 
-    <script>
-      window.onload = function () {
-        var editor = CodeMirror.fromTextArea(
-          document.getElementById("editor"),
-          {
-            lineNumbers: true,
-            mode: "javascript", // Set to 'htmlmixed' or 'css' depending on what you want
-          }
-        );
-      };
-    </script>
+		<script>
+			window.onload = function () {
+				var editor = CodeMirror.fromTextArea(
+					document.getElementById("editor"),
+					{
+						lineNumbers: true,
+						mode: "javascript", // Set to 'htmlmixed' or 'css' depending on what you want
+					}
+				);
+			};
+		</script>
 
-    <script type="module">
-      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-      import ui from "@ui.js";
-      ui();
-    </script>
-  </body>
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
 </html>

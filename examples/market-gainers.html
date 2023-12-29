@@ -1,148 +1,176 @@
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <!--
+	<head>
+		<meta charset="utf-8" />
+		<!--
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/uijs.css" type="text/css" media="all">
     -->
-    <title>NZX Gainers</title>
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui.css"
-      type="text/css"
-      media="all"
-    />
-    <link
-      rel="stylesheet"
-      href="../lib/css/ui/theme/whitelabel.css"
-      type="text/css"
-      media="all"
-    />
-    <script type="importmap">
-      { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
-    </script>
-  </head>
-  <body>
-    <section>
-      <!-- We denote that we want an instance of the component -->
-      <slot template="Gainers" />
-    </section>
-    <!--
+		<title>NZX Gainers</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui/theme/whitelabel.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body>
+		<section>
+			<!-- We denote that we want an instance of the component -->
+			<slot template="Gainers" />
+		</section>
+		<!--
       This declares "selection" as being an input and output, and that
       "title" and "sources" are both inputs. All of these will be sourced
       from the scope at component creation.
     -->
-    <template name="Gainers" in:source="0" in:state="loading">
-      <div class="card col-2 pad-4 bd stack gap-2">
-        <h4>NZX Gainers &amp; Decliners</h4>
+		<template name="Gainers" in:source="0" in:state="loading">
+			<div class="card col-2 pad-4 bd stack gap-2">
+				<h4>NZX Gainers &amp; Decliners</h4>
 
-        <!-- FIXME: on:change should support inline processing and redirection to controller -->
-        <ul class="x list-h mt-4 gap-4" x:for="feeds">
-          <li
-            class="bold label selectable"
-            out:data-selected="#,source->{_ === source}"
-            out:data-index="#"
-            out:content=".label"
-            on:click="source={parseInt(_.target.value)}"
-          >
-            …
-          </li>
-        </ul>
+				<!-- FIXME: on:change should support inline processing and redirection to controller -->
+				<ul class="x list-h mt-4 gap-4" x:for="feeds">
+					<li
+						class="bold label selectable"
+						out:data-selected="#,source->{_ === source}"
+						out:data-index="#"
+						out:content=".label"
+						on:click="source={parseInt(_.target.value)}"
+					>
+						…
+					</li>
+				</ul>
 
-        <!-- "state" here is an internal value -->
-        <slot x:match="items">
-          <!-- FIXME: If I change this to a slot, the the next one will be used -->
-          <div x:case="undefined">Loading…</div>
-          <div x:when="{(items||[]).length === 0}">No data</div>
-          <div x:otherwise>
-            <ul class="bd-t list-v mt-4 mb-4" x:for="items">
-              <li class="mt-2 mb-2 pd-2 pb-2 bd-b stack">
-                <div class="overview fit-w row">
-                  <span class="grow bold link" out:content=".code">CBD</span>
-                  <span
-                    class="ib w-10c tr"
-                    out:content=".priceAmount"
-                    out:data-direction=".priceChangeDirection"
-                    >…</span
-                  >
-                  <span class="ib w-10c tr" out:content=".priceChangeRelative"
-                    >%</span
-                  >
-                </div>
-                <div class="detail fit-w row">
-                  <span class="grow bold" out:content=".description">…</span>
-                  <span class="ib wc-10c tr tt small" out:content=".priceAt"
-                    >…</span
-                  >
-                </div>
-              </li>
-            </ul>
-          </div>
-        </slot>
+				<!-- "state" here is an internal value -->
+				<slot x:match="items">
+					<!-- FIXME: If I change this to a slot, the the next one will be used -->
+					<div x:case="undefined">Loading…</div>
+					<div x:when="{(items||[]).length === 0}">No data</div>
+					<div x:otherwise>
+						<ul class="bd-t list-v mt-4 mb-4" x:for="items">
+							<li class="mt-2 mb-2 pd-2 pb-2 bd-b stack">
+								<div class="overview fit-w row">
+									<span
+										class="grow bold link"
+										out:content=".code"
+										>CBD</span
+									>
+									<span
+										class="ib w-10c tr"
+										out:content=".priceAmount"
+										out:data-direction=".priceChangeDirection"
+										>…</span
+									>
+									<span
+										class="ib w-10c tr"
+										out:content=".priceChangeRelative"
+										>%</span
+									>
+								</div>
+								<div class="detail fit-w row">
+									<span
+										class="grow bold"
+										out:content=".description"
+										>…</span
+									>
+									<span
+										class="ib wc-10c tr tt small"
+										out:content=".priceAt"
+										>…</span
+									>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</slot>
 
-        <!-- FIXME: For some reason these disappear -->
-        <p class="dimmed mb-2">
-          Last change on 30 October 2023 ― 5:00 pm.Data is 20 mins delayed.
-        </p>
-        <p class="small">
-          Data sourced from API deployed at
-          <a href="https://api.nzx.dev/ticker/1.0">api.nzx.dev/ticker/1.0</a>
-        </p>
-      </div>
-    </template>
+				<!-- FIXME: For some reason these disappear -->
+				<p class="dimmed mb-2">
+					Last change on 30 October 2023 ― 5:00 pm.Data is 20 mins
+					delayed.
+				</p>
+				<p class="small">
+					Data sourced from API deployed at
+					<a href="https://api.nzx.dev/ticker/1.0"
+						>api.nzx.dev/ticker/1.0</a
+					>
+				</p>
+			</div>
+		</template>
 
-    <!-- TODO: This should be moved in the template -->
-    <script type="module">
-      import { controller } from "@ui.js";
-      const Gainers = ({ use, on, scope }) => {
-        const feeds = use.input("feeds");
-        const source = use.local("source");
-        console.log("SCOPE", scope);
-        const url = use.derived([feeds, source], ([feeds, source]) => {
-          console.log("TODO: Picking URL from", feeds, "using", source);
-        });
-        const items = use.derived(
-          url,
-          (url) => {
-            console.log("TODO: Create the feed");
-          },
-          (previous) => {
-            console.log("Cleaning up the prevous value");
-          }
-        );
+		<!-- TODO: This should be moved in the template -->
+		<script type="module">
+			import { controller } from "@ui.js";
+			const Gainers = ({ use, on, scope }) => {
+				const feeds = use.input("feeds");
+				const source = use.local("source");
+				const url = use.derived([feeds, source], ([feeds, source]) => {
+					console.log(
+						"TODO: Picking URL from",
+						feeds,
+						"using",
+						source
+					);
+				});
+				const items = use.derived(
+					url,
+					(url) => {
+						console.log("TODO: Create the feed");
+					},
+					(previous) => {
+						console.log("Cleaning up the prevous value");
+					}
+				);
 
-        // on.Mount((event) => {
-        //   console.log("Component is mounted", event);
-        // });
-      };
-      export default controller(Gainers);
-    </script>
+				// on.Mount((event) => {
+				//   console.log("Component is mounted", event);
+				// });
+			};
+			export default controller(Gainers);
+		</script>
 
-    <script type="module">
-      // import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-      import ui from "@ui.js";
-      ui(document, {
-        title: "NZX Gainers & Decliners",
-        feeds: [
-          { url: "api.nzx.dev/ticker/1.0/nzsx/gainers", label: "Gainers" },
-          { url: "api.nzx.dev/ticker/1.0/nzsx/decliners", label: "Decliners" },
-          { url: "api.nzx.dev/ticker/1.0/nzsx/indices", label: "Indices" },
-        ],
-        items: [
-          {
-            ISIN: "NZBWYE0001S7",
-            code: "MHM",
-            description: "MHM Automation Limited",
-            startingPriceAmount: "0.9100",
-            startingPriceAt: "2023-11-03T06:12:36+13:00",
-            priceAt: "2023-11-03T16:59:58+13:00",
-            priceAmount: "1.5200",
-            priceChangeAmount: "0.6100",
-            priceChangeRelative: "0.6703",
-            priceChangeDirection: "1",
-            priceChangeCount: 14,
-          },
-        ],
-      });
-    </script>
-  </body>
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui(document, {
+				title: "NZX Gainers & Decliners",
+				feeds: [
+					{
+						url: "api.nzx.dev/ticker/1.0/nzsx/gainers",
+						label: "Gainers",
+					},
+					{
+						url: "api.nzx.dev/ticker/1.0/nzsx/decliners",
+						label: "Decliners",
+					},
+					{
+						url: "api.nzx.dev/ticker/1.0/nzsx/indices",
+						label: "Indices",
+					},
+				],
+				items: [
+					{
+						ISIN: "NZBWYE0001S7",
+						code: "MHM",
+						description: "MHM Automation Limited",
+						startingPriceAmount: "0.9100",
+						startingPriceAt: "2023-11-03T06:12:36+13:00",
+						priceAt: "2023-11-03T16:59:58+13:00",
+						priceAmount: "1.5200",
+						priceChangeAmount: "0.6100",
+						priceChangeRelative: "0.6703",
+						priceChangeDirection: "1",
+						priceChangeCount: 14,
+					},
+				],
+			});
+		</script>
+	</body>
 </html>

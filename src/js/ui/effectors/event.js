@@ -5,12 +5,17 @@ export class EventEffector extends Effector {
 	// -- doc
 	// Creates a new `EventEffector` that  is triggered by the given `event`,
 	// generating an event `triggers` (when defined), or
-	constructor(nodePath, event, directive, handler = null) {
+	constructor(nodePath, event, directive, handler = null, processor = null) {
 		super(nodePath, null);
 		this.directive = directive;
 		this.eventPath = directive.event ? directive.event.split(".") : null;
 		this.event = event;
+		// The handler takes the event and transforms it in a value that may
+		// then be assigned to a slot.
 		this.handler = handler;
+		// The processor is used when the directive creates an event, and will
+		// be used to transform the DOM event into an internal event.
+		this.processor = processor;
 	}
 
 	apply(node, scope) {
@@ -25,14 +30,22 @@ class EventEffect extends Effect {
 	}
 
 	handle(event) {
-		const { handler, directive } = this.effector;
+		const { handler, processor, directive } = this.effector;
 		const v = handler ? handler(event, this.scope, this.node, API) : null;
 		// TODO: Do something about that
 		if (directive.assign) {
-			this.scope.set(directive.assign, v, directive.force ? true : false);
+			// NOTE: We update here, meaning that we only create a new slot
+			// if ther/s no parent slot.
+			this.scope.update(
+				directive.assign,
+				v,
+				directive.force ? true : false
+			);
 		}
+		// FIXME: So what's the difference between .slot and .assign?
 		if (directive.slot) {
-			this.scope.set(
+			// NOTE: Likewise, only create if not existins
+			this.scope.update(
 				directive.slot,
 				handler ? v : event.target.value,
 				directive.force ? true : false
@@ -43,7 +56,9 @@ class EventEffect extends Effect {
 			// same layout as the DOM hiererachy
 			this.scope.triggerEvent(
 				directive.event,
-				event,
+				processor
+					? processor(event, this.scope, this.node, API)
+					: event,
 				this.scope,
 				this.node,
 				directive.stops ? false : true

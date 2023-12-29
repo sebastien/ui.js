@@ -73,12 +73,14 @@ export class SlotEffector extends Effector {
 	apply(node, scope) {
 		// If we have bindings, we may need to derive a local scope, so that
 		// new slots can be crated without affecting the parent and that
-		// parent slots are not overriden. The exception, however, being
+		// parent slots are not overridden. The exception, however, being
 		// that the bindings are all defined in the parent scope.
 		let should_derive = this.selector?.target ? true : false;
 		if (this.bindings) {
 			for (const k in this.bindings) {
 				const v = this.bindings[k];
+				// If we find a defined binding that has no corresponding
+				// slot, then we need to derive a new scope.
 				if (v !== undefined || !this.scope.slots[k]) {
 					should_derive = true;
 					break;
@@ -157,8 +159,8 @@ class SlotEffect extends Effect {
 		super(effector, node, scope);
 		this.handlers = {};
 		this.template = template;
-		// We define local slots in the scope for each value
-		// in the bindings.
+		// FIXME: This is redundant with the Slot.apply(), and should
+		// should probably be reviewed/reworked.
 		if (this.effector.bindings) {
 			this.scope.define(this.effector.bindings, true);
 		}
@@ -232,6 +234,7 @@ class MappingSlotEffect extends SlotEffect {
 
 	// --
 	// ### Lifecycle
+	//
 
 	unify(current, previous = this.value) {
 		// We prepare from comparing the current state with the previous state,
@@ -257,6 +260,7 @@ class MappingSlotEffect extends SlotEffect {
 			} else {
 				// Nothing to do
 			}
+			this.value = current;
 		} else if (isCurrentAtom) {
 			// ### Case: Atom
 			const items = this.items ? this.items : (this.items = new Map());
@@ -278,6 +282,7 @@ class MappingSlotEffect extends SlotEffect {
 					this.mounted && new_item.mount();
 				}
 			}
+			this.value = current;
 		} else if (current instanceof Array) {
 			// ### Case: Array
 			const items = this.items ? this.items : (this.items = new Map());
@@ -300,7 +305,7 @@ class MappingSlotEffect extends SlotEffect {
 					this.mounted && new_item.mount();
 				} else {
 					if (!previous || current[i] !== previous[i]) {
-						item.scope.set(target || "_", current[i]);
+						item.scope.update(target || "_", current[i]);
 						item.apply();
 					} else {
 						// No change in item
@@ -316,6 +321,7 @@ class MappingSlotEffect extends SlotEffect {
 				items.delete(j);
 				j++;
 			}
+			this.value = [...current];
 		} else {
 			// ### Case: Object
 			const items = this.items ? this.items : (this.items = new Map());
@@ -338,7 +344,7 @@ class MappingSlotEffect extends SlotEffect {
 					this.mounted && new_item.mount();
 				} else {
 					if (!previous || current[k] !== previous[k]) {
-						item.scope.set(target || "_", current[k]);
+						item.scope.update(target || "_", current[k]);
 						item.apply();
 					}
 				}
@@ -353,8 +359,8 @@ class MappingSlotEffect extends SlotEffect {
 					this.items.delete(k);
 				}
 			}
+			this.value = { ...current };
 		}
-		this.value = current;
 		return this;
 	}
 

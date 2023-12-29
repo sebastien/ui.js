@@ -48,10 +48,10 @@
 		</div>
 		<!-- ----------------------------------------------------------------------
 
-    TEMPLATES
+    OUTLINER
 
     ----------------------------------------------------------------------- -->
-		<template name="Outliner" in:items>
+		<template name="Outliner" inout:items>
 			<div class="stack fill lined fit-h">
 				<div class="pad-4">
 					<h3>Outliner</h3>
@@ -59,21 +59,29 @@
 				<div class="fill scroll-v">
 					<ul
 						class="stack pad-4"
-						x:for="items"
-						on:remove="items=items,key->{$.removeAt(items, key)}"
+						x:for="it=items"
+						on:remove="items=items->{$.removeAt(items, event.key)}"
 					>
-						<slot template="Outline" item="." />
+						<slot template="Outline" item="it" />
 					</ul>
 				</div>
 				<div class="pad-4">
-					<button on:click="items=items->{$.append(items, {})}">
+					<button
+						on:click="items=items->{$.append(items, {label:`Untitled item #${items.length+1}`})}"
+					>
 						New
 					</button>
 				</div>
 			</div>
 		</template>
 
-		<template name="Outline" in:item>
+		<!-- ----------------------------------------------------------------------
+
+    OUTLINE
+
+    ----------------------------------------------------------------------- -->
+
+		<template name="Outline" inout:item>
 			<li>
 				<div class="row">
 					<div class="movable button square transparent">☰</div>
@@ -85,8 +93,8 @@
 					/>
 					<button on:click="!remove|key->{{key}}">Remove</button>
 				</div>
-				<ul class="stack" x:for="item.children">
-					<slot template="Outline" item="." />
+				<ul class="stack" x:for="child=item.children">
+					<slot template="Outline" item="child" />
 				</ul>
 			</li>
 		</template>

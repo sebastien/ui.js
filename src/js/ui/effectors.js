@@ -20,6 +20,7 @@ export class EffectScope extends Scope {
 		this.isComponentBoundary = false;
 	}
 
+	// FIXME: These are legacy
 	set value(value) {
 		onError("Should not set scope.value", { value });
 	}
@@ -110,14 +111,6 @@ export class EffectScope extends Scope {
 		}
 	}
 
-	topics(path, offset = 0) {
-		console.warn("TOPICS NOT IMPLEMENTED");
-	}
-
-	subs(path, creates = false, offset = 0) {
-		console.warn("SUBS NOT IMPLEMENTED");
-	}
-
 	toString() {
 		return `EffectScope(path="${this.path.join(".")}", key="${this.key}")`;
 	}
@@ -197,7 +190,7 @@ export class Effect {
 		// If the current selector has a target, we assign the target. Note that
 		// this could also be done at the scope level by creating a reducer or
 		// just assigning the node there.
-		if (this.selector?.target) {
+		if (this.selector?.target && !this.selector?.isMany) {
 			this.scope.set(this.selector.target, value);
 		}
 		return this.unify(value, this.value);
@@ -220,6 +213,7 @@ export class Effect {
 		this.mounted += 1;
 		return this;
 	}
+
 	unmount() {
 		// NOTE: This is left for debuggigng
 		if (this.mounted === 0) {
@@ -234,7 +228,11 @@ export class Effect {
 	}
 
 	dispose() {
-		this.unmount();
+		// The effector may not have been mounted, or may already have been
+		// unmounted at that point.
+		if (this.mounted) {
+			this.unmount();
+		}
 		this.unbind();
 		return this;
 	}

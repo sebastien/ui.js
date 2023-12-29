@@ -18,6 +18,8 @@ export const onOnAttribute = (processor, attr, root, name) => {
 	if (!directive) {
 		onError("Unsupported directive", attr.value);
 	}
+	// NOTE: This is not good enough, it should be in the directive module and
+	// be generalised.
 	const handler = directive.handler
 		? new Function(
 				"event",
@@ -42,6 +44,22 @@ export const onOnAttribute = (processor, attr, root, name) => {
 				`{const _=event;return (${directive.expr});}`
 		  )
 		: undefined;
+	const eventProcessor = directive.eventProcessor
+		? new Function(
+				"event",
+				"scope",
+				"node",
+				"$",
+
+				`${Object.values(directive.eventInputs || {})
+					.map((_) =>
+						_ === "key" || _ === "#"
+							? `const key=scope.key !== undefined ? scope.key : scope.path ? scope.path.at(-1) : null;`
+							: `const ${_}=scope.get("${_}");`
+					)
+					.join("")}; return (${directive.eventProcessor})`
+		  )
+		: null;
 	node.removeAttribute(attr.name);
 	// FIXME: A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
 	// case they've already been processed at that point.
@@ -50,7 +68,8 @@ export const onOnAttribute = (processor, attr, root, name) => {
 			nodePath(node, root),
 			name,
 			directive,
-			handler
+			handler,
+			eventProcessor
 		);
 	}
 	return null;
