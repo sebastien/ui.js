@@ -138,6 +138,16 @@
 	border-width: 0px;
 }
 
+table.grid {
+	border-collapse: collapse;
+	border-spacing: 0px;
+}
+
+table.grid td,
+table.grid th {
+	border: 1px solid var(--box-bd);
+}
+
 /**
  * ## Opacity
  */

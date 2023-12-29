@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>UI.js ― Visual UI Builder</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body>
+		<div class="stack fit-screen nogap">
+			<ul class="row gap-4 pad-4">
+				<li><span class="bold">UI.js Builder</span></li>
+				<li>File</li>
+				<li>Help</li>
+			</ul>
+			<div class="row fit stretched">
+				<div class="stack">
+					<div>A</div>
+					<div>B</div>
+					<div>C</div>
+					<div>D</div>
+				</div>
+				<div class="stack fill bd-r">
+					<svg width="100%" height="100%">
+						<defs>
+							<pattern
+								id="grid"
+								x="13"
+								y="13"
+								width="15"
+								height="15"
+								patternUnits="userSpaceOnUse"
+							>
+								<rect
+									x="0"
+									y="0"
+									width="15"
+									height="15"
+									fill="#FFFFFF"
+								/>
+								<rect
+									x="13"
+									y="13"
+									width="15"
+									height="15"
+									fill="#E0E0E0"
+								/>
+							</pattern>
+						</defs>
+						<g>
+							<rect fill="url(#grid)" width="100%" height="100%" />
+						</g>
+					</svg>
+				</div>
+				<div>
+					<table class="grid small">
+						<tr>
+							<th class="pad-2">(Name)</th>
+							<td class="pad-2">
+								<input
+									type="text"
+									class="transparent"
+									value="Form1"
+								/>
+							</td>
+						</tr>
+						<tr>
+							<th class="pad-1">Appearance</th>
+							<td class="pad-1">
+								<select class="fit=w">
+									<option>1 - 3D</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th class="pad-1">AutoRedraw</th>
+							<td class="pad-1"><input type="checkbox" /></td>
+						</tr>
+						<tr>
+							<th class="pad-1">FillColor</th>
+							<td class="pad-1">
+								<div class="row fit-w">
+								<div class="square bd bg-green-5">.</span
+								><code class="fit">#341212D</code>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- ----------------------------------------------------------------------
+
+    FLOATING PANEL
+
+    ----------------------------------------------------------------------- -->
+
+		<template name="FloatingPanel" in:title="Floating Panel" in:body>
+			<div>
+				<div><h3 out:content="title">…</h3></div>
+				<div out:content="body" />
+			</div>
+		</template>
+
+		<!-- ----------------------------------------------------------------------
+
+    PALETTE
+
+    ----------------------------------------------------------------------- -->
+
+		<template name="Palette"> </template>
+
+		<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
+</html>
