@@ -347,7 +347,7 @@
 	align-items: flex-start;
 }
 
-.centered {
+.centered.block {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -356,7 +356,11 @@
 }
 
 .centered.inline {
-	display: flex-flex;
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
 }
 
 .row {
@@ -367,6 +371,10 @@
 
 .row.stretched {
 	align-items: stretch;
+}
+
+.row.fitted {
+	justify-items: stretch;
 }
 
 .row.distribute {
@@ -410,6 +418,10 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--gap-2);
+}
+
+.stack.centered {
+	align-items: center;
 }
 
 .stack.fill {

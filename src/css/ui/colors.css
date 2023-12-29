@@ -1743,3 +1743,10 @@
 	border: var(--color-grey-9);
 }
 /* @end */
+.bg-low {
+	background-color: var(--color-low);
+}
+.bg-high {
+	background-color: var(--color-high);
+}
+/* EOF */

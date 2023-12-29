@@ -452,6 +452,9 @@ button.transparent {
 	--button-bd-active: transparent;
 	--button-bd-hover: transparent;
 }
+
+.button.blue,
+button.blue,
 .button.primary,
 button.primary {
 	--button-bg-hover: var(--color-blue-8);
@@ -460,6 +463,9 @@ button.primary {
 	--button-ol: var(--color-blue-3);
 	--button-text-hover: var(--color-blue-5);
 }
+
+.button.green,
+button.green,
 .button.success,
 button.success {
 	--button-bg-hover: var(--color-green-8);
@@ -468,6 +474,9 @@ button.success {
 	--button-ol: var(--color-green-3);
 	--button-txt-hover: var(--color-green-5);
 }
+
+.button.yellow,
+button.yellow,
 .button.info,
 button.info {
 	--button-bg-hover: var(--color-yellow-8);
@@ -476,6 +485,9 @@ button.info {
 	--button-ol: var(--color-yellow-3);
 	--button-txt-hover: var(--color-yellow-5);
 }
+
+.button.orange,
+button.orange,
 .button.warning,
 button.warning {
 	--button-bg-hover: var(--color-orange-8);
@@ -484,6 +496,9 @@ button.warning {
 	--button-ol: var(--color-orange-3);
 	--button-txt-hover: var(--color-yellow-5);
 }
+
+.button.red,
+button.red,
 .button.danger,
 button.danger {
 	--button-bg-hover: var(--color-red-8);
