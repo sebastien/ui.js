@@ -1,94 +1,94 @@
-.typography.page,
-.typography .page {
+.with-typography.page,
+.with-typography .page {
 	padding: var(--pad-4);
 	margin: var(--pad-4);
 }
 
-.typography h1,
-.typography h2,
-.typography h3,
-.typography h4,
-.typography h5,
-.typography h6,
-h1.typography,
-h2.typography,
-h3.typography,
-h4.typography,
-h5.typography,
-h6.typography {
+.with-typography h1,
+.with-typography h2,
+.with-typography h3,
+.with-typography h4,
+.with-typography h5,
+.with-typography h6,
+h1.with-typography,
+h2.with-typography,
+h3.with-typography,
+h4.with-typography,
+h5.with-typography,
+h6.with-typography {
 	margin-top: calc(var(--line-height) * 2);
 	margin-bottom: calc(var(--line-height) * 1);
 }
 
-.typography p {
+.with-typography p {
 	margin-top: 0.5em;
 	margin-bottom: 0.5em;
 }
 
-.typography ul,
-.typography ol {
+.with-typography ul,
+.with-typography ol {
 	padding-left: var(--pad-2);
 	margin-top: 0.75em;
 	margin-bottom: 0.75em;
 	margin-left: 0.75em;
 }
 
-.typography ul ul,
-.typography ul ol,
-.typography ol ol,
-.typography ol ul {
+.with-typography ul ul,
+.with-typography ul ol,
+.with-typography ol ol,
+.with-typography ol ul {
 	margin-top: 0em;
 	margin-bottom: 0em;
 }
 
-.typography ul.gapped li,
-.typography ol.gapped li {
+.with-typography ul.gapped li,
+.with-typography ol.gapped li {
 	margin-top: 0.75em;
 	margin-bottom: 0.75em;
 }
 
-.typography ul > li {
+.with-typography ul > li {
 	list-style-type: disc;
 }
 
-.typography ol > li {
+.with-typography ol > li {
 	list-style-type: numeric;
 }
 
-.typography li {
+.with-typography li {
 	padding-left: 0.25em;
 }
 
-.typography li > p:first-child {
+.with-typography li > p:first-child {
 	margin-top: 0em;
 }
 
-.typography li > p:last-child {
+.with-typography li > p:last-child {
 	margin-bottom: 0em;
 }
 
-.typography mark {
+.with-typography mark {
 	background-color: color-mix(
 		in srgb,
 		var(--color-yellow-7),
 		var(--page-bg-0p) 65%
 	);
 }
-.typography mark.red {
+.with-typography mark.red {
 	background-color: color-mix(
 		in srgb,
 		var(--color-red),
 		var(--page-bg-0p) 85%
 	);
 }
-.typography mark.green {
+.with-typography mark.green {
 	background-color: color-mix(
 		in srgb,
 		var(--color-green),
 		var(--page-bg-0p) 65%
 	);
 }
-.typography mark.blue {
+.with-typography mark.blue {
 	background-color: color-mix(
 		in srgb,
 		var(--color-blue),
@@ -96,7 +96,7 @@ h6.typography {
 	);
 }
 
-.typography .key {
+.with-typography .key {
 	padding: 1px 5px;
 	border-radius: 4px;
 	border: 1px solid

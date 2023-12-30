@@ -4,7 +4,7 @@ import { type, isObject } from "./values.js";
 //
 export const asMappable = (f) => (_) => _ instanceof Array ? _.map(f) : f(_);
 
-// Fixm: this should probably expand objects to their values
+// FIXME: this should probably expand objects to their values
 export const list = (_) =>
 	_ instanceof Array
 		? _

@@ -2,13 +2,7 @@ import { onError } from "./utils/logging.js";
 import { items } from "./utils/collections.js";
 import { isObject } from "./utils/values.js";
 import { ValueError } from "./utils/errors.js";
-import {
-	Cell,
-	Value,
-	ValueReducer,
-	ListReducer,
-	MapReducer,
-} from "./reactive.js";
+import { Cell, Value } from "./reactive.js";
 
 // --
 // The `Use` class creates a factory object that creates cells.
@@ -32,57 +26,6 @@ class Use {
 		} else {
 			return this.scope.slots[name];
 		}
-	}
-
-	output(name, cell) {}
-
-	// --
-	// Returns a local cell, overriding any cell with the same name defined
-	// in the parent scope.
-	local(name, value = undefined) {
-		console.warn("Deprecated");
-		if (!this.scope.slots.hasOwnProperty(name)) {
-			const cell = new Value(value, name);
-			this.cells.push(cell);
-			this.scope.slots[name] = cell;
-			return cell;
-		} else {
-			return this.scope.slots[name];
-		}
-	}
-
-	derived(inputs, functor) {
-		console.warn("Deprecated");
-		let cell = undefined;
-		if (inputs instanceof Cell) {
-			cell = new ValueReducer(inputs, functor);
-		} else if (inputs instanceof Array) {
-			for (const [i, v] of items(inputs)) {
-				if (!(v instanceof Cell)) {
-					return onError(`Excepted cell for input #${i}`, {
-						cell,
-						inputs,
-					});
-				}
-			}
-			cell = new ListReducer(inputs, functor);
-		} else if (isObject(inputs)) {
-			for (const [i, v] of items(inputs)) {
-				if (!(v instanceof Cell)) {
-					return onError(`Excepted cell for input #${i}`, {
-						cell,
-						inputs,
-					});
-				}
-			}
-			cell = new MapReducer(inputs, functor);
-		} else {
-			throw ValueError(inputs);
-		}
-		if (cell) {
-			this.cells.push(cell);
-		}
-		return cell;
 	}
 }
 export const Controllers = new Map();
@@ -154,6 +97,9 @@ export const createController = (definition, scope) => {
 			get: (_, property) => {
 				switch (property) {
 					case "use":
+						// FIXME: Is this really deprecated? We should make sure
+						// we cover the use cases properly.
+						console.warn("[uijs/controllers] use() is deprecated");
 						declared.use = new Use(scope);
 						return declared.use;
 					case "on":
