@@ -1,0 +1,3 @@
+[submodule "deps/domish"]
+	path = deps/domish
+	url = git@github.com:sebastien/domish.js.git

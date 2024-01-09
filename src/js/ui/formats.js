@@ -77,23 +77,28 @@ export const timetuple = (_) =>
 					_[2], // Day
 					_[3], // Hour
 					_[4], // Minute
-					_[5] // Second
-				)
-		  )
+					_[5], // Second
+				),
+			)
 		: _ instanceof Date
-		? _
-		: null;
+			? _
+			: null;
 
-const htmlParser = new DOMParser();
-export const html = (value) => {
-	console.log("HTML VALUE", value);
-	const doc = htmlParser.parseFromString(value, "text/html");
-	const res = new DocumentFragment();
-	while (doc.body && doc.body.firstChild) {
-		res.appendChild(doc.body.firstChild);
-	}
-	return res;
-};
+const htmlParser = globalThis.DOMParser ? new DOMParser() : null;
+
+export const html = htmlParser
+	? (value) => {
+			const doc = htmlParser.parseFromString(value, "text/html");
+			const res = new DocumentFragment();
+			while (doc.body && doc.body.firstChild) {
+				res.appendChild(doc.body.firstChild);
+			}
+			return res;
+		}
+	: (value) => {
+			onError("HTML Parser not available");
+			return value;
+		};
 export const debug = (value, scope) => {
 	console.log("[uijs.debug] Slot value:", { value, scope });
 	return value;
