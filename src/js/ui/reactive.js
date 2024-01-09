@@ -163,6 +163,9 @@ export class Cell extends Subscribable {
 	constructor(name) {
 		super();
 		this.name = name;
+		// TODO: Should have revision
+		//  TODO: Should have value getter
+		//  TODO: Should have an internal mechanism to deal with Promises
 	}
 
 	get(path) {
@@ -175,6 +178,7 @@ export class Value extends Cell {
 		super(name);
 		this.value = undefined;
 		this.comparator = comparator;
+		// FIXME: Revision may be in a cell, actually
 		this.revision = -1;
 		this._pending = undefined;
 		this.set(value);
@@ -230,113 +234,97 @@ export class Value extends Cell {
 	}
 }
 
-export class Reducer extends Cell {
-	constructor(
-		input,
-		reducer = undefined,
-		value = undefined,
-		comparator = cmp
-	) {
+export class Selected extends Cell {
+	constructor(selector, inputs, comparator = cmp) {
 		super();
-		this.input = input;
-		this.reducer = reducer;
-		// // TODO
-		// this.subscribed =
-		//   input instanceof Cell
-		//     ? input.sub(this.update)
-		//     : input
-		//     ? map(input, (_, k) => _.sub(null, (_) => this.update(_, k)))
-		//     : null;
-		this.value = value;
-		this.inputValue = undefined;
+		this.inputs = inputs;
+		this.selector = selector;
+		this.comparator = comparator;
+		this.subscriptions = new Array(inputs.length);
+		this._value =
+			selector.type === SelectorType.List
+				? new Array(inputs.length)
+				: selector.type === SelectorType.Map
+				? {}
+				: undefined;
 	}
-
-	get(path = null, offset = 0) {
-		if (this.revision === -1) {
-			this.inputValue = this.evaluateInputs();
-			this._set(this.evaluate(this.inputValue));
+	get value() {
+		return this._value;
+	}
+	bind() {
+		const t = this.selector.type;
+		for (let i; i < this.inputs.length; i++) {
+			const input = this.inputs[i];
+			if (input && input instanceof Cell) {
+				const k =
+					t === SelectorType.Atom
+						? null
+						: t === SelectorType.Mapping
+						? this.selector.fields[i]
+						: i;
+				this.subscriptions[i] = input.sub(
+					(...rest) => this.onInputUpdated(i, k, ...rest),
+					this.selector.inputs[i].path,
+					1
+				);
+			}
 		}
-		return access(this.value, path, offset);
 	}
-
 	unbind() {
-		if (this.input instanceof Cell) {
-			// this.subscribed && this.input.unsub(null, this.subscribed);
-			console.log("FIXME");
+		for (let i; i < this.inputs.length; i++) {
+			const input = this.inputs[i];
+			if (input && input instanceof Cell) {
+				input.unsub(
+					this.subscriptions[i],
+					this.selector.inputs[i].path,
+					1
+				);
+				this.subscriptions[i] = undefined;
+			}
+		}
+	}
+	onInputUpdated(index, key, value) {
+		const v = this.selector.inputs[index].formatted(value);
+		if (key === null) {
+			if (this.comparator(v, this._value) !== 0) {
+				// TODO: Should support promises
+				this._value = v;
+				this.trigger([], v);
+			}
 		} else {
-			console.log("FIXME");
-			// each(this.input, (_, k) => this.input[k].unsub(null, _));
+			if (this.comparator(v, this._value[key]) !== 0) {
+				// TODO: Should support promises
+				this._value[key] = v;
+				this.trigger([key], v);
+			}
 		}
 	}
 
-	update(value, k = null) {
-		if (value instanceof Promise) {
-			throw new Error(
-				"Cannot update a cell with a future, value must be final",
-				{ value, k }
+	eval() {
+		const extracted = this.inputs.map((input, i) => {
+			const sel = this.selector.inputs[i];
+			return sel.formatted(
+				access(input instanceof Cell ? input.value : input, sel.path, 1)
 			);
-		} else {
-			// TODO: We may want to compare the previous input value.
-			this.inputValue = value;
-			this._set(this.reducer ? this.reducer(value) : value);
+		});
+		switch (this.selector.type) {
+			case SelectorType.Atom:
+				return extracted[0];
+			case SelectorType.List:
+				return extracted;
+			case SelectorType.Map: {
+				const res = {};
+				for (const i in extracted) {
+					res[this.selector.fields[i]] = extracted[i];
+				}
+				return res;
+			}
+			default:
+				onError("Unsupported type", {
+					type: this.selector.type,
+					selector: this.selector.toString(),
+				});
 		}
-	}
-
-	evaluateInputs() {
-		throw NotImplementedError();
-	}
-
-	evaluate() {
-		throw NotImplementedError();
-	}
-}
-
-// --
-// Reduces a single input argument
-export class ValueReducer extends Reducer {
-	evaluateInputs() {
-		return this.input.get();
-	}
-	evaluate(value = this.evaluateInputs()) {
-		return this.reducer(...value);
-	}
-}
-
-// --
-// Reduces an array of arguments
-export class ListReducer extends Cell {
-	constructor(input, reducer, value = undefined, cmp = undefined) {
-		super(input, reducer, value, cmp);
-		this.inputValue = map(input, (_) => _.get());
-	}
-
-	evaluateInputs() {
-		return map(this.input, (_) => _.get());
-	}
-
-	evaluate(value = this.evaluateInputs()) {
-		return this.reducer(...value);
-	}
-
-	update(value, k) {
-		if (value instanceof Promise) {
-			throw new Error(
-				"Cannot update a cell with a future, value must be final",
-				{ value, k }
-			);
-		} else {
-			this.inputValue[k] = value;
-			// TODO: Should we absorb changes at the input? Probably not.
-			this._set(this.reducer(this.inputValue));
-		}
-	}
-}
-
-// --
-// Reduces a map of arguments
-export class MapReducer extends ListReducer {
-	evaluate(value = this.evaluateInputs()) {
-		return this.reducer(value);
 	}
 }
 
@@ -358,6 +346,14 @@ export class Scope extends Cell {
 
 	get parents() {
 		return [...this.ancestors()];
+	}
+
+	*ownSlots() {
+		for (const k in this.slots) {
+			if (this.slots.hasOwnProperty(k)) {
+				yield k;
+			}
+		}
 	}
 
 	*ancestors() {
@@ -386,9 +382,18 @@ export class Scope extends Cell {
 				} else if (skipDefined && slot.revision >= -1) {
 					// If we skip defined cells, then we won't override
 					// and already defined value.
-				} else {
+				} else if (slot instanceof Value) {
 					// TODO: This may be a sub there?
 					slot.set(v instanceof Cell ? v.get() : v);
+				} else {
+					if (v !== undefined) {
+						onError(
+							`Unsupported case for slot: trying to assign a value to slot ${k} which is not a Value cell`,
+							{ slot, value: v }
+						);
+					} else {
+						// All good here, it's undefined;
+					}
 				}
 			}
 		}
@@ -451,9 +456,17 @@ export class Scope extends Cell {
 					? this.slots[path]
 					: null;
 			if (slot) {
-				slot.set(value, undefined, undefined, force);
+				if (value instanceof Cell) {
+					onError(
+						"Scope.set: cannot assign a cell to an existing slot",
+						{ path, slot, value }
+					);
+				} else {
+					slot.set(value, undefined, undefined, force);
+				}
 			} else {
-				this.slots[path] = new Value(value, path);
+				this.slots[path] =
+					value instanceof Cell ? value : new Value(value, path);
 			}
 		} else if (path.length == 1) {
 			return this.set(path[0], value, force, update);
@@ -468,31 +481,71 @@ export class Scope extends Cell {
 		return slot ? slot.subscribed(path, creates, offset + 1) : undefined;
 	}
 
+	// FIXME: Is this even used? I think that in practice this may not be necessary
+	// anymore as the Selected cell does the job. This is called in effectors.Effect.constructor
 	sub(handler, path, offset = 0) {
+		console.log("XXX DEBUG: Scope.sub", { path });
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.sub(handler, path, offset + 1) : undefined;
 	}
 
-	// topics(path, offset = 0) {
-	//   path = typeof path === "string" ? path.split(".") : path;
-	//   const slot = this.slots[path[offset]];
-	//   return slot ? slot.topics(path, offset + 1) : undefined;
-	// }
-
 	unsub(sub, path, offset = 0) {
+		console.log("XXX DEBUG: Scope.unsub", { path });
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.unsub(sub, path, offset + 1) : undefined;
 	}
 
 	trigger(path, bubbles, offset = 0) {
+		console.log("XXX DEBUG: Scope.trigger", { path });
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
 	}
 
+	dispose() {
+		// NOTE: The problem is that the children may still use these
+		// slots. They just won't be active anymore.
+		for (const k of this.ownSlots) {
+			this.slots[k].unbind();
+			delete this.slots[k];
+		}
+	}
+
+	// --
+	// Returns a cell the represents the selected value. In the easy case,
+	// where the selector has only one input and no transform, this returns
+	// the select cell.
 	select(selector) {
+		console.log("XXX SELECT", {
+			selector: selector ? selector.toString() : selector,
+		});
+		if (!selector) {
+			return null;
+		}
+		// This is the general case, where we select and potentially transform
+		// one or more values.
+		const inputs = selector.inputs.map((input) => {
+			const key = input.path[0] || "_";
+			return key === "#" ? this.key : this.slots[key];
+		});
+		if (
+			selector.type === SelectorType.Atom &&
+			inputs.length === 1 &&
+			selector.inputs[0].path.length <= 1 &&
+			!selector.inputs[0].format?.length
+		) {
+			return inputs[0];
+		} else {
+			const cell = new Selected(selector, inputs);
+			// We'll need to make sure that there's an equivalent unbind
+			cell.bind();
+			return cell;
+		}
+	}
+
+	eval(selector) {
 		if (!selector) {
 			return this.get("_");
 		}

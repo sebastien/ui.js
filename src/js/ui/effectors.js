@@ -186,12 +186,16 @@ export class Effect {
 
 	apply() {
 		// We extract the latest value from the selection
-		const value = this.scope.select(this.selector);
+		const value = this.scope.eval(this.selector);
 		// If the current selector has a target, we assign the target. Note that
 		// this could also be done at the scope level by creating a reducer or
 		// just assigning the node there.
 		if (this.selector?.target && !this.selector?.isMany) {
-			this.scope.set(this.selector.target, value);
+			console.log("XXX FIXME Skipping scope.et", {
+				target: this.selector.target,
+				value,
+			});
+			// this.scope.set(this.selector.target, value);
 		}
 		return this.unify(value, this.value);
 	}
