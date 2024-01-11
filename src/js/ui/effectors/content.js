@@ -40,7 +40,7 @@ class ContentEffect extends Effect {
 			value === Empty || value === null || value === undefined;
 		if (isEmpty) {
 			this.textNode.data = "";
-		} else if (value instanceof DocumentFragment) {
+		} else if (value.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
 			if (this.contentNode) {
 				DOM.unmount(this.contentNode);
 			}

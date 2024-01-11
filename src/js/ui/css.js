@@ -1,4 +1,3 @@
-import { map } from "./utils/collections.js";
 import { numfmt } from "./utils/text.js";
 import { idem } from "./formats.js";
 import { Color } from "./color.js";
@@ -6,7 +5,7 @@ import { Color } from "./color.js";
 // --
 // ## CSS
 
-const CSS_UNITS = [
+export const CSS_UNITS = [
 	"%",
 	"em",
 	"ex",
@@ -49,7 +48,6 @@ const CSS_UNITS = [
 
 const RE_PROPERTY =
 	/^((?<kebab>(--)?[a-z]+(-[a-z]+)*)|(?<pascal>[a-z]+([A-Z][a-z]+)*))$/;
-window.RE_PROPERTY = RE_PROPERTY;
 
 // --
 // Normalize the given name to be a CSS property name, typically

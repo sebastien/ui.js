@@ -66,6 +66,7 @@ export class DOM {
 	static after(previous, node) {
 		switch (previous.nextSibling) {
 			case null:
+			case undefined:
 				previous.parentNode && previous.parentNode.appendChild(node);
 				return;
 			case node:

@@ -357,12 +357,17 @@ export const loadTemplates = (
 	const templates = [];
 	const stylesheets = [];
 	const scripts = [];
-	const roots = !node
-		? []
-		: node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
-		  node.nodeType === Node.DOCUMENT_NODE
-		? [...node.childNodes].filter((_) => _.nodeType === Node.ELEMENT_NODE)
-		: [node];
+	const roots =
+		node && node instanceof Array
+			? node.filter((_) => _.nodeType === Node.ELEMENT_NODE)
+			: !node
+			? []
+			: node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ||
+			  node.nodeType === Node.DOCUMENT_NODE
+			? [...node.childNodes].filter(
+					(_) => _.nodeType === Node.ELEMENT_NODE
+			  )
+			: [node];
 	for (const selector of selectors) {
 		for (const n of roots) {
 			// The root may match the selector itself, so we need to insert it
@@ -389,7 +394,7 @@ export const loadTemplates = (
 					scripts.push.apply(scripts, nodes.scripts);
 					templates.push(createTemplate(tmpl));
 				}
-				!tmpl.dataset.keep && tmpl.parentElement.removeChild(tmpl);
+				!tmpl.dataset.keep && tmpl.parentElement?.removeChild(tmpl);
 			}
 		}
 	}

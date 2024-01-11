@@ -13,6 +13,20 @@ class Use {
 	}
 
 	// --
+	// Returns a local cell, overriding any cell with the same name defined
+	// in the parent scope.
+	local(name, value = undefined) {
+		if (!this.scope.slots.hasOwnProperty(name)) {
+			const cell = new Value(value);
+			this.cells.push(cell);
+			this.scope.slots[name] = cell;
+			return cell;
+		} else {
+			return this.scope.slots[name];
+		}
+	}
+
+	// --
 	// Returns a value cell corresponding to the slot with the given
 	// name, creating it if it does not exist. Unlike `local`, this will
 	// use cells defined in parent scopes.
