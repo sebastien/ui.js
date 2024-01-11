@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>UIjs − Block Based Notebook</title>
+		<title>UIjs ― Blocks</title>
 		<link
 			rel="stylesheet"
 			href="../lib/css/ui.css"
@@ -15,16 +15,19 @@
 		</script>
 	</head>
 	<body>
-		<header>
-			<h1>Blocks</h1>
-			<p>Shows how to create a Jupyter-like notebook.</p>
-		</header>
+		<div class="stack gap-4">
+			<header class="pad-8">
+				<h2>
+					<input class="fit transparent" placeholder="Block title…" />
+				</h2>
+			</header>
 
-		<div class="Blocks">
-			<slot
-				template="Blocks"
-				cells="([{type:'text',source:'Hello, world from a text cell'}])"
-			/>
+			<div class="Blocks">
+				<slot
+					template="Blocks"
+					cells="([{type:'text',source:'Hello, world from a text cell'}])"
+				/>
+			</div>
 		</div>
 
 		<!-------------------------------------------------------------------------
@@ -83,9 +86,13 @@
 							</button>
 						</li>
 					</ul>
-					<div class="source fill">
+					<div class="source fill bg-grey-9 rounded pad-4">
 						<textarea
-							class="fit"
+							class="fit transparent"
+							style="
+								font-family: var(--font-mono);
+								font-size: var(--font-code-size);
+							"
 							out:content="cell.source"
 							on:input="!SourceChanged"
 							on:change="!SourceChanged"
