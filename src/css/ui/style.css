@@ -197,20 +197,21 @@ table.grid th {
 .larger {
 	font-size: var(--font-size-6);
 }
+
 .largest {
 	font-size: var(--font-size-8);
 }
 
 .serif {
-	font-family: var(--font-serif);
+	font-family: var(--font-serif) !important;
 }
 
 .sans {
-	font-family: var(--font-sans);
+	font-family: var(--font-sans) !important;
 }
 
 .mono {
-	font-family: var(--font-mono);
+	font-family: var(--font-mono) !important;
 }
 
 .upper {

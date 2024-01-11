@@ -25,7 +25,9 @@
 .pad-8 {
 	padding: var(--pad-8);
 }
-
+.pad-9 {
+	padding: var(--pad-9);
+}
 .pad-r {
 	padding-right: var(--pad-1);
 }

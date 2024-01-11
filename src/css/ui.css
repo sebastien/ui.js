@@ -5,7 +5,6 @@
 
 @import url("./ui/reset.css") layer(reset);
 @import url("./ui/tokens.css") layer(base);
-@import url("./ui/colors.css") layer(base);
 @import url("./ui/base.css") layer(base);
 @import url("./ui/typography.css") layer(base);
 @import url("./ui/box.css") layer(base);
@@ -13,6 +12,7 @@
 @import url("./ui/controls.css") layer(ui);
 @import url("./ui/behavior.css") layer(ui);
 @import url("./ui/layout.css") layer(layout);
+@import url("./ui/colors.css") layer(theme);
 @import url("./ui/overrides.css") layer(theme);
 
 @layer loading {

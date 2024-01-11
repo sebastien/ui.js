@@ -24,6 +24,17 @@
 	cursor: row-resize;
 }
 
+.overflow-w {
+	overflow-x: auto;
+}
+
+.overflow-h {
+	overflow-y: auto;
+}
+
+.overflow {
+	overflow: auto;
+}
 /*
    * ## Hover Behaviour
   */
