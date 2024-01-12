@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>UI.js ― HelloWorld</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body>
+		<slot
+			class="asdas"
+			template="HelloWorld"
+			out:message="Hello, World!"
+		></slot>
+
+		<template name="HelloWorld" in:message
+			><p out:content=".message">…</p></template
+		>
+
+		<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>UI.js ― Todo List</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<body>
+		<div class="stack fit-screen stretched">
+			<slot template="TodoList"></slot>
+		</div>
+
+		<!-- ----------------------------------------------------------------------
+
+    TODO LIST
+
+    ----------------------------------------------------------------------- -->
+		<template name="TodoList" in:items="({})" in:title="'To-do list'">
+			<h1 class="pad-4 bd-b" out:content="title">…</h1>
+			<div class="fill pad-4">
+				<div
+					class="bd bg-yellow-9 bd-yellow-8 pad-4"
+					x:if="items|empty"
+				>
+					No items
+				</div>
+				<ul
+					x:if="items|empty|not"
+					on:remove="items=items->{$.removeAt(items, event.key)}"
+					x:for="item=items"
+				>
+					<li>
+						<slot template="TodoItem" item="item"></slot>
+					</li>
+				</ul>
+			</div>
+			<div class="bd-t pad-4 row">
+				<div class="fill"></div>
+				<button
+					class="green"
+					on:click="items=items->{$.append(items, {label:`Untitled item #${items.length+1}`})}"
+				>
+					Add item
+				</button>
+			</div>
+		</template>
+		<!-- ----------------------------------------------------------------------
+
+    TODO ITEM
+
+    ----------------------------------------------------------------------- -->
+		<template name="TodoItem" in:item>
+			<div class="row gap-4 with-hover">
+				<div class="movable button square transparent">☰</div>
+				<input
+					class="fill"
+					type="text"
+					placeholder="New item"
+					out:value="item.label"
+				/>
+				<button
+					class="warning on-hover"
+					on:click="!remove|key->{{key}}"
+				>
+					Remove
+				</button>
+			</div>
+		</template>
+
+		<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			ui();
+		</script>
+	</body>
+</html>

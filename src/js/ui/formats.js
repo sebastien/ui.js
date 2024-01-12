@@ -11,6 +11,13 @@ export const count = (_) => {
 export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
 export const idem = (_) => _;
+export const empty = (_) =>
+	_
+		? (_ instanceof Array && _.length == 0) ||
+		  (_ instanceof Object && Object.getOwnPropertyNames(_).length === 0)
+			? true
+			: false
+		: true;
 export const ago = (date) => {
 	if (!(date && date instanceof Date)) {
 		return null;
@@ -77,12 +84,12 @@ export const timetuple = (_) =>
 					_[2], // Day
 					_[3], // Hour
 					_[4], // Minute
-					_[5], // Second
-				),
-			)
+					_[5] // Second
+				)
+		  )
 		: _ instanceof Date
-			? _
-			: null;
+		? _
+		: null;
 
 const htmlParser = globalThis.DOMParser ? new DOMParser() : null;
 
@@ -94,11 +101,11 @@ export const html = htmlParser
 				res.appendChild(doc.body.firstChild);
 			}
 			return res;
-		}
+	  }
 	: (value) => {
 			onError("HTML Parser not available");
 			return value;
-		};
+	  };
 export const debug = (value, scope) => {
 	console.log("[uijs.debug] Slot value:", { value, scope });
 	return value;
@@ -110,17 +117,18 @@ export const registerFormat = (name, format) => {
 };
 
 export const Formats = {
+	ago,
+	attr,
 	bool,
-	text,
 	count,
-	not,
+	debug,
+	empty,
 	html,
 	idem,
-	type,
-	attr,
 	len,
-	debug,
-	ago,
+	not,
+	text,
 	timetuple,
+	type,
 };
 // EOF
