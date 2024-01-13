@@ -43,7 +43,12 @@ export class Subscription {
 	}
 }
 
-// A hierarchical set of subscriptions
+// FIXME: It seems that there should be a simpler observable primitive, and
+// then a more elaborate Decomposable that can be subscribed to at a granular
+// basis. This needs to be investigated/elaborated.
+// --
+// A hierarchical set of subscription. A subscribable can wrap a given value
+// and allow for the subscription of subsets of its values.
 export class Subscribable {
 	static Count = 0;
 	constructor() {
@@ -54,6 +59,9 @@ export class Subscribable {
 		this._topics = null;
 	}
 
+	// FIXME: Not sure how useful this actually is.
+	// --
+	// Iterates over the topics available at the given `path`.
 	*topics(path = null, offset = 0, creates = false) {
 		if (!this._topics && creates) {
 			this._topics = new Map();
@@ -121,37 +129,33 @@ export class Subscribable {
 		}
 	}
 
+	// --
+	// Triggers a value change at the given `path[offset:]` (`null` by default).
+	// This will notify all the subscribers of a potential change.
 	trigger(value, path = null, offset = 0, bubbles = true) {
-		let count = 0;
-		if (!this._topics) {
-			return count;
+		// TODO: Support, path/offset, bubbles and then early exit.
+		if (path !== null) {
+			onError("Non=null path not supported yet");
 		}
-		if (bubbles) {
-			const topics = [...this.topics(path, offset)];
-			// We need to start with last one
-			for (let i = topics.length - 1; i >= 0; i--) {
-				const subs = topics[i].get(Subscription);
-				if (subs) {
-					for (const s of subs) {
-						if (s.trigger(value) === false) {
-							return count + 1;
-						} else {
-							count += 1;
-						}
-					}
-				}
-			}
-		} else {
-			// We only get the last one
-			const topic = last(this.topics(path, offset, false));
-			const subs = topic ? topic.get(Subscription) : null;
-			if (subs) {
-				for (const s of subs) {
-					if (s.trigger(value) === false) {
-						return count + 1;
-					} else {
+		return this._notifyTopics(value, this._topics);
+	}
+
+	_notifyTopics(value, topic = this._topics, depth = 0) {
+		let count = 0;
+		if (topic) {
+			for (const [k, v] of topic.entries()) {
+				if (k === Subscription) {
+					for (const s of v) {
+						// TODO: Support early exit
+						s.trigger(value);
 						count += 1;
 					}
+				} else {
+					count += this._notifyTopics(
+						value ? value[k] : undefined,
+						v,
+						depth + 1
+					);
 				}
 			}
 		}

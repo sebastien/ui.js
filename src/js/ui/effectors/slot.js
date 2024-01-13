@@ -305,6 +305,10 @@ class MappingSlotEffect extends SlotEffect {
 					this.mounted && new_item.mount();
 				} else {
 					if (!previous || current[i] !== previous[i]) {
+						// NOTE: It's not clear if we need to call apply() on the item.
+						// Updating the scope will likely trigger and update of the item.
+						// This is not a problem, but it means we may be executing the
+						// update twice.
 						item.scope.update(target || "_", current[i]);
 						item.apply();
 					} else {
