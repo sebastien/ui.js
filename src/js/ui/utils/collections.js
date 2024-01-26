@@ -242,7 +242,37 @@ export const len = (value) => {
 	}
 };
 
-export const assign = (scope, path, value) => {
+// FIXME: This should be merged with `assign`, it's almost the same.
+export const patch = (scope, path, value, merge, offset = 0) => {
+	const n = path.length;
+	// We make sure the root is an object if we need it
+	let root =
+		n > offset && !(scope && scope instanceof Object)
+			? typeof path[offset] === "number"
+				? new Array(path[offset])
+				: {}
+			: scope;
+	// Now this to make sure that path exists
+	let s = root;
+	for (let i = offset; i < n - 1; i++) {
+		const k = path[i];
+		if (!(s[k] && s[k] instanceof Object)) {
+			// If s[k] is undefined, null or a non-object type, we replace it.
+			s[k] = typeof k === "number" ? new Array(k) : {};
+		}
+		if (typeof k === "number" && s instanceof Array) {
+			while (s.length < k) {
+				s.push(undefined);
+			}
+		}
+		s = s[k];
+	}
+	const k = path[n - 1];
+	s[k] = merge ? merge(s[k], value) : value;
+	return root;
+};
+
+export const assign = (scope, path, value, create = false) => {
 	let s = scope;
 	const n = path.length - 1;
 	for (let i = 0; i <= n; i++) {
