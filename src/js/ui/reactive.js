@@ -12,6 +12,7 @@ import {
 	access,
 	append,
 	removeAt,
+	patch,
 	copy,
 } from "./utils/collections.js";
 import { lerp } from "./utils/math.js";
@@ -196,15 +197,9 @@ export class Value extends Cell {
 		if (value instanceof Promise) {
 			// We increment the revision number, to denote that we're waiting
 			// on a result.
-			this.revision += 1;
-			const r = this.revision;
-			const cell = this;
-			this._pending = value;
-			const updater = (_) => {
-				cell.revision === r &&
-					(_ instanceof Promise ? _.then(updater) : cell.set(_));
-			};
-			value.then(updater);
+			this.join(value, () => {
+				this.set(_);
+			});
 			return undefined;
 		} else if (force || this.comparator(value, previous) !== 0) {
 			// Once we have a result, we clear the pending value
@@ -229,12 +224,42 @@ export class Value extends Cell {
 		throw NotImplementedError();
 	}
 
-	patch(path) {
-		throw NotImplementedError();
+	patch(value, path = null, offset = 0, force = false) {
+		if (value instanceof Promise) {
+			this.revision += 1;
+			this._pending = value;
+			this.join(value, () => {
+				this.patch(_, path, offset, force);
+			});
+			return undefined;
+		} else {
+			this._pending = null;
+			this.revision = this.revision < 0 ? 0 : this.revision;
+			console.log(
+				"XXX PATCHING",
+				this.value,
+				path.slice(offset || 0),
+				value
+			);
+		}
 	}
 
 	delete(path) {
 		throw NotImplementedError();
+	}
+
+	// A utility method to join a value, but only if the revision is still the
+	// same by the time it is resolved.
+	join(value, callback) {
+		const r = this.revision;
+		const cell = this;
+		const updater = (_) => {
+			cell.revision === r &&
+				(_ instanceof Promise
+					? _.then(updater)
+					: callback.apply(cell, [_]));
+		};
+		return value.then(updater);
 	}
 }
 
@@ -475,7 +500,21 @@ export class Scope extends Cell {
 		} else if (path.length == 1) {
 			return this.set(path[0], value, force, update);
 		} else {
-			throw NotImplementedError();
+			const slot =
+				update || this.slots.hasOwnProperty(path[0])
+					? this.slots[path[0]]
+					: null;
+			if (!slot) {
+				// The slot doesn't exist yet, so we create a value nested at the subset
+				// of the path. For instance if path is `items.children.1` then this
+				// will create `{children:[undefined,<value>]}`.
+				return this.set(
+					path[0],
+					patch(undefined, path, value, undefined, 1)
+				);
+			} else {
+				return slot.patch(value, path, 1);
+			}
 		}
 	}
 
@@ -488,21 +527,18 @@ export class Scope extends Cell {
 	// FIXME: Is this even used? I think that in practice this may not be necessary
 	// anymore as the Selected cell does the job. This is called in effectors.Effect.constructor
 	sub(handler, path, offset = 0) {
-		console.log("XXX DEBUG: Scope.sub", { path });
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.sub(handler, path, offset + 1) : undefined;
 	}
 
 	unsub(sub, path, offset = 0) {
-		console.log("XXX DEBUG: Scope.unsub", { path });
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.unsub(sub, path, offset + 1) : undefined;
 	}
 
 	trigger(path, bubbles, offset = 0) {
-		console.log("XXX DEBUG: Scope.trigger", { path });
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
@@ -522,9 +558,6 @@ export class Scope extends Cell {
 	// where the selector has only one input and no transform, this returns
 	// the select cell.
 	select(selector) {
-		console.log("XXX SELECT", {
-			selector: selector ? selector.toString() : selector,
-		});
 		if (!selector) {
 			return null;
 		}
