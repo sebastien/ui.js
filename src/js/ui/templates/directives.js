@@ -56,12 +56,9 @@ const SELECTOR = seq(
 	opt(PROCESSOR)
 );
 
-// ---------------------------------------------------------------------------- HIGH LEVEL API
 // ----------------------------------------------------------------------------
-
-export const parseDirective = (text) => {
-	console.log(parse(text));
-};
+// HIGH LEVEL API
+// ----------------------------------------------------------------------------
 
 const RE_SELECTOR = new RegExp(SELECTOR);
 export const matchSelector = (text) =>
@@ -204,6 +201,7 @@ export const parseExpression = (text) => {
 		: null;
 };
 
+const SLOT = "\\w+(\\.\\w+)*";
 // NOTE: While this is nice to write, this produces horrendously big
 // expressions, which certainly create large objects, and therefore load
 const RE_ON = new RegExp(
@@ -211,26 +209,26 @@ const RE_ON = new RegExp(
 		seq(
 			// Slot is like, "asdsasd=" or "slot!=" to force an assignment
 			opt(
-				seq(
-					capture("[A-Za-z_0-9]+", "assign"),
-					opt(capture(text("!"), "force")),
-					text("=")
-				)
-			),
-			opt(
+				capture(SLOT, "assign"),
+				opt(capture(text("!"), "force")),
+				text("="),
 				// FIXME: Don't agree with that, it should be:
 				// expanded=expanded|not
 				// expanded=expanded->(!_)
 				// There's an optional input a,b,c->
+				list(or(SLOT, text("#")), ",", "inputs", 0, 7),
 				opt(
-					list(or("[a-zA-Z]+", text("#")), ",", "inputs", 0, 7),
-					"->"
-				),
-				// With an expression like `{....}`
-				seq(
-					text("{"),
-					capture(not(or(text("}!"), "}$"), ".+"), "handler"),
-					text("}")
+					or(
+						// With an expression like `{....}`
+						seq(
+							text("->"),
+							text("{"),
+							capture(not(or(text("}!"), "}$"), ".+"), "handler"),
+							text("}")
+						),
+						// A value processor list like `|len`
+						seq(text("|"), capture("\\w+(,\\w+)*", "processors"))
+					)
 				)
 			),
 			opt(
@@ -244,11 +242,7 @@ const RE_ON = new RegExp(
 				opt(
 					text("|"),
 					opt(
-						list(
-							or("[a-zA-Z]+", text("#"), 0, 5),
-							",",
-							"eventInputs"
-						),
+						list(or(SLOT, text("#"), 0, 5), ",", "eventInputs"),
 						"->"
 					),
 					text("{"),
@@ -258,7 +252,7 @@ const RE_ON = new RegExp(
 			),
 			"$"
 		),
-		seq(capture("[A-Za-z_0-9]+", "slot"))
+		seq(capture(SLOT, "slot"))
 	)
 );
 export const parseOnDirective = (value) => {
@@ -275,6 +269,7 @@ export const parseOnDirective = (value) => {
 		return null;
 	} else {
 		const res = makematch(match);
+		res.assign = res.assign ? res.assign.split(".") : res.assign;
 		return res;
 	}
 };
@@ -337,4 +332,38 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 	}
 	return bindings;
 };
+
+export const createHandlerBody = (inputs, handler) =>
+	`${Object.values(inputs)
+		.map((_) => {
+			// FIXME: Should make sure that the inputs don't repeat.
+			const p = _.split(".");
+			return _ === "key" || _ === "#"
+				? `const key=scope.key !== undefined ? scope.key : scope.path ? scope.path.at(-1) : null;`
+				: `const ${p.at(-1)}=scope.get([${p
+						.map((_) => `"${_}"`)
+						.join(",")}]);`;
+		})
+		.join("")}; return (${handler})`;
+
+export const createProcessorBody = (inputs, processors) => {
+	const l = map(values(inputs), (_) =>
+		_ === "#"
+			? "scope.key"
+			: `scope.get([${_.split(".")
+					.map((_) => `"${_}"`)
+					.join(",")}])`
+	);
+	return createProcessorExpression(
+		processors,
+		l.length === 0 ? "_" : l.length === 1 ? l[0] : `[${l.join(",")}]`
+	);
+};
+
+export const createProcessorExpression = (processors, input = "_") => {
+	const p = processors.map((_) => `${_}`);
+	p.reverse();
+	return p.reduce((r, v) => `${v}(${r})`, input);
+};
+
 // EOF
