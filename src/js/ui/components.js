@@ -1,4 +1,4 @@
-import { Templates } from "./templates.js";
+import { Templates, createTemplate } from "./templates.js";
 import { EffectScope } from "./effectors.js";
 import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
@@ -87,7 +87,9 @@ export const createComponent = (node, store, templates = Templates) => {
 
 	// --
 	// We validate that the template exists.
-	const template = templates.get(templateName);
+	const template = templateName
+		? templates.get(templateName)
+		: createTemplate(node);
 	if (!template) {
 		onError(
 			`ui.render: Could not find template '${templateName}', available templates are ${[
@@ -121,7 +123,7 @@ export const createComponent = (node, store, templates = Templates) => {
 		key,
 		anchor,
 		template,
-		Controllers.get(template.name),
+		template.name ? Controllers.get(template.name) : null,
 		store,
 		undefined,
 		slots,
