@@ -98,40 +98,47 @@
  * ## Border
  */
 
+.bd-1 {
+	--box-bd-w: 1px;
+}
+.bd-2 {
+	--box-bd-w: 2px;
+}
+
 .bd {
-	border: 1px solid var(--box-bd);
+	border: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-h > * {
-	border-right: 1px solid var(--box-bd);
+	border-right: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-h > *:last-child {
 	border-right: 0px solid var(--box-bd);
 }
 .bd-v {
-	border-top: 1px solid var(--box-bd);
-	border-bottom: 1px solid var(--box-bd);
+	border-top: var(--box-bd-w) solid var(--box-bd);
+	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-v > * {
-	border-bottom: 1px solid var(--box-bd);
+	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-v > *:last-child {
 	border-bottom: 0px solid var(--box-bd);
 }
 .bd-t {
-	border-top: 1px solid var(--box-bd);
+	border-top: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-b {
-	border-bottom: 1px solid var(--box-bd);
+	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-r {
-	border-right: 1px solid var(--box-bd);
+	border-right: var(--box-bd-w) solid var(--box-bd);
 }
 .bd-l {
-	border-left: 1px solid var(--box-bd);
+	border-left: var(--box-bd-w) solid var(--box-bd);
 }
 
 .lined > * {
-	border-bottom: 1px solid var(--box-bd);
+	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 
 .lined > *:last-child {

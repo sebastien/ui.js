@@ -188,6 +188,7 @@ variations).
    * ## Boxes
   */
 	--box-bd: #e0e0e0;
+	--box-bd-w: 1px;
 
 	/*
    * ## Icons

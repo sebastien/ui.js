@@ -22,7 +22,9 @@ label {
 		var(--page-bg-0p) 95%
 	);
 }
-.selectable.selected {
+
+.selectable.selected,
+.selectable[data-selected="true"] {
 	background-color: color-mix(
 		in srgb,
 		var(--color-current),
@@ -338,6 +340,7 @@ button,
 	transition-property: background-color, border-color, color;
 	transition-duration: 0.15s;
 	outline: 0px solid var(--button-ol);
+	color: var(--button-txt);
 	background-color: var(--button-bg);
 	border-color: var(--button-bd);
 	outline-color: var(--button-ol);
@@ -532,6 +535,7 @@ button.label,
 	border-color: transparent;
 	outline-color: transparent;
 	min-width: unset;
+	--button-txt: var(--button-bg);
 	--button-txt-hover: color-mix(
 		in srgb,
 		var(--button-txt),
