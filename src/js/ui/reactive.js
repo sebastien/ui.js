@@ -2,35 +2,9 @@ import { cmp } from "./utils/delta.js";
 import { RuntimeError, NotImplementedError } from "./utils/errors.js";
 import { Selector } from "./selector.js";
 import { SelectorType } from "./selector.js";
-import {
-	range,
-	map,
-	last,
-	reduce,
-	filter,
-	len,
-	access,
-	append,
-	removeAt,
-	patch,
-	copy,
-} from "./utils/collections.js";
-import { lerp } from "./utils/math.js";
-import { onError, setTrace } from "./utils/logging.js";
-
-// This is mapped to `$` in formatters
-export const API = {
-	range,
-	map,
-	reduce,
-	filter,
-	len,
-	lerp,
-	copy,
-	append,
-	removeAt,
-	setTrace,
-};
+import { map, last, access, patch } from "./utils/collections.js";
+import { onError } from "./utils/logging.js";
+import API from "./api.js";
 
 // Wraps a subscription
 export class Subscription {

@@ -1,8 +1,12 @@
 import { type, isObject } from "./values.js";
+import { idem } from "./func.js";
+
 // --
 // ## Structures
 //
 export const asMappable = (f) => (_) => _ instanceof Array ? _.map(f) : f(_);
+
+// NOTE: This comes largely from <https://observablehq.com/@sebastien/boilerplate>
 
 // FIXME: this should probably expand objects to their values
 export const list = (_) =>
@@ -33,6 +37,83 @@ export const reduce = (v, f, r) => {
 		return r;
 	}
 };
+
+export const grouped = (collection, extractor, processor = undefined) =>
+	reduce(
+		collection,
+		(r, v, k) => {
+			const g = extractor(v, k, collection);
+			(r[g] = r[g] || []).push(processor ? processor(v) : v);
+			return r;
+		},
+		{}
+	);
+
+export const cmp = (a, b) => {
+	//if (a === undefined) {
+	//    return b === undefined ? 0 : -cmp(b, a);
+	//}
+	const ta = typeof a;
+	const tb = typeof b;
+	if (ta === tb) {
+		switch (ta) {
+			case "string":
+				return a.localeCompare(b);
+			case "object":
+				if (a === b) {
+					return 0;
+				} else if (a instanceof Array) {
+					const la = a.length;
+					const lb = b.length;
+					if (la < lb) {
+						return -1;
+					} else if (la > b) {
+						return 1;
+					} else {
+						var i = 0;
+						while (i < la) {
+							const v = cmp(a[i], b[i]);
+							if (v !== 0) {
+								return v;
+							}
+							i += 1;
+						}
+						return 0;
+					}
+				} else {
+					return -1;
+				}
+			default:
+				return a === b ? 0 : a > b ? 1 : -1;
+		}
+	} else {
+		return a === b ? 0 : a > b ? 1 : -1;
+	}
+};
+
+export const sorted = (
+	collection,
+	key = undefined,
+	ordering = 1,
+	comparator = cmp
+) => {
+	const extractor =
+		typeof key === "function"
+			? key
+			: key
+			? (_) => (_ ? _[key] : undefined)
+			: idem;
+	const res =
+		collection instanceof Array ? [].concat(collection) : list(collection);
+	res.sort(
+		(a, b) =>
+			ordering *
+			(key ? comparator(extractor(a), extractor(b)) : comparator(a, b))
+	);
+
+	return res;
+};
+
 export const map = (v, f) => {
 	if (v === undefined) {
 		return v;

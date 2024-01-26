@@ -6,6 +6,7 @@ export const def = (...rest) => {
 	}
 };
 
+export const idem = (_) => _;
 export const memo = (guards, functor) => {
 	const scope = (guards instanceof Array ? guards : [guards]).reduce(
 		(r, v) => {

@@ -1,5 +1,6 @@
 import { bool as _bool, type } from "./utils/values.js";
-import { len } from "./utils/collections.js";
+import { idem } from "./utils/func.js";
+import { len, reduce } from "./utils/collections.js";
 
 // --
 // ## Formats
@@ -10,7 +11,6 @@ export const count = (_) => {
 };
 export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
-export const idem = (_) => _;
 export const empty = (_) =>
 	_
 		? (_ instanceof Array && _.length == 0) ||
@@ -18,7 +18,31 @@ export const empty = (_) =>
 			? true
 			: false
 		: true;
+
+export const date = (value) =>
+	value && typeof value === "number"
+		? new Date(value * 1000)
+		: value && value instanceof Date
+		? value
+		: new Date();
+
+export const datetime = (value) => {
+	const d = date(value);
+	return `${d.getFullYear()}-${(d.getMonth() + 1)
+		.toString()
+		.padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")} ${d
+		.getHours()
+		.toString()
+		.padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
+		.getSeconds()
+		.toString()
+		.padStart(2, "0")}`;
+};
+
 export const ago = (date) => {
+	if (date && typeof date === "number") {
+		date = new Date(date * 1000);
+	}
 	if (!(date && date instanceof Date)) {
 		return null;
 	}
@@ -92,6 +116,7 @@ export const timetuple = (_) =>
 		: null;
 
 const htmlParser = globalThis.DOMParser ? new DOMParser() : null;
+const json = (_) => (_ === undefined ? "" : JSON.stringify(_));
 
 export const html = htmlParser
 	? (value) => {
@@ -116,15 +141,21 @@ export const registerFormat = (name, format) => {
 	return format;
 };
 
+export const entries = (value) =>
+	reduce(value, (r, value, key) => (r.push({ key, value }), r), []);
+
 export const Formats = {
 	ago,
 	attr,
 	bool,
 	count,
 	debug,
+	datetime,
 	empty,
+	entries,
 	html,
 	idem,
+	json,
 	len,
 	not,
 	text,

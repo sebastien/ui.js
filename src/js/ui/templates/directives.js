@@ -9,6 +9,7 @@ import {
 	not,
 	list,
 } from "../utils/reparser.js";
+import API from "../api.js";
 import { Formats } from "../formats.js";
 import { map, values, reduce } from "../utils/collections.js";
 import { Selector, SelectorInput } from "../selector.js";
@@ -178,7 +179,7 @@ export const parseLiteral = (text) => {
 			(text.startsWith("{") && text.endsWith("}")))
 		? JSON.parse(text.slice(1, -1))
 		: text && text.startsWith("(") && text.endsWith(")")
-		? new Function(`{return ${text}}`)()
+		? new Function("$", `{return ${text}}`)(API)
 		: text &&
 		  ((text.startsWith("'") && text.endsWith("'")) ||
 				(text.startsWith('"') && text.endsWith('"')))

@@ -1,5 +1,5 @@
 import { Effect, Effector } from "../effectors.js";
-import { API } from "../reactive.js";
+import API from "../api.js";
 
 export class EventEffector extends Effector {
 	// -- doc

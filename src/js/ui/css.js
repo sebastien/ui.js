@@ -1,5 +1,5 @@
 import { numfmt } from "./utils/text.js";
-import { idem } from "./formats.js";
+import { idem } from "./utils/func.js";
 import { Color } from "./color.js";
 
 // --
