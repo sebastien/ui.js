@@ -46,67 +46,151 @@
 					</li>
 				</ul>
 			</slot>
-			<div class="stack fit scrollable">
-				<!--
-				<h2 class="large pad-2">Log</h2>
-				<ul class="lined" x:for="entry=(window.DATA.entries)">
-					<li class="pad-2">
-						<slot template="LogEntry" entry="entry" />
-					</li>
-				</ul>
-				-->
+			<div class="stack fit">
+				<div>
+					<slot
+						template
+						groups="($.sorted($.entries($.grouped(window.DATA.events, _ => _.name),'key')))"
+					>
+						<ul class="stack lined nogap bd-b" x:for="group=groups">
+							<li class="row">
+								<div class="w-3bl ellipsis bd-r pad-2 fitted">
+									<span
+										class="nowrap"
+										out:content="group.key"
+									></span>
+								</div>
+								<ul
+									class="row gap-2 pad-2"
+									x:for="event=group.value->{$.sorted(_,'timestamp',-1)}"
+								>
+									<li class="with-hover">
+										<div
+											class="small circle help"
+											out:class="event.type->{_==='error'?'bg-red-8':_==='retry'?'bg-orange-8':_==='success'?'bg-green-8':'bg-grey-9'}"
+											out:content="event.retry"
+										></div>
+										<div class="popup pos-abs show-hover">
+											<div
+												class="rounded panel dim bg-low color-high shadow-1 small pad-2"
+											>
+												<table>
+													<tr>
+														<th class="bold">
+															Type
+														</th>
+														<td>
+															<span
+																class="nowrap bold caps"
+																out:content="event.type"
+															></span>
+														</td>
+													</tr>
+
+													<tr>
+														<th class="bold">
+															Date
+														</th>
+														<td
+															class="nowrap"
+															out:content="event.timestamp|datetime"
+														></td>
+													</tr>
+													<tr>
+														<th class="bold">
+															Duration
+														</th>
+														<td
+															class="nowrap"
+															out:content="event.duration"
+														></td>
+													</tr>
+													<tr>
+														<th class="bold">
+															Retries
+														</th>
+														<td
+															out:content="event.retry"
+														></td>
+													</tr>
+												</table>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</slot>
+				</div>
+				<div class="hidden">
+					<!-- JOURNAL -->
+					<slot
+						template
+						entries="(window.DATA.journal)"
+						filters="('debug log output warning error'.split(' '))"
+					>
+						<div class="row pad-2 bd-b">
+							<input
+								class="rounded small fit transparent fit"
+								type="search"
+								placeholder="Search logs…"
+							/>
+							<ul
+								class="row gap-2 nowrap small"
+								x:for="filter=filters"
+							>
+								<li>
+									<span
+										class="pill caps selectable"
+										out:data-type="filter"
+										out:content="filter"
+									></span>
+								</li>
+							</ul>
+						</div>
+						<div class="fit scrollable">
+							<ul class="lined" x:for="entry=entries">
+								<li class="pad-2 stack selectable focus-undim">
+									<div class="row gap-4">
+										<span
+											class="w-8c center emboss pill smaller caps"
+											out:data-type="entry.level"
+											out:content="entry.level"
+										></span>
+										<span
+											class="fit"
+											out:content="entry.message"
+										></span>
+										<span
+											class="small dim nowrap"
+											out:content="entry.timestamp|ago"
+										></span>
+										<span
+											class="small dim nowrap"
+											out:content="entry.timestamp|datetime"
+										></span>
+									</div>
+									<ul
+										class="list-h gap-4 small dimmer"
+										x:for="item=entry.context|entries"
+									>
+										<li>
+											<span
+												class="pill bold"
+												out:content="item.key"
+											></span>
+											<code
+												out:content="item.value|json"
+											></code>
+										</li>
+									</ul>
+								</li>
+							</ul>
+						</div>
+					</slot>
+				</div>
 			</div>
 		</div>
-
-		<!-- ----------------------------------------------------------------------
-
-    SELECTOR
-
-    ----------------------------------------------------------------------- -->
-		<template name="Selector" in:items inout:selection="([{value:0}])">
-			<div xxxx:for="panel=selection">
-				<!-- This should be out:items="items,selection->..." -->
-				<div class="bd-r">
-					<slot template="List" items="items" />
-				</div>
-			</div>
-		</template>
-
-		<template name="List" in:items inout:selection>
-			<ul class="lined" xxx:for="item=items">
-				<li
-					class="pad-2 selectable row"
-					out:data-value="item.value"
-					xxxon:click="selection=item,#->({value:item,index:index})"
-				>
-					<span class="fit" out:content="item.label">…</span>
-					<span
-						out:content="item.children|len"
-						x:if="item.children|len"
-					></span>
-				</li>
-			</ul>
-		</template>
-
-		<!-- ----------------------------------------------------------------------
-
-    LOG ENTRY
-
-    ----------------------------------------------------------------------- -->
-		<template name="LogEntry" in:entry>
-			<div class="stack fill lined fit-h">
-				Entry
-				<!--
-				<slot out:content="entry.level.number" />
-				<slot out:content="entry.level.name" />
-				<slot out:content="entry.level.message" />
-				<ul x:for="item=entry.data|entries">
-					<li><slot out:content="item.name" /></slot out:content="item.value|json" /></li>
-				</ul>
-				</div>
-				-->
-			</div>
-		</template>
 
 		<!-- ----------------------------------------------------------------------
 

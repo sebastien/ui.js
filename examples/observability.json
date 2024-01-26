@@ -13,141 +13,139 @@
 		{ "label": "Status Page" }
 	],
 	"events": [
-		[
-			{
-				"type": "success",
-				"timestamp": 1704080000.123,
-				"name": "job.ingestion.instruments",
-				"retry": 0,
-				"duration": 45.67
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080020.456,
-				"name": "job.ingestion.customers",
-				"retry": 0,
-				"duration": 55.89
-			},
-			{
-				"type": "warning",
-				"timestamp": 1704080050.789,
-				"name": "job.transformation.data_cleaning",
-				"retry": 0,
-				"duration": 120.34
-			},
-			{
-				"type": "error",
-				"timestamp": 1704080101.234,
-				"name": "job.enrichment.user_profiles",
-				"retry": 0,
-				"duration": 30.12
-			},
-			{
-				"type": "retry",
-				"timestamp": 1704080121.567,
-				"name": "job.enrichment.user_profiles",
-				"retry": 1,
-				"duration": 40.56
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080142.901,
-				"name": "job.enrichment.user_profiles",
-				"retry": 1,
-				"duration": 25.78
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080183.234,
-				"name": "job.transformation.data_aggregation",
-				"retry": 0,
-				"duration": 75.9
-			},
-			{
-				"type": "failure",
-				"timestamp": 1704080214.567,
-				"name": "job.ingestion.logs",
-				"retry": 0,
-				"duration": 15.67
-			},
-			{
-				"type": "retry",
-				"timestamp": 1704080230.012,
-				"name": "job.ingestion.logs",
-				"retry": 1,
-				"duration": 25.34
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080255.345,
-				"name": "job.ingestion.logs",
-				"retry": 1,
-				"duration": 20.89
-			},
-			{
-				"type": "abort",
-				"timestamp": 1704080276.678,
-				"name": "job.quality_check.data_integrity",
-				"retry": 0,
-				"duration": 10.45
-			},
-			{
-				"type": "error",
-				"timestamp": 1704080297.89,
-				"name": "job.enrichment.user_preferences",
-				"retry": 0,
-				"duration": 35.78
-			},
-			{
-				"type": "retry",
-				"timestamp": 1704080333.123,
-				"name": "job.enrichment.user_preferences",
-				"retry": 1,
-				"duration": 50.12
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080383.456,
-				"name": "job.enrichment.user_preferences",
-				"retry": 1,
-				"duration": 45.67
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080434.789,
-				"name": "job.export.data_to_dashboard",
-				"retry": 0,
-				"duration": 60.34
-			},
-			{
-				"type": "warning",
-				"timestamp": 1704080495.012,
-				"name": "job.export.data_to_dashboard",
-				"retry": 0,
-				"duration": 80.56
-			},
-			{
-				"type": "retry",
-				"timestamp": 1704080575.567,
-				"name": "job.export.data_to_dashboard",
-				"retry": 1,
-				"duration": 70.78
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080646.901,
-				"name": "job.export.data_to_dashboard",
-				"retry": 1,
-				"duration": 55.9
-			},
-			{
-				"type": "success",
-				"timestamp": 1704080712.234,
-				"name": "job.cleanup.old_data",
-				"retry": 0,
-				"duration": 40.12
-			}
-		]
+		{
+			"type": "success",
+			"timestamp": 1704080000.123,
+			"name": "job.ingestion.instruments",
+			"retry": 0,
+			"duration": 45.67
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080020.456,
+			"name": "job.ingestion.customers",
+			"retry": 0,
+			"duration": 55.89
+		},
+		{
+			"type": "warning",
+			"timestamp": 1704080050.789,
+			"name": "job.transformation.data_cleaning",
+			"retry": 0,
+			"duration": 120.34
+		},
+		{
+			"type": "error",
+			"timestamp": 1704080101.234,
+			"name": "job.enrichment.user_profiles",
+			"retry": 0,
+			"duration": 30.12
+		},
+		{
+			"type": "retry",
+			"timestamp": 1704080121.567,
+			"name": "job.enrichment.user_profiles",
+			"retry": 1,
+			"duration": 40.56
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080142.901,
+			"name": "job.enrichment.user_profiles",
+			"retry": 1,
+			"duration": 25.78
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080183.234,
+			"name": "job.transformation.data_aggregation",
+			"retry": 0,
+			"duration": 75.9
+		},
+		{
+			"type": "failure",
+			"timestamp": 1704080214.567,
+			"name": "job.ingestion.logs",
+			"retry": 0,
+			"duration": 15.67
+		},
+		{
+			"type": "retry",
+			"timestamp": 1704080230.012,
+			"name": "job.ingestion.logs",
+			"retry": 1,
+			"duration": 25.34
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080255.345,
+			"name": "job.ingestion.logs",
+			"retry": 1,
+			"duration": 20.89
+		},
+		{
+			"type": "abort",
+			"timestamp": 1704080276.678,
+			"name": "job.quality_check.data_integrity",
+			"retry": 0,
+			"duration": 10.45
+		},
+		{
+			"type": "error",
+			"timestamp": 1704080297.89,
+			"name": "job.enrichment.user_preferences",
+			"retry": 0,
+			"duration": 35.78
+		},
+		{
+			"type": "retry",
+			"timestamp": 1704080333.123,
+			"name": "job.enrichment.user_preferences",
+			"retry": 1,
+			"duration": 50.12
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080383.456,
+			"name": "job.enrichment.user_preferences",
+			"retry": 1,
+			"duration": 45.67
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080434.789,
+			"name": "job.export.data_to_dashboard",
+			"retry": 0,
+			"duration": 60.34
+		},
+		{
+			"type": "warning",
+			"timestamp": 1704080495.012,
+			"name": "job.export.data_to_dashboard",
+			"retry": 0,
+			"duration": 80.56
+		},
+		{
+			"type": "retry",
+			"timestamp": 1704080575.567,
+			"name": "job.export.data_to_dashboard",
+			"retry": 1,
+			"duration": 70.78
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080646.901,
+			"name": "job.export.data_to_dashboard",
+			"retry": 1,
+			"duration": 55.9
+		},
+		{
+			"type": "success",
+			"timestamp": 1704080712.234,
+			"name": "job.cleanup.old_data",
+			"retry": 0,
+			"duration": 40.12
+		}
 	],
 	"journal": [
 		{

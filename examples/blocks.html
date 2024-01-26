@@ -110,7 +110,9 @@
 									></slot>
 								</button>
 								<!-- FIXME: Anything after the slot does not appear -->
-								<menu class="on-hover to-l to-t pos-abs shadow">
+								<menu
+									class="show-hover to-l to-t pos-abs shadow"
+								>
 									<li class="selected">
 										<span class="icon-small">
 											<slot
@@ -202,7 +204,7 @@
 				<button class="small circle transparent" on:click="!AddCell">
 					<slot template="Icon" name="plus-circle" />
 				</button>
-				<hr class="faint fill on-hover" />
+				<hr class="faint fill show-hover" />
 			</div>
 		</template>
 		<script type="module">
