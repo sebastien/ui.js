@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>UI.js ― Observability Dashboard</title>
+		<link
+			rel="stylesheet"
+			href="../lib/css/ui.css"
+			type="text/css"
+			media="all"
+		/>
+		<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+	</head>
+	<!-- TODO:
+	 1) H2 is styled, but should not be
+	 2) Tabs is not rendered
+	 3) There's just one entry
+	-->
+	<body>
+		<div class="stack fit-screen stretched lined nogap">
+			<div class="pad-2">
+				<h1 class="bold large">Observability Dashboard</h1>
+			</div>
+			<div class="stack fill bd-r">
+				<h2 class="large pad-2">Scope</h2>
+				<!--
+				<slot template="Selector" items="(window.DATA.topics)" />
+				-->
+			</div>
+			<hr class="hr" />
+			<slot
+				template
+				items="('Status Metrics Events Log'.split(' '))"
+				selected="0"
+			>
+				<ul class="row list-h nogap" x:for="item=items">
+					<li
+						class="selectable large pad-2 bold"
+						out:content="item"
+						out:data-selected="selected,#->{selected === key ? 'true' : null}"
+						on:click="selected=#"
+					>
+						…
+					</li>
+				</ul>
+			</slot>
+			<div class="stack fit scrollable">
+				<!--
+				<h2 class="large pad-2">Log</h2>
+				<ul class="lined" x:for="entry=(window.DATA.entries)">
+					<li class="pad-2">
+						<slot template="LogEntry" entry="entry" />
+					</li>
+				</ul>
+				-->
+			</div>
+		</div>
+
+		<!-- ----------------------------------------------------------------------
+
+    SELECTOR
+
+    ----------------------------------------------------------------------- -->
+		<template name="Selector" in:items inout:selection="([{value:0}])">
+			<div xxxx:for="panel=selection">
+				<!-- This should be out:items="items,selection->..." -->
+				<div class="bd-r">
+					<slot template="List" items="items" />
+				</div>
+			</div>
+		</template>
+
+		<template name="List" in:items inout:selection>
+			<ul class="lined" xxx:for="item=items">
+				<li
+					class="pad-2 selectable row"
+					out:data-value="item.value"
+					xxxon:click="selection=item,#->({value:item,index:index})"
+				>
+					<span class="fit" out:content="item.label">…</span>
+					<span
+						out:content="item.children|len"
+						x:if="item.children|len"
+					></span>
+				</li>
+			</ul>
+		</template>
+
+		<!-- ----------------------------------------------------------------------
+
+    LOG ENTRY
+
+    ----------------------------------------------------------------------- -->
+		<template name="LogEntry" in:entry>
+			<div class="stack fill lined fit-h">
+				Entry
+				<!--
+				<slot out:content="entry.level.number" />
+				<slot out:content="entry.level.name" />
+				<slot out:content="entry.level.message" />
+				<ul x:for="item=entry.data|entries">
+					<li><slot out:content="item.name" /></slot out:content="item.value|json" /></li>
+				</ul>
+				</div>
+				-->
+			</div>
+		</template>
+
+		<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+		<script type="module">
+			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+			import ui from "@ui.js";
+			window.DATA = await fetch(
+				window.location.pathname.replace(".html", ".json")
+			).then((_) => _.json());
+			ui();
+		</script>
+	</body>
+</html>

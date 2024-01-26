@@ -29,7 +29,9 @@
 			</div>
 		</div>
 		<!-- ------------------------------------------------------------------
-		TEMPLATES
+
+		TREE
+
 		------------------------------------------------------------------- -->
 		<template name="Tree" in:items>
 			<div class="stack fill lined fit-h indent-icon">
@@ -38,7 +40,11 @@
 				</ul>
 			</div>
 		</template>
+		<!-- ------------------------------------------------------------------
 
+		NODE
+
+		------------------------------------------------------------------- -->
 		<template name="Node" in:item inout:is-expanded="true">
 			<li x:match="children=item.children">
 				<slot x:when="{children?.length}">
@@ -54,10 +60,12 @@
 						<span class="label fill" out:content="item.label"
 							>…</span
 						>
+						<!-- If I do `out:content=children|len`, this will be 0, meaning
+				that match doesn't create a scope and assign a slot for the children. -->
 						<span
 							class="small"
 							x:if="isExpanded|not"
-							out:content="children|len"
+							out:content="item.children|len"
 							>…</span
 						>
 					</div>
@@ -75,6 +83,9 @@
 				</slot>
 			</li>
 		</template>
+		<!-- TODO: Should really be an attribute like
+		on:Toggle="isExpanded=isExpanded->{!isExpanded}"
+		-->
 		<script type="module">
 			import { controller } from "@ui.js";
 			const Node = ({ use, on, scope }) => {

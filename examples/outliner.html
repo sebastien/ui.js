@@ -89,7 +89,10 @@
 		<template name="Outline" inout:item>
 			<li>
 				<div class="row gap-4 with-hover">
-					<div class="movable button square transparent">☰</div>
+					<div
+						class="movable button square transparent"
+						out:content="item.children,item.expanded->{children && children.length ? expanded === false ? '⏵' : '🞃' : '▪'}"
+					></div>
 					<input
 						class="fill"
 						type="text"
@@ -97,7 +100,16 @@
 						out:value="item.label"
 					/>
 					<button
-						class="warning on-hover"
+						class="green on-hover"
+						title="Add an child item"
+						xxx-click="item.children=item->{children ? [...children, {label:`Child item #{children.length}`}] : [{label:`Child item #{children.length}`}]}"
+						on:click="items.children=items.children->{$.append(children||[], {label:`Untitled item #${$.len(children)+1}`})}"
+					>
+						+
+					</button>
+					<button
+						class="label warning on-hover"
+						title="Remove item and children"
 						on:click="!remove|key->{{key}}"
 					>
 						Remove
