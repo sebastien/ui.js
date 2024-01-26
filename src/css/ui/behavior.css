@@ -12,6 +12,14 @@
 	cursor: move;
 }
 
+.help {
+	cursor: help;
+}
+
+.cell {
+	cursor: cell;
+}
+
 .no-select {
 	user-select: none;
 }
@@ -43,7 +51,7 @@
 	position: relative;
 }
 .show-menu > .menu,
-.with-hover .on-hover {
+.with-hover .show-hover {
 	visibility: hidden;
 	pointer-events: none;
 	opacity: 0;
@@ -51,9 +59,10 @@
 	transition-delay: 0.1s;
 	transition-duration: 0.25s;
 }
-.with-hover:hover .on-hover,
+
+.with-hover:hover .show-hover,
 .show-menu:hover > .menu,
-.with-hover .on-hover:hover {
+.with-hover .show-hover:hover {
 	visibility: visible;
 	pointer-events: auto;
 	opacity: 1;

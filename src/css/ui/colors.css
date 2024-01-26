@@ -1749,4 +1749,10 @@
 .bg-high {
 	background-color: var(--color-high);
 }
+.color-low {
+	color: var(--color-low);
+}
+.color-high {
+	color: var(--color-high);
+}
 /* EOF */

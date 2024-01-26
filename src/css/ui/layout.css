@@ -33,9 +33,11 @@
 .noscroll-h {
 	overflow-x: hidden;
 }
+.scrollable,
 .scroll-v {
 	overflow-y: auto;
 }
+
 .noscroll-v {
 	overflow-y: hidden;
 }
@@ -377,6 +379,10 @@
 	justify-items: stretch;
 }
 
+.row > .fitted {
+	align-self: stretch;
+}
+
 .row.distribute {
 	justify-content: space-between;
 }
@@ -475,7 +481,19 @@
 }
 
 /* EOF */
-{
+ {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+}
+
+/* EOF */
+ {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+}
+
+/* EOF */
+
 	display: grid;
 	grid-template-columns: 1fr 2fr;
 }

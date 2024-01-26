@@ -2,6 +2,17 @@
 	visibility: hidden;
 }
 
+.nocolor {
+	color: transparent;
+}
+.nobg {
+	background-color: transparent;
+}
+.noshadow {
+	box-shadow: unset;
+	text-shadow: unset;
+}
+
 /**
  * ## Shapes
  */
@@ -119,6 +130,15 @@
 
 .bolder {
 	font-weight: 800;
+}
+
+.cut {
+	overflow: hidden;
+}
+
+.ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /**

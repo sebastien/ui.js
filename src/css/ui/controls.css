@@ -37,6 +37,19 @@ label {
 	opacity: 0.75;
 }
 
+.popup {
+	position: absolute;
+	z-index: var(--z-popup);
+}
+
+.cursor-help {
+	cursor: help;
+}
+
+.cursor-cell {
+	cursor: cell;
+}
+
 /* Selectable labels typically don't have padding and therefore
    * should rely on border and text color instead */
 .label.selectable {
@@ -725,11 +738,10 @@ menu {
 	user-select: none;
 	z-index: var(--z-menu);
 }
+
 .menu.popup,
 menu.popup {
 	box-shadow: var(--shadow-floating);
-	position: absolute;
-	z-index: var(--z-popup);
 	min-width: 200px;
 	max-height: 290px;
 	overflow-y: auto;
