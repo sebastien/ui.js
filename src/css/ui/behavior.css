@@ -72,7 +72,10 @@
 .focus-undim {
 	transition: opacity 0.25s;
 }
-.focus-undim:hover {
+.focus-undim:hover,
+.focus-undim:hover .dim,
+.focus-undim:hover .dimmer,
+.focus-undim:hover .dimmest {
 	opacity: 1;
 }
 

@@ -300,6 +300,7 @@ input.roundest,
 
 button,
 .button {
+	/* TODO: This may be --element-bg */
 	--button-bg-hover: var(--color-grey-9);
 	--button-bg: var(--color-grey-8);
 	--button-bg-active: var(--color-grey-5);

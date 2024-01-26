@@ -1,8 +1,9 @@
 @layer reset, base, ui, layout, theme, loading, debug;
 @import url("https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 
+@import url("./ui/fonts.css") layer(reset);
 @import url("./ui/reset.css") layer(reset);
 @import url("./ui/tokens.css") layer(base);
 @import url("./ui/base.css") layer(base);
