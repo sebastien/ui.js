@@ -2,8 +2,12 @@
 
 - Syntax: `{.sadasd}` for selectors, `([1,2,4])` for JavaScript,
   otherwise literals.
+
 - Components: should be `x:Icon` or `x-icon` instead of
   `slot name=Icon`.
+
+- Speed: initial rendering could be done in a worker and using domish,
+  before being injected.
 
 ## Fixes
 

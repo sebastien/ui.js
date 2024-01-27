@@ -32,5 +32,4 @@ export const API = {
 	removeAt,
 	setTrace,
 };
-globalThis.API = API;
 export default API;

@@ -92,4 +92,8 @@
 	visibility: hidden !important;
 }
 
+.skip {
+	display: none !important;
+}
+
 /* EOF */

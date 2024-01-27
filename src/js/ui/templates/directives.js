@@ -177,7 +177,7 @@ export const parseLiteral = (text) => {
 	return text &&
 		((text.startsWith("[") && text.endsWith("]")) ||
 			(text.startsWith("{") && text.endsWith("}")))
-		? JSON.parse(text.slice(1, -1))
+		? JSON.parse(text)
 		: text && text.startsWith("(") && text.endsWith(")")
 		? new Function("$", `{return ${text}}`)(API)
 		: text &&

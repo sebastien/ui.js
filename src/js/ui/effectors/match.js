@@ -10,6 +10,7 @@ export class MatchEffector extends Effector {
 		return new MatchEffect(this, node, scope).init();
 	}
 }
+
 class MatchEffect extends Effect {
 	constructor(effector, node, scope) {
 		super(effector, node, scope);
@@ -23,20 +24,21 @@ class MatchEffect extends Effect {
 		let index = undefined;
 		let branch = undefined;
 		for (let i = 0; i < branches.length; i++) {
-			branch = branches[i];
-			const { guard } = branch;
+			const b = branches[i];
+			const { guard } = b;
 			if (
 				guard === true ||
 				value === guard ||
 				(guard instanceof Function && guard(value))
 			) {
 				index = i;
+				branch = b;
 				break;
 			}
 		}
 		// FIXME: We should check that this works both for regular nodes
 		// and slots as well.
-		if (this.states[index] === undefined) {
+		if (index !== undefined && this.states[index] === undefined) {
 			// We apply the template effector at the match effect node, which
 			// should be a comment node.
 			// Options.debug &&
@@ -53,12 +55,14 @@ class MatchEffect extends Effect {
 			//     `MatchEffector: mounting matched branch ${index}/${this.currentBranchIndex}`,
 			//     { value }
 			//   );
-			this.mounted && this.states[index].mount();
+			index !== undefined && this.mounted && this.states[index].mount();
+
 			const previousState = this.states[this.currentBranchIndex];
 			// NOTE: We could cleanup the previous state if we wanted to
 			if (previousState) {
 				this.mounted && previousState.unmount();
-				// TODO: We may want to deinit?
+				// TODO: We may want to deinit? -- Probably not, especially
+				// if we're using tabs, or something like that.
 			}
 			this.currentBranchIndex = index;
 		}
