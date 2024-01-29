@@ -242,13 +242,21 @@ const RE_ON = new RegExp(
 				// And a event processor
 				opt(
 					text("|"),
+					list(or(SLOT, text("#")), ",", "eventInputs", 0, 7),
 					opt(
-						list(or(SLOT, text("#"), 0, 5), ",", "eventInputs"),
-						"->"
-					),
-					text("{"),
-					capture(not("}$", ".+"), "eventProcessor"),
-					text("}")
+						or(
+							// With an expression like `{....}`
+							seq(
+								text("->"),
+								text("{"),
+								capture(
+									not(or(text("}!"), "}$"), ".+"),
+									"eventProcessor"
+								),
+								text("}")
+							)
+						)
+					)
 				)
 			),
 			"$"
@@ -277,13 +285,8 @@ export const parseOnDirective = (value) => {
 
 export const parseForDirective = (text) => {
 	const res = parseSelector(text);
-	if (res) {
-		if (res.inputs.length !== 1) {
-			onError(
-				`For directive expects just one selection, got ${res.inputs.length}`
-			);
-		}
-	}
+	// NOTE: We use to throw an error when there's more than one input,  but
+	// that could still be a legit use case.
 	// It's a for directive, so it's always going to be many
 	res.isMany = true;
 	return res;

@@ -3,11 +3,32 @@
 		{
 			"label": "Website",
 			"children": [
-				{ "label": "Render Pipeline" },
-				{ "label": "Data Pipelines" },
+				{
+					"label": "Render Pipeline",
+					"children": [
+						{ "label": "SSR Lambda" },
+						{ "label": "ISR Service" },
+						{ "label": "CMS" }
+					]
+				},
+				{
+					"label": "Data Pipelines",
+					"children": [
+						{ "label": "Ingestion Jobs" },
+						{ "label": "Aggregation Jobs" },
+						{ "label": "Ingestion Service" }
+					]
+				},
 				{ "label": "API Service" },
 				{ "label": "Control Service" },
-				{ "label": "Synthetic Tests" }
+				{
+					"label": "Synthetic Tests",
+					"children": [
+						{ "label": "Service Availability" },
+						{ "label": "Website Conformance" },
+						{ "label": "Data Integrity" }
+					]
+				}
 			]
 		},
 		{ "label": "Status Page" }

@@ -20,15 +20,13 @@
 			</div>
 			<div class="stack bd-r">
 				<h2 class="large pad-2">Scope</h2>
-				<!--
 				<slot template="Selector" items="(window.DATA.topics)" />
-				-->
 			</div>
 			<hr class="hr" />
 			<slot
 				template
 				items="('Status Metrics Events Log'.split(' '))"
-				selected="0"
+				selected="Events"
 			>
 				<ul class="row list-h nogap" x:for="item=items">
 					<li
@@ -57,6 +55,38 @@
 				</div>
 			</slot>
 		</div>
+
+		<!-- ----------------------------------------------------------------------
+
+    SELECTOR
+
+    ----------------------------------------------------------------------- -->
+
+		<template name="Selector" in:items inout:selection="[]">
+			<ul
+				class="bd-t row stretched"
+				x:for="panel=selection->{(selection && selection.length ? selection : [null]).map((value,offset)=>({value,offset}))}"
+			>
+				<li class="stack w-3bl bd-r">
+					<ul
+						class="lined"
+						x:for="item=panel,items,selection,#->{$.reduce(selection.slice(0,panel.offset),(r,v,i)=>(v === null ? r : r[v].children), items)}"
+					>
+						<li
+							class="row pad-2 selectable nowrap ellipsis"
+							out:data-selected="selection,panel,#->{selection[panel.offset]===key?'true':null}"
+							on:click="selection=item,panel,selection,#->{item.children ? [...selection.slice(0, panel.offset), key, null] : [...selection.slice(0,panel.offset),key]}"
+						>
+							<span class="fit" out:content="item.label"></span>
+							<span
+								class="smaller dimmed"
+								out:content="item.children|count"
+							></span>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</template>
 
 		<!-- ----------------------------------------------------------------------
 

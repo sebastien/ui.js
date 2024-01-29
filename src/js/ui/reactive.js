@@ -171,7 +171,7 @@ export class Value extends Cell {
 		if (value instanceof Promise) {
 			// We increment the revision number, to denote that we're waiting
 			// on a result.
-			this.join(value, () => {
+			this.join(value, (_) => {
 				this.set(_);
 			});
 			return undefined;

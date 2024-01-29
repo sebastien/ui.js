@@ -7,7 +7,11 @@ import { len, reduce } from "./utils/collections.js";
 export const bool = _bool;
 export const text = (_) => `${_}`;
 export const count = (_) => {
-	return `${_.length}`;
+	if (!_ || !_.length) {
+		return "";
+	} else {
+		return `${_.length}`;
+	}
 };
 export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
