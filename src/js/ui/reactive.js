@@ -47,7 +47,9 @@ export class Subscribable {
 		// Map
 
 		if (offset === n) {
-			yield topic;
+			if (topic) {
+				yield topic;
+			}
 		} else {
 			for (let i = offset; i < n; i++) {
 				const chunk = path[i];
@@ -69,7 +71,7 @@ export class Subscribable {
 	}
 
 	topic(path = null, offset = 0, creates = false) {
-		return last(this.topic(path, offset, creates));
+		return last(this.topics(path, offset, creates));
 	}
 
 	sub(handler, path, offset = 0) {
@@ -108,27 +110,42 @@ export class Subscribable {
 	// Triggers a value change at the given `path[offset:]` (`null` by default).
 	// This will notify all the subscribers of a potential change.
 	trigger(value, path = null, offset = 0, bubbles = true) {
-		// TODO: Support, path/offset, bubbles and then early exit.
-		if (path !== null) {
-			onError("Non=null path not supported yet");
+		if (path === null) {
+			return this._notifyTopics(
+				value,
+				path === null ? this._topics : this.topic(path, offset)
+			);
+		} else {
+			let topic = undefined;
+			for (const t of this.topics(path, offset)) {
+				if (topic) {
+					// FIXME: We should extract the value, or maybe we say
+					// undefined==no change?
+					console.log("TODO: Notify topic with value");
+					this._notifyTopics(undefined, topic, 0, 0);
+				}
+				topic = t;
+			}
+			this._notifyTopics(value, topic, -1);
 		}
-		return this._notifyTopics(value, this._topics);
 	}
 
-	_notifyTopics(value, topic = this._topics, depth = 0) {
+	_notifyTopics(value, topic = this._topics, limit = 0, depth = 0) {
 		let count = 0;
 		if (topic) {
 			for (const [k, v] of topic.entries()) {
 				if (k === Subscription) {
 					for (const s of v) {
 						// TODO: Support early exit
+						// TODO: What about the path
 						s.trigger(value);
 						count += 1;
 					}
-				} else {
+				} else if (limit < 0 || depth < limit) {
 					count += this._notifyTopics(
 						value ? value[k] : undefined,
 						v,
+						limit,
 						depth + 1
 					);
 				}
@@ -180,7 +197,7 @@ export class Value extends Cell {
 			this.value = value;
 			this._pending = null;
 			this.revision += 1;
-			this.trigger(value);
+			this.trigger(value, path, offset);
 			return true;
 		} else {
 			// Event if the value was absorbed, we clear the pending value.
@@ -244,19 +261,22 @@ export class Selected extends Cell {
 		this.selector = selector;
 		this.comparator = comparator;
 		this.subscriptions = new Array(inputs.length);
-		this._value =
+		// NOTE: We should optimize and use this to do incremental
+		// updates.
+		this._inputsValue =
 			selector.type === SelectorType.List
 				? new Array(inputs.length)
 				: selector.type === SelectorType.Map
 				? {}
 				: undefined;
+		this._value = undefined;
 	}
 	get value() {
 		return this._value;
 	}
 	bind() {
 		const t = this.selector.type;
-		for (let i; i < this.inputs.length; i++) {
+		for (let i = 0; i < this.inputs.length; i++) {
 			const input = this.inputs[i];
 			if (input && input instanceof Cell) {
 				const k =
@@ -274,7 +294,7 @@ export class Selected extends Cell {
 		}
 	}
 	unbind() {
-		for (let i; i < this.inputs.length; i++) {
+		for (let i = 0; i < this.inputs.length; i++) {
 			const input = this.inputs[i];
 			if (input && input instanceof Cell) {
 				input.unsub(
@@ -286,20 +306,16 @@ export class Selected extends Cell {
 			}
 		}
 	}
+
+	// Called as part of  each input cell's subscription handler, `index`
+	// is the input number, `key` is either index (array) or the name (map),
+	// `value` is the value replaced.
 	onInputUpdated(index, key, value) {
-		const v = this.selector.inputs[index].formatted(value);
-		if (key === null) {
-			if (this.comparator(v, this._value) !== 0) {
-				// TODO: Should support promises
-				this._value = v;
-				this.trigger([], v);
-			}
-		} else {
-			if (this.comparator(v, this._value[key]) !== 0) {
-				// TODO: Should support promises
-				this._value[key] = v;
-				this.trigger([key], v);
-			}
+		// TODO: We should optimize this
+		const w = this.eval();
+		if (this.comparator(w, this._value) !== 0) {
+			this._value = w;
+			this.trigger(w);
 		}
 	}
 
@@ -310,24 +326,33 @@ export class Selected extends Cell {
 				access(input instanceof Cell ? input.value : input, sel.path, 1)
 			);
 		});
+		let res = undefined;
 		switch (this.selector.type) {
 			case SelectorType.Atom:
-				return extracted[0];
+				res = extracted[0];
+				break;
 			case SelectorType.List:
-				return extracted;
-			case SelectorType.Map: {
-				const res = {};
-				for (const i in extracted) {
-					res[this.selector.fields[i]] = extracted[i];
+				res = extracted;
+				break;
+			case SelectorType.Map:
+				{
+					res = {};
+					for (const i in extracted) {
+						res[this.selector.fields[i]] = extracted[i];
+					}
 				}
-				return res;
-			}
+				break;
 			default:
 				onError("Unsupported type", {
 					type: this.selector.type,
 					selector: this.selector.toString(),
 				});
 		}
+		return this.selector.format
+			? this.selector.type === SelectorType.List
+				? this.selector.format(...res, API)
+				: this.selector.format(res, API)
+			: res;
 	}
 }
 
@@ -522,7 +547,13 @@ export class Scope extends Cell {
 		return slot ? slot.unsub(sub, path, offset + 1) : undefined;
 	}
 
-	trigger(path, bubbles, offset = 0) {
+	// TODO: This is the same a subscribable
+	trigger(value, path = null, offset = 0, bubbles = true) {
+		console.log("NOT IMPLEMENTED -- see XXXTrigger");
+	}
+
+	// FIXME: This is not the same as Subscribable
+	XXXtrigger(path, bubbles, offset = 0) {
 		path = typeof path === "string" ? path.split(".") : path;
 		const slot = this.slots[path[offset]];
 		return slot ? slot.trigger(path, bubbles, offset + 1) : undefined;
