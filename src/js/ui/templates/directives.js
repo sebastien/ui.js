@@ -172,6 +172,14 @@ const matchLiteral = (text) => {
 	);
 };
 
+// A literal selector is an inline expression that can be
+// evaluated to a complete selector.
+export const matchLiteralSelector = (text) =>
+	text && text.startsWith("${") && text.endsWith("}");
+
+export const parseLiteralSelector = (text) =>
+	parseSelector(text.substring(2, text.length - 1));
+
 // A literal can be directly converted to JavaScript and does not use
 export const parseLiteral = (text) => {
 	return text &&
@@ -327,6 +335,9 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 		} else if (matchLiteral(v)) {
 			// This is a literal expression
 			bindings[name] = parseLiteral(v);
+		} else if (matchLiteralSelector(v)) {
+			// This is an inline selector
+			bindings[name] = parseLiteralSelector(v);
 		} else if (withSelectors && matchSelector(v)) {
 			bindings[name] = parseSelector(v);
 		} else {

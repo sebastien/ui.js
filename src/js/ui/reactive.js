@@ -367,12 +367,18 @@ export class Scope extends Cell {
 		}
 	}
 
+	// Defines/updates the slots in this scope based on the given `slots`.
+	// When `replace` is true, any existing slot will be overridden, when
+	// `skipDefined` is set only the slots that exist but have no value
+	// will be set.
 	define(slots, replace = true, skipDefined = false) {
 		if (slots) {
 			for (const k in slots) {
 				// We retrieve the slot, and if the slot is a selector, then
-				// we apply it and resolve the actuall cell that is attached to it.
+				// we apply it and resolve the actual cell that is attached to it.
 				const w = slots[k];
+				// If the given value is a selector, then we create a selection
+				// (ie a derived value).
 				const v = w instanceof Selector ? this.select(w) : w;
 				// We only define the own slots
 				const slot = this.slots.hasOwnProperty(k)
@@ -382,6 +388,10 @@ export class Scope extends Cell {
 				// defined.
 				if (replace || slot === undefined) {
 					this.slots[k] = v instanceof Cell ? v : new Value(v, k);
+					// If we had a previous scope cell, we need to unbind it.
+					if (w && w instanceof Cell) {
+						w.unbind();
+					}
 				} else if (skipDefined && slot.revision >= -1) {
 					// If we skip defined cells, then we won't override
 					// and already defined value.

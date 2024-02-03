@@ -235,6 +235,7 @@ class TemplateEffect extends Effect {
 		}
 		return res;
 	}
+
 	bind() {
 		if (this.effector.controller) {
 			if (!this.controller) {
@@ -253,9 +254,10 @@ class TemplateEffect extends Effect {
 		// TODO: Should we trigger a bind event?
 		return super.bind();
 	}
+
 	unbind() {
 		if (this.controller) {
-			// TODO: SHould we trigger unbind?
+			// TODO: Should we trigger unbind?
 			for (const [name, handlers] of this.controller.events.entries()) {
 				for (const h of handlers) {
 					this.scope.unbindEvent(name, h);

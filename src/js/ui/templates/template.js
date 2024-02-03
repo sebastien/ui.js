@@ -67,7 +67,7 @@ export const onTemplateNode = (
 	// If there is  `data-body` attribute, then we'll get a different node
 	// to source the children. This is important when using different namespaces,
 	// such as `svg` nodes, which need to be within an `svg` parent to
-	// implicitly get the SVG namespace (which can still be set explicitely
+	// implicitly get the SVG namespace (which can still be set explicitly
 	// through xmlns).
 	const bodyId = node?.dataset?.body;
 	let viewsParent = undefined;
@@ -84,6 +84,8 @@ export const onTemplateNode = (
 		viewsParent = root;
 	}
 
+	// Note that the bindings here may contain selectors as well, which
+	// will then be created as derived values in the effector scope.
 	const bindings = extractLiteralBindings(node, ["name"]);
 
 	// FIXME: We some times register anonymous templates that we don/t really
