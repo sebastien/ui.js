@@ -22,9 +22,12 @@ export const bool = (value) =>
 	value === undefined ||
 	value === false ||
 	value === "" ||
-	(value instanceof Array && value.length === 0)
+	(value instanceof Array && value.length === 0) ||
+	(isObject(value) && Object.getOwnPropertyNames().length === 0)
 		? false
-		: true;
+		: value
+		? true
+		: false;
 
 export const isObject = (value) =>
 	value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
