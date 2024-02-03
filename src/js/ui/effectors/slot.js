@@ -72,7 +72,7 @@ export class SlotEffector extends Effector {
 
 	apply(node, scope) {
 		// If we have bindings, we may need to derive a local scope, so that
-		// new slots can be crated without affecting the parent and that
+		// new slots can be created without affecting the parent and that
 		// parent slots are not overridden. The exception, however, being
 		// that the bindings are all defined in the parent scope.
 		let should_derive = this.selector?.target ? true : false;
@@ -81,7 +81,7 @@ export class SlotEffector extends Effector {
 				const v = this.bindings[k];
 				// If we find a defined binding that has no corresponding
 				// slot, then we need to derive a new scope.
-				if (v !== undefined || !this.scope.slots[k]) {
+				if (v !== undefined || !scope.slots[k]) {
 					should_derive = true;
 					break;
 				}
@@ -417,6 +417,7 @@ class MappingSlotEffect extends SlotEffect {
 			for (const item of this.items.values()) {
 				item?.dispose();
 			}
+			this.items.clear();
 		}
 		return super.dispose(...args);
 	}
