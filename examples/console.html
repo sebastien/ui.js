@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>UI.js ― Console</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<slot template="Console" logs="(window.DATA.logs)"></slot>
+	<template name="Console" in:logs out:count="${logs|count}">
+		<span out:content="count"></span>
+		<ul x:for="log=logs">
+			<li>
+				<code out:content="log.type"></code>
+				<span out:content="log.message"></message>
+					<ul x:for="item=log.context|entries">
+						<li>
+							<code out:content="item.key"></code>
+							<code out:content="item.value"></code>
+						</li>
+					</ul>
+			</li>
+		</ul>
+	</template>
+	<script type="module">
+		import ui from "@ui.js";
+		const logs = await fetch(
+			window.location.pathname.replace(".html", ".json")
+		).then((_) => _.json());
+		window.DATA = {logs}
+		ui();
+	</script>
+</body>
+
+</html>
