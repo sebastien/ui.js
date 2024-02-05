@@ -49,6 +49,32 @@ export const grouped = (collection, extractor, processor = undefined) =>
 		{}
 	);
 
+export const array = (count, creator = null) => {
+	const res = new Array(count);
+	while (count) {
+		count--;
+		res[count] = creator ? creator(count) : count;
+	}
+	return res;
+};
+
+export const reverse = (collection) => {
+	if (collection && collection instanceof Array) {
+		const n = collection.length;
+		return array(n, (i) => collection[n - i - 1]);
+	} else if (isObject(collection)) {
+		const l = Object.keys(collection);
+		const r = {};
+		for (let i = l.length - 1; i >= 0; i--) {
+			const k = l[i];
+			r[k] = collection[k];
+		}
+		return r;
+	} else {
+		return collection;
+	}
+};
+
 export const cmp = (a, b) => {
 	//if (a === undefined) {
 	//    return b === undefined ? 0 : -cmp(b, a);
@@ -211,7 +237,7 @@ export const values = (v) => {
 // FIXME: Should be iterator
 export const keys = (v) => {
 	if (v instanceof Array) {
-		return range(v.lenght);
+		return range(v.length);
 	} else if (isObject(v)) {
 		return Object.keys(v);
 	} else if (v instanceof Map) {
