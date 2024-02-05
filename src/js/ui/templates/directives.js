@@ -67,6 +67,16 @@ export const matchSelector = (text) =>
 
 const normInput = (value) => (value === "#" ? "key" : value);
 
+// A wrapper to create function and report errors in case it fails.
+const createFunction = (args, body) => {
+	try {
+		return new Function(...args, body);
+	} catch (error) {
+		onError("Could not create function", { args, body, error });
+		return null;
+	}
+};
+
 export const parseSelector = (text) => {
 	const parsed = parse(text, RE_SELECTOR, true);
 	if (!parsed || parsed.index !== 0) {
@@ -106,14 +116,15 @@ export const parseSelector = (text) => {
 							r.push(f);
 						}
 					} else if (code) {
-						const f = new Function(
-							"value",
-							"scope",
+						const f = createFunction(
+							["value", "scope"],
 							`const _=value;return (${code})`
 						);
-						// This is for when printing selectors
-						f.name = code;
-						r.push(f);
+						if (f) {
+							// This is for when printing selectors
+							f.name = code;
+							r.push(f);
+						}
 					}
 					return r;
 				},
@@ -138,15 +149,11 @@ export const parseSelector = (text) => {
 		inputs,
 		// Format
 		match.processor
-			? new Function(
-					...inputs
-						.map((v) => normInput(v.path.at(-1)))
-						.concat([
-							"$",
-							`const _=${normInput(
-								inputs[0].path.at(-1)
-							)};return (${match.processor})`,
-						])
+			? createFunction(
+					[...inputs.map((v) => normInput(v.path.at(-1))), "$"],
+					`const _=${normInput(inputs[0].path.at(-1))};return (${
+						match.processor
+					})`
 			  )
 			: null,
 		// Target
@@ -187,7 +194,7 @@ export const parseLiteral = (text) => {
 			(text.startsWith("{") && text.endsWith("}")))
 		? JSON.parse(text)
 		: text && text.startsWith("(") && text.endsWith(")")
-		? new Function("$", `{return ${text}}`)(API)
+		? createFunction(["$"], `{return ${text}}`)(API)
 		: text &&
 		  ((text.startsWith("'") && text.endsWith("'")) ||
 				(text.startsWith('"') && text.endsWith('"')))
