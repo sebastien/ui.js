@@ -3,6 +3,7 @@
 
 <head>
 	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>UI.js ― Console</title>
 	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
 	<script type="importmap">
@@ -11,35 +12,61 @@
 </head>
 
 <body>
-	<slot template="Console" logs="($.reverse(window.DATA.logs))"></slot>
+	<div class="fit-screen">
+		<slot template="Console" class="fit" logs="($.reverse(window.DATA.logs))"></slot>
+	</div>
 	<!-- ------------------------------------------------------------------------
 
 	 CONSOLE
 
 	 ------------------------------------------------------------------------ -->
 	<template name="Console" in:logs inout:filter out:count="${logs|count}"
-		out:filtered="${logs,filter->{console.log(filter),logs}}">
-		<input type="text" on:input="filter=filter->{console.log('filter',filter),event.target.value}" />
-		<div>
-			Filtering <span out:content="filter"></span>
-			<span class="parenthesized" out:content="filtered|count"></span>
-			<div>
-				<!--
-		<ul class="lined" x:for="log=logs"> <li class="item stack">
-				<div class="row fit gap-3">
-					<span class="pill" out:content="log.type"></span>
-					<span class="fit" out:content="log.message"></span>
-					<span class="nowrap small dim" out:content="log.timestamp|ago" out:title="log.timestamp|datetime"></span>
+		out:predicate="${filter->{$.query.predicate({message:$.query.text(filter)})}}"
+		out:filtered="${logs,predicate->{predicate ? $.filter(logs,predicate) : logs}}">
+		<div class="stack nogap">
+			<div class="input row fit-w">
+				<input class="fill transparent" placeholder="Search logs" type="text"
+					on:input="filter=filter->{event.target.value.trim()}" />
+			</div>
+
+			<div class="small">
+				<slot x:if="predicate">
+					<div class="pad-2 bg-yellow-9" x:if="filtered->{!(filtered && filtered.length)}">
+						No match for <span class="pill bg-yellow-7" out:content="filter"></span>
+					</div>
+					<div class="pad-2 bg-grey-9" x:if="filtered->{filtered && filtered.length}">
+						Filtering <span class="pill bg-high" out:content="filter"></span>
+						<span class="parenthesized">
+							<span out:content="filtered|count"></span>/<span out:content="logs|count"></span>
+						</span>
+					</div>
+				</slot>
+				<div class="pad-2 bg-grey-9" x:if="predicate|not">
+					Showing all items
+					<span class="parenthesized" out:content="logs|count"></span>
 				</div>
-				<ul class="list-h small fit" x:for="item=log.context|entries">
-					<li>
-						<span class="pill" out:content="item.key"></span>
-						<code out:content="item.value"></code>
+			</div>
+
+			<!-- Log details -->
+
+			<div class="fit scrollable bd-t">
+				<ul class="lined" x:for="log=filtered">
+					<li class="stack pad-2">
+						<div class="row fit gap-3">
+							<span class="pill" out:content="log.type"></span>
+							<span class="fit" out:content="log.message"></span>
+							<span class="nowrap small dim" out:content="log.timestamp|ago" out:title="log.timestamp|datetime"></span>
+						</div>
+						<ul class="list-h small fit" x:for="item=log.context|entries">
+							<li>
+								<span class="pill" out:content="item.key"></span>
+								<code out:content="item.value"></code>
+							</li>
+						</ul>
 					</li>
 				</ul>
-			</li>
-		</ul>
-		-->
+			</div>
+		</div>
 	</template>
 	<!-- ------------------------------------------------------------------------
 

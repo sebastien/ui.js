@@ -45,7 +45,7 @@ export class TemplateEffector extends Effector {
 			this.bindings,
 			(r, v, k) => {
 				const cell = scope.slots[k];
-				if (v !== undefined && (!cell || cell.revision === -1)) {
+				if (!cell || cell.revision === -1) {
 					r[k] = v;
 				}
 				return r;

@@ -598,8 +598,11 @@ export class Scope extends Cell {
 			selector.type === SelectorType.Atom &&
 			inputs.length === 1 &&
 			selector.inputs[0].path.length <= 1 &&
-			!selector.inputs[0].format?.length
+			!selector.inputs[0].format?.length &&
+			!selector.format
 		) {
+			// We only return the input as-is if it's a plain, no-transform
+			// selector.
 			return inputs[0];
 		} else {
 			const cell = new Selected(selector, inputs);
