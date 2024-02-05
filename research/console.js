@@ -137,7 +137,16 @@ function generateRandomArray(limit = 3, depth = 0) {
 
 // Example usage
 const res = [];
-for (let i = 0; i < 200; i++) {
-	res.push(generateLog());
+const count = 200;
+const now = new Date().getTime() / 1000;
+const timespan = 60 * 60 * 24 * 7 * 4;
+let start = now - timespan;
+const timedelta = timespan / count;
+for (let i = 0; i < count; i++) {
+	const entry = generateLog();
+	const t = start + timedelta * (0.75 + Math.random());
+	entry.timestamp = t;
+	res.push(entry);
+	start = t;
 }
 console.log(JSON.stringify(res));

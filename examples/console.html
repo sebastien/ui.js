@@ -11,26 +11,45 @@
 </head>
 
 <body>
-	<slot template="Console" logs="(window.DATA.logs)"></slot>
-	<template name="Console" in:logs out:count="${logs|count}">
-		<span out:content="count"></span>
-		<ul x:for="log=logs">
-			<li>
-				<code out:content="log.type"></code>
-				<span out:content="log.message"></message>
-					<ul x:for="item=log.context|entries">
-						<li>
-							<code out:content="item.key"></code>
-							<code out:content="item.value"></code>
-						</li>
-					</ul>
+	<slot template="Console" logs="($.reverse(window.DATA.logs))"></slot>
+	<!-- ------------------------------------------------------------------------
+
+	 CONSOLE
+
+	 ------------------------------------------------------------------------ -->
+	<template name="Console" in:logs inout:filter out:count="${logs|count}"
+		out:filtered="${logs,filter->{console.log(filter),logs}}">
+		<input type="text" on:input="filter=filter->{console.log('filter',filter),event.target.value}" />
+		<div>
+			Filtering <span out:content="filter"></span>
+			<span class="parenthesized" out:content="filtered|count"></span>
+			<div>
+				<!--
+		<ul class="lined" x:for="log=logs"> <li class="item stack">
+				<div class="row fit gap-3">
+					<span class="pill" out:content="log.type"></span>
+					<span class="fit" out:content="log.message"></span>
+					<span class="nowrap small dim" out:content="log.timestamp|ago" out:title="log.timestamp|datetime"></span>
+				</div>
+				<ul class="list-h small fit" x:for="item=log.context|entries">
+					<li>
+						<span class="pill" out:content="item.key"></span>
+						<code out:content="item.value"></code>
+					</li>
+				</ul>
 			</li>
 		</ul>
+		-->
 	</template>
+	<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
 	<script type="module">
 		import ui from "@ui.js";
 		const logs = await fetch(
-			window.location.pathname.replace(".html", ".json")
+			"https://sebastien-fakeconsole.web.val.run/"
 		).then((_) => _.json());
 		window.DATA = {logs}
 		ui();
