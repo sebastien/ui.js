@@ -164,7 +164,7 @@ export class Cell extends Subscribable {
 		//  TODO: Should have an internal mechanism to deal with Promises
 	}
 
-	get(path) {
+	get(path, offset) {
 		throw NotImplementedError();
 	}
 }
@@ -269,11 +269,21 @@ export class Selected extends Cell {
 				: selector.type === SelectorType.Map
 				? {}
 				: undefined;
-		this._value = undefined;
+		this.revision = -1;
 	}
+
 	get value() {
+		if (this.revision === -1) {
+			this._value = this.eval();
+			this.revision = 0;
+		}
 		return this._value;
 	}
+
+	get(path, offset = 0) {
+		return access(this.value, path, offset);
+	}
+
 	bind() {
 		const t = this.selector.type;
 		for (let i = 0; i < this.inputs.length; i++) {
@@ -293,6 +303,7 @@ export class Selected extends Cell {
 			}
 		}
 	}
+
 	unbind() {
 		for (let i = 0; i < this.inputs.length; i++) {
 			const input = this.inputs[i];
@@ -315,6 +326,7 @@ export class Selected extends Cell {
 		const w = this.eval();
 		if (this.comparator(w, this._value) !== 0) {
 			this._value = w;
+			this.revision += 1;
 			this.trigger(w);
 		}
 	}
