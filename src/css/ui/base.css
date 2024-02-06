@@ -18,18 +18,23 @@ body {
 .icon-smaller {
 	--icon-size: var(--icon-size-smaller);
 }
+
 .icon-small {
 	--icon-size: var(--icon-size-small);
 }
+
 .icon-regular {
 	--icon-size: var(--icon-size-regular);
 }
+
 .icon-large {
 	--icon-size: var(--icon-size-large);
 }
+
 .icon-larger {
 	--icon-size: var(--icon-size-larger);
 }
+
 .icon {
 	color: var(--icon-color);
 	font-family: var(--font-icon);
@@ -53,6 +58,7 @@ body {
 	stroke-width: 1px;
 	stroke: var(--icon-color);
 }
+
 .icon.text {
 	font-size: var(--font-text-size);
 	line-height: var(--font-line-height);
@@ -88,29 +94,37 @@ h6 {
 	line-height: var(--font-heading-lh);
 	font-weight: 600;
 }
+
 h1 {
 	font-size: var(--font-size-8);
 }
+
 h2 {
 	font-size: var(--font-size-7);
 }
+
 h3 {
 	font-size: var(--font-size-6);
 }
+
 h4 {
 	font-size: var(--font-size-5);
 }
+
 h5 {
 	font-size: var(--font-size-4);
 }
+
 h6 {
 	font-size: var(--font-size-3);
 }
+
 dt {
 	font-weight: bold;
 	margin-top: 1.25em;
 	max-width: var(--text-max-width);
 }
+
 dd {
 	max-width: var(--text-max-width);
 	margin-left: 0.5ch;
@@ -133,22 +147,17 @@ a[href],
 .link {
 	text-decoration: none;
 	color: var(--color-text);
-	border-bottom: 1px solid
-		color-mix(in srgb, var(--color-primary), var(--page-bg-0p) 60%);
-	background-color: color-mix(
-		in srgb,
-		var(--color-text),
-		var(--page-bg-0p) 100%
-	);
+	border-bottom: 1px solid color-mix(in srgb, var(--color-primary), var(--page-bg-0p) 60%);
+	background-color: color-mix(in srgb,
+			var(--color-text),
+			var(--page-bg-0p) 100%);
 }
 
 a[href]:hover,
 .link:hover {
-	background-color: color-mix(
-		in srgb,
-		var(--color-accent),
-		var(--page-bg-0p) 90%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-accent),
+			var(--page-bg-0p) 90%);
 }
 
 a[href].nolink,
@@ -165,12 +174,18 @@ a[href].nolink:hover {
 	background-color: #03dac675;
 	border: 1px solid #03dac675;
 }
+
 /* NOTE: We leave the padding units after the definition 
    * of the main layout classes so that we can overridde. 
 */
 .nowrap {
 	white-space: nowrap;
 }
+
+.noselect {
+	user-select: none;
+}
+
 /**
 	* ## Text
 	*/
@@ -178,9 +193,11 @@ a[href].nolink:hover {
 .tr {
 	text-align: right;
 }
+
 .tl {
 	text-align: left;
 }
+
 .tt {
 	align-self: flex-start;
 }

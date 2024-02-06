@@ -20,6 +20,10 @@
 	 CONSOLE
 
 	 ------------------------------------------------------------------------ -->
+	<!--
+		TODO: Filter down does not trigger a re-render when the elements have 
+		changed, if is fucked up
+	 -->
 	<template name="Console" in:logs inout:filter out:count="${logs|count}"
 		out:predicate="${filter->{$.query.predicate({message:$.query.text(filter)})}}"
 		out:filtered="${logs,predicate->{predicate ? $.filter(logs,predicate) : logs}}">
@@ -53,6 +57,7 @@
 				<ul class="lined" x:for="log=filtered">
 					<li class="stack pad-2">
 						<div class="row fit gap-3">
+							<span out:content="#"></span>
 							<span class="pill" out:content="log.type"></span>
 							<span class="fit" out:content="log.message"></span>
 							<span class="nowrap small dim" out:content="log.timestamp|ago" out:title="log.timestamp|datetime"></span>
