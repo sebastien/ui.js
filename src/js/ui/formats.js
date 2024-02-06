@@ -1,18 +1,16 @@
 import { bool as _bool, type } from "./utils/values.js";
 import { idem } from "./utils/func.js";
-import { len, reduce } from "./utils/collections.js";
+import { len, entries } from "./utils/collections.js";
 
 // --
 // ## Formats
 export const bool = _bool;
 export const text = (_) => `${_}`;
 export const count = (_) => {
-	if (!_ || !_.length) {
-		return "";
-	} else {
-		return `${_.length}`;
-	}
+	const n = len(_);
+	return n ? `${n}` : "";
 };
+
 export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
 export const empty = (_) =>
@@ -145,9 +143,6 @@ export const registerFormat = (name, format) => {
 	return format;
 };
 
-export const entries = (value) =>
-	reduce(value, (r, value, key) => (r.push({ key, value }), r), []);
-
 export const Formats = {
 	ago,
 	attr,
@@ -166,4 +161,5 @@ export const Formats = {
 	timetuple,
 	type,
 };
+export default Formats;
 // EOF

@@ -48,9 +48,11 @@ export const type = (_) => {
 				default:
 					return _ instanceof Array
 						? "array"
-						: Object.getPrototypeOf(_) === RawObjectPrototype
+						: _ instanceof Map
 						? "map"
-						: "object";
+						: Object.getPrototypeOf(_) === RawObjectPrototype
+						? "object"
+						: "value";
 			}
 	}
 };

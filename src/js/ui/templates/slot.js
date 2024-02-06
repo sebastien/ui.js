@@ -46,7 +46,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		return null;
 	} else {
 		// If there is no template, then the slot contains the template.
-		console.warn("TODO: Slot", node.outerHTML);
+		console.warn("TODO: Slot", node.outerHTML, node);
 	}
 	// We remove the slot node from the template object, as we don't
 	// want it to appear in the output. We replace it with a placeholder.

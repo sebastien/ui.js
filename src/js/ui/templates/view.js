@@ -106,7 +106,12 @@ export const createView = (processor, root, templateName = undefined) => {
 	// NOTE: We pre-expand the iterator into an array as onSlotNode
 	// is destructive. We want all the slots first and the we process them.
 	for (const node of [...iterNodes(root, "slot", "SLOT")]) {
-		if (node.hasAttribute("x:for") || node.hasAttribute("x:match")) {
+		if (
+			// Processors can set `x:processed` to skit the slot.
+			node.hasAttribute("x:processed") ||
+			node.hasAttribute("x:for") ||
+			node.hasAttribute("x:match")
+		) {
 			// We do nothing, we/ve already processed the node
 		} else {
 			const e = processor.Slot(processor, node, root, templateName);

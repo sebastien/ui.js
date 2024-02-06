@@ -1,4 +1,5 @@
 import { Effector, Effect } from "../effectors.js";
+import { cmp } from "../utils/collections.js";
 
 export class MatchEffector extends Effector {
 	constructor(nodePath, selector, branches) {
@@ -27,9 +28,11 @@ class MatchEffect extends Effect {
 			const b = branches[i];
 			const { guard } = b;
 			if (
-				guard === true ||
-				value === guard ||
-				(guard instanceof Function && guard(value))
+				guard instanceof Function
+					? guard(value)
+					: guard === true ||
+					  value === guard ||
+					  cmp(value, guard) == 0
 			) {
 				index = i;
 				branch = b;

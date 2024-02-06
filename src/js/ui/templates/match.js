@@ -56,5 +56,6 @@ export const onMatchAttribute = (processor, attr, root, templateName) => {
 	const key = makeKey("when");
 	const path = nodePath(node, root);
 	replaceNodeWithPlaceholder(node, `${key}|When`);
+	node.setAttribute("x:processed", "true");
 	return new MatchEffector(path, selector, branches);
 };

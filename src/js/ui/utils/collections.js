@@ -29,11 +29,13 @@ export const reduce = (v, f, r) => {
 			r = rr !== undefined ? rr : r;
 		}
 		return r;
-	} else if (isObject(v)) {
+	} else if (typeof v === "object") {
 		for (const k in v) {
 			const rr = f(r, v[k], k);
 			r = rr !== undefined ? rr : r;
 		}
+		return r;
+	} else {
 		return r;
 	}
 };
@@ -48,6 +50,26 @@ export const grouped = (collection, extractor, processor = undefined) =>
 		},
 		{}
 	);
+
+export const set = (collection, key, value) => {
+	if (collection && collection[key] === value) {
+		return collection;
+	}
+	if (typeof key === "number" && collection instanceof Array) {
+		const res =
+			collection instanceof Array ? [...collection] : { ...collection };
+		while (res.length < key) {
+			res.push(undefined);
+		}
+		res[key] = value;
+		return res;
+	} else {
+		// TODO: Wed should maybe do a copy
+		const res = collection === undefined ? {} : { ...collection };
+		res[key] = value;
+		return res;
+	}
+};
 
 export const array = (count, creator = null) => {
 	const res = new Array(count);
@@ -161,6 +183,9 @@ export const map = (v, f) => {
 		return f(v);
 	}
 };
+
+export const entries = (value) =>
+	reduce(value, (r, value, key) => (r.push({ key, value }), r), []);
 
 export const filter = (v, f) => {
 	if (v === undefined) {
@@ -341,9 +366,15 @@ export const len = (value) => {
 		case "array":
 			return value.length;
 		case "map":
-			return Object.keys(value).length;
+			return value.size;
 		case "object":
-			return value.length || 0;
+		case "value": {
+			let n = 0;
+			for (const _ in value) {
+				n++;
+			}
+			return n;
+		}
 		default:
 			return 0;
 	}

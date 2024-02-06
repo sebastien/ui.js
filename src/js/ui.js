@@ -19,7 +19,7 @@
 // embedded and used in different contexts.
 //
 // *UI.js* uses granular rendering directly based on data changes using
-// a centralised state tree. Components can then subscribe and subsribe
+// a centralised state tree. Components can then subscribe and subscribe
 // to data changes to be updated.
 
 import { createComponent } from "./ui/components.js";
@@ -27,6 +27,7 @@ import { controller } from "./ui/controllers.js";
 import { Loader, loadTemplates, createModule } from "./ui/loading.js";
 import { stylesheet } from "./ui/css.js";
 import { onWarning } from "./ui/utils/logging.js";
+import API from "./ui/api.js";
 import Options from "./ui/utils/options.js";
 import tokens from "./ui/tokens.js";
 
@@ -62,7 +63,7 @@ export const ui = (
 					case "javascript":
 					case "module":
 					case undefined:
-						// TOOD: Shouldn't we do something with the script her?
+						// TODO: Shouldn't we do something with the script her?
 						createModule(_.innerText);
 						break;
 					default:
@@ -85,7 +86,7 @@ export const ui = (
 				while (Loader.pending) {
 					await Loader.join();
 				}
-				// And here we detect components and we instanciate them
+				// And here we detect components and we instantiate them
 				for (const node of scope.querySelectorAll("slot[template]")) {
 					const c = createComponent(node, store);
 					c && components.push(c);
@@ -96,6 +97,7 @@ export const ui = (
 	);
 };
 ui.options = Options;
+ui.api = API;
 
 export { tokens, stylesheet, controller };
 export default ui;
