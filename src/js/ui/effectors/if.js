@@ -28,6 +28,7 @@ class IfEffect extends Effect {
 	unify(value, previous = this.value) {
 		const a = bool(value);
 		const b = bool(previous);
+
 		if (previous === undefined || a !== b) {
 			if (a) {
 				if (this.state === undefined) {
@@ -51,6 +52,7 @@ class IfEffect extends Effect {
 				this.visible = false;
 			}
 		}
+
 		return this;
 	}
 	mount() {

@@ -273,6 +273,11 @@ class TemplateEffect extends Effect {
 		// unify() process requires that. however, what's important here is to
 		// call mount on the effectors.
 		let previous = this.node;
+		if (!this.node || !this.node.parentNode) {
+			// This may happen if the parent is not mounted, in this case
+			// we unmount and will remount when the parent is mounted.
+			return this.unmount();
+		}
 		for (const view of this.views) {
 			const { root, states } = view;
 			if (root) {
@@ -298,7 +303,11 @@ class TemplateEffect extends Effect {
 		for (const view of this.views) {
 			const { root, states } = view;
 			for (const state of states) {
-				state?.unmount();
+				// NOTE: Unmount may have been triggered more than once due
+				// to unmount on mount when no parent.
+				if (state && state.mounted) {
+					state?.unmount();
+				}
 			}
 			root?.parentNode?.removeChild(view.root);
 		}
