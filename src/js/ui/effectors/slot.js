@@ -310,7 +310,9 @@ class MappingSlotEffect extends SlotEffect {
 						// This is not a problem, but it means we may be executing the
 						// update twice.
 						item.scope.update(target || "_", current[i]);
-						item.apply();
+						// NOTE: I don't think that apply is useful here as
+						// the selectors should update when a dependency changes
+						// item.apply();
 					} else {
 						// No change in item
 					}

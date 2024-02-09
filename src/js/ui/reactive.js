@@ -122,7 +122,7 @@ export class Subscribable {
 					// FIXME: We should extract the value, or maybe we say
 					// undefined==no change?
 					console.log("TODO: Notify topic with value");
-					this._notifyTopics(undefined, topic, 0, 0);
+					this._notifyTopics(undefined, topic);
 				}
 				topic = t;
 			}
@@ -130,7 +130,7 @@ export class Subscribable {
 		}
 	}
 
-	_notifyTopics(value, topic = this._topics, limit = 0, depth = 0) {
+	_notifyTopics(value, topic = this._topics, limit = -1, depth = 0) {
 		let count = 0;
 		if (topic) {
 			for (const [k, v] of topic.entries()) {
@@ -219,7 +219,7 @@ export class Value extends Cell {
 		if (value instanceof Promise) {
 			this.revision += 1;
 			this._pending = value;
-			this.join(value, () => {
+			this.join(value, (_) => {
 				this.patch(_, path, offset, force);
 			});
 			return undefined;
