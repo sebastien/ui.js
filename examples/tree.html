@@ -1,108 +1,85 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<!--
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/css/uijs.css" type="text/css" media="all">
-		-->
-		<title>UIjs ― Tree View</title>
-		<link
-			rel="stylesheet"
-			href="../lib/css/ui.css"
-			type="text/css"
-			media="all"
-		/>
-		<script type="importmap">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UIjs ― Tree View</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
 			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
 		</script>
-	</head>
-	<body>
-		<div class="row fit-screen stretched lined nogap">
-			<div
-				class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3 pad-4 scroll-v"
-			>
-				<slot
-					template="Tree"
-					items="(fetch('../lib/json/taxonomy.json').then(_=>_.json()))"
-					debug-items="([{label:'A',children:[{label:'B0',children:[{label:'C0'}]},{label:'B1'}]}])"
-				/>
-			</div>
+</head>
+
+<body>
+	<div class="row fit-screen stretched lined nogap">
+		<div class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3 pad-4 scroll-v">
+			<slot template="Tree" items="(fetch('../lib/json/taxonomy.json').then(_=>_.json()))"
+				debug-items="([{label:'A',children:[{label:'B0',children:[{label:'C0'}]},{label:'B1'}]}])" />
 		</div>
-		<!-- ------------------------------------------------------------------
+	</div>
+	<!-- ------------------------------------------------------------------
 
 		TREE
 
 		------------------------------------------------------------------- -->
-		<template name="Tree" in:items>
-			<div class="stack fill lined fit-h indent-icon">
-				<ul class="stack" x:for="item=items">
-					<slot template="Node" item="item"></slot>
-				</ul>
-			</div>
-		</template>
-		<!-- ------------------------------------------------------------------
+	<template name="Tree" in:items>
+		<div class="stack fill lined fit-h indent-icon">
+			<ul class="stack" x:for="item=items">
+				<slot template="Node" item="item"></slot>
+			</ul>
+		</div>
+	</template>
+	<!-- ------------------------------------------------------------------
 
 		NODE
 
 		------------------------------------------------------------------- -->
-		<template name="Node" in:item inout:is-expanded="true">
-			<li x:match="children=item.children">
-				<slot x:when="{children?.length}">
-					<div
-						class="row item middle selectable pad-2"
-						on:click="!Toggle."
-					>
-						<span
-							class="icon smaller centered"
-							out:content="isExpanded->{isExpanded ? '▼' : '▶'}"
-							>…</span
-						>
-						<span class="label fill" out:content="item.label"
-							>…</span
-						>
-						<!-- If I do `out:content=children|len`, this will be 0, meaning
+	<template name="Node" in:item inout:is-expanded="true">
+		<li x:match="children=item.children">
+			<slot x:when="{children?.length}">
+				<div class="row item middle selectable pad-2" on:click="!Toggle.">
+					<span class="icon smaller centered" out:content="isExpanded->{isExpanded ? '▼' : '▶'}">…</span>
+					<span class="label fill" out:content="item.label">…</span>
+					<!-- If I do `out:content=children|len`, this will be 0, meaning
 				that match doesn't create a scope and assign a slot for the children. -->
-						<span
-							class="small"
-							x:if="isExpanded|not"
-							out:content="item.children|len"
-							>…</span
-						>
-					</div>
-					<slot x:if="isExpanded">
-						<ul class="stack items" x:for="item.children">
-							<slot template="Node" item="."></slot>
-						</ul>
-					</slot>
+					<span class="small" x:if="isExpanded|not" out:content="item.children|len">…</span>
+				</div>
+				<slot x:if="isExpanded">
+					<ul class="stack items" x:for="item.children">
+						<slot template="Node" item="."></slot>
+					</ul>
 				</slot>
-				<slot x:otherwise>
-					<div class="row item selectable pad-2">
-						<span class="icon">○</span>
-						<span class="label" out:content="item.label">…</span>
-					</div>
-				</slot>
-			</li>
-		</template>
-		<!-- TODO: Should really be an attribute like
+			</slot>
+			<slot x:otherwise>
+				<div class="row item selectable pad-2">
+					<span class="icon">○</span>
+					<span class="label" out:content="item.label">…</span>
+				</div>
+			</slot>
+		</li>
+	</template>
+	<!-- TODO: Should really be an attribute like
 		on:Toggle="isExpanded=isExpanded->{!isExpanded}"
 		-->
-		<script type="module">
-			import { controller } from "@ui.js";
-			const Node = ({ use, on, scope }) => {
-				const isExpanded = use.local("isExpanded", true);
-				on.Toggle((event) => {
-					isExpanded.set(!isExpanded.value);
-				});
-			};
-			export default controller(Node);
-		</script>
-		<!-- ------------------------------------------------------------------
+	<script type="module">
+		import {controller} from "@ui.js";
+		const Node = ({use, on, scope}) => {
+			const isExpanded = use.local("isExpanded", true);
+			on.Toggle((event) => {
+				isExpanded.set(!isExpanded.value);
+			});
+		};
+		export default controller(Node);
+	</script>
+	<!-- ------------------------------------------------------------------
 		MAIN SCRIPT
 		------------------------------------------------------------------- -->
-		<script type="module">
-			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-			import ui from "@ui.js";
-			ui();
-		</script>
-	</body>
+	<script type="module">
+		// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
 </html>

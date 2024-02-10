@@ -1,4 +1,8 @@
-import { parseSelector, parseLiteral, parseExpression } from "./directives.js";
+import {
+	parseSelector,
+	parseLiteralValue,
+	parseExpression,
+} from "./directives.js";
 import { nodePath } from "../path.js";
 import { asFragment, replaceNodeWithPlaceholder } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
@@ -17,7 +21,7 @@ export const onMatchAttribute = (processor, attr, root, templateName) => {
 			continue;
 			// It's a case branch (compare by value)
 		} else if (child.hasAttribute("x:case")) {
-			guard = parseLiteral(child.getAttribute("x:case"));
+			guard = parseLiteralValue(child.getAttribute("x:case"));
 			child.removeAttribute("x:case");
 			// It's a when branch (predicate)
 		} else if (child.hasAttribute("x:when")) {

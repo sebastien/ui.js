@@ -29,12 +29,17 @@
 					on:input="filter=filter->{event.target.value.trim()}" />
 			</div>
 
-			<div class="small">
+			<div x:if="logs->{!logs || !logs.length}" class="small">
+				<div class="pad-2 italic">
+					No data available
+				</div>
+			</div>
+			<div x:if="logs|bool" class="small">
 				<slot x:if="predicate">
 					<div x:if="filtered->{!(filtered && filtered.length)}" class="pad-2 bg-yellow-9">
 						No match for <span class="pill bg-yellow-7" out:content="filter"></span>
 					</div>
-					<div x:if="filtered->{filtered && filtered.length}" class="pad-2 bg-grey-9">
+					<div x:if="filteredsd->{filtered && filtered.length}" class="pad-2 bg-grey-9">
 						Filtering <span class="pill bg-high" out:content="filter"></span>
 						<span class="parens">
 							<span out:content="filtered|count"></span>/<span out:content="logs|count"></span>

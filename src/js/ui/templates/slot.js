@@ -1,4 +1,4 @@
-import { parseSelector, extractBindings } from "./directives.js";
+import { parseSelector, extractBindings, parseLiteral } from "./directives.js";
 import { nodePath } from "../path.js";
 import { SlotEffector } from "../effectors/slot.js";
 import { replaceNodeWithPlaceholder } from "../utils/dom.js";
@@ -10,12 +10,15 @@ import { makeKey } from "../utils/ids.js";
 // with `.*` then the slot will be mapped for each selected item.
 export const onSlotNode = (processor, node, root, templateName) => {
 	// We retrieve the `template` and `selector` from the attributes.
-	const template = node.getAttribute("template");
+	const template = parseLiteral(node.getAttribute("template"));
+
+	// FIXME: I'm not even sure we're using that anymore
 	const selector = node.hasAttribute("selector")
 		? parseSelector(node.getAttribute("selector"))
 		: null;
 
 	const bindings = extractBindings(node, ["template", "selector"]);
+	console.log("XXXX EXPORT BINDINGS", bindings);
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.

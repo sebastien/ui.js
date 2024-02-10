@@ -1,4 +1,4 @@
-import { parseSelector, parseLiteral, parseExpression } from "./directives.js";
+import { parseSelector } from "./directives.js";
 import { nodePath } from "../path.js";
 import {
 	asFragment,
@@ -8,7 +8,7 @@ import {
 import { makeKey } from "../utils/ids.js";
 import { IfEffector } from "../effectors/if.js";
 
-export const onIfAttribute = (processor, attr, root, templateName) => {
+export const onIfAttribute = (processor, attr, root) => {
 	const selector = parseSelector(attr.value);
 	const node = attr.ownerElement;
 	const key = makeKey("if");

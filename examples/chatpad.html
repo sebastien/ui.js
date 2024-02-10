@@ -1,123 +1,108 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<title>UI.js ― Chatpad</title>
-		<link
-			rel="stylesheet"
-			href="../lib/css/ui.css"
-			type="text/css"
-			media="all"
-		/>
-		<script type="importmap">
+
+<head>
+	<meta charset="utf-8" />
+	<title>UI.js ― Chatpad</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
 			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
 		</script>
-	</head>
-	<body>
-		<!-- ----------------------------------------------------------------------
+</head>
+
+<body>
+	<!-- ----------------------------------------------------------------------
 
     MAIN UI
 
     ----------------------------------------------------------------------- -->
-		<div class="row fit-screen stretched fitted">
-			<div class="w-2col stack bd-r">
-				<h1 class="centered block larger pad-2">Chatpad</h1>
-				<ul class="row pad-2 gap-2 pb-0">
-					<li
-						class="fit selectable rounded block centered pad-2 selected"
-					>
-						Chats
-					</li>
-					<li class="fit selectable rounded block centered pad-2">
-						Prompts
-					</li>
-				</ul>
-				<div class="row pad-2">
-					<button class="fit-w default green">
-						<span class="small">💬</span>
-						New Chat
-					</button>
-				</div>
-				<div class="gap-4 fit-w row bd-t bd-b pad-3">
-					<span class="small">🔍</span>
-					<input
-						class="transparent"
-						type="search"
-						placeholder="Search"
-					/>
-				</div>
-				<ul class="fit lined">
-					<li class="item pad-2 gap-4 selectable">
-						<span class="pl-2 pr-2 icon square centered">💬</span>
-						<span class="label fit">New Chat</span>
-						<span class="button label square">⋮</span>
-					</li>
-				</ul>
-				<div class="row bd-t pad-2 gap-2">
-					<button class="square icon transparent">☀️</button>
-					<button class="square icon transparent">⚙️</button>
-				</div>
+	<div class="row fit-screen stretched fitted">
+		<div class="w-2col stack bd-r">
+			<h1 class="centered block larger pad-2">Chatpad</h1>
+			<ul class="row pad-2 gap-2 pb-0">
+				<li class="fit selectable rounded block centered pad-2 selected">
+					Chats
+				</li>
+				<li class="fit selectable rounded block centered pad-2">
+					Prompts
+				</li>
+			</ul>
+			<div class="row pad-2">
+				<button class="fit-w default green">
+					<span class="small">💬</span>
+					New Chat
+				</button>
 			</div>
-			<div class="fit stack centered bg-grey-9 pad-4 gap-4">
-				<div class="fit fit-w" style="max-width: 90ch">
-					<div class="bg-high bd rounded row pad-2 shadow">
-						<div><div class="square large">🧑</div></div>
-						<div class="fit stack">
-							<div class="with-typography">Message</div>
-							<div class="small">14 words</div>
-						</div>
-					</div>
-				</div>
-				<div class="fit-w rounded row pad-2" style="max-width: 90ch">
-					<textarea
-						class="transarent fit-w pad-4"
-						placeholder="Your message here…"
-					></textarea>
-					<button class="button icon square large transparent">
-						<span class="larger"> ➡️ </span>
-					</button>
-				</div>
+			<div class="gap-4 fit-w row bd-t bd-b pad-3">
+				<span class="small">🔍</span>
+				<input class="transparent" type="search" placeholder="Search" />
+			</div>
+			<ul class="fit lined">
+				<li class="item pad-2 gap-4 selectable">
+					<span class="pl-2 pr-2 icon square centered">💬</span>
+					<span class="label fit">New Chat</span>
+					<span class="button label square">⋮</span>
+				</li>
+			</ul>
+			<div class="row bd-t pad-2 gap-2">
+				<button class="square icon transparent">☀️</button>
+				<button class="square icon transparent">⚙️</button>
 			</div>
 		</div>
-		<!-- ----------------------------------------------------------------------
+		<div class="fit stack centered bg-grey-9 pad-4 gap-4">
+			<div class="fit fit-w" style="max-width: 90ch">
+				<div class="bg-high bd rounded row pad-2 shadow">
+					<div>
+						<div class="square large">🧑</div>
+					</div>
+					<div class="fit stack">
+						<div class="t">Message</div>
+						<div class="small">14 words</div>
+					</div>
+				</div>
+			</div>
+			<div class="fit-w rounded row pad-2" style="max-width: 90ch">
+				<textarea class="transarent fit-w pad-4" placeholder="Your message here…"></textarea>
+				<button class="button icon square large transparent">
+					<span class="larger"> ➡️ </span>
+				</button>
+			</div>
+		</div>
+	</div>
+	<!-- ----------------------------------------------------------------------
 
     OUTLINER
 
     ----------------------------------------------------------------------- -->
-		<template name="Outliner" inout:items>
-			<div class="stack fill lined fit-h">
-				<div class="pad-4">
-					<h3>Outliner</h3>
-				</div>
-				<div class="fill scroll-v">
-					<ul
-						class="stack pad-4"
-						x:for="it=items"
-						on:remove="items=items->{$.removeAt(items, event.key)}"
-					>
-						<slot template="Outline" item="it" />
-					</ul>
-				</div>
-				<div class="pad-4">
-					<button
-						on:click="items=items->{$.append(items, {label:`Untitled item #${items.length+1}`})}"
-					>
-						New
-					</button>
-				</div>
+	<template name="Outliner" inout:items>
+		<div class="stack fill lined fit-h">
+			<div class="pad-4">
+				<h3>Outliner</h3>
 			</div>
-		</template>
+			<div class="fill scroll-v">
+				<ul class="stack pad-4" x:for="it=items" on:remove="items=items->{$.removeAt(items, event.key)}">
+					<slot template="Outline" item="it" />
+				</ul>
+			</div>
+			<div class="pad-4">
+				<button on:click="items=items->{$.append(items, {label:`Untitled item #${items.length+1}`})}">
+					New
+				</button>
+			</div>
+		</div>
+	</template>
 
-		<!-- ----------------------------------------------------------------------
+	<!-- ----------------------------------------------------------------------
 
     MAIN SCRIPT
 
     ----------------------------------------------------------------------- -->
 
-		<script type="module">
-			// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-			import ui from "@ui.js";
-			ui();
-		</script>
-	</body>
+	<script type="module">
+		// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
 </html>

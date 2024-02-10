@@ -6,8 +6,9 @@ SOURCES_XML=$(call get-sources,src/xml,xml)
 SOURCES_XSL=$(call get-sources,src/xml,xsl)
 SOURCES_HTML=$(call get-sources,src/html,html)
 EXAMPLES_ALL=$(call get-sources,examples,*)
+COMPONENTS_ALL=$(call get-sources,components,*)
 SOURCES_ALL=$(foreach T,JS CSS XML XSL JSON HTML,$(SOURCES_$T))
-RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%) $(EXAMPLES_ALL:%=run/%)
+RUN_ALL=$(SOURCES_ALL:src/%=run/lib/%) $(EXAMPLES_ALL:%=run/%) $(COMPONENTS_ALL:%=run/%)
 DIST_ALL=\
 	$(patsubst src/js/%,dist/js/%,$(filter %.js,$(SOURCES_JS)))\
 	$(patsubst src/css/%,dist/css/%,$(filter %.css,$(SOURCES_CSS)))\

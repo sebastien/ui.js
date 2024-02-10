@@ -79,6 +79,7 @@ export class SlotEffector extends Effector {
 		if (this.bindings) {
 			for (const k in this.bindings) {
 				const v = this.bindings[k];
+				console.log("XXX IMPORT BINDINGS", k, v);
 				// If we find a defined binding that has no corresponding
 				// slot, then we need to derive a new scope.
 				if (v !== undefined || !scope.slots[k]) {
@@ -90,7 +91,6 @@ export class SlotEffector extends Effector {
 		const effect_scope = should_derive
 			? scope.derive(this.bindings)
 			: scope;
-		console.log("XXX BINDINGS", this.bindings, effect_scope);
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
 			: SingleSlotEffect)(this, node, effect_scope, this.template).init();
@@ -121,12 +121,13 @@ class DynamicTemplateEffect extends Effect {
 	}
 
 	resolveTemplate(template) {
-		const res =
-			typeof template === "string"
+		const res = template
+			? typeof template === "string"
 				? Templates.get(template)
 				: template instanceof Effector
 				? template
-				: null;
+				: null
+			: null;
 		res ||
 			onError(
 				`DynamicTemplateEffect: unable to resolve template '${template}'`,
@@ -136,7 +137,7 @@ class DynamicTemplateEffect extends Effect {
 	}
 
 	apply() {
-		return this.unify(this.resolveTemplate(this.selection.value));
+		return this.unify(this.resolveTemplate(this.scope.eval(this.selector)));
 	}
 
 	unify(current, previous = this.value) {
@@ -147,8 +148,15 @@ class DynamicTemplateEffect extends Effect {
 			this.value = current;
 			// The template has changed
 			this.effect.dispose();
-			this.effect.template = current;
-			this.effect.apply();
+			// We only apply the effect if we have a template
+			if (current) {
+				this.effect.template = current;
+				this.effect.bind();
+				this.effect.apply();
+				if (this.mounted) {
+					this.effect.mount();
+				}
+			}
 		}
 	}
 }
@@ -197,12 +205,16 @@ class SingleSlotEffect extends SlotEffect {
 			// }
 
 			// NOTE: No need to call .init(), it's done by apply.
-			this.effect = this.template?.apply(
-				node, // node
-				this.scope
-			);
-			this.mounted && this.effect.mount();
-			return this.effect;
+			if (!this.template) {
+				return null;
+			} else {
+				this.effect = this.template.apply(
+					node, // node
+					this.scope
+				);
+				this.mounted && this.effect.mount();
+				return this.effect;
+			}
 		} else if (current !== previous) {
 			this.effect.unify(current, previous);
 		}
