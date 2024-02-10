@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>UI.js ― Selector</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div>
+		<section>
+			<h1 class="t">Selector component</h1>
+			<h2 class="t">Stack</h2>
+			<slot template="Preview" component="'Selector'" class="stack lined"
+				items="([{label:'One'},{label:'Two'},{label:'Three'}])"></slot>
+			<h3 class="t">Row</h3>
+			<slot template="Preview" component="'Selector'" class="row" itemclass="bd-b bd-3"
+				items="([{label:'One'},{label:'Two'},{label:'Three'}])"></slot>
+		</section>
+
+	</div>
+
+	<!-- ----------------------------------------------------------------------
+
+    PREVIEW
+
+    ----------------------------------------------------------------------- -->
+
+	<template name="Preview" in:component in:args="...">
+		<slot template="${component}" ...="args"></slot>
+	</template>
+
+
+	<!-- ----------------------------------------------------------------------
+
+    SELECTOR
+
+    ----------------------------------------------------------------------- -->
+
+	<template name="Selector" in:type="stack" in:items in:itemclass inout:selection="[]">
+		<ul x:for="item=items">
+			<li class="pad-2 selectable nowrap ellipsis" out:class="itemclass"
+				out:data-selected="selection,item,#->{selection.indexOf(item)!==-1}"
+				on:click="selection=selection,item,#->{[item]}">
+				<span class="fit" out:content="item.label"></span>
+				<span class="smaller dimmed" out:content="item.children|count"></span>
+			</li>
+		</ul>
+	</template>
+
+
+
+	<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+	<script type="module">
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
+</html>
