@@ -20,10 +20,6 @@
 	 CONSOLE
 
 	 ------------------------------------------------------------------------ -->
-	<!--
-		TODO: Filter down does not trigger a re-render when the elements have 
-		changed, if is fucked up
-	 -->
 	<template name="Console" in:logs inout:filter out:count="${logs|count}"
 		out:predicate="${filter->{$.query.predicate({message:$.query.text(filter)})}}"
 		out:filtered="${logs,predicate->{predicate ? $.filter(logs,predicate) : logs}}">
@@ -40,14 +36,14 @@
 					</div>
 					<div x:if="filtered->{filtered && filtered.length}" class="pad-2 bg-grey-9">
 						Filtering <span class="pill bg-high" out:content="filter"></span>
-						<span class="parenthesized">
+						<span class="parens">
 							<span out:content="filtered|count"></span>/<span out:content="logs|count"></span>
 						</span>
 					</div>
 				</slot>
 				<div x:if="predicate|not" class="pad-2 bg-grey-9">
 					Showing all items
-					<span class="parenthesized" out:content="logs|count"></span>
+					<span class="parens" out:content="logs|count"></span>
 				</div>
 			</div>
 

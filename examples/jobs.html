@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Jobs</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div class="stack fit-screen stretched lined nogap">
+		<div class="pad-2">
+			<h1 class="bold large">Jobs</h1>
+		</div>
+		<slot template="Jobs" class="fit" schedule="(window.DATA.schedule)" runs="(window.DATA.run)"></slot>
+	</div>
+	<!-- ------------------------------------------------------------------------
+
+	 JOBS
+
+	 ------------------------------------------------------------------------ -->
+	<template name="Jobs" in:schedule in:runs inout:selected-jobs inout:selected-runs>
+		<div class="row stretched">
+			<div class="w-2b bd-r">
+				<h2 class="bold large pad-2">Schedule</h2>
+				<slot template="JobSchedule" jobs="schedule" selection="selectedJobs"></slot>
+			</div>
+			<div class="w-3b">
+				<h2 class="bold large pad-2">Runs</h2>
+				<slot template="JobRuns" runs="runs" selection="selectedRuns"></slot>
+			</div>
+			<div class="w-3b">
+				<slot template="JobRun" run="(window.DATA.run[0])"></slot>
+			</div>
+			<div class="w-6b">
+				<slot template="LogEntries" items="(window.DATA.run[0].errors)"></slot>
+			</div>
+		</div>
+	</template>
+
+	<!-- ------------------------------------------------------------------------
+
+	 JOBS
+
+	 ------------------------------------------------------------------------ -->
+
+	<template name="JobSchedule" in:jobs inout:selection="[]">
+		<div class="stack">
+			<div class="fit scrollable">
+				<ul x:for="job=jobs" class="pad-1">
+					<li class="pad-1"><span out:content="job.name" /></li>
+				</ul>
+			</div>
+		</div>
+	</template>
+
+	<!-- ------------------------------------------------------------------------
+
+	 RUNS
+
+	 ------------------------------------------------------------------------ -->
+
+	<template name="JobRuns" in:runs
+		out:groups="${runs->{$.map($.entries($.grouped(runs,_ => _.name)),_=>{_.values=$.sorted(_.values,_=>_.started);return _})}}"
+		inout:selection="[]">
+		<div class="stack">
+			<div class="fit scrollable">
+				<ul x:for="item=groups">
+					<li class="pad-2">
+						<div class="row bd-b">
+							<span class="fill bold" out:content="item.key"></span>
+							<span class="dim small parens" out:content="item.value|count"></span>
+						</div>
+						<ul class="row wrap" x:for="run=item.value">
+							<li>
+								<div class="selectable centered inline square smaller bd-1 bd bd-high"
+									out:class="run->{_.status==='failed'?'bg-red-8':_.warning?.length+_.error?.length?'bg-orange-8':_==='succeeded'?'bg-green-8':'bg-grey-9'}"
+									out:content="run.retries"></div>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</template>
+
+	<!-- ------------------------------------------------------------------------
+
+	 RUN
+
+	 ------------------------------------------------------------------------ -->
+
+	<template name="JobRun" in:run inout:selection="[]">
+		<div class="stack">
+			<div class="row">
+				<h3 class="fill" out:content="run.name"></h3>
+				<span class="pill small upper" out:content="run.status"></span>
+			</div>
+			<span out:content="run.scheduled|datetime"></span>
+			<div class="small">
+				<span out:content="run.started|time"></span>
+				<span class="parens" out:content="run.started|ago"></span>
+				→<span out:content="run.ended|time"></span>
+				<span class="brackets" out:content="run.duration|duration"></span>
+				+ <span out:content="run.retries"></span>
+			</div>
+			<h4>Errors</h4>
+			<table>
+				<thead>
+					<tr>
+						<th class="dim bd-b">Error</th>
+						<th class="dim bd-b tr">Count</th>
+					</tr>
+				</thead>
+				<tbody x:for="items=run.errors->{$.grouped(errors, _ => _.message)}">
+					<tr>
+						<td out:content="#"></td>
+						<td class="tr" out:content="items|count"></td>
+					</tr>
+				</tbody>
+			</table>
+			<span class="parens" out:content="run.errors|count"></span>
+			<h4>Warnings</h4>
+			<span class="parens" out:content="run.warnings|count"></span>
+			<h4>Actions</h4>
+			<span class="parens" out:content="run.actions|count"></span>
+	</template>
+
+	<!-- ------------------------------------------------------------------------
+
+	 ENTRIES
+
+	 ------------------------------------------------------------------------ -->
+
+	<template name="LogEntries" in:items inout:selection="[]">
+		<ul class="lined" x:for="log=items">
+			<li class="row">
+				<div class="centered block w-3c" out:content="#"></div>
+				<div class="stack fill pad-2">
+					<div class="row fit gap-3">
+						<span class="pill" out:content="log.type"></span>
+						<span class="fit" out:content="log.message"></span>
+						<span class="nowrap small dim" out:content="log.timestamp|ago" out:title="log.timestamp|datetime"></span>
+					</div>
+					<ul class="list-h small fit" x:for="item=log.context|entries">
+						<li>
+							<span class="pill" out:content="item.key"></span>
+							<code out:content="item.value"></code>
+						</li>
+					</ul>
+				</div>
+			</li>
+		</ul>
+	</template>
+
+	<!-- ------------------------------------------------------------------------
+
+	 ACTIONS
+
+	 ------------------------------------------------------------------------ -->
+
+	<template name="Actions" in:items inout:selection="[]">
+		<ul class="lined" x:for="action=items">
+			<li class="stack pad-2">
+				<div class="row fit gap-3">
+					<span out:content="#"></span>
+					<span out:content="action.origin"></span>
+					<code class="pill" out:content="action.code"></code>
+				</div>
+				<div out:content="action.reason"></div>
+				<ul class="list-h small fit" x:for="item=action.arguments|entries">
+					<li>
+						<span class="pill" out:content="item.key"></span>
+						<code out:content="item.value"></code>
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</template>
+
+
+	<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
+	<script type="module">
+		import ui from "@ui.js";
+		const data = await fetch(
+			"https://sebastien-fakejobs.web.val.run/"
+		).then((_) => _.json());
+		window.DATA = data;
+		ui();
+	</script>
+</body>
+
+</html>
