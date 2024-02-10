@@ -56,8 +56,8 @@ class IfEffect extends Effect {
 		return this;
 	}
 	mount() {
-		if (this.state?.mounted === 0) {
-			this.state?.mount();
+		if (this.state?.mounted === 0 && this.visible) {
+			this.state.mount();
 		}
 		return super.mount();
 	}

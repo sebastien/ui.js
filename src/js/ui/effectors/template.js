@@ -45,7 +45,10 @@ export class TemplateEffector extends Effector {
 			this.bindings,
 			(r, v, k) => {
 				const cell = scope.slots[k];
-				if (!cell || cell.revision === -1) {
+				// Here we only add to  slot if there is no parent cell
+				// in the scope, or if the cell is a value with no value
+				// just yet.
+				if (!cell || (cell instanceof Value && cell.revision === -1)) {
 					r[k] = v;
 				}
 				return r;

@@ -35,10 +35,35 @@ export const datetime = (value) => {
 		.padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")} ${d
 		.getHours()
 		.toString()
-		.padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d
-		.getSeconds()
+		.padStart(2, "0")}:${time(d)}`;
+};
+
+export const time = (value) => {
+	const d = date(value);
+	return `${d.getHours().toString().padStart(2, "0")}:${d
+		.getMinutes()
 		.toString()
-		.padStart(2, "0")}`;
+		.padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+};
+
+const durationUnits = [
+	{ name: " year", value: 365 * 24 * 60 * 60 }, // Years
+	{ name: " weeks", value: 7 * 24 * 60 * 60 }, // Weeks
+	{ name: " day", value: 24 * 60 * 60 }, // Days
+	{ name: "h", value: 60 * 60 }, // Hours
+	{ name: "m", value: 60 }, // Minutes
+	{ name: "s", value: 1 }, // Seconds
+];
+export const duration = (seconds) => {
+	const parts = [];
+	for (const { name, value } of durationUnits) {
+		if (seconds >= value) {
+			const t = Math.floor(seconds / value);
+			parts.push(`${t}${name}`);
+			seconds -= t * value;
+		}
+	}
+	return parts.join(" ");
 };
 
 export const ago = (date) => {
@@ -153,12 +178,14 @@ export const Formats = {
 	empty,
 	entries,
 	html,
+	time,
 	idem,
 	json,
 	len,
 	not,
 	text,
 	timetuple,
+	duration,
 	type,
 };
 export default Formats;

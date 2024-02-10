@@ -23,6 +23,9 @@ import { setTrace } from "./utils/logging.js";
 
 // This is mapped to `$` in formatters
 export const API = {
+	debug: () => {
+		debugger;
+	},
 	append,
 	cmp,
 	type,

@@ -90,6 +90,7 @@ export class SlotEffector extends Effector {
 		const effect_scope = should_derive
 			? scope.derive(this.bindings)
 			: scope;
+		console.log("XXX BINDINGS", this.bindings, effect_scope);
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
 			: SingleSlotEffect)(this, node, effect_scope, this.template).init();
