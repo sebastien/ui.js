@@ -79,8 +79,8 @@
 	display: inline-flex;
 	align-items: center;
 	border-radius: 0.5em;
-	padding-left: var(--pad-1);
-	padding-right: var(--pad-1);
+	padding-left: var(--pad-2);
+	padding-right: var(--pad-2);
 	--element-bg: var(--color-grey-9);
 	background-color: var(--element-bg);
 }
@@ -304,21 +304,47 @@ table.grid th {
 	text-align: center;
 }
 
-.parenthesized:before {
+.parens:before {
 	content: "(";
 }
 
-.parenthesized:after {
+.parens:after {
 	content: ")";
 }
 
-.bracketed:before {
+.brackets:before {
 	content: "[";
 }
 
-.bracketed:after {
+.brackets:after {
 	content: "]";
 }
+
+.curlies:before {
+	content: "{";
+}
+
+.curlies:after {
+	content: "}";
+}
+
+.quotes:before {
+	content: "«";
+}
+
+.quotes:after {
+	content: "»";
+}
+
+.airquotes:before {
+	content: "“";
+}
+
+.airquotes:after {
+	content: "”";
+}
+
+
 
 
 /* @tmpl
