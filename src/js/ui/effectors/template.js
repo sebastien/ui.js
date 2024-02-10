@@ -55,7 +55,6 @@ export class TemplateEffector extends Effector {
 			},
 			{}
 		);
-		console.log("XXX IMPORT TEMP BINDINGS", this.bindings, slots);
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
 		if (this.isComponent && subscope !== scope) {

@@ -18,7 +18,6 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		: null;
 
 	const bindings = extractBindings(node, ["template", "selector"]);
-	console.log("XXXX EXPORT BINDINGS", bindings);
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.

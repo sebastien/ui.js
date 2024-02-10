@@ -79,7 +79,6 @@ export class SlotEffector extends Effector {
 		if (this.bindings) {
 			for (const k in this.bindings) {
 				const v = this.bindings[k];
-				console.log("XXX IMPORT BINDINGS", k, v);
 				// If we find a defined binding that has no corresponding
 				// slot, then we need to derive a new scope.
 				if (v !== undefined || !scope.slots[k]) {

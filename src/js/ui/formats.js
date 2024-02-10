@@ -66,6 +66,8 @@ export const duration = (seconds) => {
 	return parts.join(" ");
 };
 
+export const swallow = () => "";
+
 export const ago = (date) => {
 	if (date && typeof date === "number") {
 		date = new Date(date * 1000);
@@ -187,6 +189,7 @@ export const Formats = {
 	timetuple,
 	duration,
 	type,
+	swallow,
 };
 export default Formats;
 // EOF

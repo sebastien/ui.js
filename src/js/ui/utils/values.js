@@ -23,7 +23,7 @@ export const bool = (value) =>
 	value === false ||
 	value === "" ||
 	(value instanceof Array && value.length === 0) ||
-	(isObject(value) && Object.getOwnPropertyNames().length === 0)
+	(isObject(value) && Object.getOwnPropertyNames(value).length === 0)
 		? false
 		: value
 		? true

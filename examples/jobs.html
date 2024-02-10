@@ -23,21 +23,44 @@
 	 JOBS
 
 	 ------------------------------------------------------------------------ -->
-	<template name="Jobs" in:schedule in:runs inout:selected-jobs inout:selected-runs>
+	<template name="Jobs" in:schedule in:runs inout:jobs="[]" inout:run inout:selected-logs="[]" out:entry=""
+		out:logs="${run.errors,run.warnings->{$.sorted((errors||[]).concat(warnings||[]),'timestamp')}}">
 		<div class="row stretched">
-			<div class="w-2b bd-r">
-				<h2 class="bold large pad-2">Schedule</h2>
-				<slot template="JobSchedule" jobs="schedule" selection="selectedJobs"></slot>
+			<div class="w-3b bd-r stack fit">
+				<h2 class="bold large pad-2 bd-b">Schedule</h2>
+				<div class="fit fill scrollable">
+					<slot template="JobSchedule" jobs="schedule" selection="jobs"></slot>
+				</div>
 			</div>
-			<div class="w-3b">
-				<h2 class="bold large pad-2">Runs</h2>
-				<slot template="JobRuns" runs="runs" selection="selectedRuns"></slot>
+			<div class="w-3b bd-r stack fit">
+				<h2 class="bold large pad-2 bd-b">Runs</h2>
+				<div class="fit fill scrollable">
+					<slot template="JobRuns" runs="runs" selection="run"></slot>
+				</div>
 			</div>
-			<div class="w-3b">
-				<slot template="JobRun" run="(window.DATA.run[0])"></slot>
+			<div x:if="run|bool" class="w-3b bd-r stack fit">
+				<h2 class="bold large pad-2 bd-b">Run
+					<span class="dim small" out:content="run.name"></span>
+				</h2>
+				<div class="fit fill scrollable pad-2">
+					<slot template="JobRun" run="run" selection="logs"></slot>
+				</div>
 			</div>
-			<div class="w-6b">
-				<slot template="LogEntries" items="(window.DATA.run[0].errors)"></slot>
+			<div x:if="logs|bool" class="w-6b bd-r stack fit">
+				<h2 class="bold large pad-2 bd-b">Log
+					<span class="dim small" out:content="run.name"></span>
+				</h2>
+				<div class="fit fill scrollable pad-2">
+					<slot template="LogEntries" items="logs"></slot>
+				</div>
+			</div>
+			<div x:if="entry|bool" class="w-6b bd-r stack fit">
+				<h2 class="bold large pad-2 bd-b">Entry
+					<span class="dim small" out:content="run.name"></span>
+				</h2>
+				<div class="fit fill scrollable pad-2">
+					<slot template="LogEntry" item="log"></slot>
+				</div>
 			</div>
 		</div>
 	</template>
@@ -48,15 +71,37 @@
 
 	 ------------------------------------------------------------------------ -->
 
-	<template name="JobSchedule" in:jobs inout:selection="[]">
-		<div class="stack">
-			<div class="fit scrollable">
-				<ul x:for="job=jobs" class="pad-1">
-					<li class="pad-1"><span out:content="job.name" /></li>
-				</ul>
-			</div>
-		</div>
+	<template name="JobSchedule" in:jobs out:items="${jobs->{$.sorted(_,_=>_.name)}}" inout:selection="[]">
+		<ul x:for="item=items" class="stack lined">
+			<li class="pad-1 selectable">
+				<div class="row">
+					<span class="fill" out:content="item.name"></span>
+
+					<span class="selectable centered inline square smaller bd-1 bd bd-high"
+						out:class="item->{_.status==='failed'?'bg-red-8':_.warning?.length+_.error?.length?'bg-orange-8':_==='succeeded'?'bg-green-8':'bg-grey-9'}"
+						out:content="item.retries"></span>
+				</div>
+				<!--  note quite working
+				<slot template="Period" value="item.schedule"></slot>
+				-->
+
+
+			</li>
+		</ul>
 	</template>
+
+	<!--
+	<template name="Period" in:value
+		out:repr="(_=> _ ? _['*'] ? '*' : $.len(_) > 1 ? $.values(_).map(_ => `${_}`).join(',') : `${_[0]}` : '*' )">
+		<span out:content="value.year,repr->{repr(_)}"></span>-
+		<span out:content="value.month,repr->{repr(_)}"></span>-
+		<span out:content="value.day,repr->{repr(_)}"></span>
+		T
+		<span out:content="value.hour,repr->{repr(_)}"></span>:
+		<span out:content="value.minute,repr->{repr(_)}"></span>:
+		<span out:content="value.second,repr->{repr(_)}"></span>
+	</template>
+	-->
 
 	<!-- ------------------------------------------------------------------------
 
@@ -66,7 +111,7 @@
 
 	<template name="JobRuns" in:runs
 		out:groups="${runs->{$.map($.entries($.grouped(runs,_ => _.name)),_=>{_.values=$.sorted(_.values,_=>_.started);return _})}}"
-		inout:selection="[]">
+		inout:selection>
 		<div class="stack">
 			<div class="fit scrollable">
 				<ul x:for="item=groups">
@@ -76,7 +121,7 @@
 							<span class="dim small parens" out:content="item.value|count"></span>
 						</div>
 						<ul class="row wrap" x:for="run=item.value">
-							<li>
+							<li on:click="selection=run">
 								<div class="selectable centered inline square smaller bd-1 bd bd-high"
 									out:class="run->{_.status==='failed'?'bg-red-8':_.warning?.length+_.error?.length?'bg-orange-8':_==='succeeded'?'bg-green-8':'bg-grey-9'}"
 									out:content="run.retries"></div>
@@ -94,40 +139,86 @@
 
 	 ------------------------------------------------------------------------ -->
 
-	<template name="JobRun" in:run inout:selection="[]">
-		<div class="stack">
+	<template name="JobRun" in:run inout:selection="">
+		<div class="stack gap-4">
 			<div class="row">
-				<h3 class="fill" out:content="run.name"></h3>
+				<h3 class="fill lh-100" out:content="run.name"></h3>
 				<span class="pill small upper" out:content="run.status"></span>
 			</div>
-			<span out:content="run.scheduled|datetime"></span>
-			<div class="small">
-				<span out:content="run.started|time"></span>
-				<span class="parens" out:content="run.started|ago"></span>
-				→<span out:content="run.ended|time"></span>
-				<span class="brackets" out:content="run.duration|duration"></span>
-				+ <span out:content="run.retries"></span>
-			</div>
-			<h4>Errors</h4>
-			<table>
-				<thead>
+			<table class="small">
+				<tbody>
 					<tr>
-						<th class="dim bd-b">Error</th>
-						<th class="dim bd-b tr">Count</th>
+						<th>Scheduled</th>
+						<td out:content="run.scheduled|datetime"></td>
 					</tr>
-				</thead>
-				<tbody x:for="items=run.errors->{$.grouped(errors, _ => _.message)}">
 					<tr>
-						<td out:content="#"></td>
-						<td class="tr" out:content="items|count"></td>
+						<th>Started</th>
+						<td><span out:content="run.started|time"></span>
+							<span class="parens" out:content="run.started|ago"></span>
+						</td>
+					</tr>
+					<tr>
+						<th>Ended</th>
+						<td><span out:content="run.ended|time"></span>
+							<span class="parens" out:content="run.ended|ago"></span>
+						</td>
+					</tr>
+
+					<tr>
+						<th>Duration</th>
+						<td out:content="run.duration|duration"></td>
+					</tr>
+
+					<tr>
+						<th>Retries</th>
+						<td out:content="run.retries"></td>
 					</tr>
 				</tbody>
 			</table>
-			<span class="parens" out:content="run.errors|count"></span>
-			<h4>Warnings</h4>
-			<span class="parens" out:content="run.warnings|count"></span>
-			<h4>Actions</h4>
-			<span class="parens" out:content="run.actions|count"></span>
+
+			<div>
+				<slot x:match="run.actions|len">
+					<slot x:case="(0)">No actions</slot>
+					<slot x:otherwise>
+						<slot template="LogSummary" items="run.actions" title="'Actions'" selection="selection"></slot>
+					</slot>
+				</slot>
+			</div>
+			<div>
+				<slot x:match="run.errors|len">
+					<slot x:case="(0)">No errors</slot>
+					<slot x:otherwise>
+						<slot template="LogSummary" items="run.errors" title="'Errors'" selection="selection"></slot>
+					</slot>
+				</slot>
+			</div>
+			<div>
+				<slot x:match="run.warnings|len">
+					<slot x:case="(0)">No warnings</slot>
+					<slot x:otherwise>
+						<slot template="LogSummary" items="run.warnings" title="'Warnings'" selection="selection"></slot>
+					</slot>
+				</slot>
+			</div>
+
+		</div>
+	</template>
+
+	<template name="LogSummary" in:items in:title out:selection>
+		<table class="fit-w">
+			<thead>
+				<tr>
+					<th class="bold bd-b" out:content="title">Entries</th>
+					<th class="dim bd-b tr">Count</th>
+				</tr>
+			</thead>
+			<tbody x:for="entry=items->{$.sorted($.entries($.grouped(items, _ => _.message||_.name)),_=>_.key)}">
+				<tr class="selectable" on:click="selection=#">
+					<td out:content="entry.key"></td>
+					<td class="tr small dim" out:content="entry.value|count"></td>
+				</tr>
+			</tbody>
+		</table>
 	</template>
 
 	<!-- ------------------------------------------------------------------------
@@ -136,11 +227,11 @@
 
 	 ------------------------------------------------------------------------ -->
 
-	<template name="LogEntries" in:items inout:selection="[]">
+	<template name="LogEntries" in:items inout:selection="">
 		<ul class="lined" x:for="log=items">
-			<li class="row">
-				<div class="centered block w-3c" out:content="#"></div>
-				<div class="stack fill pad-2">
+			<li class="row selectable" on:click="selection=log">
+				<div class="small dim centered block w-3c" out:content="#"></div>
+				<div class="stack fill pad-2 gap-2">
 					<div class="row fit gap-3">
 						<span class="pill" out:content="log.type"></span>
 						<span class="fit" out:content="log.message"></span>
@@ -155,6 +246,22 @@
 				</div>
 			</li>
 		</ul>
+	</template>
+
+	<template name="LogEnty" in:item>
+		<div class="stack fill pad-2 gap-2">
+			<div class="row fit gap-3">
+				<span class="pill" out:content="log.type"></span>
+				<span class="fit" out:content="log.message"></span>
+				<span class="nowrap small dim" out:content="log.timestamp|ago" out:title="log.timestamp|datetime"></span>
+			</div>
+			<ul class="list-h small fit" x:for="item=log.context|entries">
+				<li on:click="selection=item">
+					<span class="pill" out:content="item.key"></span>
+					<code out:content="item.value"></code>
+				</li>
+			</ul>
+		</div>
 	</template>
 
 	<!-- ------------------------------------------------------------------------
