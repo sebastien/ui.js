@@ -203,9 +203,9 @@ export const loadHTML = (url) =>
 				const stylesheets = [];
 				const scripts = [];
 				const templates = [];
-				extractNodes(doc, stylesheets, scripts, remove);
+				extractNodes(doc, stylesheets, scripts);
 				doc.querySelectorAll("template").forEach((_) => {
-					extractNodes(_.content, stylesheets, scripts, remove);
+					extractNodes(_.content, stylesheets, scripts);
 					templates.push(createTemplate(_));
 				});
 				// We support .template for dynamically loaded chunks, which supports
@@ -400,7 +400,7 @@ export const loadTemplates = (
 	}
 	onDebug(
 		"loading.loadTemplates: Loaded templates",
-		templates.map((_) => _.name),
+		templates.map((_) => (_ ? _.name : _)),
 		{ scripts, stylesheets }
 	);
 	return Promise.resolve({

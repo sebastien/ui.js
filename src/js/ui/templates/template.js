@@ -1,5 +1,6 @@
 import { extractLiteralBindings } from "./directives.js";
 import { onError } from "../utils/logging.js";
+import { loadHTML } from "../loading.js";
 import { TemplateEffector } from "../effectors/template.js";
 import { createView } from "./view.js";
 
@@ -44,6 +45,17 @@ export const onTemplateNode = (
 	clone = true, // TODO: We should probably always have that to false
 	scriptContainer = document.body
 ) => {
+	const i = name ? name.indexOf("@") : -1;
+	if (i !== -1) {
+		const url = name.substring(i + 1, name.length);
+		name = name.substring(0, i);
+		loadHTML(url).then(({ templates }) => {
+			if (!templates.find((_) => _.name === name)) {
+				onError(`Could not find template ${name} in source at ${url}`);
+			}
+		});
+		return null;
+	}
 	// NOTE: We skip text nodes there
 	const root =
 		node.nodeName.toLowerCase() === "template" ? node.content : node;
