@@ -1,109 +1,101 @@
-.with-typography.page,
-.with-typography .page {
+.t.page,
+.t .page {
 	padding: var(--pad-4);
 	margin: var(--pad-4);
 }
 
-.with-typography h1,
-.with-typography h2,
-.with-typography h3,
-.with-typography h4,
-.with-typography h5,
-.with-typography h6,
-h1.with-typography,
-h2.with-typography,
-h3.with-typography,
-h4.with-typography,
-h5.with-typography,
-h6.with-typography {
+.t h1,
+.t h2,
+.t h3,
+.t h4,
+.t h5,
+.t h6,
+h1.t,
+h2.t,
+h3.t,
+h4.t,
+h5.t,
+h6.t {
 	margin-top: calc(var(--line-height) * 2);
 	margin-bottom: calc(var(--line-height) * 1);
 }
 
-.with-typography p {
+.t p {
 	margin-top: 0.5em;
 	margin-bottom: 0.5em;
 }
 
-.with-typography ul,
-.with-typography ol {
+.t ul,
+.t ol {
 	padding-left: var(--pad-2);
 	margin-top: 0.75em;
 	margin-bottom: 0.75em;
 	margin-left: 0.75em;
 }
 
-.with-typography ul ul,
-.with-typography ul ol,
-.with-typography ol ol,
-.with-typography ol ul {
+.t ul ul,
+.t ul ol,
+.t ol ol,
+.t ol ul {
 	margin-top: 0em;
 	margin-bottom: 0em;
 }
 
-.with-typography ul.gapped li,
-.with-typography ol.gapped li {
+.t ul.gapped li,
+.t ol.gapped li {
 	margin-top: 0.75em;
 	margin-bottom: 0.75em;
 }
 
-.with-typography ul > li {
+.t ul>li {
 	list-style-type: disc;
 }
 
-.with-typography ol > li {
+.t ol>li {
 	list-style-type: numeric;
 }
 
-.with-typography li {
+.t li {
 	padding-left: 0.25em;
 }
 
-.with-typography li > p:first-child {
+.t li>p:first-child {
 	margin-top: 0em;
 }
 
-.with-typography li > p:last-child {
+.t li>p:last-child {
 	margin-bottom: 0em;
 }
 
-.with-typography mark {
-	background-color: color-mix(
-		in srgb,
-		var(--color-yellow-7),
-		var(--page-bg-0p) 65%
-	);
-}
-.with-typography mark.red {
-	background-color: color-mix(
-		in srgb,
-		var(--color-red),
-		var(--page-bg-0p) 85%
-	);
-}
-.with-typography mark.green {
-	background-color: color-mix(
-		in srgb,
-		var(--color-green),
-		var(--page-bg-0p) 65%
-	);
-}
-.with-typography mark.blue {
-	background-color: color-mix(
-		in srgb,
-		var(--color-blue),
-		var(--page-bg-0p) 65%
-	);
+.t mark {
+	background-color: color-mix(in srgb,
+			var(--color-yellow-7),
+			var(--page-bg-0p) 65%);
 }
 
-.with-typography .key {
+.t mark.red {
+	background-color: color-mix(in srgb,
+			var(--color-red),
+			var(--page-bg-0p) 85%);
+}
+
+.t mark.green {
+	background-color: color-mix(in srgb,
+			var(--color-green),
+			var(--page-bg-0p) 65%);
+}
+
+.t mark.blue {
+	background-color: color-mix(in srgb,
+			var(--color-blue),
+			var(--page-bg-0p) 65%);
+}
+
+.t .key {
 	padding: 1px 5px;
 	border-radius: 4px;
-	border: 1px solid
-		color-mix(in srgb, var(--color-text), var(--page-bg-0p) 85%);
-	background-color: color-mix(
-		in srgb,
-		var(--color-text),
-		var(--page-bg-0p) 95%
-	);
+	border: 1px solid color-mix(in srgb, var(--color-text), var(--page-bg-0p) 85%);
+	background-color: color-mix(in srgb,
+			var(--color-text),
+			var(--page-bg-0p) 95%);
 }

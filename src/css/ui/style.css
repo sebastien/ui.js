@@ -143,6 +143,10 @@
 	overflow: hidden;
 }
 
+.italic {
+	font-style: italic;
+}
+
 .ellipsis {
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -158,6 +162,10 @@
 
 .bd-2 {
 	--box-bd-w: 2px;
+}
+
+.bd-3 {
+	--box-bd-w: 3px;
 }
 
 .bd {
@@ -203,6 +211,15 @@
 
 .lined>* {
 	border-bottom: var(--box-bd-w) solid var(--box-bd);
+}
+
+.lined>*:last-child {
+	border-width: 0px;
+}
+
+.row.lined>* {
+	border-bottom: unset;
+	border-right: var(--box-bd-w) solid var(--box-bd);
 }
 
 .lined>*:last-child {
