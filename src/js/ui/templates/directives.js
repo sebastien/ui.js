@@ -162,7 +162,7 @@ export const parseSelector = (text) => {
 };
 
 const RE_NUMBER = new RegExp("^\\d+(\\.\\d+)?$");
-const matchLiteral = (text) => {
+const matchLiteralValue = (text) => {
 	const v = text;
 	const s = v.at(0);
 	const e = v.length > 1 ? v.at(-1) : null;
@@ -188,27 +188,37 @@ export const parseLiteralSelector = (text) =>
 	parseSelector(text.substring(2, text.length - 1));
 
 // A literal can be directly converted to JavaScript and does not use
-export const parseLiteral = (text) => {
-	return text &&
-		((text.startsWith("[") && text.endsWith("]")) ||
-			(text.startsWith("{") && text.endsWith("}")))
-		? JSON.parse(text)
-		: text && text.startsWith("(") && text.endsWith(")")
-		? createFunction(["$"], `{return ${text}}`)(API)
-		: text &&
-		  ((text.startsWith("'") && text.endsWith("'")) ||
-				(text.startsWith('"') && text.endsWith('"')))
-		? text.substring(1, text.length - 1)
-		: RE_NUMBER.test(text)
-		? parseFloat(text)
-		: text === "true"
-		? true
-		: text === "false"
-		? false
-		: text
-		? text
-		: undefined;
+export const parseLiteralValue = (text) => {
+	try {
+		return text &&
+			((text.startsWith("[") && text.endsWith("]")) ||
+				(text.startsWith("{") && text.endsWith("}")))
+			? JSON.parse(text)
+			: text && text.startsWith("(") && text.endsWith(")")
+			? createFunction(["$"], `{return ${text}}`)(API)
+			: text &&
+			  ((text.startsWith("'") && text.endsWith("'")) ||
+					(text.startsWith('"') && text.endsWith('"')))
+			? text.substring(1, text.length - 1)
+			: RE_NUMBER.test(text)
+			? parseFloat(text)
+			: text === "true"
+			? true
+			: text === "false"
+			? false
+			: text
+			? text
+			: undefined;
+	} catch (error) {
+		onError("Could not parse literal value", { text });
+		return null;
+	}
 };
+
+export const parseLiteral = (text) =>
+	matchLiteralSelector(text)
+		? parseLiteralSelector(text)
+		: parseLiteralValue(text);
 
 // An expression makes use of the context
 export const parseExpression = (text) => {
@@ -339,9 +349,9 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 		if (!v.trim()) {
 			// Bindings will be inherited from scope
 			bindings[name] = undefined;
-		} else if (matchLiteral(v)) {
+		} else if (matchLiteralValue(v)) {
 			// This is a literal expression
-			bindings[name] = parseLiteral(v);
+			bindings[name] = parseLiteralValue(v);
 		} else if (matchLiteralSelector(v)) {
 			// This is an inline selector
 			bindings[name] = parseLiteralSelector(v);
