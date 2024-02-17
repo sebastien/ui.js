@@ -20,6 +20,7 @@ import formats from "./formats.js";
 import { lerp } from "./utils/math.js";
 import query from "./utils/query.js";
 import { setTrace } from "./utils/logging.js";
+import { drag } from "./interaction.js";
 
 // This is mapped to `$` in formatters
 export const API = {
@@ -46,5 +47,6 @@ export const API = {
 	set,
 	query,
 	formats,
+	drag,
 };
 export default API;

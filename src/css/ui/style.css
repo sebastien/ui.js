@@ -493,4 +493,17 @@ table.grid th {
 
 /* @end */
 
+
+.bevel {
+	border: var(--box-bd-w) solid #FFFFFF20;
+	border-bottom-color: #00000020;
+	border-right-color: #00000020;
+}
+
+.emboss {
+	border: var(--box-bd-w) solid #FFFFFF20;
+	border-top-color: #00000020;
+	border-left-color: #00000020;
+}
+
 /* EOF */

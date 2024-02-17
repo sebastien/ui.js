@@ -188,6 +188,7 @@ export class Value extends Cell {
 		if (value instanceof Promise) {
 			// We increment the revision number, to denote that we're waiting
 			// on a result.
+			this.revision += 1;
 			this.join(value, (_) => {
 				this.set(_);
 			});
@@ -360,11 +361,21 @@ export class Selected extends Cell {
 					selector: this.selector.toString(),
 				});
 		}
-		return this.selector.format
-			? this.selector.type === SelectorType.List
-				? this.selector.format(...res, API)
-				: this.selector.format(res, API)
-			: res;
+		try {
+			return this.selector.format
+				? this.selector.type === SelectorType.List
+					? this.selector.format(...res, API)
+					: this.selector.format(res, API)
+				: res;
+		} catch (error) {
+			onError("Scope.eval; Error during selector formatting", {
+				text: this.selector.toString(),
+				selector: this.selector,
+				value: res,
+				error,
+			});
+			return null;
+		}
 	}
 }
 
@@ -491,6 +502,15 @@ export class Scope extends Cell {
 		return slot ? slot.get(path, offset + 1) : undefined;
 	}
 
+	patch(delta) {
+		if (delta instanceof Object) {
+			for (const k in delta) {
+				this.set(k, delta[k], true, true);
+			}
+		}
+	}
+
+	// FIXME: Should probably be `value`, `path`.
 	// Updates and existing slot
 	update(path, value, force = false) {
 		return this.set(path, value, force, true);

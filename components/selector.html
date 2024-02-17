@@ -12,6 +12,7 @@
 
 <body>
 	<div>
+		<!--
 		<section>
 			<h1 class="t">Selector component</h1>
 			<h2 class="t">Stack</h2>
@@ -21,6 +22,12 @@
 			<slot template="Preview" component="'Selector'" class="row" itemclass="bd-b bd-3"
 				items="([{label:'One'},{label:'Two'},{label:'Three'}])"></slot>
 		</section>
+		-->
+
+		<section>
+			<h2 class="t">Selector Panel</h1>
+				<slot template="PanelSelector" items="(fetch('../examples/tree.json').then(_=>(console.log(_),_.json())))">
+				</slot>
 
 	</div>
 
@@ -51,6 +58,31 @@
 			</li>
 		</ul>
 	</template>
+
+	<!-- ----------------------------------------------------------------------
+
+    PANEL SELECTOR
+
+    ----------------------------------------------------------------------- -->
+
+	<template name="PanelSelector" in:type="stack" in:items in:itemclass inout:selection="[]"
+		out:sel="selection->selection ? [...selection, undefined] : [undefined]"
+		out:panels="${items,sel->{(sel ? [...sel, undefined] : [undefined]).reduce(({ panels, items }, i) => ({panels: [...panels, items], items: items ? items[sel[i]]?.children : [], }), { panels: [], items }).panels}}">
+		<ul x:for="panel,i=panels">
+			<!-- TODO: We may want to add a panel header here -->
+			<div class="scrollable">
+				<ul x:for="item,j=panel">
+					<li class="pad-2 selectable nowrap ellipsis" out:class="itemclass"
+						out:data-selected="sel,item,i,j->{sel[i]?.indexOf(item)!==-1}"
+						on:click="selection=sel,item,i,j->{$.set(sel, i, [j]).slice(0,j+1)}">
+						<span class="fit" out:content="item.label"></span>
+						<span class="smaller dimmed" out:content="item.children|count"></span>
+					</li>
+				</ul>
+			</div>
+		</ul>
+	</template>
+
 
 
 

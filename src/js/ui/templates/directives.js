@@ -68,7 +68,7 @@ export const matchSelector = (text) =>
 const normInput = (value) => (value === "#" ? "key" : value);
 
 // A wrapper to create function and report errors in case it fails.
-const createFunction = (args, body) => {
+export const createFunction = (args, body) => {
 	try {
 		return new Function(...args, body);
 	} catch (error) {
@@ -237,7 +237,9 @@ const RE_ON = new RegExp(
 			opt(
 				capture(SLOT, "assign"),
 				opt(capture(text("!"), "force")),
-				text("="),
+				text("=")
+			),
+			opt(
 				// FIXME: Don't agree with that, it should be:
 				// expanded=expanded|not
 				// expanded=expanded->(!_)
@@ -363,6 +365,37 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 		}
 	}
 	return bindings;
+};
+
+// FIXME: Not sure this is still needed
+// --
+// Extracts the `<* slot="SLOT_NAME">…</*>` descendants of the given DOM
+// node, and returns them as an object if defined. Otherwise returns null. This
+// also removes the nodes as they are added to the object.
+export const extractSlots = (node, remove = true) => {
+	const slots = {};
+	let hasSlots = false;
+	for (const slot of [...node.children]) {
+		if (
+			slot.nodeName.toLowerCase() === "slot" &&
+			slot.hasAttribute("name")
+		) {
+			const n = slot.getAttribute("name") || "children";
+			const l = slots[n];
+			if (!l) {
+				slots[n] = slot;
+			} else if (l instanceof Array) {
+				l.push(node);
+			} else {
+				slots[n] = [l, slot];
+			}
+			if (remove) {
+				node.parentElement.removeChild(slot);
+			}
+			hasSlots = true;
+		}
+	}
+	return hasSlots ? slots : null;
 };
 
 export const createHandlerBody = (inputs, handler) =>

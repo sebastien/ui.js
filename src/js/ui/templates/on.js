@@ -4,6 +4,7 @@ import { onError } from "../utils/logging.js";
 import { WebEvents } from "../utils/dom.js";
 import {
 	parseOnDirective,
+	createFunction,
 	createHandlerBody,
 	createProcessorBody,
 } from "../templates/directives.js";
@@ -25,19 +26,13 @@ export const onOnAttribute = (processor, attr, root, name) => {
 	// NOTE: This is not good enough, it should be in the directive module and
 	// be generalised.
 	const handler = directive.handler
-		? new Function(
-				"event",
-				"scope",
-				"node",
-				"$",
+		? createFunction(
+				["event", "scope", "node", "$"],
 				createHandlerBody(directive.inputs, directive.handler)
 		  )
 		: directive.assign && (directive.processors || directive.inputs)
-		? new Function(
-				"event",
-				"scope",
-				"node",
-				"$",
+		? createFunction(
+				["event", "scope", "node", "$"],
 				`{const _=event;return (${createProcessorBody(
 					Object.values(directive.inputs),
 					directive.processors ? directive.processors.split(",") : []
@@ -45,11 +40,8 @@ export const onOnAttribute = (processor, attr, root, name) => {
 		  )
 		: undefined;
 	const eventProcessor = directive.eventProcessor
-		? new Function(
-				"event",
-				"scope",
-				"node",
-				"$",
+		? createFunction(
+				["event", "scope", "node", "$"],
 
 				`${Object.values(directive.eventInputs || {})
 					.map((_) =>
@@ -75,7 +67,7 @@ export const onOnAttribute = (processor, attr, root, name) => {
 	return null;
 };
 
-// We use the attribute nodes directly, as there is an asymetry in
+// We use the attribute nodes directly, as there is an asymmetry in
 // HTML where an attribute node may be `on:Send`, but `getAttribute("on:Send")`
 // will return `null` (while `getAttribute("on:send")` will return
 // the value).

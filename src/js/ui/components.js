@@ -3,7 +3,7 @@ import { EffectScope } from "./effectors.js";
 import { createComment } from "./utils/dom.js";
 import { onError } from "./utils/logging.js";
 import { makeKey } from "./utils/ids.js";
-import { extractBindings } from "./templates/directives.js";
+import { extractBindings, extractSlots } from "./templates/directives.js";
 import { Controllers } from "./controllers.js";
 
 // FIXME: This is redundant with the slot effector.
@@ -51,29 +51,6 @@ export class Component {
 }
 
 // --
-// Extracts the `<* slot="SLOT_NAME">…</*>` descendants of the given DOM
-// node, and returns them as an object if defined. Otherwise returns null. This
-// also removes the nodes as they are added to the object.
-const extractSlots = (node) => {
-	const slots = {};
-	let hasSlots = false;
-	for (const _ of node.querySelectorAll("*[slot]")) {
-		const n = _.getAttribute("slot") || "children";
-		const l = slots[n];
-		if (!l) {
-			slots[n] = _;
-		} else if (l instanceof Array) {
-			l.push(_);
-		} else {
-			slots[n] = [l, _];
-		}
-		_.parentElement.removeChild(_);
-		hasSlots = true;
-	}
-	return hasSlots ? slots : null;
-};
-
-// --
 // Takes a DOM node that typically has a `data-ui` attribute, looks for the
 // corresponding template in `Templates` and creates a new `Component`
 // replacing the given `node` and then rendering the component.
@@ -107,8 +84,12 @@ export const createComponent = (node, store, templates = Templates) => {
 	// We create an anchor component, and replace the node with the anchor.
 	const key = id ? id : makeKey(templateName);
 	const anchor = createComment(`${key}|Component|${templateName}`);
+	// We only keep attributes that are HTML attributes
 	const attributes = [...node.attributes].reduce((r, v) => {
-		if (!v.name.startsWith("data-")) {
+		if (
+			v.name.startsWith("data-") ||
+			["class", "style", "id"].indexOf(v.name) !== -1
+		) {
 			r.set(v.name, v.value);
 		}
 		return r;

@@ -1,238 +1,164 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8" />
-		<title>UI.js ― Observability Dashboard</title>
-		<link
-			rel="stylesheet"
-			href="../lib/css/ui.css"
-			type="text/css"
-			media="all"
-		/>
-		<script type="importmap">
+
+<head>
+	<meta charset="utf-8" />
+	<title>UI.js ― Observability Dashboard</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
 			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
 		</script>
-	</head>
-	<body>
-		<div class="stack fit-screen stretched lined nogap">
-			<div class="pad-2">
-				<h1 class="bold large">Observability Dashboard</h1>
-			</div>
-			<div class="stack bd-r">
-				<h2 class="large pad-2">Scope</h2>
-				<slot template="Selector" items="(window.DATA.topics)" />
-			</div>
-			<hr class="hr" />
-			<slot
-				template
-				items="('Status Metrics Events Log'.split(' '))"
-				selected="Events"
-			>
-				<ul class="row list-h nogap" x:for="item=items">
-					<li
-						class="selectable large pad-2 bold"
-						out:content="item"
-						out:data-selected="selected,item->{selected === item ? 'true' : null}"
-						on:click="selected=item"
-					>
-						…
-					</li>
-				</ul>
-				<div class="stack fit" x:match="selected">
-					<div class="stack fit" x:case="Events">
-						<slot
-							template="Events"
-							groups="($.sorted($.entries($.grouped(window.DATA.events, _ => _.name),'key')))"
-						></slot>
-					</div>
-					<div class="stack fit" x:case="Log">
-						<!-- JOURNAL -->
-						<slot
-							template="Journal"
-							entries="(window.DATA.journal)"
-						></slot>
-					</div>
-				</div>
-			</slot>
-		</div>
+</head>
 
-		<!-- ----------------------------------------------------------------------
+<body>
+	<div class="stack fit-screen stretched lined nogap">
+		<div class="pad-2">
+			<h1 class="bold large">Observability Dashboard</h1>
+		</div>
+		<div class="stack bd-r">
+			<h2 class="large pad-2">Scope</h2>
+			<slot template="Selector" items="(window.DATA.topics)" />
+		</div>
+		<hr class="hr" />
+		<slot template items="('Status Metrics Events Log'.split(' '))" selected="Events">
+			<ul class="row list-h nogap" x:for="item=items">
+				<li class="selectable large pad-2 bold" out:content="item"
+					out:data-selected="selected,item->{selected === item ? 'true' : null}" on:click="selected=item">
+					…
+				</li>
+			</ul>
+			<div class="stack fit" x:match="selected">
+				<div class="stack fit" x:case="Events">
+					<slot template="Events" groups="($.sorted($.entries($.grouped(window.DATA.events, _ => _.name),'key')))">
+					</slot>
+				</div>
+				<div class="stack fit" x:case="Log">
+					<!-- JOURNAL -->
+					<slot template="Journal" entries="(window.DATA.journal)"></slot>
+				</div>
+			</div>
+		</slot>
+	</div>
+
+	<!-- ----------------------------------------------------------------------
 
     SELECTOR
 
     ----------------------------------------------------------------------- -->
 
-		<template name="Selector" in:items inout:selection="[]">
-			<ul
-				class="bd-t row stretched"
-				x:for="panel=selection->{(selection && selection.length ? selection : [null]).map((value,offset)=>({value,offset}))}"
-			>
-				<li class="stack w-3bl bd-r">
-					<ul
-						class="lined"
-						x:for="item=panel,items,selection,#->{$.reduce(selection.slice(0,panel.offset),(r,v,i)=>(v === null ? r : r[v].children), items)}"
-					>
-						<li
-							class="row pad-2 selectable nowrap ellipsis"
-							out:data-selected="selection,panel,#->{selection[panel.offset]===key?'true':null}"
-							on:click="selection=item,panel,selection,#->{item.children ? [...selection.slice(0, panel.offset), key, null] : [...selection.slice(0,panel.offset),key]}"
-						>
-							<span class="fit" out:content="item.label"></span>
-							<span
-								class="smaller dimmed"
-								out:content="item.children|count"
-							></span>
-						</li>
-					</ul>
-				</li>
-			</ul>
-		</template>
+	<template name="Selector" in:items inout:selection="[]">
+		<ul class="bd-t row stretched"
+			x:for="panel=selection->{(selection && selection.length ? selection : [null]).map((value,offset)=>({value,offset}))}">
+			<li class="stack w-3b bd-r">
+				<ul class="lined"
+					x:for="item=panel,items,selection,#->{$.reduce(selection.slice(0,panel.offset),(r,v,i)=>(v === null ? r : r[v].children), items)}">
+					<li class="row pad-2 selectable nowrap ellipsis"
+						out:data-selected="selection,panel,#->{selection[panel.offset]===key?'true':null}"
+						on:click="selection=item,panel,selection,#->{item.children ? [...selection.slice(0, panel.offset), key, null] : [...selection.slice(0,panel.offset),key]}">
+						<span class="fit" out:content="item.label"></span>
+						<span class="smaller dimmed" out:content="item.children|count"></span>
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</template>
 
-		<!-- ----------------------------------------------------------------------
+	<!-- ----------------------------------------------------------------------
 
     EVENTS
 
     ----------------------------------------------------------------------- -->
-		<template name="Events" in:groups="[]">
-			<ul
-				class="stack lined nogap bd-b fit scrollable"
-				x:for="group=groups"
-			>
-				<li class="row">
-					<div class="w-3bl ellipsis bd-r pad-2 fitted">
-						<span class="nowrap" out:content="group.key"></span>
-					</div>
-					<ul
-						class="row gap-2 pad-2"
-						x:for="event=group.value->{$.sorted(_,'timestamp',-1)}"
-					>
-						<li class="with-hover">
-							<div
-								class="small circle help"
-								out:class="event.type->{_==='error'?'bg-red-8':_==='retry'?'bg-orange-8':_==='success'?'bg-green-8':'bg-grey-9'}"
-								out:content="event.retry"
-							></div>
-							<div class="popup pos-abs show-hover">
-								<div
-									class="rounded panel dim bg-low color-high shadow-1 small pad-2"
-								>
-									<table>
-										<tr>
-											<th class="bold">Type</th>
-											<td>
-												<span
-													class="nowrap bold caps"
-													out:content="event.type"
-												></span>
-											</td>
-										</tr>
+	<template name="Events" in:groups="[]">
+		<ul class="stack lined nogap bd-b fit scrollable" x:for="group=groups">
+			<li class="row">
+				<div class="w-3b ellipsis bd-r pad-2 fitted">
+					<span class="nowrap" out:content="group.key"></span>
+				</div>
+				<ul class="row gap-2 pad-2" x:for="event=group.value->{$.sorted(_,'timestamp',-1)}">
+					<li class="with-hover">
+						<div class="small circle help"
+							out:class="event.type->{_==='error'?'bg-red-8':_==='retry'?'bg-orange-8':_==='success'?'bg-green-8':'bg-grey-9'}"
+							out:content="event.retry"></div>
+						<div class="popup pos-abs show-hover">
+							<div class="rounded panel dim bg-low color-high shadow-1 small pad-2">
+								<table>
+									<tr>
+										<th class="bold">Type</th>
+										<td>
+											<span class="nowrap bold caps" out:content="event.type"></span>
+										</td>
+									</tr>
 
-										<tr>
-											<th class="bold">Date</th>
-											<td
-												class="nowrap"
-												out:content="event.timestamp|datetime"
-											></td>
-										</tr>
-										<tr>
-											<th class="bold">Duration</th>
-											<td
-												class="nowrap"
-												out:content="event.duration"
-											></td>
-										</tr>
-										<tr>
-											<th class="bold">Retries</th>
-											<td out:content="event.retry"></td>
-										</tr>
-									</table>
-								</div>
+									<tr>
+										<th class="bold">Date</th>
+										<td class="nowrap" out:content="event.timestamp|datetime"></td>
+									</tr>
+									<tr>
+										<th class="bold">Duration</th>
+										<td class="nowrap" out:content="event.duration"></td>
+									</tr>
+									<tr>
+										<th class="bold">Retries</th>
+										<td out:content="event.retry"></td>
+									</tr>
+								</table>
 							</div>
-						</li>
-					</ul>
-				</li>
-			</ul>
-		</template>
+						</div>
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</template>
 
-		<!-- ----------------------------------------------------------------------
+	<!-- ----------------------------------------------------------------------
 
     JOURNAL
 
     ----------------------------------------------------------------------- -->
 
-		<template
-			name="Journal"
-			in:entries
-			in:filters="('debug log output warning error'.split(' '))"
-			inout:criteria="null"
-		>
-			<div class="row pad-2 bd-b">
-				<input
-					class="rounded small fit transparent fit"
-					type="search"
-					placeholder="Search logs…"
-				/>
-				<ul class="row gap-2 nowrap small" x:for="filter=filters">
-					<li>
-						<span
-							class="pill caps selectable"
-							out:data-type="filter"
-							out:content="filter"
-						></span>
-					</li>
-				</ul>
-			</div>
-			<div class="fit scrollable">
-				<ul class="lined" x:for="entry=entries">
-					<li class="pad-2 stack selectable focus-undim">
-						<div class="row gap-4">
-							<span
-								class="w-8c center emboss pill smaller caps"
-								out:data-type="entry.level"
-								out:content="entry.level"
-							></span>
-							<span
-								class="fit"
-								out:content="entry.message"
-							></span>
-							<span
-								class="small dim nowrap"
-								out:content="entry.timestamp|ago"
-							></span>
-							<span
-								class="small dim nowrap"
-								out:content="entry.timestamp|datetime"
-							></span>
-						</div>
-						<ul
-							class="list-h gap-4 small dimmer"
-							x:for="item=entry.context|entries"
-						>
-							<li>
-								<span
-									class="pill bold"
-									out:content="item.key"
-								></span>
-								<code out:content="item.value|json"></code>
-							</li>
-						</ul>
-					</li>
-				</ul>
-			</div>
-		</template>
+	<template name="Journal" in:entries in:filters="('debug log output warning error'.split(' '))" inout:criteria="null">
+		<div class="row pad-2 bd-b">
+			<input class="rounded small fit transparent fit" type="search" placeholder="Search logs…" />
+			<ul class="row gap-2 nowrap small" x:for="filter=filters">
+				<li>
+					<span class="pill caps selectable" out:data-type="filter" out:content="filter"></span>
+				</li>
+			</ul>
+		</div>
+		<div class="fit scrollable">
+			<ul class="lined" x:for="entry=entries">
+				<li class="pad-2 stack selectable focus-undim">
+					<div class="row gap-4">
+						<span class="w-8c center emboss pill smaller caps" out:data-type="entry.level"
+							out:content="entry.level"></span>
+						<span class="fit" out:content="entry.message"></span>
+						<span class="small dim nowrap" out:content="entry.timestamp|ago"></span>
+						<span class="small dim nowrap" out:content="entry.timestamp|datetime"></span>
+					</div>
+					<ul class="list-h gap-4 small dimmer" x:for="item=entry.context|entries">
+						<li>
+							<span class="pill bold" out:content="item.key"></span>
+							<code out:content="item.value|json"></code>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+	</template>
 
-		<!-- ----------------------------------------------------------------------
+	<!-- ----------------------------------------------------------------------
 
     MAIN SCRIPT
 
     ----------------------------------------------------------------------- -->
 
-		<script type="module">
-			import ui from "@ui.js";
-			window.DATA = await fetch(
-				window.location.pathname.replace(".html", ".json")
-			).then((_) => _.json());
-			ui();
-		</script>
-	</body>
+	<script type="module">
+		import ui from "@ui.js";
+		window.DATA = await fetch(
+			window.location.pathname.replace(".html", ".json")
+		).then((_) => _.json());
+		ui();
+	</script>
+</body>
+
 </html>

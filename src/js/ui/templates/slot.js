@@ -1,4 +1,5 @@
 import { parseSelector, extractBindings, parseLiteral } from "./directives.js";
+import { createView } from "./view.js";
 import { nodePath } from "../path.js";
 import { SlotEffector } from "../effectors/slot.js";
 import { replaceNodeWithPlaceholder } from "../utils/dom.js";
@@ -18,6 +19,10 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		: null;
 
 	const bindings = extractBindings(node, ["template", "selector"]);
+	// NOTE: We should probably remove the attributes
+	// for (const attr of [...(node.attributes || [])]) {
+	// 	node.removeAttribute(attr.name);
+	// }
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.
@@ -38,7 +43,11 @@ export const onSlotNode = (processor, node, root, templateName) => {
 				}
 				const name = child.getAttribute("name");
 				// FIXME:  This is parsing a new template
-				// bindings[name] = view(container, `${templateName}.{name}`);
+				bindings[name] = createView(
+					processor,
+					container,
+					`${templateName}.{name}`
+				);
 				node.removeChild(child);
 			}
 		}
@@ -62,6 +71,16 @@ export const onSlotNode = (processor, node, root, templateName) => {
 			selector ? selector.toString() : "."
 		}`
 	);
+	// TODO: Like for components, we may have <slot name="XXX"> which then
+	// contain a slot effector. That slot effector should then be put
+	// as a value in the scope, and when content is rendered the content
+	// rendering should apply the effector.
+	if (!template && node.children.length === 0) {
+		console.warn(
+			"[ui.js/slot] Slot may be missing 'template' attribute, as it does not have any contents",
+			node
+		);
+	}
 	return new SlotEffector(path, selector, template, undefined, bindings);
 
 	// NOTE: Previous behaviour, left for reference

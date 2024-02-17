@@ -57,8 +57,14 @@ export const onTemplateNode = (
 		return null;
 	}
 	// NOTE: We skip text nodes there
+	// NOTE: Due to some limitations in HTML documents, SVG template nodes have
+	// to be defined within a parent SVG node, as otherwise their contents will
+	// be in the HTML namespace. Now, template nodes in SVG are just regular nodes
+	// and don't behave like HTML templates. So we guard against that.
 	const root =
-		node.nodeName.toLowerCase() === "template" ? node.content : node;
+		node.nodeName.toLowerCase() === "template" && node.content !== undefined
+			? node.content
+			: node;
 	for (const _ of root.children) {
 		switch (_.nodeName) {
 			case "STYLE":
