@@ -11,7 +11,7 @@ import { parseOutDirective } from "./directives.js";
 
 // --
 // Processes an `out:NAME=SELECTOR` attribute, where `out:content=SELECTOR`
-// is a special case where the content of the node will be applied wit the
+// is a special case where the content of the node will be applied with the
 // value of the selector. Otherwise the handling will be either an
 // style, value or regular attribute.
 export const onOutAttribute = (processor, attr, root, name) => {
@@ -42,43 +42,41 @@ export const onOutAttribute = (processor, attr, root, name) => {
 		// Now, if we have an `out:content=XXXX`, then it means we're replacing
 		// the content with the value or a template applied with the value.
 		// We extract the fragment, handlers, and content template
+		const hasTemplate = directive.template;
+		const hasContents = !isNodeEmpty(node);
 		const contents = contentAsFragment(node);
-		const template = directive.template
-			? directive.template
-			: isNodeEmpty(node)
-			? null // An empty node means a null (text) formatter
-			: processor.Template(
-					processor,
-					// The format is the template id
-					contents,
-					// Anonymous node
-					null,
-					false // No need to clone there
-			  );
-		const handlers = findEventHandlers(node);
-		const anchor = createAnchor(node, `out:content=${text}`);
-
-		// The rules should be a little bit more refined:
-		// - If there is a template, then the content could be the placholder
-		// - If the node name is slot, then it is for sure a slot effector
-		return template && (template.hasEffectors || handlers)
-			? new SlotEffector(
-					nodePath(anchor, root),
-					directive.selector,
-					template,
-					handlers
-			  )
-			: new ContentEffector(
-					nodePath(node, root),
-					directive.selector,
-					contents
-			  );
+		const anchor = createAnchor(node);
+		if (hasTemplate || hasContents) {
+			// It's either an explicit template or an inline template
+			return new SlotEffector(
+				nodePath(anchor, root),
+				directive.selector,
+				directive.template ||
+					processor.Template(
+						processor,
+						// The format is the template id
+						contents,
+						// Anonymous node
+						null,
+						false // No need to clone there
+					),
+				// FIXME: Not sure if it should be node or contetns
+				findEventHandlers(node)
+			);
+		} else {
+			return new ContentEffector(
+				nodePath(anchor, root),
+				directive.selector,
+				contents
+			);
+		}
 	} else {
 		// It's not an `out:content` attribute, then it's either a style, value
 		// or attribute effector.
 		const nodeName = node.nodeName.toUpperCase();
 		// For some reason, `out:viewBox` gets normalized as `out:viewbox`, so we
 		// correct it here.
+		// FIXME: We should generalize that to support other edge cases
 		if (nodeName === "SVG" && name == "viewbox") {
 			name = "viewBox";
 		}

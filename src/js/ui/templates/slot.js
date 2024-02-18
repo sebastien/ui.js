@@ -2,7 +2,8 @@ import { parseSelector, extractBindings, parseLiteral } from "./directives.js";
 import { createView } from "./view.js";
 import { nodePath } from "../path.js";
 import { SlotEffector } from "../effectors/slot.js";
-import { replaceNodeWithPlaceholder } from "../utils/dom.js";
+import { ViewEffector } from "../effectors/view.js";
+import { DOM, replaceNodeWithPlaceholder } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
 
 // --
@@ -39,14 +40,26 @@ export const onSlotNode = (processor, node, root, templateName) => {
 				// could be rendered once, or many times.
 				const container = document.createElement("div");
 				while (child.firstChild) {
-					container.appendChild(child.firstChild);
+					if (
+						child.firstChild.nodeType === Node.ELEMENT_NODE &&
+						// When a node has `x:skip` it won't be included in
+						// the template.
+						// FIXME: Make sure this is the case everywhere
+						child.firstChild.hasAttribute("x:skip")
+					) {
+						DOM.mount(container, [...child.firstChild.childNodes]);
+						DOM.unmount(child.firstChild);
+					} else {
+						container.appendChild(child.firstChild);
+					}
 				}
 				const name = child.getAttribute("name");
-				// FIXME:  This is parsing a new template
-				bindings[name] = createView(
-					processor,
-					container,
-					`${templateName}.{name}`
+				// TODO: If the container has just one child and the child
+				// has an element we should unwrap it.
+				bindings[name] = new ViewEffector(
+					null,
+					null,
+					createView(processor, container, `${templateName}.{name}`)
 				);
 				node.removeChild(child);
 			}
@@ -64,6 +77,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	const key = makeKey(
 		node.dataset.id || node.getAttribute("name") || template
 	);
+
 	const path = nodePath(node, root);
 	replaceNodeWithPlaceholder(
 		node,

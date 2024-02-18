@@ -14,10 +14,12 @@ export const asFragment = (...nodes) => {
 };
 
 // Flushes the content of the node into a new fragment
-export const contentAsFragment = (node) => {
+export const contentAsFragment = (node, ignored) => {
 	const fragment = document.createDocumentFragment();
 	while (fragment && node.firstChild) {
-		fragment.appendChild(node.firstChild);
+		if (node.firstChild !== ignored) {
+			fragment.appendChild(node.firstChild);
+		}
 	}
 	return fragment;
 };
@@ -119,6 +121,27 @@ export class DOM {
 		} else {
 			previous.parentNode?.replaceChild(node, previous);
 		}
+	}
+	// If the node has a single element child and only empty text
+	// nodes, then it will return the only child.
+	static unwrap(node) {
+		let element = undefined;
+		for (const child of node.childNodes) {
+			switch (child.nodeType) {
+				case Node.ELEMENT_NODE:
+					if (element) {
+						return node;
+					} else {
+						element = child;
+					}
+					break;
+				case Node.TEXT_NODE:
+					if (child.data) {
+						return node;
+					}
+			}
+		}
+		return element || node;
 	}
 }
 

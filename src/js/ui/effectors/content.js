@@ -52,6 +52,12 @@ class ContentEffect extends Effect {
 			}
 			this.contentNode = value;
 			this.textNode.data = "";
+		} else if (value instanceof Effector) {
+			if (!this.textNode.parentNode) {
+				DOM.mount(this.node, this.textNode);
+			}
+			const applied = value.apply(this.node, this.scope);
+			applied.mount();
 		} else {
 			DOM.unmount(this.contentNode);
 			this.textNode.data =
