@@ -1,12 +1,10 @@
-import { onError } from "../utils/logging.js";
-import { isNodeEmpty, contentAsFragment, createAnchor } from "../utils/dom.js";
+import { onError, onWarning } from "../utils/logging.js";
+import { contentAsFragment, createAnchor, isNodeEmpty } from "../utils/dom.js";
 import { nodePath } from "../path.js";
 import { AttributeEffector } from "../effectors/attribute.js";
 import { StyleEffector } from "../effectors/style.js";
 import { ValueEffector } from "../effectors/value.js";
 import { ContentEffector } from "../effectors/content.js";
-import { SlotEffector } from "../effectors/slot.js";
-import { findEventHandlers } from "./on.js";
 import { parseOutDirective } from "./directives.js";
 
 // --
@@ -42,32 +40,21 @@ export const onOutAttribute = (processor, attr, root, name) => {
 		// Now, if we have an `out:content=XXXX`, then it means we're replacing
 		// the content with the value or a template applied with the value.
 		// We extract the fragment, handlers, and content template
-		const hasTemplate = directive.template;
-		const hasContents = !isNodeEmpty(node);
-		const contents = contentAsFragment(node);
-		const anchor = createAnchor(node);
-		if (hasTemplate || hasContents) {
-			// It's either an explicit template or an inline template
-			return new SlotEffector(
-				nodePath(anchor, root),
-				directive.selector,
-				directive.template ||
-					processor.Template(
-						processor,
-						// The format is the template id
-						contents,
-						// Anonymous node
-						null,
-						false // No need to clone there
-					),
-				// FIXME: Not sure if it should be node or contetns
-				findEventHandlers(node)
+		if (directive.template) {
+			onWarning(
+				"out:content with template directive is deprecated. Use a <slot> with explicit bindings."
 			);
+			// NOTE: This used to be a slot effector
+			return null;
 		} else {
+			const placeholder = isNodeEmpty(node)
+				? null
+				: contentAsFragment(node);
+			const anchor = createAnchor(node);
 			return new ContentEffector(
 				nodePath(anchor, root),
 				directive.selector,
-				contents
+				placeholder
 			);
 		}
 	} else {
