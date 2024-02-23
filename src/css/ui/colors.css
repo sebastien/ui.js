@@ -1922,19 +1922,23 @@
 }
 
 /* @end */
+.bg-black,
 .bg-low {
 	background-color: var(--color-low);
 }
 
+.bg-white,
 .bg-high {
 	background-color: var(--color-high);
 }
 
+.bd-black,
 .bd-low {
 	--box-bd: var(--color-low);
 
 }
 
+.bd-white,
 .bd-high {
 	--box-bd: var(--color-high);
 }

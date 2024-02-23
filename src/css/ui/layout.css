@@ -480,10 +480,6 @@
 	justify-content: space-between;
 }
 
-.row.fill>* {
-	flex: 1;
-}
-
 .row>.fill {
 	flex: 1;
 }

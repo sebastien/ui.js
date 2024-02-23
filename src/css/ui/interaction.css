@@ -1,0 +1,15 @@
+.dragged {
+	cursor: grabbing;
+}
+
+.dragging-overlay {
+	position: fixed;
+	top: 0px;
+	bottom: 0px;
+	left: 0px;
+	right: 0px;
+	background-color: #00000000;
+	z-index: 65535;
+	cursor: grabbing;
+	user-select: none;
+}
