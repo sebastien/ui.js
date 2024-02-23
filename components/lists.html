@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>UI.js ― Selector</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div>
+		<section>
+			<h1 class="t">List Component</h1>
+			<slot template="List" draggable="true" items="([{label:'One'},{label:'Two'},{label:'Three'}])"></slot>
+		</section>
+
+	</div>
+
+	<!-- ----------------------------------------------------------------------
+
+    SELECTOR
+
+    ----------------------------------------------------------------------- -->
+
+	<template name="List" in:type="stack" in:classes inout:items inout:selection="[]">
+		<ul x:for="item=items" out:class="classes.item">
+			<li out:data-index="#" class="" on:mousedown="!DragStart" out:class="classes.item">
+				<span class="fit" out:content="item.label"></span>
+				<span class="smaller dimmed" out:content="item.children|count"></span>
+			</li>
+		</ul>
+
+	</template>
+
+	<!-- NOTE: If the module is within the template, it won't be loaded/available
+	 by the time the component is created -->
+	<script type="module">
+		import {$, controller} from "@ui.js";
+		import {lerp, within, sign} from "@ui/utils/math.js";
+		import {DOM} from "@ui/utils/dom.js";
+		console.log("LIST CONTROLLER")
+		const List = ({on, scope, state}) => {
+			on.DragStart((event, scope) => {
+				// We do the dragging interaction bypassing the rendering engine. It's
+				// fine as it's really just a decoration.
+				const clone = event.currentTarget.cloneNode(true)
+				clone.classList.add("dragged");
+				const item = event.currentTarget;
+				const display = item.style.display;
+				const items = [...item.parentElement.children].filter(_ => _.dataset.index);
+				const res = {index: undefined, affinity: undefined, origin: scope.key, value: state.items[scope.key]}
+				const overlay = document.createElement("div");
+				overlay.classList.add("dragging-overlay");
+				$.drag(event,
+					(e, s) => {
+						if (s.step === 0) {
+							state.dragged = {node: clone, over: 0, from: scope.key};
+							document.body.appendChild(overlay);
+						} else {
+							// We find the list item that's the closest
+							const p = [e.clientX, e.clientY];
+							for (let i = 0; i < items.length; i++) {
+								const node = items[i];
+								const bbox = node.getBoundingClientRect()
+								if (
+									within(p[0], bbox.left, bbox.left + bbox.width) &&
+									within(p[1], bbox.top, bbox.top + bbox.height)) {
+									item.style.display = "none";
+									res.index = i;
+									// We mount the clone
+									if ((res.affinity = sign(p[1] - (bbox.top + bbox.height / 2))) >= 0) {
+										DOM.after(node, clone);
+									} else {
+										DOM.before(node, clone);
+									}
+									break;
+								}
+							}
+						}
+					}, (e, p) => {
+						// If there was a change, then we update the items.
+						if (res.index !== res.origin) {
+							const items = [...state.items];
+							items.splice(res.origin, 1)
+							const i = Math.max(0, res.index - (res.index > res.origin ? 1 : 0) + (res.affinity > 0 ? 1 : 0))
+							items.splice(i, 0, res.value)
+							state.items = items;
+						}
+						DOM.unmount(clone)
+						DOM.unmount(overlay)
+						item.style.display = display;
+					}
+				)
+			});
+		}
+		controller(List);
+	</script>
+
+	<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+	<script type="module">
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
+</html>

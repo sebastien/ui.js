@@ -77,7 +77,7 @@ export class EffectScope extends Scope {
 			handlers &&
 				handlers.forEach((handler) => {
 					try {
-						const res = handler(data, scope, origin, node);
+						const res = handler(data, origin, scope, node);
 						count += 1;
 						// TODO: This could be stop
 						if (res === false) {
@@ -159,7 +159,7 @@ export class Effect {
 	}
 
 	unbind() {
-		// TODO: Unscubscribe to the selection
+		// TODO: Subscribe to the selection
 		// NOTE: This is left for debugging
 		if (this.bound === 0) {
 			onError(`Effector not previously bound`, { effector: this });
@@ -259,7 +259,7 @@ export class Effector {
 	}
 
 	// --
-	// An effector is applied when the effect need to be instanciated
+	// An effector is applied when the effect need to be instantiated
 	apply(node, scope) {
 		onError("Effector.apply: no implementation defined", {
 			node,

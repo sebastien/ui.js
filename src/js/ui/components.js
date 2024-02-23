@@ -100,6 +100,7 @@ export const createComponent = (node, store, templates = Templates) => {
 	// changes.
 	node.parentElement.replaceChild(anchor, node);
 
+	console.log("COMPONENT", Controllers, template.name);
 	return new Component(
 		key,
 		anchor,

@@ -24,6 +24,7 @@ export const drag = (event, move, end) => {
 		oy: event.pageY,
 		pointerEvents: event.target.style.pointerEvents,
 		userSelect: event.target.style.userSelect,
+		step: 0,
 	};
 	const handlers = {
 		mousemove: (event) => {
@@ -31,6 +32,7 @@ export const drag = (event, move, end) => {
 				move(event, {
 					dx: event.pageX - dragging.ox,
 					dy: event.pageY - dragging.oy,
+					step: dragging.step++,
 				});
 		},
 		mouseup: (event) => {

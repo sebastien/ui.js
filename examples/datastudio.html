@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Self</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div class="stack fit-screen stretched lined nogap">
+		<slot template="DataStudio" />
+
+
+		<!-- ------------------------------------------------------------------------
+
+	 DATA STUDIO
+
+	 ------------------------------------------------------------------------ -->
+		<template name="DataStudio" in:items="('Application Component Path'.split(' '))">
+			<div class="stack lined fit">
+				<div class="row">
+					DataStudio
+				</div>
+				<div class="row fill lined stretched">
+					<div class="stack w-3b">
+						<ul class="stack lined" x:for="item=items">
+							<li>
+								<div class="row with-hover">
+									<div class="icon square"></div>
+									<div class="label fill" out:content="item"></div>
+									<div class="pill small">type</div>
+									<div class="show-hover pos-abs floating panel to-t to-r bg-white w-2b">Details</div>
+								</div>
+							</li>
+						</ul>
+					</div>
+					<div class="stack fill lined">
+						<div class="fill bg-grey-8">
+							Graph
+						</div>
+						<div class="row">
+							Example
+						</div>
+					</div>
+					<div class="stack w-3b">
+						Detail
+					</div>
+				</div>
+			</div>
+		</template>
+
+		<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
+		<script type="module">
+			import ui from "@ui.js";
+			const data = await fetch("https://api.opensource.org/licenses/").then(_ => _.json())
+			console.log(data)
+			ui();
+		</script>
+</body>
+
+</html>

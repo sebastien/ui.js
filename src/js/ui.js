@@ -56,21 +56,25 @@ export const ui = (
 			scripts.forEach((_) => {
 				// NOTE: Adding a script node doesn't quite work. We could do
 				// it in SSR, though.
-				const type = _.getAttribute("type");
-				switch (type) {
-					case "importmap":
-						break;
-					case "javascript":
-					case "module":
-					case undefined:
-						// TODO: Shouldn't we do something with the script her?
-						createModule(_.innerText);
-						break;
-					default:
-						onWarning(
-							`Unsupported script type in template: ${type}`
-						);
-						break;
+				// --
+				// We don't add a script that's already loaded in the document
+				if (_.ownerDocument !== globalThis.document) {
+					const type = _.getAttribute("type");
+					switch (type) {
+						case "importmap":
+							break;
+						case "javascript":
+						case "module":
+						case undefined:
+							// TODO: Shouldn't we do something with the script her?
+							createModule(_.innerText);
+							break;
+						default:
+							onWarning(
+								`Unsupported script type in template: ${type}`
+							);
+							break;
+					}
 				}
 			});
 
@@ -99,6 +103,7 @@ export const ui = (
 ui.options = Options;
 ui.api = API;
 
+export const $ = API;
 export { tokens, stylesheet, controller };
 export default ui;
 

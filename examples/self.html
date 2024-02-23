@@ -28,21 +28,16 @@
 						<!-- This is the contents of the draggable -->
 						<slot name="children" in:x in:y in:is-dragging="">
 							<foreignObject xmlns="http://www.w3.org/2000/svg" out:x="x" out:y="y" out:width="width" x:skip>
-								<div>
-									Here is an object
-
-								</div>
+								x=<code out:content="x">X</code>,
+								y=<code out:content="y">Y</code>
+								?=<code out:content="isDragging">?</code>
 							</foreignObject>
 						</slot>
 					</slot>
 				</g>
 			</svg>
 		</template>
-		<!--
-									x=<code out:content="x">X</code>,
-									y=<code out:content="y">Y</code>
-									?=<code out:content="isDragging">?</code>
-									-->
+
 
 		<!--
 							<div class="row gap-1 pad-1"> <span class="fill">
@@ -64,16 +59,15 @@
 		<!-- NOTE: We need to wrap the template in an SVG node as otherwise
 	 foreignObject is not SVG -->
 		<svg style="display:none;">
+			<!-- TODO: We can't quite get something done base on the ref, we'd need to get the size of the ref -->
 			<template name="Draggable" inout:x="0" inout:y="0" inout:width="100" inout:height="100" out:is-dragging="false"
-				in:children>
+				in:children out:container-size="${container->{console.log('XXX CONTAINER',container)}}">
 				<foreignObject xmlns="http://www.w3.org/2000/svg" out:x="x" out:y="y" out:width="width" out:height="height"
 					out:style="isDragging->{_ ? 'cursor: grabbing;' : 'cursor: unset;'}"
 					on:mousedown="x,y->{$.drag(event,(_,{dx,dy})=>scope.patch({isDragging:true,x:(x||0)+dx,y:(y||0)+dy}), ()=>scope.patch({isDragging:false}))}">
-					<div class="bg-grey-7 fit" xmlns="http://www.w3.org/1999/xhtml">
+					<div ref="container" class="bg-grey-7 fit" xmlns="http://www.w3.org/1999/xhtml">
 						<div class="stack w-3b bg-grey-8 bevel bd-3">
-							A
 							<slot out:content="children"></slot>
-							B
 						</div>
 					</div>
 				</foreignObject>

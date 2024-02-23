@@ -227,12 +227,8 @@ export class Value extends Cell {
 		} else {
 			this._pending = null;
 			this.revision = this.revision < 0 ? 0 : this.revision;
-			console.log(
-				"XXX PATCHING",
-				this.value,
-				path.slice(offset || 0),
-				value
-			);
+			const v = patch(this.value, path, value, undefined, offset);
+			this.set(v, null, 0, true);
 		}
 	}
 
@@ -517,6 +513,7 @@ export class Scope extends Cell {
 	}
 
 	// Ensures that there is a local slot defined, unless `update` is false.
+	// FIXME: update should be create and should be negated.
 	set(path, value, force = false, update = false) {
 		if (typeof path === "string") {
 			// NOTE: We do need to override. If we set in a scope, we don't
