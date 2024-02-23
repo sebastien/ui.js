@@ -9,7 +9,7 @@ export const diffstate = (
 	onRemove,
 	state
 ) => {
-	// All hanlders are (CURRENT,INDEX,PREVIOUS,STATE)
+	// All handlers are (CURRENT,INDEX,PREVIOUS,STATE)
 	// We discrimated between atoms and composites (objects)
 	const ta =
 		valueA === null || valueA === undefined ? undefined : typeof valueA;
@@ -94,6 +94,8 @@ export const diffstate = (
 	}
 };
 
+// TODO: Redundant with utils/collections
+//
 export const cmp = (a, b) => {
 	//if (a === undefined) {
 	//    return b === undefined ? 0 : -cmp(b, a);

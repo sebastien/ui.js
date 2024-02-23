@@ -381,7 +381,7 @@ export const len = (value) => {
 };
 
 // FIXME: This should be merged with `assign`, it's almost the same.
-export const patch = (scope, path, value, merge, offset = 0) => {
+export const patch = (scope, path, value, merge = undefined, offset = 0) => {
 	const n = path.length;
 	// We make sure the root is an object if we need it
 	let root =

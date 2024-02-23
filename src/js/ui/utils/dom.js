@@ -1,4 +1,5 @@
 import Options from "./options.js";
+import { isObject } from "./values.js";
 
 export const createComment = (text) =>
 	Options.anchors
@@ -62,23 +63,115 @@ export const isNodeEmpty = (node) => {
 	return true;
 };
 
+export const NS = {
+	svg: "http://www.w3.org/2000/svg",
+	xlink: "http://www.w3.org/1999/xlink",
+};
+
+class DOMProxy {
+	constructor(namespace) {
+		this.namespace = namespace;
+	}
+	get(scope, property) {
+		const node = this.namespace
+			? document.createElementNS(this.namespace, property)
+			: document.createElement(property);
+		return (...args) => {
+			for (const v of args) {
+				if (isObject(v)) {
+					for (const k in args) {
+						const w = v[k];
+						DOM.attr(
+							node,
+							k,
+							w === null || w === undefined ? "" : `${w}`
+						);
+					}
+				} else if (v instanceof Node) {
+					node.appendChild(v);
+				} else if (v === null || v === undefined) {
+					// pass
+				} else {
+					node.appendChild(document.createTextNode(`${v}`));
+				}
+			}
+		};
+	}
+}
+
 // --
 // A collection of utilities to better work with the DOM
 export class DOM {
+	static attr(node, name, value, append = 0, ns = undefined) {
+		const t = typeof value;
+		if (!ns && name.startsWith("on")) {
+			const n = name.toLowerCase();
+			if (node[n] !== undefined) {
+				// We have a callback
+				node[n] = value;
+			}
+			return node;
+		}
+		if (!ns & (name === "style") && t === "object") {
+			// We manage style properties by valle
+			if (!append) {
+				node.setAttribute("style", "");
+			}
+			Object.assign(node.style, value);
+		} else if (!ns && name === "value" && node.value !== undefined) {
+			node.value = value ? value : "";
+		} else if (!ns && name.startsWith("on") && node[name] !== undefined) {
+			// We have a callback
+			node[name] = value;
+		} else if (value === undefined || value === null) {
+			// We remove the attribute
+			ns ? node.removeAttributeNS(ns, name) : node.removeAttribute(name);
+		} else {
+			// We have a regular value that we stringify
+			const v =
+				t === "number"
+					? `${value}`
+					: t === "string"
+					? value
+					: JSON.stringify(value);
+			// If we append, we create an inermediate value.
+			if (append) {
+				const e = ns
+					? node.getAttributeNS(ns, name)
+					: node.getAttribute(name);
+				const w = `${append < 0 && e ? e + " " : ""}${v}${
+					append > 0 && e ? " " + e : ""
+				}`;
+				ns
+					? node.setAttributeNS(ns, name, w)
+					: node.setAttribute(name, w);
+			} else {
+				ns
+					? node.setAttributeNS(ns, name, v)
+					: node.setAttribute(name, v);
+			}
+		}
+		return node;
+	}
+	static before(next, node) {
+		next.parentNode && next.parentNode.insertBefore(node, next);
+		return node;
+	}
 	static after(previous, node) {
 		switch (previous.nextSibling) {
 			case null:
 			case undefined:
 				previous.parentNode && previous.parentNode.appendChild(node);
-				return;
+				return node;
 			case node:
-				return;
+				return node;
 			default:
 				previous.parentNode &&
 					previous.parentNode.insertBefore(
 						node,
 						previous.nextSibling
 					);
+				return node;
 		}
 	}
 	static mount(parent, node) {
@@ -268,4 +361,6 @@ export const WebEvents = [
 	"speechstart",
 ].reduce((r, v) => ((r[v] = true), r), {});
 
+export const html = new Proxy({}, new DOMProxy());
+export const svg = new Proxy({}, new DOMProxy(NS.svg));
 // EOF
