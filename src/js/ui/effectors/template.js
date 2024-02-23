@@ -96,6 +96,7 @@ class TemplateEffect extends Effect {
 			for (let i = 0; i < template.views.length; i++) {
 				// … we create the view if it does not exist
 				if (!this.views[i]) {
+					// FIXME: This should be using the View Effector.
 					// We start with cloning the view root node.
 					const view = template.views[i];
 					const root = view.root.cloneNode(true);
@@ -142,15 +143,20 @@ class TemplateEffect extends Effect {
 					// entries in the local state. We need to do this first, as effectors
 					// may use specific refs.
 					// FIXME: Do we really need to pass the `refs`?
+					//
+					// TODO: We should support an array of refs, like the children of a list
 					const refs = {};
 					for (const [k, p] of view.refs.entries()) {
 						const n = pathNode(p, root);
 						assign(refs, k, n);
-						this.scope.state.put(
-							[...this.scope.localPath, `#${k}`],
-							n
+						this.scope.set(
+							k,
+							n,
+							/* force to override */ true,
+							false
 						);
 					}
+					console.log("REFS", refs);
 
 					// --
 					// ### Mounting

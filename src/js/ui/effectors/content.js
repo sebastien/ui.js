@@ -34,6 +34,7 @@ class ContentEffect extends Effect {
 		return this._placeholder;
 	}
 
+	// FIXME: This should be reworked, and mount()/unmount() added as well.
 	unify(value, previous = this.value) {
 		const placeholder = this.placeholder;
 		const isEmpty =
