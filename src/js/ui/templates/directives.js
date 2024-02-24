@@ -139,7 +139,7 @@ export const parseSelector = (text) => {
 		(_, i) =>
 			new SelectorInput(
 				_.isCurrent ? "." : _.isKey ? "#" : _.type,
-				_.isCurrent ? ["_"] : _.isKey ? ["#"] : values(_.chunk),
+				_.isCurrent ? ["_"] : _.isKey ? ["#"] : [...values(_.chunk)],
 				_.card === "*",
 				formats[i]
 			)

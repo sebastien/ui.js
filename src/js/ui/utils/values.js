@@ -2,8 +2,10 @@
 //  # Utilities
 
 export const Empty = Symbol("Empty");
+export const Nil = Symbol("Nil");
 export const Any = Symbol("Any");
 export const Stop = Symbol("Stop");
+export const Skip = Symbol("Skip");
 export const RawObjectPrototype = Object.getPrototypeOf({});
 
 ("");
@@ -31,6 +33,11 @@ export const bool = (value) =>
 
 export const isObject = (value) =>
 	value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
+
+export const isIterable = (value) =>
+	value !== undefined &&
+	value !== null &&
+	typeof value[Symbol.iterator] === "function";
 export const type = (_) => {
 	const t = typeof _;
 	switch (_) {

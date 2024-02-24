@@ -17,6 +17,8 @@ export const numfmt = (value, precision = 0) => {
 		: value;
 };
 
+export const capitalize = (text) =>
+	`${text.substr(0, 1).toUpperCase()}${text.substr(1)}`;
 export const numcode = (
 	number,
 	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -32,7 +34,7 @@ export const numcode = (
 	return res.join("");
 };
 
-	export const sprintf = (...args) => {
+export const sprintf = (...args) => {
 	var str_repeat = function (i, m) {
 		for (var o = []; m > 0; o[--m] = i) {}
 		return o.join("");

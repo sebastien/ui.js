@@ -96,6 +96,7 @@ export const ui = (
 					c && components.push(c);
 				}
 			}
+			// TODO: We should probably create a scope that can be introspected
 			return { templates, components, stylesheets, style, store };
 		}
 	);

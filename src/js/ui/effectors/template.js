@@ -156,7 +156,6 @@ class TemplateEffect extends Effect {
 							false
 						);
 					}
-					console.log("REFS", refs);
 
 					// --
 					// ### Mounting

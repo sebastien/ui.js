@@ -1,8 +1,5 @@
 import { onError } from "./utils/logging.js";
-import { items } from "./utils/collections.js";
-import { isObject } from "./utils/values.js";
-import { ValueError } from "./utils/errors.js";
-import { Cell, Value } from "./reactive.js";
+import { Value } from "./reactive.js";
 
 // --
 // The `Use` class creates a factory object that creates cells.

@@ -21,9 +21,11 @@ import { lerp } from "./utils/math.js";
 import query from "./utils/query.js";
 import { setTrace } from "./utils/logging.js";
 import { drag } from "./interaction.js";
+import data from "./utils/data.js";
 
 // This is mapped to `$` in formatters
 export const API = {
+	data,
 	debug: () => {
 		debugger;
 	},

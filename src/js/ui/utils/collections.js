@@ -1,4 +1,4 @@
-import { type, isObject } from "./values.js";
+import { type, isObject, isIterable } from "./values.js";
 import { idem } from "./func.js";
 
 // --
@@ -173,7 +173,15 @@ export const map = (v, f) => {
 			r.set(k, f(w, k));
 		}
 		return r;
-	} else if (isObject(v)) {
+	} else if (isIterable(v)) {
+		const res = [];
+		let i = 0;
+		for (const w of v) {
+			res.push(f(w, i++));
+		}
+		return res;
+	}
+	if (isObject(v)) {
 		const res = {};
 		for (const k in v) {
 			res[k] = f(v[k], k);
@@ -244,35 +252,31 @@ export const each = (v, f) => {
 	}
 };
 
-// FIXME: Should be iterator
-export const values = (v) => {
-	if (v instanceof Array) {
-		return v;
+export function* values(v) {
+	if (v instanceof Array || isIterable(v)) {
+		for (const w of v) {
+			yield w;
+		}
 	} else if (isObject(v)) {
-		return Object.values(v);
+		for (const k in v) {
+			yield v[k];
+		}
 	} else if (v instanceof Map) {
-		return [...v.values()];
+		return v.values();
 	} else if (v !== null && v !== undefined) {
-		return [v];
-	} else {
-		return [];
+		yield;
 	}
-};
+}
 
-// FIXME: Should be iterator
-export const keys = (v) => {
-	if (v instanceof Array) {
-		return range(v.length);
-	} else if (isObject(v)) {
-		return Object.keys(v);
+export function* keys(v) {
+	if (v instanceof Array || isObject(v)) {
+		for (const i in v) {
+			yield i;
+		}
 	} else if (v instanceof Map) {
-		return [...v.keys()];
-	} else if (v !== null && v !== undefined) {
-		return [];
-	} else {
-		return [];
+		return v.keys();
 	}
-};
+}
 
 export function* items(v) {
 	if (v instanceof Array) {
