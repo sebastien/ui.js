@@ -111,6 +111,7 @@ variations).
 	--pad-6: calc(1px * 24);
 	--pad-7: calc(1px * 28);
 	--pad-8: calc(1px * 32);
+	--pad: var(--pad-0);
 
 	--gap-1: var(--pad-0);
 	--gap-2: var(--pad-1);
@@ -257,4 +258,5 @@ variations).
 
 	--control-input-bg: var(--page-bg);
 }
+
 /* EOF */
