@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>UI.js ― Self</title>
+	<title>UI.js ― DataStudio</title>
 	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
 	<script type="importmap">
 			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
@@ -13,7 +13,7 @@
 
 <body>
 	<div class="stack fit-screen stretched lined nogap">
-		<slot template="DataStudio" />
+		<slot template="DataStudio" structures="(window.SCHEMA.structures)" />
 
 
 		<!-- ------------------------------------------------------------------------
@@ -21,14 +21,30 @@
 	 DATA STUDIO
 
 	 ------------------------------------------------------------------------ -->
-		<template name="DataStudio" in:items="('Application Component Path'.split(' '))">
+		<template name="DataStudio" in:structures in:items="('Application Component Path'.split(' '))">
 			<div class="stack lined fit">
 				<div class="row">
-					DataStudio
+					<h1>
+						<slot template="Icon" name="'menu'"></slot>
+						DataStudio
+					</h1>
 				</div>
 				<div class="row fill lined stretched">
 					<div class="stack w-3b">
-						<ul class="stack lined" x:for="item=items">
+						<slot template="DataStructures" items="structures"></slot>
+					</div>
+					<div class="stack fill lined">
+						<div class="fill scrollable">
+							<slot template="DataTable" data="(window.DATA)" path="'*.identifiers'"></slot>
+						</div>
+						<div class="row">
+							Example
+						</div>
+					</div>
+
+
+					<!--
+					<div class="stack w-3b"> <ul class="stack lined" x:for="item=items">
 							<li>
 								<div class="row with-hover">
 									<div class="icon square"></div>
@@ -50,21 +66,102 @@
 					<div class="stack w-3b">
 						Detail
 					</div>
+					-->
 				</div>
 			</div>
 		</template>
 
 		<!-- ------------------------------------------------------------------------
 
+	 DATA STRUCTURES
+
+	 ------------------------------------------------------------------------ -->
+		<template name="DataStructures" in:items>
+			<ul class="lined" x:for="item=items">
+				<li>
+					<div class="pad-2 row bd-b">
+						<span class="fill" out:content="item.name"></span>
+						<code class="small dim" out:content="item.path"></code>
+					</div>
+					<ul class="pl-2" x:for="slot=item.definition.children">
+						<li>
+							<span>⚬ </span>
+							<span out:content="#"></span>
+						<li>
+					</ul>
+			</ul>
+	</div>
+	</template>
+
+	<!-- ------------------------------------------------------------------------
+
+	 DATA TABLE
+
+	 ------------------------------------------------------------------------ -->
+	<template name="DataValue" in:data>
+		<span x:match="data|type">
+			<span x:case="'null'">◌</span>
+			<span x:case="'undefined'">―</span>
+			<span x:case="number"><span class="selectable" out:content="data"></span></span>
+			<span x:case="string"><span class="selectable" out:content="data"></span></span>
+			<span x:case="bool"><input type="checkbox" disabled="true" out:checked="data" /></span>
+			<span x:case="function">λ</span>
+			<span x:case="array">
+				<ul class="inline row brackets comma" x:for="item=data">
+					<li>
+						<slot template="DataValue" data="item"></slot>
+					</li>
+				</ul>
+			</span>
+			<span x:case="map">
+				<ul class="inline row curlies comma" x:for="item=data">
+					<li><span out:content="#"></span>:<slot template="DataValue" data="item"></slot>
+					</li>
+				</ul>
+			</span>
+			<span x:case="obj"><span out:content="obj|json"></span></span>
+			<span x:case="val"><span out:content="obj|json"></span></span>
+			<span x:otherwise>⁇ <span out:content="obj|type"></span></span>
+		</span>
+	</template>
+
+	<template name="DataTable" in:data inout:path out:table="${data,path->{$.data.table($.data.query(data,path))}}"
+		out:columns="${table->{console.log('table',table),table ? table.at(0) : null}}"
+		out:rows="${table->{table ? table.slice(1) : null}}">
+		<table class="lined">
+			<thead class="bd-2">
+				<!-- FIXME: If we move the for in a slot, it doesn't work anymore -->
+				<tr x:for="col=columns">
+					<th class="bold pad-1"><span out:content="col"></span></th>
+				</tr>
+			</thead>
+			<tbody class="small mono" x:for="row=rows">
+				<tr x:for="cell=row">
+					<td class="pad-1">
+						<slot template="DataValue" data="cell">
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</template>
+
+	<template name="Icon@../components/icons.html"></template>
+
+	<!-- ------------------------------------------------------------------------
+
 	 MAIN
 
 	 ------------------------------------------------------------------------ -->
-		<script type="module">
-			import ui from "@ui.js";
-			const data = await fetch("https://api.opensource.org/licenses/").then(_ => _.json())
-			console.log(data)
-			ui();
-		</script>
+	<script type="module">
+		import ui from "@ui.js";
+		import {schema, table, query} from "@ui/utils/data.js";
+		const cors = (url) => fetch(`https://sebastien-cors.web.val.run/${url.split('//').at(-1)}`);
+		const data = await cors("https://api.opensource.org/licenses/").then(_ => _.json())
+		window.SCHEMA = schema(data);
+		window.DATA = data;
+		window.TABLE = table(query(data, "*.identifiers"));
+		ui();
+	</script>
 </body>
 
 </html>
