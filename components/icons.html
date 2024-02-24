@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>UI.js ― Icons</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div>
+		<section>
+			<h1 class="t">Icon</h1>
+
+			<slot template="Icon" name="'menu'"></slot>
+		</section>
+
+	</div>
+
+	<!-- ----------------------------------------------------------------------
+
+    ICON
+
+    ----------------------------------------------------------------------- -->
+
+
+	<template name="Icon" base="24" in:name="help-square" in:source="Iconoir">
+		<svg class="icon" out:height="size" out:viewbox="base->{`0 0 ${base} ${base}`}">
+			<use out:href="name,source->{`#icon-${name}-${(source||'generic').toLowerCase()}`}" />
+		</svg>
+		<script type="module">
+			import {controller} from "@ui.js";
+			import {loadIcon} from "@ui/icons.js";
+			const Icon = ({on, scope, state}) => {
+				loadIcon(state.name, state.source);
+			};
+			controller(Icon);
+		</script>
+	</template>
+
+	<!-- ----------------------------------------------------------------------
+
+    MAIN SCRIPT
+
+    ----------------------------------------------------------------------- -->
+
+	<script type="module">
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
+</html>
