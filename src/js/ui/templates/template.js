@@ -54,6 +54,10 @@ export const onTemplateNode = (
 				onError(`Could not find template ${name} in source at ${url}`);
 			}
 		});
+		// TODO: We should tell the asset loader we're waiting on the
+		// templates to be loaded, and we should probably also wait for the
+		// controllers, or at least register that the controllers need to be
+		// bound when they're loaded.
 		return null;
 	}
 	// NOTE: We skip text nodes there

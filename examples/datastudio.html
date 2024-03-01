@@ -33,12 +33,9 @@
 					<div class="stack w-3b">
 						<slot template="DataStructures" items="structures"></slot>
 					</div>
-					<div class="stack fill lined">
-						<div class="fill scrollable">
+					<div class="stack fill lined container">
+						<div class="expand  pannable">
 							<slot template="DataTable" data="(window.DATA)" path="'*.identifiers'"></slot>
-						</div>
-						<div class="row">
-							Example
 						</div>
 					</div>
 
@@ -107,14 +104,14 @@
 			<span x:case="bool"><input type="checkbox" disabled="true" out:checked="data" /></span>
 			<span x:case="function">λ</span>
 			<span x:case="array">
-				<ul class="inline row brackets comma" x:for="item=data">
+				<ul class="stack" x:for="item=data">
 					<li>
 						<slot template="DataValue" data="item"></slot>
 					</li>
 				</ul>
 			</span>
 			<span x:case="map">
-				<ul class="inline row curlies comma" x:for="item=data">
+				<ul class="stack" x:for="item=data">
 					<li><span out:content="#"></span>:<slot template="DataValue" data="item"></slot>
 					</li>
 				</ul>
@@ -129,9 +126,9 @@
 		out:columns="${table->{console.log('table',table),table ? table.at(0) : null}}"
 		out:rows="${table->{table ? table.slice(1) : null}}">
 		<table class="lined">
-			<thead class="bd-2">
+			<thead>
 				<!-- FIXME: If we move the for in a slot, it doesn't work anymore -->
-				<tr x:for="col=columns">
+				<tr class="sticky-t bg-grey-9 shadow-1" x:for="col=columns">
 					<th class="bold pad-1"><span out:content="col"></span></th>
 				</tr>
 			</thead>

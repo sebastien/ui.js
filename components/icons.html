@@ -14,10 +14,8 @@
 	<div>
 		<section>
 			<h1 class="t">Icon</h1>
-
 			<slot template="Icon" name="'menu'"></slot>
 		</section>
-
 	</div>
 
 	<!-- ----------------------------------------------------------------------
@@ -31,15 +29,14 @@
 		<svg class="icon" out:height="size" out:viewbox="base->{`0 0 ${base} ${base}`}">
 			<use out:href="name,source->{`#icon-${name}-${(source||'generic').toLowerCase()}`}" />
 		</svg>
-		<script type="module">
-			import {controller} from "@ui.js";
-			import {loadIcon} from "@ui/icons.js";
-			const Icon = ({on, scope, state}) => {
-				loadIcon(state.name, state.source);
-			};
-			controller(Icon);
-		</script>
+
 	</template>
+	<script type="module">
+		import {controller} from "@ui.js";
+		import {loadIcon} from "@ui/icons.js";
+		const Icon = ({on, scope, state}) => loadIcon(state.name, state.source);
+		controller(Icon);
+	</script>
 
 	<!-- ----------------------------------------------------------------------
 
@@ -49,6 +46,7 @@
 
 	<script type="module">
 		import ui from "@ui.js";
+		fetch("https://iconoir.com/_next/data/UU6FMZyesNLYQtdw4nlPQ/index.json")
 		ui();
 	</script>
 </body>

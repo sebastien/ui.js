@@ -23,7 +23,7 @@
 	 ------------------------------------------------------------------------ -->
 	<!--
 		TODO: Filter down does not trigger a re-render when the elements have 
-		changed, if is fucked up
+		changed.
 	 -->
 	<template name="Inspector" in:value out:type="${value|type}" inout:selection="[]" inout:summary="(true)">
 		<slot x:match="type">
@@ -31,14 +31,15 @@
 				<span>Value <span class="noselect bracketed" out:content="value|count" /></span>
 				<ul x:for="entry=value|entries">
 					<li>
-						<span class="pointer" on:click="selection=selection,#->{$.set(selection,key,selection[key]? false:true)}">
-							<span class="mono small noselect" out:content="selection,#->{selection && selection[key] ?  '▼' : '▶'}" />
-							<span class="mono" out:content="entry.key" />
-						</span>
+						<span class="pointer"
+							on:click="selection=selection,#->{$.set(selection,key,selection[key]? false:true)}">X</span>
+						<span class="mono small noselect"
+							out:content="selection,#->{selection && selection[key] ?  '▼' : '▶'}">X</span>
+						<span class="mono" out:content="entry.key" />
 						<span x:if="selection,#->{selection[key]}">:
 							<slot template="Inspector" value="entry.value" />
 						</span>
-					<li>
+					</li>
 				</ul>
 			</slot>
 			<slot x:otherwise>
