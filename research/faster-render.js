@@ -4,32 +4,50 @@
 // I'm quite happy with `ui.js`'s speed of development, and also its interactive
 // speed past the first render (esp. with lots of data), but the initial
 // render needs to improve.
-class VNode {
-	static Unify(node, dom) {
-		return document.createTextNode("XXX");
+
+export const RawObjectPrototype = Object.getPrototypeOf({});
+export const isObject = (value) =>
+	value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
+
+// ----------------------------------------------------------------------------
+//
+// CELLS SELECTIONS
+//
+// ----------------------------------------------------------------------------
+
+
+class Cell {
+	static Count = 0;
+
+	// --
+	// Takes a data structure containing cells, and retrieves values
+	// defined in context mapping the cell id to the value.
+	static Eval(data, context) {
+		if (data instanceof Cell) {
+			return context[data.id]
+		} else if (data instanceof Array) {
+			return data.map(_ => Cell.Eval(_, context))
+		} else if (data instanceof Map) {
+			const r = new Map();
+			for (const [k, v] of data.entries()) {
+				r.set(k, Cell.Eval(v, context))
+			}
+			return r;
+		} else if (isObject(data)) {
+			const r = {};
+			for (const k in data) {
+				r[k] = Cell.Eval(data[k], context);
+			}
+			return r;
+		} else { return data }
 	}
 
-	constructor(ns, name, ...children) {
-		this.ns = ns
-		this.name = name
-		this.children = children;
+	constructor(input = null) {
+		this.id = Cell.Count++;
+		this.input = input;
 	}
+	apply(value) { return value }
 
-}
-
-class FactoryProxy {
-	constructor(namespace) {
-		this.namespace = namespace;
-	}
-	get(scope, property) {
-		if (scope.has(property)) {
-			return scope.get(property)
-		} else {
-			const res = (...args) => new VNode(this.namespace, property, ...args)
-			scope.set(property, res)
-			return res
-		}
-	}
 }
 
 // ----------------------------------------------------------------------------
@@ -38,16 +56,14 @@ class FactoryProxy {
 //
 // ----------------------------------------------------------------------------
 
-class Selectable {
-	constructor(selection = null) {
-		this.selection = selection;
-	}
+
+class Selectable extends Cell {
 
 	get entries() {
 		return new Derivation(this, Object.entries);
 	}
 
-	apply(func) {
+	then(func) {
 		return new Derivation(this, func)
 	}
 
@@ -66,15 +82,14 @@ class Selectable {
 		// TODO: we should do parsing here
 		for (const [k, v] of Object.entries(cases)) {
 			for (const _ of k.split(",")) {
-				branches.push([_, v])
+				branches.push([_, null, v])
 			}
 		}
 		return new ConditionalEffect(this, branches);
 	}
 
 	map(transform) {
-		template(transform)
-		return this;
+		return new MappedEffect(this, template(transform))
 	}
 
 
@@ -111,13 +126,35 @@ class Effect extends Selectable {
 }
 
 class AttributeEffect extends Effect { }
+
 class ConditionalEffect extends Effect {
-	constructor(selection, branches) { super(selection); this.branches = branches }
+	constructor(selection, branches) {
+		super(selection);
+		this.branches = branches;
+	}
 
 	apply(value) {
+		for (const [v, f, result] of this.branches) {
+			if (v !== undefined && value === v || f && f(value)) {
+				return result;
+			}
+		}
+		return null;
 	}
 }
-class MappedEffect extends Effect { }
+class MappedEffect extends Effect {
+
+	constructor(selection, template) {
+		super(selection);
+		this.template = template;
+	}
+
+	apply(value) {
+		console.log("MAPPING", value, this.template)
+	}
+
+
+}
 
 // ----------------------------------------------------------------------------
 //
@@ -130,8 +167,7 @@ const FIELD_SEP = String.fromCharCode(31);
 class Slot extends Selectable {
 	static Count = 0;
 	constructor(name, index = null) {
-		super();
-		this.id = Slot.Count++;
+		super(null);
 		this.name = name;
 		this.index = index;
 		this.children = undefined;
@@ -140,7 +176,13 @@ class Slot extends Selectable {
 	toString() { return `${FIELD_SEP}{${this.id}}${FIELD_SEP}` }
 }
 
-class Selection extends Selectable { }
+class Selection extends Selectable {
+	constructor(selection) {
+		super([...cellsOf(selection)]);
+		this.selection = selection;
+	}
+
+}
 
 export function* matchesOf(template, data) {
 	if (template instanceof Slot) {
@@ -168,24 +210,24 @@ export function* matchesOf(template, data) {
 }
 export const matches = (template, data) => [...matchesOf(template, data)]
 
-export function* slotsOf(template, path = []) {
-	if (template instanceof Slot) {
+export function* cellsOf(template, path = []) {
+	if (template instanceof Cell) {
 		yield [template, path];
 	} else if (template instanceof Map) {
 		for (const [k, v] of template.entries()) {
-			for (const _ of slotsOf(v, [...path, k])) {
+			for (const _ of cellsOf(v, [...path, k])) {
 				yield _
 			}
 		}
 	} else if (template instanceof Object) {
 		for (const k in template) {
-			for (const _ of slotsOf(template[k], [...path, k])) {
+			for (const _ of cellsOf(template[k], [...path, k])) {
 				yield _
 			}
 		}
 	}
 }
-export const slots = (template, data) => [...slotsOf(template, data)]
+export const cells = (template, data) => [...cellsOf(template, data)]
 
 
 
@@ -201,8 +243,9 @@ export const prototype = (func) => {
 	// We extract the args
 	const t = func.toString();
 	const i = t.indexOf("(");
-	const j = t.indexOf(")");
-	const argdef = t.slice(i >= 0 ? i + 1 : 0, j >= 0 ? j : n)
+	let j = t.indexOf(")");
+	j = j < 0 ? t.indexOf("=>") : j
+	const argdef = t.slice(i >= 0 ? i + 1 : 0, j >= 0 ? j : t.length)
 	const n = argdef.length;
 	// Now we do the parsing
 	const args = [];
@@ -274,17 +317,38 @@ export const assign = (scope, path, value) => {
 	return scope;
 };
 
+
 // ----------------------------------------------------------------------------
 //
 // TEMPLATES
 //
 // ----------------------------------------------------------------------------
 
+
 class Template {
 	static All = new Map();
 	constructor(input, output) {
 		this.input = input;
 		this.output = output;
+		// The derivations is a forward map, so that we know when a given
+		// input changes, which other inputs need to be changed.
+		const derivations = new Map();
+		const queue = output instanceof VNode ? output.cells : [output]
+		const cells = new Map();
+		while (queue.length) {
+			const output = queue.pop();
+			if (!cells.has(output.id)) {
+				for (const [input] of cellsOf(output.input)) {
+					if (!derivations.has(input.id)) { derivations.set(input.id, []) }
+					derivations.get(input.id).push(output.id)
+					if (!cells.has(input.id)) { queue.push(input) }
+				}
+				cells.set(output.id, output);
+			}
+		}
+		//
+		this.derivations = derivations;
+		this.cells = cells;
 	}
 }
 
@@ -334,23 +398,178 @@ export const component = (declarator) => {
 class RenderState {
 	constructor(template, parent = undefined) {
 		this.template = template;
-		this.values = Object.create(parent ? parent.values : {})
+		this.context = Object.create(parent ? parent.context : {})
+		this.updated = Object.create(parent ? parent.updated : {})
+		this.revision = 0;
+		this.states = new Map();
 	}
+
 	apply(value) {
-		// TODO: Could move to the constructor
+		// We apply the value, and extract the slot values for each slot
+		// in the template input. This populates the state.
+		const queue = [];
+		const rev = this.revision++;
+		// First step is to populate the context with the extracted slot
+		// value from the arguments.
 		for (const [s, v] of matchesOf(this.template.input, value)) {
-			// TODO: Should detect own slots
-			this.values[s.id] = v;
+			this.context[s.id] = v;
+			queue.push(s);
 		}
-		return this.template.output.apply(this.values)
+		// Now, we play back the derivations, updating values in cascade,
+		// following the template's derivation map.
+		const derivations = this.template.derivations
+		while (queue.length) {
+			const cell = queue.pop();
+			const derived = derivations.get(cell.id);
+			if (derived) {
+				for (const cid of derived) {
+					// We skip any cell that already has been processed in this
+					// update cycle.
+					if ((this.updated[cid] || -1) < rev) {
+						// We get the cell, evaluate the corresponding value for 
+						// its input, and pass it to apply.
+						const output = this.template.cells.get(cid)
+						const value = output.apply(Cell.Eval(output.input, this.context))
+						// TODO: Value may be a VNode, in which case the values
+						// may not have been updated as part of derivations. For instance
+						// conditionals.
+
+						// We store the result in the context
+						this.context[cid] = value;
+						this.updated[cid] = rev;
+						// And schedule further derivations for processing.
+						if (derivations.has(cid)) {
+							queue.push(output)
+						}
+					}
+				}
+			}
+		}
+		// At this point the context is fully populated with outputs, we just
+		// need to retrieve the output value of the output
+		return this.context[this.template.output.id];
+	}
+
+	render(node, output) {
+		const state = this.states.get(node)
+		console.log("RENDER", state, output)
+		// We create
+		if (!state) {
+			if (output instanceof VNode) {
+				const res = output.render(this.context)
+				node.appendChild(res);
+				this.states.set(node, res);
+			} else {
+				console.warning("Output is not a VNode")
+			}
+		} else {
+			console.log("UPDATING NOT IMPLEMENTED", { node, output })
+		}
 	}
 }
 
 const unify = (template, data, node, context = new RenderState(template)) => {
-	context.apply(data)
+	const output = context.apply(data)
+	context.render(node, output)
 	return context
 
 }
+
+// ----------------------------------------------------------------------------
+//
+// HTML FACTORY
+//
+// ----------------------------------------------------------------------------
+
+function* cellsOfVNode(node, path = []) {
+	let i = 0;
+	for (const child of node.children) {
+		if (child instanceof Cell) {
+			yield ([child, [...path, i]]);
+		} else if (child instanceof VNode) {
+			for (const _ of cellsOfVNode(child, [...path, i])) {
+				yield _
+			}
+		}
+		i++;
+	}
+}
+
+class VNode {
+
+	constructor(ns, name, ...children) {
+		this.ns = ns
+		this.name = name
+		this.children = children;
+		// NOTE: Maybe an imperative version would be faster?
+		this.cells = children.reduce((r, v) => v instanceof VNode ? [...r, ...v.cells] : v instanceof Cell ? [...r, v] : r, [])
+	}
+
+	render(context) {
+		const res = this.ns ? document.createElementNS(this.ns, this.name) : document.createElement(this.name);
+		for (const child of this.children) {
+			let v = child;
+			if (v instanceof Cell) {
+				if (context[child.id] === undefined) {
+					context[child.id] = v = child.apply(Cell.Eval(child.input, context))
+				}
+			}
+			if (v === undefined || v === null) {
+				// pass
+			} else if (v instanceof VNode) {
+				res.appendChild(v.render(context))
+			} else if (isObject(v)) {
+				for (const k in v) {
+					const w = k[v];
+					switch (k) {
+						case "class":
+						case "_":
+							if (w === undefined) {
+								//pass
+							} else if (w === null) {
+								res.removeAttribute("class");
+							} else {
+								for (const _ of w.split(" ")) {
+									res.classList.add(_)
+								}
+							}
+							break
+						default:
+							// TODO: Event handlers, style, value
+							if (w === undefined) {
+								//pass
+							} else if (w === null) {
+								res.removeAttribute(k);
+							} else {
+								res.setAttribute(k, `${w}`);
+							}
+					}
+
+				}
+			} else {
+				res.appendChild(document.createTextNode(`${v}`));
+			}
+		}
+		return res;
+	}
+
+}
+
+class FactoryProxy {
+	constructor(namespace) {
+		this.namespace = namespace;
+	}
+	get(scope, property) {
+		if (scope.has(property)) {
+			return scope.get(property)
+		} else {
+			const res = (...args) => new VNode(this.namespace, property, ...args)
+			scope.set(property, res)
+			return res
+		}
+	}
+}
+export const h = new Proxy(new Map(), new FactoryProxy());
 
 // ----------------------------------------------------------------------------
 //
@@ -361,7 +580,7 @@ const unify = (template, data, node, context = new RenderState(template)) => {
 export const select = (...slots) => {
 	return new Selection(slots)
 }
-export const h = new Proxy(new Map(), new FactoryProxy());
+
 export const $ = select;
 
 export const render = (definition, data, node, context = null) =>

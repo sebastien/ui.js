@@ -20,20 +20,23 @@
 			import {h, $, render} from "./faster-render.js"
 
 			const Inspector = (value) =>
-				value.apply($.type).match({
-					[["object", "map"]]: h.ul(
-						{_: "comma curlies dim-ab"},
-						value.entries.map(([key, value]) => h.li(
-							{_: "pl-2"},
-							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
-					"array": h.ul(
-						{_: "comma brackets dim-ab"},
-						value.map((value, key) => h.li(
-							{_: "pl-2"},
-							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
-					[null]: h.span(value.fmt())
-
-				})
+				value
+					.then(_ => _ === undefined ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _)
+					.match({
+						[["object", "map"]]: h.ul(
+							{_: "comma curlies dim-ab"},
+							// The input should be [Slot(#0.0), Slot(#0.1)]
+							value.entries.map(([key, value]) => h.li(
+								{_: "pl-2"},
+								h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+						"array": h.ul(
+							{_: "comma brackets dim-ab"},
+							// The input should be [Slot(#0), Slot(#1)]
+							value.map((value, key) => h.li(
+								{_: "pl-2"},
+								h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+						[null]: h.span(value.fmt())
+					})
 
 
 			const logs = await fetch(
