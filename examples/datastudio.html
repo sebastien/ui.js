@@ -24,7 +24,7 @@
 		<template name="DataStudio" in:structures in:items="('Application Component Path'.split(' '))">
 			<div class="stack lined fit">
 				<div class="row">
-					<h1>
+					<h1 class="large bold">
 						<slot template="Icon" name="'menu'"></slot>
 						DataStudio
 					</h1>
@@ -96,7 +96,7 @@
 
 	 ------------------------------------------------------------------------ -->
 	<template name="DataValue" in:data>
-		<span x:match="data|type">
+		<slot x:match="data|type">
 			<span x:case="'null'">◌</span>
 			<span x:case="'undefined'">―</span>
 			<span x:case="number"><span class="selectable" out:content="data"></span></span>
@@ -104,22 +104,26 @@
 			<span x:case="bool"><input type="checkbox" disabled="true" out:checked="data" /></span>
 			<span x:case="function">λ</span>
 			<span x:case="array">
-				<ul class="stack" x:for="item=data">
-					<li>
+				<ul class="stack lined" x:for="item=data">
+					<li out:title="#">
 						<slot template="DataValue" data="item"></slot>
 					</li>
 				</ul>
 			</span>
 			<span x:case="map">
-				<ul class="stack" x:for="item=data">
-					<li><span out:content="#"></span>:<slot template="DataValue" data="item"></slot>
+				<ul class="stack dim-ab" x:for="item=data">
+					<li><span class="dim" out:content="#"></span>:<slot template="DataValue" data="item"></slot>
 					</li>
 				</ul>
 			</span>
-			<span x:case="obj"><span out:content="obj|json"></span></span>
-			<span x:case="val"><span out:content="obj|json"></span></span>
+			<span x:case="object">
+				<ul class="pad-2 stack dim-ab" x:for="item=data">
+					<li><span class="dim" out:content="#"></span>:<slot template="DataValue" data="item"></slot>
+					</li>
+				</ul>
+			</span>
 			<span x:otherwise>⁇ <span out:content="obj|type"></span></span>
-		</span>
+		</slot>
 	</template>
 
 	<template name="DataTable" in:data inout:path out:table="${data,path->{$.data.table($.data.query(data,path))}}"
@@ -134,7 +138,7 @@
 			</thead>
 			<tbody class="small mono" x:for="row=rows">
 				<tr x:for="cell=row">
-					<td class="pad-1">
+					<td class="pad-1 bd-r dashed">
 						<slot template="DataValue" data="cell">
 					</td>
 				</tr>

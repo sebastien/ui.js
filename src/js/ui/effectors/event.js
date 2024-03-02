@@ -64,6 +64,9 @@ class EventEffect extends Effect {
 				directive.stops ? false : true
 			);
 		}
+		if (directive.stops) {
+			event.stopPropagation();
+		}
 	}
 
 	unify(current, previous = this.value) {

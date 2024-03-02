@@ -221,6 +221,14 @@
 	border-width: 0px;
 }
 
+.dotted {
+	border-style: dotted;
+}
+
+.dashed {
+	border-style: dashed;
+}
+
 .row.lined > * {
 	border-bottom: unset;
 	border-right: var(--box-bd-w) solid var(--box-bd);
@@ -254,27 +262,51 @@ table.lined {
  * ## Opacity
  */
 
-.dim {
+.dim,
+.dim-a:after,
+.dim-b:before,
+.dim-ab:after,
+.dim-ab:before {
 	opacity: 0.65;
 }
 
-.dimmer {
+.dimmer,
+.dimmer-a:after,
+.dimmer-b:before,
+.dimmer-ab:after,
+.dimmer-ab:before  {
 	opacity: 0.45;
 }
 
-.dimmest {
+.dimmest,
+.dimmest-a:after,
+.dimmest-b:before,
+.dimmest-ab:after,
+.dimmest-ab:before  {
 	opacity: 0.25;
 }
 
-.faint {
+.faint,
+.faint-a:after,
+.faint-b:before,
+.faint-ab:after,
+.faint-ab:before  {
 	opacity: 0.15;
 }
 
-.fainter {
+.fainter,
+.fainter-a:after,
+.fainter-b:before,
+.fainter-ab:after,
+.fainter-ab:before  {
 	opacity: 0.1;
 }
 
-.faintest {
+.faintest,
+.faintest-a:after,
+.faintest-b:before,
+.faintest-ab:after,
+.faintest-ab:before  {
 	opacity: 0.05;
 }
 

@@ -12,6 +12,7 @@ import {
 	reverse,
 	entries,
 	sorted,
+	toggle,
 	set,
 } from "./utils/collections.js";
 import { type } from "./utils/values.js";
@@ -47,6 +48,7 @@ export const API = {
 	setTrace,
 	sorted,
 	set,
+	toggle,
 	query,
 	formats,
 	drag,

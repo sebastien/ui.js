@@ -13,10 +13,10 @@ export const list = (_) =>
 	_ instanceof Array
 		? _
 		: _ instanceof Map
-		? [_.values]
-		: _ !== null && _ !== undefined
-		? [_]
-		: [];
+			? [_.values]
+			: _ !== null && _ !== undefined
+				? [_]
+				: [];
 
 export const reduce = (v, f, r) => {
 	if (v === undefined) {
@@ -149,8 +149,8 @@ export const sorted = (
 		typeof key === "function"
 			? key
 			: key
-			? (_) => (_ ? _[key] : undefined)
-			: idem;
+				? (_) => (_ ? _[key] : undefined)
+				: idem;
 	const res =
 		collection instanceof Array ? [].concat(collection) : list(collection);
 	res.sort(
@@ -162,7 +162,7 @@ export const sorted = (
 	return res;
 };
 
-export const map = (v, f) => {
+export const map = (v, f = idem) => {
 	if (v === undefined) {
 		return v;
 	} else if (v instanceof Array) {
@@ -310,16 +310,10 @@ export const range = (start, end, step = 1, closed = false) => {
 	return r;
 };
 
-export const copy = (value) =>
-	value === null
-		? null
-		: typeof value === "object"
-		? value instanceof Array
-			? [...value]
-			: value instanceof Map
-			? new Map(value)
-			: { ...value }
-		: value;
+export const copy = (value) => {
+	if (value === undefined || value === null) { return value }
+	return typeof value === "object" ? map(value) : value;
+}
 
 export const append = (value, item) => {
 	if (value instanceof Array) {
@@ -436,6 +430,27 @@ export const last = (stream) => {
 	}
 	return res;
 };
+
+// TOOD
+// export const has = (collection, value) => {
+// }
+// export const add = (collection, value) => {
+// }
+// export const remove = (collection, value) => {
+// }
+export const toggle = (collection, value) => {
+	if (!collection) { return [value] }
+	if (collection instanceof Array) {
+		const i = collection.indexOf(value);
+		if (i === -1) { collection.push(value) }
+		else { collection.splice(i, 1) }
+		return collection;
+	} else {
+		return collection
+	}
+}
+
+
 
 export const trigger = (handlers, ...value) => {
 	let i = 0;

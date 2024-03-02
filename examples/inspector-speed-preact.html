@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Inspector (Preact)</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/"} }
+		</script>
+</head>
+
+<body>
+	<div id="Inspector">
+	</div>
+
+
+	<script type="module">
+		import {h, render} from 'https://esm.sh/preact';
+		import {useState, useEffect} from 'https://esm.sh/preact/hooks';
+		import htm from 'https://esm.sh/htm';
+		import {$} from "@ui.js"
+
+		// Initialize htm with Preact
+		const html = htm.bind(h);
+
+		function Inspector({value}) {
+			const t = $.formats.type(value)
+			switch (t) {
+				case "object":
+				case "map":
+					return h("ul", {
+						className: "comma curlies dim-ab"
+					}, $.entries(value).map(({key, value}) => h("li", {className: "pl-2"},
+						h("span", {className: "mono dim small"}, `${key}: `),
+						Inspector({value}))))
+				case "array":
+					return h("ul", {
+						className: "comma brackets dim-ab"
+					}, ...value.map((v, i) => h("li", {className: "pl-2"},
+						h("span", {className: "mono dim small"}, `#${i}: `),
+						Inspector({value: v}))))
+				default:
+					return html`<span>${t}</span>`
+			}
+			return html`<h1>Hello ${props.name}!</h1>`;
+		}
+		const logs = await fetch(
+			"inspector-speed.json"
+		).then((_) => _.json())
+		render(Inspector({value: {logs}}), document.getElementById("Inspector"));
+	</script>
+</body>
+
+</html>

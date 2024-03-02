@@ -150,11 +150,10 @@ export const parseSelector = (text) => {
 		// Format
 		match.processor
 			? createFunction(
-					[...inputs.map((v) => normInput(v.path.at(-1))), "$"],
-					`const _=${normInput(inputs[0].path.at(-1))};return (${
-						match.processor
-					})`
-			  )
+				[...inputs.map((v) => normInput(v.path.at(-1))), "$"],
+				`const _=${normInput(inputs[0].path.at(-1))};return (${match.processor
+				})`
+			)
 			: null,
 		// Target
 		match.target
@@ -195,20 +194,20 @@ export const parseLiteralValue = (text) => {
 				(text.startsWith("{") && text.endsWith("}")))
 			? JSON.parse(text)
 			: text && text.startsWith("(") && text.endsWith(")")
-			? createFunction(["$"], `{return ${text}}`)(API)
-			: text &&
-			  ((text.startsWith("'") && text.endsWith("'")) ||
-					(text.startsWith('"') && text.endsWith('"')))
-			? text.substring(1, text.length - 1)
-			: RE_NUMBER.test(text)
-			? parseFloat(text)
-			: text === "true"
-			? true
-			: text === "false"
-			? false
-			: text
-			? text
-			: undefined;
+				? createFunction(["$"], `{return ${text}}`)(API)
+				: text &&
+					((text.startsWith("'") && text.endsWith("'")) ||
+						(text.startsWith('"') && text.endsWith('"')))
+					? text.substring(1, text.length - 1)
+					: RE_NUMBER.test(text)
+						? parseFloat(text)
+						: text === "true"
+							? true
+							: text === "false"
+								? false
+								: text
+									? text
+									: undefined;
 	} catch (error) {
 		onError("Could not parse literal value", { text });
 		return null;
@@ -264,7 +263,6 @@ const RE_ON = new RegExp(
 				seq(
 					text("!"),
 					capture("[A-Za-z]+", "event"),
-					opt(capture(text("."), "stops"))
 				),
 				// And a event processor
 				opt(
@@ -286,6 +284,7 @@ const RE_ON = new RegExp(
 					)
 				)
 			),
+			opt(capture(text("."), "stops")),
 			"$"
 		),
 		seq(capture(SLOT, "slot"))
@@ -406,8 +405,8 @@ export const createHandlerBody = (inputs, handler) =>
 			return _ === "key" || _ === "#"
 				? `const key=scope.key !== undefined ? scope.key : scope.path ? scope.path.at(-1) : null;`
 				: `const ${p.at(-1)}=scope.get([${p
-						.map((_) => `"${_}"`)
-						.join(",")}]);`;
+					.map((_) => `"${_}"`)
+					.join(",")}]);`;
 		})
 		.join("")}; return (${handler})`;
 
@@ -416,8 +415,8 @@ export const createProcessorBody = (inputs, processors) => {
 		_ === "#"
 			? "scope.key"
 			: `scope.get([${_.split(".")
-					.map((_) => `"${_}"`)
-					.join(",")}])`
+				.map((_) => `"${_}"`)
+				.join(",")}])`
 	);
 	return createProcessorExpression(
 		processors,

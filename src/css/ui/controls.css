@@ -9,6 +9,18 @@ label {
 	display: block;
 }
 
+.action {
+	cursor: pointer;
+	user-select: none;
+}
+.action:hover {
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 95%
+	);
+}
+
 .selectable {
 	cursor: pointer;
 	user-select: none;
