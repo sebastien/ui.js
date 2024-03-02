@@ -19,8 +19,8 @@
 		<script type="module">
 			import {h, $, render} from "./faster-render.js"
 
-			const Inspector = ({value}) =>
-				value.match({
+			const Inspector = (value) =>
+				value.apply($.type).match({
 					[["object", "map"]]: h.ul(
 						{_: "comma curlies dim-ab"},
 						value.entries.map(([key, value]) => h.li(
@@ -39,7 +39,7 @@
 			const logs = await fetch(
 				"../examples/inspector-speed.json"
 			).then((_) => _.json())
-			render(Inspector, {logs}, document.getElementById("Inspector"));
+			render(Inspector, [logs], document.getElementById("Inspector"));
 		</script>
 </body>
 

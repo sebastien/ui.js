@@ -56,6 +56,9 @@
 		import ui from "@ui.js";
 		// Currently 2024-02-19, UI.js is 4x slower (2.2s vs 0.6s) than Preact and takes
 		// about 2x the memory (65M heap, 307k nodes vs 22M heap and 127k nodes)
+
+		// Run: Scripting:628ms, Rendering:2198ms
+		// Heap(max):28Mb, Nodes(max):129k
 		const logs = await fetch(
 			"inspector-speed.json"
 		).then((_) => _.json())

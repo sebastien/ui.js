@@ -49,6 +49,9 @@
 		const logs = await fetch(
 			"inspector-speed.json"
 		).then((_) => _.json())
+
+		// Run: Scripting:2333ms, Rendering:2401ms
+		// Heap(max):65Mb, Nodes(max):322k
 		render(Inspector({value: {logs}}), document.getElementById("Inspector"));
 	</script>
 </body>

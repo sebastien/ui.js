@@ -1,5 +1,14 @@
+// --
+// This is an experiment in trying to beat Preact at the `inspector-speed`
+// test, in order to find a faster way to do the first render. At this point,
+// I'm quite happy with `ui.js`'s speed of development, and also its interactive
+// speed past the first render (esp. with lots of data), but the initial
+// render needs to improve.
+class VNode {
+	static Unify(node, dom) {
+		return document.createTextNode("XXX");
+	}
 
-class TNode {
 	constructor(ns, name, ...children) {
 		this.ns = ns
 		this.name = name
@@ -16,12 +25,18 @@ class FactoryProxy {
 		if (scope.has(property)) {
 			return scope.get(property)
 		} else {
-			const res = (...args) => new TNode(this.namespace, property, ...args)
+			const res = (...args) => new VNode(this.namespace, property, ...args)
 			scope.set(property, res)
 			return res
 		}
 	}
 }
+
+// ----------------------------------------------------------------------------
+//
+// DATA SELECTIONS
+//
+// ----------------------------------------------------------------------------
 
 class Selectable {
 	constructor(selection = null) {
@@ -29,12 +44,16 @@ class Selectable {
 	}
 
 	get entries() {
-		return new ApplicationTransform(this, Object.entries);
+		return new Derivation(this, Object.entries);
+	}
+
+	apply(func) {
+		return new Derivation(this, func)
 	}
 
 	fmt(text) {
 		// TODO: Should expand the slots
-		return new ApplicationTransform(this, () => text)
+		return new Derivation(this, () => text)
 	}
 
 	// if(...branches) {
@@ -61,25 +80,50 @@ class Selectable {
 
 }
 
+// ----------------------------------------------------------------------------
+//
+// DATA TRANSFORMS
+//
+// ----------------------------------------------------------------------------
 
-class ApplicationTransform extends Selectable {
+class Derivation extends Selectable {
 	constructor(input, operation) {
 		super(input);
 		this.operation = operation;
+		this.args = operation ? prototype(operation) : null;
 	}
 	apply(value) {
 		return this.operation ? this.operation(value) : value;
 	}
 }
 
-class Effect extends Selectable { }
+// ----------------------------------------------------------------------------
+//
+// PRESENTATION EFFECTS
+//
+// ----------------------------------------------------------------------------
+
+class Effect extends Selectable {
+	apply(value) {
+		console.error("Effect.apply not implemented", this)
+	}
+
+}
 
 class AttributeEffect extends Effect { }
 class ConditionalEffect extends Effect {
 	constructor(selection, branches) { super(selection); this.branches = branches }
+
+	apply(value) {
+	}
 }
 class MappedEffect extends Effect { }
 
+// ----------------------------------------------------------------------------
+//
+// SLOTS
+//
+// ----------------------------------------------------------------------------
 
 const FIELD_SEP = String.fromCharCode(31);
 
@@ -97,6 +141,59 @@ class Slot extends Selectable {
 }
 
 class Selection extends Selectable { }
+
+export function* matchesOf(template, data) {
+	if (template instanceof Slot) {
+		yield [template, data];
+	} else if (template instanceof Map) {
+		const is_map = data instanceof Map
+		if (data !== null && data !== undefined) {
+			for (const k of template.keys()) {
+				for (const _ of matchesOf(template[k], is_map ? data.get(k) : data[k])) {
+					yield _
+				}
+			}
+		}
+	} else if (template instanceof Object) {
+		const is_map = data instanceof Map
+		if (data !== null && data !== undefined) {
+			for (const k in template) {
+				for (const _ of matchesOf(template[k], is_map ? data.get(k) : data[k])) {
+					yield _
+				}
+			}
+		}
+	}
+	// TODO: We could have a strict mode to see if that matches
+}
+export const matches = (template, data) => [...matchesOf(template, data)]
+
+export function* slotsOf(template, path = []) {
+	if (template instanceof Slot) {
+		yield [template, path];
+	} else if (template instanceof Map) {
+		for (const [k, v] of template.entries()) {
+			for (const _ of slotsOf(v, [...path, k])) {
+				yield _
+			}
+		}
+	} else if (template instanceof Object) {
+		for (const k in template) {
+			for (const _ of slotsOf(template[k], [...path, k])) {
+				yield _
+			}
+		}
+	}
+}
+export const slots = (template, data) => [...slotsOf(template, data)]
+
+
+
+// ----------------------------------------------------------------------------
+//
+// UTILITIES
+//
+// ----------------------------------------------------------------------------
 
 // --
 // Retrieves the arguments from a function declaration.
@@ -177,6 +274,12 @@ export const assign = (scope, path, value) => {
 	return scope;
 };
 
+// ----------------------------------------------------------------------------
+//
+// TEMPLATES
+//
+// ----------------------------------------------------------------------------
+
 class Template {
 	static All = new Map();
 	constructor(input, output) {
@@ -200,24 +303,67 @@ export const template = (declarator) => {
 
 }
 
+
+// ----------------------------------------------------------------------------
+//
+// COMPONENTS
+//
+// ----------------------------------------------------------------------------
+
+
+
+const Components = new Map();
+export const component = (declarator) => {
+	if (declarator instanceof Template) { return declarator }
+	else if (Components.has(declarator)) { return Components.get(declarator) }
+	else {
+		const t = template(declarator)
+		Components.set(declarator, t)
+		return t;
+	}
+
+}
+
+
+// ----------------------------------------------------------------------------
+//
+// RENDERING/UNIFICATION
+//
+// ----------------------------------------------------------------------------
+
+class RenderState {
+	constructor(template, parent = undefined) {
+		this.template = template;
+		this.values = Object.create(parent ? parent.values : {})
+	}
+	apply(value) {
+		// TODO: Could move to the constructor
+		for (const [s, v] of matchesOf(this.template.input, value)) {
+			// TODO: Should detect own slots
+			this.values[s.id] = v;
+		}
+		return this.template.output.apply(this.values)
+	}
+}
+
+const unify = (template, data, node, context = new RenderState(template)) => {
+	context.apply(data)
+	return context
+
+}
+
+// ----------------------------------------------------------------------------
+//
+// HIGH LEVEL API
+//
+// ----------------------------------------------------------------------------
+
 export const select = (...slots) => {
 	return new Selection(slots)
 }
-
-export const component = (declarator) => {
-	const t = template(declarator)
-	Template.All.set(declarator, t)
-	return t;
-
-}
-
 export const h = new Proxy(new Map(), new FactoryProxy());
 export const $ = select;
 
-
-
-export const render = (template, data, node) => {
-	const c = component(template);
-	console.log("C", c)
-}
+export const render = (definition, data, node, context = null) =>
+	unify(component(definition), data, node)
 // EOF
