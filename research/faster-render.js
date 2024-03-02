@@ -1,45 +1,87 @@
 
-class Context {
-
-	onNode(ns, name, ...args) {
-		console.log("Args", { ns, name, args })
+class TNode {
+	constructor(ns, name, ...children) {
+		this.ns = ns
+		this.name = name
+		this.children = children;
 	}
-}
 
+}
 
 class FactoryProxy {
 	constructor(namespace) {
 		this.namespace = namespace;
 	}
 	get(scope, property) {
-		return (...args) => scope.onNode(this.namespace, property, ...args)
+		if (scope.has(property)) {
+			return scope.get(property)
+		} else {
+			const res = (...args) => new TNode(this.namespace, property, ...args)
+			scope.set(property, res)
+			return res
+		}
 	}
 }
 
 class Selectable {
+	constructor(selection = null) {
+		this.selection = selection;
+	}
+
 	get entries() {
-		return this;
-	}
-
-	if(...branches) {
-		return this;
-	}
-
-	match(cases) {
-		return this;
-	}
-
-
-	map(transform) {
-		console.log("MAP", transform)
-		define(transform)
-		return this;
+		return new ApplicationTransform(this, Object.entries);
 	}
 
 	fmt(text) {
-		return this
+		// TODO: Should expand the slots
+		return new ApplicationTransform(this, () => text)
+	}
+
+	// if(...branches) {
+	// 	console.log("IF", { branches })
+	// 	return this;
+	// }
+
+	match(cases) {
+		const branches = [];
+		// TODO: we should do parsing here
+		for (const [k, v] of Object.entries(cases)) {
+			for (const _ of k.split(",")) {
+				branches.push([_, v])
+			}
+		}
+		return new ConditionalEffect(this, branches);
+	}
+
+	map(transform) {
+		template(transform)
+		return this;
+	}
+
+
+}
+
+
+class ApplicationTransform extends Selectable {
+	constructor(input, operation) {
+		super(input);
+		this.operation = operation;
+	}
+	apply(value) {
+		return this.operation ? this.operation(value) : value;
 	}
 }
+
+class Effect extends Selectable { }
+
+class AttributeEffect extends Effect { }
+class ConditionalEffect extends Effect {
+	constructor(selection, branches) { super(selection); this.branches = branches }
+}
+class MappedEffect extends Effect { }
+
+
+const FIELD_SEP = String.fromCharCode(31);
 
 class Slot extends Selectable {
 	static Count = 0;
@@ -49,24 +91,12 @@ class Slot extends Selectable {
 		this.name = name;
 		this.index = index;
 		this.children = undefined;
+		this.selection = [this];
 	}
+	toString() { return `${FIELD_SEP}{${this.id}}${FIELD_SEP}` }
 }
 
 class Selection extends Selectable { }
-
-
-class SlotDeclarationProxy {
-	static get(slot, property) {
-		if (!slot.children) { slot.children = new Map() }
-		const m = slot.children;
-		if (m.has(property)) { return m.get(property) }
-		else {
-			const c = new Slot(property);
-			m.set(property, c)
-			return c;
-		}
-	}
-}
 
 // --
 // Retrieves the arguments from a function declaration.
@@ -130,6 +160,8 @@ export const prototype = (func) => {
 	return [argdef, args];
 }
 
+// --
+// Standard assign function
 export const assign = (scope, path, value) => {
 	let s = scope;
 	const n = path.length - 1;
@@ -145,33 +177,47 @@ export const assign = (scope, path, value) => {
 	return scope;
 };
 
-export const define = (declarator) => {
+class Template {
+	static All = new Map();
+	constructor(input, output) {
+		this.input = input;
+		this.output = output;
+	}
+}
+
+export const template = (declarator) => {
 	// We get the paths for the arguments
-	const [def, proto] = prototype(declarator)
+	const [_, proto] = prototype(declarator)
 	// We create corresponding slots
-	const slots = proto.reduce((r, { path, name }) => assign(r, path, new Slot(name)), [])
+	const slots = []
+	const input = proto.reduce((r, { path, name }) => {
+		const s = new Slot(name);
+		slots.push(s)
+		return assign(r, path, s)
+	}, [])
 	// And we pass them to the function declarator
-	declarator(...slots);
-	return slots;
+	return new Template(input, declarator(...input));
 
 }
 
-const idem = _ => _;
 export const select = (...slots) => {
 	return new Selection(slots)
 }
 
 export const component = (declarator) => {
-	define(declarator)
+	const t = template(declarator)
+	Template.All.set(declarator, t)
+	return t;
+
 }
 
-export const globalContext = new Context();
-export const h = new Proxy(globalContext, new FactoryProxy());
+export const h = new Proxy(new Map(), new FactoryProxy());
 export const $ = select;
 
 
 
-export const render = (template, data, node, context = globalContext) => {
-	component(template)
+export const render = (template, data, node) => {
+	const c = component(template);
+	console.log("C", c)
 }
 // EOF

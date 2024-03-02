@@ -19,13 +19,13 @@
 		<script type="module">
 			import {h, $, render} from "./faster-render.js"
 
-			const Inspector = ({value}) => {
+			const Inspector = ({value}) =>
 				value.match({
-					// [["object", "map"]]: h.ul(
-					// 	{_: "comma curlies dim-ab"},
-					// 	value.entries.map(({key, value}) => h.li(
-					// 		{_: "pl-2"}, console.log("XXX KEY", {key, value}),
-					// 		h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+					[["object", "map"]]: h.ul(
+						{_: "comma curlies dim-ab"},
+						value.entries.map(([key, value]) => h.li(
+							{_: "pl-2"},
+							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
 					"array": h.ul(
 						{_: "comma brackets dim-ab"},
 						value.map((value, key) => h.li(
@@ -35,7 +35,6 @@
 
 				})
 
-			}
 
 			const logs = await fetch(
 				"../examples/inspector-speed.json"
