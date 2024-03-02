@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Inspector</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div class="fit-screen">
+		<slot template="Inspector" class="fit" value="(window.DATA)"></slot>
+	</div>
+
+	<!-- ------------------------------------------------------------------------
+
+	 CONSOLE
+
+	 ------------------------------------------------------------------------ -->
+	<!--
+		TODO: Filter down does not trigger a re-render when the elements have 
+		changed.
+	 -->
+	<template name="Inspector" in:value out:type="${value|type}" inout:selection="[]" inout:summary="(true)">
+		<slot x:match="type">
+			<slot x:when="{type === 'object' || type === 'value'}">
+				<span>Value <span class="noselect bracketed" out:content="value|count" /></span>
+				<ul x:for="entry=value|entries">
+					<li>
+						<span class="pointer"
+							on:click="selection=selection,#->{$.set(selection,key,selection[key]? false:true)}">X</span>
+						<span class="mono small noselect"
+							out:content="selection,#->{selection && selection[key] ?  '▼' : '▶'}">X</span>
+						<span class="mono" out:content="entry.key" />
+						<span x:if="selection,#->{selection[key]}">:
+							<slot template="Inspector" value="entry.value" />
+						</span>
+					</li>
+				</ul>
+			</slot>
+			<slot x:otherwise>
+				<span out:content="type"></span>
+				</div>
+			</slot>
+
+	</template>
+	<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
+	<script type="module">
+		import ui from "@ui.js";
+		const logs = await fetch(
+			"https://sebastien-fakeconsole.web.val.run/"
+		).then((_) => _.json())
+		window.DATA = {logs}
+		window.ui = ui;
+		ui();
+	</script>
+</body>
+
+</html>

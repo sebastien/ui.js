@@ -12,7 +12,7 @@
 </head>
 
 <body>
-	<div class="fit-screen">
+	<div>
 		<slot template="Inspector" class="fit" value="(window.DATA)"></slot>
 	</div>
 
@@ -27,26 +27,42 @@
 	 -->
 	<template name="Inspector" in:value out:type="${value|type}" inout:selection="[]" inout:summary="(true)">
 		<slot x:match="type">
-			<slot x:when="{type === 'object' || type === 'value'}">
-				<span>Value <span class="noselect bracketed" out:content="value|count" /></span>
-				<ul x:for="entry=value|entries">
-					<li>
-						<span class="pointer"
-							on:click="selection=selection,#->{$.set(selection,key,selection[key]? false:true)}">X</span>
-						<span class="mono small noselect"
-							out:content="selection,#->{selection && selection[key] ?  '▼' : '▶'}">X</span>
-						<span class="mono" out:content="entry.key" />
-						<span x:if="selection,#->{selection[key]}">:
+			<slot x:case="object">
+				<ul class="comma curlies dim-ab" x:for="entry=value|entries">
+					<li class="pl-2" on:click="selection=selection,key->{$.toggle([...(selection||[])],key)}.">
+						<span class="selectable mono dim small"><span out:content="entry.key"></span>:</span>
+						<span
+							x:if="entry.value,selection,#->{value === null || value == undefined || typeof value !== 'object' || selection && selection.indexOf(key) !== -1}">
 							<slot template="Inspector" value="entry.value" />
 						</span>
+						<span class="selectable" x:else>…</span>
 					</li>
 				</ul>
 			</slot>
-			<slot x:otherwise>
-				<span out:content="type"></span>
-				</div>
+			<slot x:case="array">
+				<ul class="comma brackets dim-ab" x:for="entry=value|entries">
+					<li class="pl-2" on:click="selection=selection,key->{$.toggle([...(selection||[])],key)}.">
+						<span class="selectable mono dim small">#<span out:content="entry.key"></span>:</span>
+						<span
+							x:if="entry.value,selection,#->{value === null || value == undefined || typeof value !== 'object' || selection && selection.indexOf(key) !== -1}">
+							<slot template="Inspector" value="entry.value" />
+						</span>
+						<span x:else>…</span>
+					</li>
+				</ul>
 			</slot>
-
+			<slot x:case="string">
+				<span class="quotes dim-ab" out:content="value"></span>
+			</slot>
+			<slot x:case="boolean">
+				<input type="checkbox" disabled out:checked="value->{value ? true : null}"></code>
+			</slot>
+			<slot x:case="number">
+				<code out:content="value"></code>
+			</slot>
+			<slot x:otherwise>
+				<span class="selectable" out:content="type"></span>
+			</slot>
 	</template>
 	<!-- ------------------------------------------------------------------------
 
@@ -55,6 +71,8 @@
 	 ------------------------------------------------------------------------ -->
 	<script type="module">
 		import ui from "@ui.js";
+		// Currently 2024-02-19, UI.js is 4x slower (2.2s vs 0.6s) than Preact and takes
+		// about 2x the memory (65M heap, 307k nodes vs 22M heap and 127k nodes)
 		const logs = await fetch(
 			"https://sebastien-fakeconsole.web.val.run/"
 		).then((_) => _.json())
