@@ -1,5 +1,15 @@
 import { prototype, assign } from "./faster-render.js";
 
+const FIELD_SEP = String.fromCharCode(31);
+const entries = (value) =>
+	value !== undefined && value !== null && typeof value === "object"
+		? Object.entries(value)
+		: [];
+
+export const RawObjectPrototype = Object.getPrototypeOf({});
+export const isObject = (value) =>
+	value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
+
 // ----------------------------------------------------------------------------
 //
 // HTML IN JAVASCRIPT
@@ -7,7 +17,7 @@ import { prototype, assign } from "./faster-render.js";
 // ----------------------------------------------------------------------------
 
 class VNode {
-	constructor(ns, name, attributes, ...children) {
+	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
 		this.attributes = new Map();
@@ -15,7 +25,7 @@ class VNode {
 			let [ns, name] = k.split(":");
 			if (!name) {
 				name = ns;
-				ns == undefined;
+				ns = undefined;
 			}
 			if (name === "_") {
 				name = "class";
@@ -34,8 +44,15 @@ class VDOMFactoryProxy {
 		if (scope.has(property)) {
 			return scope.get(property);
 		} else {
-			const res = (...args) =>
-				new VNode(this.namespace, property, ...args);
+			const res = (attributes, ...args) =>
+				attributes !== null &&
+				attributes !== undefined &&
+				isObject(attributes)
+					? new VNode(this.namespace, property, attributes, args)
+					: new VNode(this.namespace, property, null, [
+							attributes,
+							...args,
+					  ]);
 			scope.set(property, res);
 			return res;
 		}
@@ -51,11 +68,13 @@ export const h = new Proxy(new Map(), new VDOMFactoryProxy());
 
 class Cell {
 	static Id = 0;
+	// static All = new Map();
 	constructor() {
 		this.id = Cell.Id++;
+		// Cell.All.set(this.id, All);
 	}
 	toString() {
-		return `<cell:${this.id}>`;
+		return `${FIELD_SEP}${this.id}${FIELD_SEP}`;
 	}
 }
 
@@ -115,11 +134,12 @@ class ConditionalEffect extends Effect {
 }
 
 class TemplateEffect extends Effect {
-	constructor(inputs, template, args) {
+	constructor(inputs, template, args, name) {
 		super(inputs);
 		this.template = template;
 		// NOTE: Not in input, the inputs are actually
 		this.args = args;
+		this.name = name;
 	}
 }
 
@@ -157,16 +177,17 @@ class Injection extends Cell {
 // ----------------------------------------------------------------------------
 
 class Selection extends Cell {
-	get entries() {
-		return this.then(Object.entries);
-	}
-
 	then(func) {
 		return new Derivation(this, func);
 	}
 
 	fmt(text) {
+		// FIXME: Not that
 		return new FormattingEffect(this, () => text);
+	}
+
+	apply(tmpl) {
+		return new TemplateEffect(this, template(tmpl));
 	}
 
 	match(cases) {
@@ -211,6 +232,25 @@ export const $ = select;
 // ----------------------------------------------------------------------------
 
 class DOMEffector {
+	ensureContent(parent, position, content) {
+		const t = typeof content;
+		if (content === null || content === undefined) {
+			// pass
+		} else if (t === "string") {
+			return this.ensureText(parent, position, content);
+		} else if (t === "number") {
+			return this.ensureText(parent, position, `${content}`);
+		} else if (content instanceof Node) {
+			const existing = this.ensureNode(parent, position);
+			if (!existing) {
+				parent.appendChild(content);
+			} else if (existing !== content) {
+				parent.replaceChild(content, existing);
+			}
+		} else {
+			console.error("Unsupported content", { content });
+		}
+	}
 	ensureText(parent, position, text) {
 		const existing = this.ensurePosition(parent, position);
 		if (existing) {
@@ -229,9 +269,11 @@ class DOMEffector {
 	}
 
 	ensureAttribute(node, ns, name, value) {
-		ns
-			? node.setAttributeNS(ns, name, `${value}`)
-			: node.setAttribute(name, `${value}`);
+		if (ns) {
+			node.setAttributeNS(ns, name, `${value}`);
+		} else {
+			node.setAttribute(name, `${value}`);
+		}
 	}
 
 	ensureNode(parent, position, ns, name) {
@@ -240,7 +282,7 @@ class DOMEffector {
 		} else {
 			const existing = this.ensurePosition(parent, position);
 			if (existing) {
-				console.log("TODO: EnsureNode/Existing");
+				console.error("TODO: EnsureNode/Existing");
 				return existing;
 			} else {
 				const node = ns
@@ -271,7 +313,6 @@ class DOMEffector {
 const getContext = (cell, data, context) => {
 	if (cell instanceof Injection) {
 		const derived = context[cell.id] ?? Object.create(context);
-		console.log("INKECTION", cell.args, "<<", data);
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of matchedCells(cell.args, data)) {
 			derived[c.id] = v;
@@ -288,7 +329,7 @@ const getContext = (cell, data, context) => {
 			return context;
 		}
 	} else {
-		console.log("Unsupported cell", cell);
+		console.error("Unsupported cell", cell);
 		return context;
 	}
 };
@@ -312,20 +353,23 @@ function _render(
 		_render(template.template, data, node, position, effector, context);
 	} else if (template instanceof ConditionalEffect) {
 		const current = context[template.input.id];
+		let match = undefined;
 		for (const [value, predicate, branch] of template.branches) {
-			if (
+			if (!match && value === "" && !predicate) {
+				match = branch;
+			} else if (
 				(value !== undefined && value === current) ||
 				(predicate && predicate(current))
 			) {
-				_render(branch, data, node, position, effector, context);
+				match = branch;
 				break;
 			}
 		}
+		_render(match, data, node, position, effector, context);
 	} else if (template instanceof MappingEffect) {
 		const mapping = template;
 		const input = context[template.input.id];
 		for (const k in input) {
-			console.log("MAPPING TEMPLATE", mapping.template);
 			_render(
 				mapping.template,
 				[input[k], k],
@@ -342,7 +386,7 @@ function _render(
 		const text = context[effect.input.id];
 		effector.ensureText(node, position, text);
 	} else if (template instanceof Cell) {
-		console.log("CELL", template);
+		effector.ensureContent(node, position, context[template.id]);
 	} else if (template instanceof VNode) {
 		const vnode = template;
 		node = effector.ensureNode(node, position, vnode.ns, vnode.name);
@@ -370,12 +414,23 @@ function _render(
 // ----------------------------------------------------------------------------
 
 const template = (component) => {
-	const args = [];
-	for (const { path, name } of prototype(component).args) {
-		const input = new Argument(name);
-		assign(args, path, input);
+	if (component.template) {
+		return component.template;
+	} else {
+		const args = [];
+		for (const { path, name } of prototype(component).args) {
+			const input = new Argument(name);
+			assign(args, path, input);
+		}
+		const res = (component.template = new TemplateEffect(
+			new Injection(args),
+			undefined,
+			args,
+			component.name
+		));
+		res.template = component(...args);
+		return res;
 	}
-	return new TemplateEffect(new Injection(args), component(...args));
 };
 
 export const render = (

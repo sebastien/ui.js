@@ -20,28 +20,30 @@
 
 		const Inspector = (value) =>
 			value
-				.then(_ => (console.log("VAL", _), _ === undefined ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
+				.then(_ => (_ === undefined ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
 				.match({
 					[["object", "map"]]: h.ul(
 						{_: "comma curlies dim-ab"},
 						// The input should be [Slot(#0.0), Slot(#0.1)]
-						value.entries.map(([key, value]) => h.li(
+						value.map((value, key) => h.li(
 							{_: "pl-2"},
-							h.span({_: "mono dim small"}, key.fmt(`${key}`))))),
+							h.span({_: "mono dim small"}, key.then(_ => `${_}: `)), value.apply(Inspector)))),
 					"array": h.ul(
 						{_: "comma brackets dim-ab"},
 						// The input should be [Slot(#0), Slot(#1)]
 						value.map((value, key) => h.li(
 							{_: "pl-2"},
-							h.span({_: "mono dim small"}, key.fmt(`${key}`))))),
-					[null]: h.span(value.fmt())
+							h.span({_: "mono dim small"}, key.then(_ => `#${_}: `)), value.apply(Inspector)))),
+					"": h.span(value.fmt())
 				})
 
 
 		const logs = await fetch(
 			"../examples/inspector-speed.json"
 		).then((_) => _.json())
-		render(Inspector, [logs.slice(0, 2)], document.getElementById("Inspector"));
+		const data = {logs};
+
+		render(Inspector, [data], document.getElementById("Inspector"));
 	</script>
 </body>
 
