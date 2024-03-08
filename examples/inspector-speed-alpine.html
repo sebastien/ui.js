@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Inspector (AlpineJS)</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+    { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/"} }
+  </script>
+	<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+	<div id="Inspector" x-data="inspectorData()" x-init="fetchData()">
+		<template x-if="value">
+			<template x-if="t === 'object' || t === 'map'">
+				<ul class="comma curlies dim-ab">
+					<template x-for="({key, value}, index) in $.entries(value)" :key="index">
+						<li class="pl-2">
+							<span class="mono dim small" x-text="`${key}: `"></span>
+							<inspector :value="value" />
+						</li>
+					</template>
+				</ul>
+			</template>
+
+			<template x-if="t === 'array'">
+				<ul class="comma brackets dim-ab">
+					<template x-for="(v, i) in value" :key="i">
+						<li class="pl-2">
+							<span class="mono dim small" x-text="`#${i}: `"></span>
+							<inspector :value="v" />
+						</li>
+					</template>
+				</ul>
+			</template>
+
+			<template x-if="!['object', 'map', 'array'].includes(t)">
+				<span x-text="t"></span>
+			</template>
+		</template>
+	</div>
+
+</body>
+<script type="module">
+	import {$} from "@ui.js"
+
+	document.addEventListener('alpine:init', () => {
+		Alpine.data('inspectorData', () => ({
+			value: null,
+
+			async fetchData() {
+				const logs = await fetch("inspector-speed.json").then((_) => _.json());
+				this.value = logs;
+			},
+		}));
+
+		Alpine.data('Inspector', function () {
+			const t = $.formats.type(this.value);
+
+			return {
+				t,
+			}
+		});
+	});
+</script>
+
+</html>

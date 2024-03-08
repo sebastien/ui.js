@@ -149,8 +149,17 @@ class MappedEffect extends Effect {
 		this.template = template;
 	}
 
-	apply(value) {
-		console.log("MAPPING", value, this.template)
+	render(value, context) {
+		const res = [];
+		for (const k in value) {
+			const v = value[k];
+			const c = context.derive(this.template);
+			const r = c.apply([v, k]);
+			console.log("R", v, "=", r)
+			res.push(r)
+		}
+		console.log("MAPPING", res)
+		return res;
 	}
 
 
@@ -395,13 +404,19 @@ export const component = (declarator) => {
 //
 // ----------------------------------------------------------------------------
 
-class RenderState {
-	constructor(template, parent = undefined) {
+class RenderContext {
+	constructor(template, parent = undefined, revision = 0) {
+		this.parent = parent;
 		this.template = template;
 		this.context = Object.create(parent ? parent.context : {})
 		this.updated = Object.create(parent ? parent.updated : {})
-		this.revision = 0;
-		this.states = new Map();
+		this.revision = revision;
+		this.output = undefined;
+		this.parent = parent;
+	}
+
+	derive(template) {
+		return new RenderContext(template, this)
 	}
 
 	apply(value) {
@@ -411,6 +426,7 @@ class RenderState {
 		const rev = this.revision++;
 		// First step is to populate the context with the extracted slot
 		// value from the arguments.
+		console.log("APPLY", value, this.template.input)
 		for (const [s, v] of matchesOf(this.template.input, value)) {
 			this.context[s.id] = v;
 			queue.push(s);
@@ -447,71 +463,31 @@ class RenderState {
 		}
 		// At this point the context is fully populated with outputs, we just
 		// need to retrieve the output value of the output
-		return this.context[this.template.output.id];
+		this.output = this.context[this.template.output.id];
+		return this.output;
 	}
 
+	// FIXME: node should probably be reverse (output, node)
 	render(node, output) {
-		const state = this.states.get(node)
-		console.log("RENDER", state, output)
-		// We create
-		if (!state) {
-			if (output instanceof VNode) {
-				const res = output.render(this.context)
-				node.appendChild(res);
-				this.states.set(node, res);
-			} else {
-				console.warning("Output is not a VNode")
-			}
+		if (output instanceof VNode) {
+			// NOTE: This is where there's going to be a need of sub
+			// renders. If the cell is an effect, then we should create
+			// a new RenderState and then render the output. This creates
+			// a natural boundary for propagation.
+			const res = this.renderVNode(output, this.context)
+			node && node.appendChild(res);
 		} else {
-			console.log("UPDATING NOT IMPLEMENTED", { node, output })
+			console.warn("Output is not a VNode", output)
 		}
 	}
-}
-
-const unify = (template, data, node, context = new RenderState(template)) => {
-	const output = context.apply(data)
-	context.render(node, output)
-	return context
-
-}
-
-// ----------------------------------------------------------------------------
-//
-// HTML FACTORY
-//
-// ----------------------------------------------------------------------------
-
-function* cellsOfVNode(node, path = []) {
-	let i = 0;
-	for (const child of node.children) {
-		if (child instanceof Cell) {
-			yield ([child, [...path, i]]);
-		} else if (child instanceof VNode) {
-			for (const _ of cellsOfVNode(child, [...path, i])) {
-				yield _
-			}
-		}
-		i++;
-	}
-}
-
-class VNode {
-
-	constructor(ns, name, ...children) {
-		this.ns = ns
-		this.name = name
-		this.children = children;
-		// NOTE: Maybe an imperative version would be faster?
-		this.cells = children.reduce((r, v) => v instanceof VNode ? [...r, ...v.cells] : v instanceof Cell ? [...r, v] : r, [])
-	}
-
-	render(context) {
-		const res = this.ns ? document.createElementNS(this.ns, this.name) : document.createElement(this.name);
-		for (const child of this.children) {
+	renderVNode(node, context = this.context) {
+		const res = node.ns ? document.createElementNS(node.ns, node.name) : document.createElement(node.name);
+		for (const child of node.children) {
 			let v = child;
-			if (v instanceof Cell) {
+			if (v instanceof Effect) {
 				if (context[child.id] === undefined) {
-					context[child.id] = v = child.apply(Cell.Eval(child.input, context))
+					context[child.id] = v = child.render(Cell.Eval(child.input, context), this, context[child.id])
+					console.log("GOT CHILD", v)
 				}
 			}
 			if (v === undefined || v === null) {
@@ -551,6 +527,46 @@ class VNode {
 			}
 		}
 		return res;
+	}
+
+
+}
+
+const unify = (template, data, node, context = new RenderContext(template)) => {
+	const output = context.apply(data)
+	context.render(node, output)
+	return context
+
+}
+
+// ----------------------------------------------------------------------------
+//
+// HTML FACTORY
+//
+// ----------------------------------------------------------------------------
+
+function* cellsOfVNode(node, path = []) {
+	let i = 0;
+	for (const child of node.children) {
+		if (child instanceof Cell) {
+			yield ([child, [...path, i]]);
+		} else if (child instanceof VNode) {
+			for (const _ of cellsOfVNode(child, [...path, i])) {
+				yield _
+			}
+		}
+		i++;
+	}
+}
+
+class VNode {
+
+	constructor(ns, name, ...children) {
+		this.ns = ns
+		this.name = name
+		this.children = children;
+		// NOTE: Maybe an imperative version would be faster?
+		this.cells = children.reduce((r, v) => v instanceof VNode ? [...r, ...v.cells] : v instanceof Cell ? [...r, v] : r, [])
 	}
 
 }
