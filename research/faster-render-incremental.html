@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Faster Render expermient</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+				{"imports": {"@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/" } }
+			</script>
+</head>
+
+<body>
+	<div id="Inspector">
+	</div>
+
+	<script type="module">
+		import {h, $, render} from "./faster-render-incremental.js"
+
+		const Inspector = (value) =>
+			value
+				.then(_ => (console.log("VAL", _), _ === undefined ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
+				.match({
+					[["object", "map"]]: h.ul(
+						{_: "comma curlies dim-ab"},
+						// The input should be [Slot(#0.0), Slot(#0.1)]
+						value.entries.map(([key, value]) => h.li(
+							{_: "pl-2"},
+							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+					"array": h.ul(
+						{_: "comma brackets dim-ab"},
+						// The input should be [Slot(#0), Slot(#1)]
+						value.map((value, key) => h.li(
+							{_: "pl-2"},
+							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+					[null]: h.span(value.fmt())
+				})
+
+
+		const logs = await fetch(
+			"../examples/inspector-speed.json"
+		).then((_) => _.json())
+		render(Inspector, [logs.slice(0, 2)], document.getElementById("Inspector"));
+	</script>
+</body>
+
+</html>

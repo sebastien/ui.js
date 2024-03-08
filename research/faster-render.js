@@ -260,8 +260,8 @@ export const prototype = (func) => {
 	const i = t.indexOf("(");
 	let j = t.indexOf(")");
 	j = j < 0 ? t.indexOf("=>") : j;
-	const argdef = t.slice(i >= 0 ? i + 1 : 0, j >= 0 ? j : t.length);
-	const n = argdef.length;
+	const declaration = t.slice(i >= 0 ? i + 1 : 0, j >= 0 ? j : t.length);
+	const n = declaration.length;
 	// Now we do the parsing
 	const args = [];
 	// Path is the access path from the parent structure.
@@ -274,7 +274,7 @@ export const prototype = (func) => {
 	let name = undefined;
 	let key = undefined;
 	while (o < n) {
-		const c = argdef.charAt(o);
+		const c = declaration.charAt(o);
 		switch (c) {
 			case "{":
 			case "[":
@@ -285,7 +285,7 @@ export const prototype = (func) => {
 				break;
 			case "}":
 			case "]":
-				name = argdef.substring(token, o);
+				name = declaration.substring(token, o);
 				token !== undefined &&
 					args.push({
 						name,
@@ -300,14 +300,14 @@ export const prototype = (func) => {
 				position = path.pop();
 				break;
 			case ":":
-				key = argdef.substring(token, o);
+				key = declaration.substring(token, o);
 				rest = false;
 				token = undefined;
 				break;
 			case ",":
 			case ".":
 			case " ":
-				name = argdef.substring(token, o);
+				name = declaration.substring(token, o);
 				rest = c === "." ? true : c === "," ? false : rest;
 				token !== undefined &&
 					args.push({
@@ -330,14 +330,14 @@ export const prototype = (func) => {
 		}
 		o++;
 	}
-	name = argdef.substring(token, o);
+	name = declaration.substring(token, o);
 	token !== undefined &&
 		args.push({
 			name,
 			path: [...path, position == undefined ? key || name : position],
 			rest,
 		});
-	return [argdef, args];
+	return { declaration, args };
 };
 
 // --
