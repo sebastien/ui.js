@@ -20,7 +20,7 @@
 
 		const Inspector = (value) =>
 			value
-				.then(_ => (_ === undefined ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
+				.then(_ => (_ === undefined || _ === null ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
 				.match({
 					[["object", "map"]]: h.ul(
 						{_: "comma curlies dim-ab"},

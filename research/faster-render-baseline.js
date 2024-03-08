@@ -1,10 +1,6 @@
 import { prototype, assign } from "./faster-render.js";
 
 const FIELD_SEP = String.fromCharCode(31);
-const entries = (value) =>
-	value !== undefined && value !== null && typeof value === "object"
-		? Object.entries(value)
-		: [];
 
 export const RawObjectPrototype = Object.getPrototypeOf({});
 export const isObject = (value) =>
@@ -231,7 +227,7 @@ export const $ = select;
 //
 // ----------------------------------------------------------------------------
 
-class DOMEffector {
+class DummyEffector {
 	ensureContent(parent, position, content) {
 		const t = typeof content;
 		if (content === null || content === undefined) {
@@ -240,32 +236,12 @@ class DOMEffector {
 			return this.ensureText(parent, position, content);
 		} else if (t === "number") {
 			return this.ensureText(parent, position, `${content}`);
-		} else if (content instanceof Node) {
-			const existing = this.ensureNode(parent, position);
-			if (!existing) {
-				parent.appendChild(content);
-			} else if (existing !== content) {
-				parent.replaceChild(content, existing);
-			}
 		} else {
 			console.error("Unsupported content", { content });
 		}
 	}
 	ensureText(parent, position, text) {
-		const existing = this.ensurePosition(parent, position);
-		if (existing) {
-			if (existing.nodeType === Node.TEXT_NODE) {
-				existing.data = `${text}`;
-			} else {
-				parent.insertBefore(
-					document.createTextNode(`${text}`),
-					existing
-				);
-				parent.removeChild(existing);
-			}
-		} else {
-			parent.appendChild(document.createTextNode(`${text}`));
-		}
+		return document.createTextNode(`${text}`);
 	}
 
 	ensureAttribute(node, ns, name, value) {
@@ -277,30 +253,106 @@ class DOMEffector {
 	}
 
 	ensureNode(parent, position, ns, name) {
-		if (position instanceof Array) {
-			return this.ensureNode(parent, position[0] + position[1], ns, name);
+		const node = ns
+			? document.createElementNS(ns, name)
+			: document.createElement(name);
+		return node;
+	}
+}
+class DOMEffector {
+	ensureContent(parent, position, content) {
+		const t = typeof content;
+		if (content === null || content === undefined) {
+			// pass
+		} else if (t === "string") {
+			return this.ensureText(parent, position, content);
+		} else if (t === "number") {
+			return this.ensureText(parent, position, `${content}`);
 		} else {
-			const existing = this.ensurePosition(parent, position);
-			if (existing) {
-				console.error("TODO: EnsureNode/Existing");
-				return existing;
-			} else {
-				const node = ns
-					? document.createElementNS(ns, name)
-					: document.createElement(name);
-				parent.appendChild(node);
-				return node;
-			}
+			console.error("Unsupported content", { content });
+		}
+	}
+	ensureText(parent, position, text) {
+		parent && parent.appendChild(document.createTextNode(`${text}`));
+	}
+
+	ensureAttribute(node, ns, name, value) {
+		if (ns) {
+			node.setAttributeNS(ns, name, `${value}`);
+		} else {
+			node.setAttribute(name, `${value}`);
 		}
 	}
 
-	ensurePosition(parent, position) {
-		while (parent.childNodes.length < position - 1) {
-			parent.appendChild(
-				document.createComment(`P${parent.childNodes.length}`)
-			);
+	ensureNode(parent, position, ns, name) {
+		const node = ns
+			? document.createElementNS(ns, name)
+			: document.createElement(name);
+		parent && parent.appendChild(node);
+		return node;
+	}
+}
+
+class DeferredDOMEffector {
+	constructor() {
+		this.operations = [];
+		this.mappings = new Map();
+	}
+	ensureContent(parent, position, content) {
+		const t = typeof content;
+		if (content === null || content === undefined) {
+			// pass
+		} else if (t === "string") {
+			return this.ensureText(parent, position, content);
+		} else if (t === "number") {
+			return this.ensureText(parent, position, `${content}`);
+		} else {
+			console.error("Unsupported content", { content });
 		}
-		return parent.childNodes[position];
+	}
+
+	ensureText(parent, position, text) {
+		if (position instanceof Array) {
+			position = position[0] + position[1];
+		}
+		this.operations.splice(0, 0, [
+			parent,
+			position,
+			document.createTextNode(text),
+		]);
+	}
+
+	ensureAttribute(node, ns, name, value) {
+		if (ns) {
+			node.setAttributeNS(ns, name, value);
+		} else {
+			node.setAttribute(name, value);
+		}
+	}
+
+	ensureNode(parent, position, ns, name) {
+		if (position instanceof Array) {
+			position = position[0] + position[1];
+		}
+		const node = ns
+			? document.createElementNS(ns, name)
+			: document.createElement(name);
+		this.operations.splice(0, 0, [parent, position, node]);
+		return node;
+	}
+	flush() {
+		let item = null;
+		while ((item = this.operations.pop())) {
+			const [parent, position, node] = item;
+			// let n = parent.childNodes.length - position;
+			// while (n-- >= 0) {
+			// 	parent.appendChild(document.createComment("P"));
+			// }
+			const existing = null; // parent.childNodes[position];
+			existing
+				? parent.replaceChild(node, existing)
+				: parent.appendChild(node);
+		}
 	}
 }
 
@@ -350,7 +402,14 @@ function _render(
 			? getContext(template, data, context)
 			: context;
 	if (template instanceof TemplateEffect) {
-		_render(template.template, data, node, position, effector, context);
+		return _render(
+			template.template,
+			data,
+			node,
+			position,
+			effector,
+			context
+		);
 	} else if (template instanceof ConditionalEffect) {
 		const current = context[template.input.id];
 		let match = undefined;
@@ -365,16 +424,17 @@ function _render(
 				break;
 			}
 		}
-		_render(match, data, node, position, effector, context);
+		return _render(match, data, node, position, effector, context);
 	} else if (template instanceof MappingEffect) {
 		const mapping = template;
 		const input = context[template.input.id];
+		let i = 0;
 		for (const k in input) {
 			_render(
 				mapping.template,
 				[input[k], k],
 				node,
-				[position, k],
+				[position, i++],
 				effector,
 				context
 			);
@@ -398,13 +458,14 @@ function _render(
 			_render(child, data, node, i, effector, context);
 			i++;
 		}
+		return node;
 	} else {
 		console.error("Unsupported template type", {
 			type: typeof template,
 			template,
 		});
 	}
-	return context;
+	return node;
 }
 
 // ----------------------------------------------------------------------------
@@ -439,7 +500,10 @@ export const render = (
 	node,
 	position = node.childNodes.length
 ) => {
-	return _render(template(component), data, node, position);
+	const res = _render(template(component), data, null, position);
+	// Appending only at the end is the best way to speed up the initial rendering.
+	node.appendChild(res);
+	return res;
 };
 
 // EOF
