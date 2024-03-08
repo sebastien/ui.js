@@ -1,6 +1,15 @@
 # Approach to faster rendering
 
 
+## Takeaways
+
+- Work in a document fragment/detached when creating new nodes, as for
+  a first render incremental update will kill performance (2x slower).
+
+- Function recursion is much faster than using a stack (3x faster)
+
+## Thoughts
+
 UI effects are incremental: they take the current value, and the previous
 state, which typically includes the previous value, and a reference to
 previously created nodes.
