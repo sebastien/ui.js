@@ -10,7 +10,18 @@ class VNode {
 	constructor(ns, name, attributes, ...children) {
 		this.ns = ns;
 		this.name = name;
-		this.attributes = attributes;
+		this.attributes = new Map();
+		for (const k in attributes) {
+			let [ns, name] = k.split(":");
+			if (!name) {
+				name = ns;
+				ns == undefined;
+			}
+			if (name === "_") {
+				name = "class";
+			}
+			this.attributes.set([ns, name], attributes[k]);
+		}
 		this.children = children;
 	}
 }
@@ -42,6 +53,9 @@ class Cell {
 	static Id = 0;
 	constructor() {
 		this.id = Cell.Id++;
+	}
+	toString() {
+		return `<cell:${this.id}>`;
 	}
 }
 
@@ -116,6 +130,13 @@ class MappingEffect extends Effect {
 	}
 }
 
+class FormattingEffect extends Effect {
+	constructor(input, format) {
+		super(input);
+		this.format = format;
+	}
+}
+
 // ----------------------------------------------------------------------------
 //
 // SELECTION
@@ -145,7 +166,7 @@ class Selection extends Cell {
 	}
 
 	fmt(text) {
-		return new Derivation(this, () => text);
+		return new FormattingEffect(this, () => text);
 	}
 
 	match(cases) {
@@ -178,9 +199,8 @@ class Derivation extends Selection {
 	}
 }
 
-export const select = (...slots) => {
-	return new Selection(slots);
-};
+export const select = (args) =>
+	args instanceof Selection ? args : new Selection(new Injection(args));
 
 export const $ = select;
 
@@ -191,23 +211,54 @@ export const $ = select;
 // ----------------------------------------------------------------------------
 
 class DOMEffector {
-	ensureNode(parent, position, ns, name) {
-		const existing = parent.childNodes[position];
+	ensureText(parent, position, text) {
+		const existing = this.ensurePosition(parent, position);
 		if (existing) {
-			console.log("TODO: EnsureNode/Existing");
-			return existing;
-		} else {
-			const node = ns
-				? document.createElementNS(ns, name)
-				: document.createElement(name);
-			while (parent.childNodes.length < position - 1) {
-				parent.appendChild(
-					document.createComment(`P${parent.childNodes.length}`)
+			if (existing.nodeType === Node.TEXT_NODE) {
+				existing.data = `${text}`;
+			} else {
+				parent.insertBefore(
+					document.createTextNode(`${text}`),
+					existing
 				);
+				parent.removeChild(existing);
 			}
-			parent.appendChild(node);
-			return node;
+		} else {
+			parent.appendChild(document.createTextNode(`${text}`));
 		}
+	}
+
+	ensureAttribute(node, ns, name, value) {
+		ns
+			? node.setAttributeNS(ns, name, `${value}`)
+			: node.setAttribute(name, `${value}`);
+	}
+
+	ensureNode(parent, position, ns, name) {
+		if (position instanceof Array) {
+			return this.ensureNode(parent, position[0] + position[1], ns, name);
+		} else {
+			const existing = this.ensurePosition(parent, position);
+			if (existing) {
+				console.log("TODO: EnsureNode/Existing");
+				return existing;
+			} else {
+				const node = ns
+					? document.createElementNS(ns, name)
+					: document.createElement(name);
+				parent.appendChild(node);
+				return node;
+			}
+		}
+	}
+
+	ensurePosition(parent, position) {
+		while (parent.childNodes.length < position - 1) {
+			parent.appendChild(
+				document.createComment(`P${parent.childNodes.length}`)
+			);
+		}
+		return parent.childNodes[position];
 	}
 }
 
@@ -220,6 +271,7 @@ class DOMEffector {
 const getContext = (cell, data, context) => {
 	if (cell instanceof Injection) {
 		const derived = context[cell.id] ?? Object.create(context);
+		console.log("INKECTION", cell.args, "<<", data);
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of matchedCells(cell.args, data)) {
 			derived[c.id] = v;
@@ -252,7 +304,6 @@ function _render(
 	effector = globalEffector,
 	context = globalContext
 ) {
-	const parent = context;
 	context =
 		template instanceof Cell
 			? getContext(template, data, context)
@@ -272,20 +323,33 @@ function _render(
 		}
 	} else if (template instanceof MappingEffect) {
 		const mapping = template;
-		console.log(
-			"MAPPING EFFECT",
-			mapping,
-			context[mapping.input.id],
-			"/",
-			parent[mapping.input.id]
-		);
-		console.log("CONTEXT", context);
+		const input = context[template.input.id];
+		for (const k in input) {
+			console.log("MAPPING TEMPLATE", mapping.template);
+			_render(
+				mapping.template,
+				[input[k], k],
+				node,
+				[position, k],
+				effector,
+				context
+			);
+		}
+		// TODO: We should clear any node that has been removed
+		//
+	} else if (template instanceof FormattingEffect) {
+		const effect = template;
+		const text = context[effect.input.id];
+		effector.ensureText(node, position, text);
 	} else if (template instanceof Cell) {
 		console.log("CELL", template);
 	} else if (template instanceof VNode) {
 		const vnode = template;
 		node = effector.ensureNode(node, position, vnode.ns, vnode.name);
 		let i = 0;
+		for (const [[ns, name], value] of vnode.attributes.entries()) {
+			effector.ensureAttribute(node, ns, name, value);
+		}
 		for (const child of vnode.children) {
 			_render(child, data, node, i, effector, context);
 			i++;

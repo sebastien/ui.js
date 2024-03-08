@@ -27,13 +27,13 @@
 						// The input should be [Slot(#0.0), Slot(#0.1)]
 						value.entries.map(([key, value]) => h.li(
 							{_: "pl-2"},
-							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+							h.span({_: "mono dim small"}, key.fmt(`${key}`))))),
 					"array": h.ul(
 						{_: "comma brackets dim-ab"},
 						// The input should be [Slot(#0), Slot(#1)]
 						value.map((value, key) => h.li(
 							{_: "pl-2"},
-							h.span({_: "mono dim small"}, $(key).fmt(`${key}`))))),
+							h.span({_: "mono dim small"}, key.fmt(`${key}`))))),
 					[null]: h.span(value.fmt())
 				})
 
