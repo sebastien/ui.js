@@ -12,13 +12,6 @@ export const isObject = (value) =>
 //
 // ----------------------------------------------------------------------------
 
-const IS_VNODE = 1;
-const IS_CELL = 10;
-const IS_TEMPLATE = 20;
-const IS_CONDITIONAL = 21;
-const IS_MAPPING = 22;
-const IS_FORMATTING = 23;
-
 function* iterVNodeCells(node, path = []) {
 	for (let i = 0; i < node.children.length; i++) {
 		const v = node.children[i];
@@ -33,7 +26,6 @@ function* iterVNodeCells(node, path = []) {
 }
 class VNode {
 	constructor(ns, name, attributes, children) {
-		this.type = IS_VNODE;
 		this.ns = ns;
 		this.name = name;
 		this.attributes = new Map();
@@ -145,7 +137,6 @@ class Cell {
 	// static All = new Map();
 	constructor() {
 		this.id = Cell.Id++;
-		this.type = IS_CELL;
 		// Cell.All.set(this.id, All);
 	}
 	toString() {
@@ -271,7 +262,6 @@ class Effect extends Cell {
 class ConditionalEffect extends Effect {
 	constructor(input, branches) {
 		super(input);
-		this.type = IS_CONDITIONAL;
 		this.branches = branches;
 	}
 	render(data, node, position, context, effector) {
@@ -295,7 +285,6 @@ class ConditionalEffect extends Effect {
 class TemplateEffect extends Effect {
 	constructor(inputs, template, args, name) {
 		super(inputs);
-		this.type = IS_TEMPLATE;
 		this.template = template;
 		// NOTE: Not in input, the inputs are actually
 		this.args = args;
@@ -309,7 +298,6 @@ class TemplateEffect extends Effect {
 class MappingEffect extends Effect {
 	constructor(input, template) {
 		super(input);
-		this.type = IS_MAPPING;
 		this.template = template;
 	}
 	render(data, node, position, context, effector) {
@@ -333,7 +321,6 @@ class MappingEffect extends Effect {
 class FormattingEffect extends Effect {
 	constructor(input, format) {
 		super(input);
-		this.type = IS_FORMATTING;
 		this.format = format;
 	}
 	render(data, node, position, context, effector) {
