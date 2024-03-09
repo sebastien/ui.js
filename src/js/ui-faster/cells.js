@@ -10,6 +10,8 @@ export class Cell {
 	static Input = 1;
 	static Node = 2;
 	static State = 3;
+	static Render = 4;
+	static Revision = 5;
 
 	static Match(template, data, res = []) {
 		if (template instanceof Cell) {

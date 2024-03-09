@@ -2,6 +2,7 @@ import {
 	ConditionalEffect,
 	MappingEffect,
 	TemplateEffect,
+	ApplicationEffect,
 	FormattingEffect,
 } from "./effects.js";
 import { Cell } from "./cells.js";
@@ -17,7 +18,7 @@ export class Injection extends Cell {
 		const data = context[Cell.Input];
 		const derived = (context[this.id] =
 			context[this.id] ?? Object.create(context));
-		derived.parent = context;
+		derived[Cell.Parent] = context;
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of Cell.Match(this.args, data)) {
 			derived[c.id] = v;
@@ -36,7 +37,7 @@ export class Selection extends Cell {
 	}
 
 	apply(tmpl) {
-		return new TemplateEffect(this, template(tmpl));
+		return new ApplicationEffect(this, template(tmpl));
 	}
 
 	match(cases) {

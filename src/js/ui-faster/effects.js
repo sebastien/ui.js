@@ -15,8 +15,27 @@ export class TemplateEffect extends Effect {
 		this.name = name;
 	}
 	render(node, position, context, effector) {
-		context = this.input.applyContext(context);
-		this.template.render(node, position, context, effector);
+		const derived = this.input.applyContext(context);
+		return this.template.render(node, position, derived, effector);
+	}
+}
+
+export class ApplicationEffect extends Effect {
+	constructor(inputs, template) {
+		super(inputs);
+		this.template = template;
+	}
+	render(node, position, context, effector) {
+		// When we apply we create a new context detached from the previous
+		// one, so that we don't leak values.
+		let ctx = context[this.id];
+		if (!context[this.id]) {
+			ctx = {};
+			ctx[Cell.Parent] = context;
+			ctx[Cell.Input] = context[Cell.Input];
+			context[this.id] = ctx;
+		}
+		return this.template.render(node, position, ctx, effector);
 	}
 }
 
@@ -27,22 +46,36 @@ export class ConditionalEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
-		const current = context[this.input.id];
+		const value = context[this.input.id];
+		const j = context[this.id + Cell.State];
+		let i = 0;
 		let match = undefined;
-		for (const [value, predicate, branch] of this.branches) {
-			if (!match && value === "" && !predicate) {
+		for (const [expected, predicate, branch] of this.branches) {
+			if (!match && expected === "" && !predicate) {
 				match = branch;
 			} else if (
-				(value !== undefined && value === current) ||
-				(predicate && predicate(current))
+				(expected !== undefined && expected === value) ||
+				(predicate && predicate(value))
 			) {
 				match = branch;
 				break;
 			}
+			i++;
 		}
-		match.render(node, position, context, effector);
+		if (j == i) {
+			console.log("TODO: No change");
+		} else {
+			context[this.id + Cell.State] = i;
+		}
+
+		return match.render(node, position, context, effector);
 	}
 }
+
+// NOTE: It's actually faster and more memory efficient to have a single
+// map for mapping effect visited nodes. That should be one per thread if
+// we move that to web workers.
+const visited = new Map();
 
 export class MappingEffect extends Effect {
 	constructor(input, template) {
@@ -50,16 +83,22 @@ export class MappingEffect extends Effect {
 		this.template = template;
 	}
 	render(node, position, context, effector) {
+		context = this.input.applyContext(context);
 		const items = context[this.input.id];
-		const subcontext = (context[this.id + Cell.State] =
-			context[this.id + Cell.State] ?? new Map());
+		let mapping = context[this.id + Cell.State];
+		if (!mapping) {
+			context[this.id + Cell.State] = mapping = new Map();
+		}
 		let i = 0;
 		for (const k in items) {
-			let ctx = subcontext.get(k);
+			let ctx = mapping.get(k);
+			visited.set(k, true);
 			if (!ctx) {
 				ctx = Object.create(context);
+				// We make sure that we can recurse this effect.
+				ctx[this.id + Cell.State] = null;
 				ctx[Cell.Input] = [items[k], k];
-				subcontext.set(k, ctx);
+				mapping.set(k, ctx);
 			} else {
 				ctx[Cell.Input][0] = items[k];
 				ctx[Cell.Input][1] = k;
@@ -67,8 +106,16 @@ export class MappingEffect extends Effect {
 			// TODO: We need to transform V input the template input
 			this.template.render(node, [position, i++], ctx, effector);
 		}
-		// TODO: We should clear any node that has been removed
-		//
+		// FIXME: We should try to optimize that
+		for (const k of [...mapping.keys()]) {
+			if (!visited.has(k)) {
+				const m = mapping.get(k);
+				// TODO: Do something with the mapping there.
+				mapping.delete(k);
+			}
+		}
+		// We clear at the end
+		visited.clear();
 	}
 }
 

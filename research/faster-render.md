@@ -19,6 +19,12 @@
 - Iterators are about 2x slower than the equivalent when building a list
   by appending to it, concatenating is 1.5x slower.
 
+- Using Map vs Objects doesn't really make a difference.
+
+- When using temporary key-value structures, it's better to create a global
+  object, set() and then clear() at the end. This only works in an atomic,
+  single-thread model but saves a lot of memory (ie. mappings).
+
 ## Thoughts
 
 UI effects are incremental: they take the current value, and the previous

@@ -43,7 +43,25 @@
 		).then((_) => _.json())
 		const data = {logs: logs};
 
-		render(Inspector, [data], document.getElementById("Inspector"));
+		const shuffle = (array) => {
+			for (let i = array.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[array[i], array[j]] = [array[j], array[i]]; // Swap elements
+			}
+			return array; // Return the shuffled array
+		}
+
+		const r = (data) => render(Inspector, [data], document.getElementById("Inspector"));
+		const d = logs // logs.slice(0, 1)
+		const frame = (n) => {
+			console.group("FRAME", n)
+			shuffle(d)
+			r({logs: d})
+			n > 0 && setTimeout(() => frame(n - 1), 100)
+			console.groupEnd()
+		}
+		frame(0)
+
 	</script>
 </body>
 

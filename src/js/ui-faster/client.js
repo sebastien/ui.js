@@ -11,19 +11,25 @@ const globals = {
 const render = (
 	component,
 	data,
-	node,
-	position = node.childNodes.length,
+	parent,
+	position = parent.childNodes.length,
 	context = globals.context,
 	effector = globals.effector
 ) => {
-	const ctx = Object.create(context);
+	const tmpl = template(component);
+	const ctx = (context[tmpl.id] = context[tmpl.id] ?? Object.create(context));
 	ctx[Cell.Parent] = context;
 	ctx[Cell.Input] = data;
-	const fragment = document.createDocumentFragment();
-	const tmpl = template(component);
-	const res = tmpl.render(fragment, position, ctx, effector);
+	if (!ctx[Cell.Node]) {
+		ctx[Cell.Node] = document.createDocumentFragment();
+	}
+	const node = ctx[Cell.Node];
+	const res = tmpl.render(node, position, ctx, effector);
 	// Appending only at the end is the best way to speed up the initial rendering.
-	node.appendChild(fragment);
+	if (!node.parentElement) {
+		// NOTE: The fragment will be emptied from its contents.
+		parent.appendChild(node);
+	}
 	return res;
 };
 
