@@ -42,7 +42,8 @@
 			const logs = await fetch(
 				"../examples/inspector-speed.json"
 			).then((_) => _.json())
-			render(Inspector, [logs.slice(0, 2)], document.getElementById("Inspector"));
+			const data = [logs.slice(0, 2)]
+			render(Inspector, data, document.getElementById("Inspector"));
 		</script>
 </body>
 

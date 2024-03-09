@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Inspector (Vanilla)</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+    { "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/"} }
+  </script>
+</head>
+
+<body>
+	<div id="Inspector"></div>
+
+	<script type="module">
+		import {$} from "@ui.js"
+
+		// Helper for creating elements
+		function createElement(tag, props, ...children) {
+			const element = document.createElement(tag);
+			if (props) {
+				for (let prop in props) {
+					element[prop] = props[prop];
+				}
+			}
+			children.forEach(child => {
+				if (typeof child === 'string') {
+					child = document.createTextNode(child);
+				}
+				element.appendChild(child);
+			});
+			return element;
+		}
+
+		function Inspector({value}) {
+			const t = $.formats.type(value);
+
+			switch (t) {
+				case "object":
+				case "map":
+					return createElement("ul", {className: "comma curlies dim-ab"},
+						...$.entries(value).map(({key, value}) =>
+							createElement("li", {className: "pl-2"},
+								createElement("span", {className: "mono dim small"}, `${key}: `),
+								Inspector({value})
+							)
+						)
+					);
+				case "array":
+					return createElement("ul", {className: "comma brackets dim-ab"},
+						...value.map((v, i) =>
+							createElement("li", {className: "pl-2"},
+								createElement("span", {className: "mono dim small"}, `#${i}: `),
+								Inspector({value: v})
+							)
+						)
+					);
+				default:
+					return createElement("span", {}, t);
+			}
+		}
+
+		const logs = await fetch(
+			"inspector-speed.json"
+		).then((_) => _.json())
+
+
+		// Run: Scripting:705ms, Rendering:2218ms
+		// Heap(max):10Mb, Nodes(max):189k
+
+		document.getElementById("Inspector").appendChild(Inspector({value: logs}))
+
+
+	</script>
+
+</body>
+
+</html>
