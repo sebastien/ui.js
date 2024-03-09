@@ -8,6 +8,17 @@
 
 - Function recursion is much faster than using a stack (3x faster)
 
+- Type switch vs `instanceof` is negligible (670/2419 vs 646/2239), so
+  instanceof is better.
+
+- Difference between method overloading vs conditional dispatch based on `instanceof`
+  if negligible. It's better to use method overloading then.
+
+- DOM node cloning does not seem to have a notable impact.
+
+- Iterators are about 2x slower than the equivalent when building a list
+  by appending to it, concatenating is 1.5x slower.
+
 ## Thoughts
 
 UI effects are incremental: they take the current value, and the previous

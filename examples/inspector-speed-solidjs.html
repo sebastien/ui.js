@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Inspector (SolidJS)</title>
+	<link rel="stylesheet" href="../lib/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+		{"imports": {"@ui.js": "../lib/js/ui.js", "@ui/": "../lib/js/ui/"} }
+	</script>
+</head>
+
+<body>
+	<div id="Inspector"></div>
+	
+	<script type="module">
+		import {
+			createSignal,
+			createMemo,
+			onCleanup
+		} from "https://cdn.skypack.dev/solid-js";
+		import {render} from "https://cdn.skypack.dev/solid-js/web";
+		import html from "https://cdn.skypack.dev/solid-js/html";
+		import h from "https://cdn.skypack.dev/solid-js/h";
+		import {$} from "@ui.js"
+
+		function Inspector({value}) {
+			const t = $.formats.type(value)
+			switch (t) {
+				case "object":
+				case "map":
+					return h("ul", {
+						className: "comma curlies dim-ab"
+					}, $.entries(value).map(({key, value}) => h("li", {className: "pl-2"},
+						h("span", {className: "mono dim small"}, `${key}: `),
+						Inspector({value}))))
+				case "array":
+					return h("ul", {
+						className: "comma brackets dim-ab"
+					}, ...value.map((v, i) => h("li", {className: "pl-2"},
+						h("span", {className: "mono dim small"}, `#${i}: `),
+						Inspector({value: v}))))
+				default:
+					return h("span", {}, `${value}`)
+			}
+		}
+		const logs = await fetch(
+			"inspector-speed.json"
+		).then((_) => _.json())
+
+
+		render(() => h(Inspector, {value: {logs}}), document.getElementById("Inspector"));
+	</script>
+</body>
+
+</html>
