@@ -52,15 +52,15 @@
 		}
 
 		const r = (data) => render(Inspector, [data], document.getElementById("Inspector"));
-		const d = logs // logs.slice(0, 1)
+		const d = logs.slice(0, 2)
 		const frame = (n) => {
 			console.group("FRAME", n)
-			shuffle(d)
-			r({logs: d})
+			let v = shuffle(d)
+			r({logs: v})
 			n > 0 && setTimeout(() => frame(n - 1), 100)
 			console.groupEnd()
 		}
-		frame(0)
+		frame(4)
 
 	</script>
 </body>

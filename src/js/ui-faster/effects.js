@@ -16,7 +16,7 @@ export class TemplateEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		const derived = this.input.applyContext(context);
-		return this.template.render(node, position, derived, effector);
+		return this.template.render(node, position, derived, effector, this.id);
 	}
 }
 
@@ -35,7 +35,7 @@ export class ApplicationEffect extends Effect {
 			ctx[Cell.Input] = context[Cell.Input];
 			context[this.id] = ctx;
 		}
-		return this.template.render(node, position, ctx, effector);
+		return this.template.render(node, position, ctx, effector, this.id);
 	}
 }
 
@@ -47,7 +47,14 @@ export class ConditionalEffect extends Effect {
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		const value = context[this.input.id];
-		const j = context[this.id + Cell.State];
+		// State is [previousBranchIndex, [...<context for each branch>]]
+		let state = context[this.id + Cell.State];
+		if (!state) {
+			context[this.id + Cell.State] = state = [
+				undefined,
+				new Array(this.branches.length).fill(null),
+			];
+		}
 		let i = 0;
 		let match = undefined;
 		for (const [expected, predicate, branch] of this.branches) {
@@ -62,20 +69,25 @@ export class ConditionalEffect extends Effect {
 			}
 			i++;
 		}
-		if (j == i) {
-			console.log("TODO: No change");
-		} else {
-			context[this.id + Cell.State] = i;
+		if (i != state[0]) {
+			// We need to unmount the previous state
+			if (state[0] !== undefined) {
+				console.log("TODO: Conditional unmoutn previous branch", state);
+			}
+			state[0] = i;
+			state[1][i] = state[1][i] ?? Object.create(context);
 		}
 
-		return match.render(node, position, context, effector);
+		// We store the created/updated node
+		return (state[1][i][Cell.Node] = match.render(
+			node,
+			position,
+			state[1][i],
+			effector,
+			this.id
+		));
 	}
 }
-
-// NOTE: It's actually faster and more memory efficient to have a single
-// map for mapping effect visited nodes. That should be one per thread if
-// we move that to web workers.
-const visited = new Map();
 
 export class MappingEffect extends Effect {
 	constructor(input, template) {
@@ -86,36 +98,45 @@ export class MappingEffect extends Effect {
 		context = this.input.applyContext(context);
 		const items = context[this.input.id];
 		let mapping = context[this.id + Cell.State];
+		const revision = (context[this.id + Cell.Revision] =
+			(context[this.id + Cell.Revision] || 0) + 1);
+
 		if (!mapping) {
 			context[this.id + Cell.State] = mapping = new Map();
 		}
 		let i = 0;
 		for (const k in items) {
-			let ctx = mapping.get(k);
-			visited.set(k, true);
+			const existing = mapping.get(k);
+			let ctx = (existing && existing[1]) || undefined;
 			if (!ctx) {
 				ctx = Object.create(context);
 				// We make sure that we can recurse this effect.
 				ctx[this.id + Cell.State] = null;
 				ctx[Cell.Input] = [items[k], k];
-				mapping.set(k, ctx);
+				mapping.set(k, [revision, ctx]);
 			} else {
+				console.log("INPUT", ctx[Cell.Input]);
 				ctx[Cell.Input][0] = items[k];
 				ctx[Cell.Input][1] = k;
+				existing[k] = revision;
 			}
-			// TODO: We need to transform V input the template input
-			this.template.render(node, [position, i++], ctx, effector);
+			// TODO: We should probably store the output DOM node?
+			const res = this.template.render(
+				node,
+				[position, i++],
+				ctx,
+				effector,
+				this.template.id
+			);
+			console.log("MAPPING NODE", k, "=", res);
 		}
-		// FIXME: We should try to optimize that
-		for (const k of [...mapping.keys()]) {
-			if (!visited.has(k)) {
-				const m = mapping.get(k);
-				// TODO: Do something with the mapping there.
-				mapping.delete(k);
+		// TODO: We should remove the ammping items that haven't been updated
+		for (const [k, [rev]] of mapping.entries()) {
+			console.log("ENTRY", k, rev);
+			if (rev !== revision) {
+				console.log("TODO: Mapping remove key", k);
 			}
 		}
-		// We clear at the end
-		visited.clear();
 	}
 }
 
@@ -127,7 +148,17 @@ export class FormattingEffect extends Effect {
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		const text = context[this.input.id];
-		effector.ensureText(node, position, text);
+		const textNode = context[this.id];
+		if (!textNode) {
+			return (context[this.id] = effector.ensureText(
+				node,
+				position,
+				text
+			));
+		} else {
+			textNode.data = text;
+			return textNode;
+		}
 	}
 }
 // EOF

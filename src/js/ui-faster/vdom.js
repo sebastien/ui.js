@@ -79,16 +79,28 @@ export class VNode {
 		return node;
 	}
 
-	render(parent, position, context, effector) {
-		const node = this.clone();
-		for (const [path, effect] of this.effects) {
-			const child = path.reduce((r, v) => r.childNodes[v], node);
-			effect.render(child, position, context, effector);
-			// FIXME: This should probably be replacing the placeholder?
-			// It's a first render, so we keep track of the placeholder
-			child.parentNode.removeChild(child);
+	// NOTE: Only for the VNode.render we need an extra `id` argument, as
+	// the VNode has no id, so it is just using the parent `id`.
+	render(parent, position, context, effector, id) {
+		const existing = context[id + Cell.Node];
+		if (!existing) {
+			const node = this.clone();
+			for (const [path, effect] of this.effects) {
+				const child = path.reduce((r, v) => r.childNodes[v], node);
+				effect.render(child, position, context, effector);
+				// FIXME: This should probably be replacing the placeholder?
+				// It's a first render, so we keep track of the placeholder
+				child.parentNode.removeChild(child);
+			}
+			context[id + Cell.Node] = node;
+			return effector.appendChild(parent, node);
+		} else {
+			for (const [path, effect] of this.effects) {
+				const child = path.reduce((r, v) => r.childNodes[v], existing);
+				effect.render(child, position, context, effector);
+			}
+			return existing;
 		}
-		return effector.appendChild(parent, node);
 	}
 }
 
