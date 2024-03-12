@@ -1,7 +1,7 @@
 import { bool as _bool, type } from "./utils/values.js";
 import { idem } from "./utils/func.js";
 import { len, entries } from "./utils/collections.js";
-import { onError } from "./logging.js";
+import { onError } from "./utils/logging.js";
 
 // --
 // ## Formats
