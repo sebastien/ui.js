@@ -274,7 +274,7 @@ table.lined {
 .dimmer-a:after,
 .dimmer-b:before,
 .dimmer-ab:after,
-.dimmer-ab:before  {
+.dimmer-ab:before {
 	opacity: 0.45;
 }
 
@@ -282,7 +282,7 @@ table.lined {
 .dimmest-a:after,
 .dimmest-b:before,
 .dimmest-ab:after,
-.dimmest-ab:before  {
+.dimmest-ab:before {
 	opacity: 0.25;
 }
 
@@ -290,7 +290,7 @@ table.lined {
 .faint-a:after,
 .faint-b:before,
 .faint-ab:after,
-.faint-ab:before  {
+.faint-ab:before {
 	opacity: 0.15;
 }
 
@@ -298,7 +298,7 @@ table.lined {
 .fainter-a:after,
 .fainter-b:before,
 .fainter-ab:after,
-.fainter-ab:before  {
+.fainter-ab:before {
 	opacity: 0.1;
 }
 
@@ -306,7 +306,7 @@ table.lined {
 .faintest-a:after,
 .faintest-b:before,
 .faintest-ab:after,
-.faintest-ab:before  {
+.faintest-ab:before {
 	opacity: 0.05;
 }
 
@@ -365,6 +365,14 @@ table.lined {
 
 .center {
 	text-align: center;
+}
+
+.slash > *:after {
+	content: "/";
+}
+
+.slash > *:last-child:after {
+	content: "";
 }
 
 .comma > *:after {
