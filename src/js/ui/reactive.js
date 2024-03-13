@@ -74,6 +74,7 @@ export class Subscribable {
 		return last(this.topics(path, offset, creates));
 	}
 
+	// FIXME: We should track subscriptions,
 	sub(handler, path, offset = 0) {
 		let topic = null;
 		for (const _ of this.topics(path, offset, true)) {
@@ -113,7 +114,7 @@ export class Subscribable {
 		if (path === null) {
 			return this._notifyTopics(
 				value,
-				path === null ? this._topics : this.topic(path, offset)
+				path === null ? this._topics : this.topic(path, offset),
 			);
 		} else {
 			let topic = undefined;
@@ -146,7 +147,7 @@ export class Subscribable {
 						value ? value[k] : undefined,
 						v,
 						limit,
-						depth + 1
+						depth + 1,
 					);
 				}
 			}
@@ -264,17 +265,32 @@ export class Selected extends Cell {
 			selector.type === SelectorType.List
 				? new Array(inputs.length)
 				: selector.type === SelectorType.Map
-				? {}
-				: undefined;
+					? {}
+					: undefined;
 		this.revision = -1;
 	}
 
 	get value() {
 		if (this.revision === -1) {
-			this._value = this.eval();
-			this.revision = 0;
+			const v = this.eval();
+			// NOTE: this is a pattern that should be abstracted out.
+			if (v instanceof Promise) {
+				this.revision = 0;
+				const revision = this.revision;
+				const updater = (value) => {
+					if (this.revision === revision) {
+						this._value = value;
+						this.revision += 1;
+						this.trigger(value);
+					}
+				};
+				v.then(updater);
+			} else {
+				this._value = v;
+				this.revision = 0;
+			}
 		}
-		return this._value;
+		return this._value instanceof Promise ? undefined : this._value;
 	}
 
 	get(path, offset = 0) {
@@ -290,12 +306,12 @@ export class Selected extends Cell {
 					t === SelectorType.Atom
 						? null
 						: t === SelectorType.Mapping
-						? this.selector.fields[i]
-						: i;
+							? this.selector.fields[i]
+							: i;
 				this.subscriptions[i] = input.sub(
 					(...rest) => this.onInputUpdated(i, k, ...rest),
 					this.selector.inputs[i].path,
-					1
+					1,
 				);
 			}
 		}
@@ -308,7 +324,7 @@ export class Selected extends Cell {
 				input.unsub(
 					this.subscriptions[i],
 					this.selector.inputs[i].path,
-					1
+					1,
 				);
 				this.subscriptions[i] = undefined;
 			}
@@ -320,11 +336,47 @@ export class Selected extends Cell {
 	// `value` is the value replaced.
 	onInputUpdated(index, key, value) {
 		// TODO: We should optimize this
-		const w = this.eval();
-		if (this.comparator(w, this._value) !== 0) {
-			this._value = w;
-			this.revision += 1;
-			this.trigger(w);
+		if (value instanceof Promise) {
+			onError("Input updated with promise not supported yet", {
+				cell: this.id,
+				name: this.name,
+				index,
+				key,
+				value,
+			});
+		} else {
+			if (value instanceof Promise) {
+				value.then((_) => {
+					if (this._inputsValue[index] === value) {
+						this.onInputUpdated(index, key, _);
+					}
+				});
+			} else {
+				const previous = this._inputsValue[index];
+				this._inputsValue[index] = value;
+				if (
+					this.comparator(previous, value) !== 0 &&
+					// The following is an edge case where a cell is initialized
+					// with a future, and then set with an undefined value.
+					!(previous instanceof Promise && value === undefined)
+				) {
+					const w = this.eval();
+					if (w instanceof Promise && w != this._value) {
+						const rev = this.revision;
+						w.then((_) => {
+							if (this.revision === rev) {
+								this._value = _;
+								this.revision += 1;
+								this.trigger(_);
+							}
+						});
+					} else if (this.comparator(previous, value) !== 0) {
+						this._value = w;
+						this.revision += 1;
+						this.trigger(w);
+					}
+				}
+			}
 		}
 	}
 
@@ -332,7 +384,11 @@ export class Selected extends Cell {
 		const extracted = this.inputs.map((input, i) => {
 			const sel = this.selector.inputs[i];
 			return sel.formatted(
-				access(input instanceof Cell ? input.value : input, sel.path, 1)
+				access(
+					input instanceof Cell ? input.value : input,
+					sel.path,
+					1,
+				),
 			);
 		});
 		let res = undefined;
@@ -385,8 +441,8 @@ export class Scope extends Cell {
 			? Object.create(
 					parent instanceof Scope
 						? parent.slots
-						: map(parent, (_, k) => new Value(_, k))
-			  )
+						: map(parent, (_, k) => new Value(_, k)),
+				)
 			: {};
 		this.parent = parent instanceof Scope ? parent : null;
 	}
@@ -446,7 +502,7 @@ export class Scope extends Cell {
 					if (v !== undefined) {
 						onError(
 							`Unsupported case for slot: trying to assign a value to slot ${k} which is not a Value cell`,
-							{ slot, value: v }
+							{ slot, value: v },
 						);
 					} else {
 						// All good here, it's undefined;
@@ -526,7 +582,7 @@ export class Scope extends Cell {
 				if (value instanceof Cell) {
 					onError(
 						"Scope.set: cannot assign a cell to an existing slot",
-						{ path, slot, value }
+						{ path, slot, value },
 					);
 				} else {
 					slot.set(value, undefined, undefined, force);
@@ -548,7 +604,7 @@ export class Scope extends Cell {
 				// will create `{children:[undefined,<value>]}`.
 				return this.set(
 					path[0],
-					patch(undefined, path, value, undefined, 1)
+					patch(undefined, path, value, undefined, 1),
 				);
 			} else {
 				return slot.patch(value, path, 1);
@@ -635,7 +691,7 @@ export class Scope extends Cell {
 		}
 		if (selector.format) {
 			const inputs = selector.inputs.map((_) =>
-				_.formatted(this.get(_.path))
+				_.formatted(this.get(_.path)),
 			);
 			try {
 				return selector.format(...[...inputs, API]);
@@ -651,18 +707,18 @@ export class Scope extends Cell {
 			switch (selector.type) {
 				case SelectorType.Atom:
 					return selector.inputs[0].formatted(
-						this.get(selector.inputs[0].path)
+						this.get(selector.inputs[0].path),
 					);
 				case SelectorType.List:
 					return selector.inputs.map((_) =>
-						_.formatted(this.get(_.path))
+						_.formatted(this.get(_.path)),
 					);
 				case SelectorType.Map:
 					return selector.inputs.reduce(
 						(r, _) => (
 							(r[_.name] = _.formatted(this.get(_.path))), r
 						),
-						{}
+						{},
 					);
 				default:
 					onError("Unsupported selector type", selector.type, {
