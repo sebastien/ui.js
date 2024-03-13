@@ -102,7 +102,6 @@ const rewrite = async (path) => {
 	const out = output.writer();
 	for (const chunk of process(text)) {
 		await Bun.write(Bun.stdout, chunk);
-		await out.write(chunk);
 	}
 	await out.flush();
 };
