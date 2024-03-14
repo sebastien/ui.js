@@ -58,6 +58,7 @@ export class SelectorInput {
 		// TODO: Should freeze
 	}
 
+	// FIXME: Not sure when that's called
 	formatted(value) {
 		return this.format ? this.format.reduce((r, v) => v(r), value) : value;
 	}
@@ -90,7 +91,7 @@ export class Selector {
 		this.isMany = inputs.length === 1 && inputs[0].isMany;
 		this.type = inputs.reduce(
 			(r, v) => (v.key ? SelectorType.Mapping : r),
-			inputs.length > 1 ? SelectorType.List : SelectorType.Atom
+			inputs.length > 1 ? SelectorType.List : SelectorType.Atom,
 		);
 		this.fields = inputs.map((_) => _.key || _.path.at(-1));
 		this.target = target;

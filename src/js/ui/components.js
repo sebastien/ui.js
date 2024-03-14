@@ -30,7 +30,7 @@ export class Component {
 		store,
 		path,
 		slots,
-		attributes
+		attributes,
 	) {
 		this.id = id;
 		this.anchor = anchor;
@@ -57,7 +57,7 @@ export class Component {
 export const createComponent = (node, store, templates = Templates) => {
 	const slots = Object.assign(
 		extractBindings(node, ["template", "id"]),
-		extractSlots(node)
+		extractSlots(node),
 	);
 	const templateName = node.getAttribute("template");
 	const id = node.getAttribute("id");
@@ -76,7 +76,7 @@ export const createComponent = (node, store, templates = Templates) => {
 				node,
 				templateName,
 				templates,
-			}
+			},
 		);
 		return null;
 	}
@@ -100,7 +100,6 @@ export const createComponent = (node, store, templates = Templates) => {
 	// changes.
 	node.parentElement.replaceChild(anchor, node);
 
-	console.log("COMPONENT", Controllers, template.name);
 	return new Component(
 		key,
 		anchor,
@@ -109,7 +108,7 @@ export const createComponent = (node, store, templates = Templates) => {
 		store,
 		undefined,
 		slots,
-		attributes
+		attributes,
 	);
 };
 

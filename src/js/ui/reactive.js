@@ -347,13 +347,23 @@ export class Selected extends Cell {
 		} else {
 			if (value instanceof Promise) {
 				value.then((_) => {
-					if (this._inputsValue[index] === value) {
+					if (
+						this.selector.type === SelectorType.Atom
+							? this._inputsValue === value
+							: this._inputsValue[key] === value
+					) {
 						this.onInputUpdated(index, key, _);
 					}
 				});
 			} else {
-				const previous = this._inputsValue[index];
-				this._inputsValue[index] = value;
+				let previous = undefined;
+				if (this.selector.type === SelectorType.Atom) {
+					previous = this._inputsValue;
+					this._inputsValue = value;
+				} else {
+					previous = this._inputsValue[key];
+					this._inputsValue[key] = value;
+				}
 				if (
 					this.comparator(previous, value) !== 0 &&
 					// The following is an edge case where a cell is initialized
@@ -480,10 +490,12 @@ export class Scope extends Cell {
 				// If the given value is a selector, then we create a selection
 				// (ie a derived value).
 				const v = w instanceof Selector ? this.select(w) : w;
+
 				// We only define the own slots
 				const slot = this.slots.hasOwnProperty(k)
 					? this.slots[k]
 					: undefined;
+
 				// FIXME: This will  replace existing cells that are already
 				// defined.
 				if (replace || slot === undefined) {

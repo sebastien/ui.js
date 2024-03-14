@@ -1,4 +1,5 @@
 import {
+	array,
 	append,
 	cmp,
 	copy,
@@ -15,7 +16,7 @@ import {
 	toggle,
 	set,
 } from "./utils/collections.js";
-import { type } from "./utils/values.js";
+import { type, bool } from "./utils/values.js";
 import { pipe } from "./utils/func.js";
 import formats from "./formats.js";
 import { lerp } from "./utils/math.js";
@@ -26,7 +27,17 @@ import data from "./utils/data.js";
 
 // This is mapped to `$` in formatters
 export const API = {
+	and: (...args) => {
+		for (const _ of args) {
+			if (!bool(_)) {
+				return false;
+			}
+		}
+		return true;
+	},
 	data,
+	bool,
+	array,
 	debug: () => {
 		debugger;
 	},

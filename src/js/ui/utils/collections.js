@@ -4,7 +4,7 @@ import { idem } from "./func.js";
 // --
 // ## Structures
 //
-export const asMappable = (f) => (_) => _ instanceof Array ? _.map(f) : f(_);
+export const asMappable = (f) => (_) => (_ instanceof Array ? _.map(f) : f(_));
 
 // NOTE: This comes largely from <https://observablehq.com/@sebastien/boilerplate>
 
@@ -48,7 +48,7 @@ export const grouped = (collection, extractor, processor = undefined) =>
 			(r[g] = r[g] || []).push(processor ? processor(v) : v);
 			return r;
 		},
-		{}
+		{},
 	);
 
 export const set = (collection, key, value) => {
@@ -143,7 +143,7 @@ export const sorted = (
 	collection,
 	key = undefined,
 	ordering = 1,
-	comparator = cmp
+	comparator = cmp,
 ) => {
 	const extractor =
 		typeof key === "function"
@@ -156,7 +156,7 @@ export const sorted = (
 	res.sort(
 		(a, b) =>
 			ordering *
-			(key ? comparator(extractor(a), extractor(b)) : comparator(a, b))
+			(key ? comparator(extractor(a), extractor(b)) : comparator(a, b)),
 	);
 
 	return res;
@@ -311,9 +311,11 @@ export const range = (start, end, step = 1, closed = false) => {
 };
 
 export const copy = (value) => {
-	if (value === undefined || value === null) { return value }
+	if (value === undefined || value === null) {
+		return value;
+	}
 	return typeof value === "object" ? map(value) : value;
-}
+};
 
 export const append = (value, item) => {
 	if (value instanceof Array) {
@@ -348,12 +350,13 @@ export const access = (context, path, offset = 0) => {
 	if (path && path.length && context !== undefined) {
 		const n = path.length;
 		// Note that it's a feature here to allow an offset greater than the path
-		for (let i = offset; i < n; i++) {
+		for (
+			let i = offset;
+			i < n && context !== undefined && context !== null;
+			i++
+		) {
 			// TODO: We may want to deal with number vs key
 			context = context[path[i]];
-			if (context === undefined) {
-				break;
-			}
 		}
 	}
 	return context;
@@ -431,7 +434,7 @@ export const last = (stream) => {
 	return res;
 };
 
-// TOOD
+// TODO
 // export const has = (collection, value) => {
 // }
 // export const add = (collection, value) => {
@@ -439,18 +442,21 @@ export const last = (stream) => {
 // export const remove = (collection, value) => {
 // }
 export const toggle = (collection, value) => {
-	if (!collection) { return [value] }
+	if (!collection) {
+		return [value];
+	}
 	if (collection instanceof Array) {
 		const i = collection.indexOf(value);
-		if (i === -1) { collection.push(value) }
-		else { collection.splice(i, 1) }
+		if (i === -1) {
+			collection.push(value);
+		} else {
+			collection.splice(i, 1);
+		}
 		return collection;
 	} else {
-		return collection
+		return collection;
 	}
-}
-
-
+};
 
 export const trigger = (handlers, ...value) => {
 	let i = 0;

@@ -12,6 +12,8 @@ export const count = (_) => {
 	return n ? `${n}` : "";
 };
 
+export const index = (_) => (typeof _ === "number" ? _ + 1 : null);
+
 export const attr = (_) => (bool(_) ? text(_) : "");
 export const not = (_) => !bool(_);
 export const empty = (_) =>
@@ -64,7 +66,7 @@ export const duration = (seconds) => {
 			seconds -= t * value;
 		}
 	}
-	return parts.join(" ");
+	return parts.length ? parts.join(" ") : `${seconds.toFixed(2)}s`;
 };
 
 export const swallow = () => "";
@@ -79,33 +81,35 @@ export const ago = (date) => {
 	const now = new Date();
 	const diffInSeconds = Math.floor((now - date) / 1000);
 	const absDiff = Math.abs(diffInSeconds);
+	const prefix = diffInSeconds > 0 ? "" : "in ";
+	const suffix = diffInSeconds > 0 ? " ago" : "";
 
 	if (absDiff < 1) {
 		return "now";
 	}
 
 	if (absDiff < 60) {
-		return `${absDiff}s ${diffInSeconds > 0 ? "ago" : "ahead"}`;
+		return `${prefix}${absDiff}s${suffix}`;
 	}
 
 	const diffInMinutes = Math.floor(absDiff / 60);
 	if (diffInMinutes < 60) {
-		return `${diffInMinutes}m ${diffInSeconds > 0 ? "ago" : "ahead"}`;
+		return `${prefix}${diffInMinutes}m${suffix}`;
 	}
 
 	const diffInHours = Math.floor(diffInMinutes / 60);
 	if (diffInHours < 24) {
-		return `${diffInHours}h ${diffInSeconds > 0 ? "ago" : "ahead"}`;
+		return `${prefix}${diffInHours}h${suffix}`;
 	}
 
 	const diffInDays = Math.floor(diffInHours / 24);
 	if (diffInDays < 7) {
-		return `${diffInDays}d ${diffInSeconds > 0 ? "ago" : "ahead"}`;
+		return `${prefix}${diffInDays}d${suffix}`;
 	}
 
 	const diffInWeeks = Math.floor(diffInDays / 7);
 	if (diffInWeeks < 4) {
-		return `${diffInWeeks}w ${diffInSeconds > 0 ? "ago" : "ahead"}`;
+		return `${prefix}${diffInWeeks}w ${suffix}`;
 	}
 
 	const monthNames = [
@@ -192,6 +196,7 @@ export const Formats = {
 	duration,
 	type,
 	swallow,
+	index,
 };
 export default Formats;
 // EOF

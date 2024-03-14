@@ -239,7 +239,8 @@ const RE_ON = new RegExp(
 		seq(
 			// Slot is like, "asdsasd=" or "slot!=" to force an assignment
 			opt(
-				capture(SLOT, "assign"),
+				// We may need to assign to multiple slots
+				capture(list(SLOT, ",", "assign", 0, 4)),
 				opt(capture(text("!"), "force")),
 				text("="),
 			),
@@ -306,7 +307,7 @@ export const parseOnDirective = (value) => {
 		return null;
 	} else {
 		const res = makematch(match);
-		res.assign = res.assign ? res.assign.split(".") : res.assign;
+		res.assign = Object.values(res.assign).map((_) => _.split("."));
 		return res;
 	}
 };

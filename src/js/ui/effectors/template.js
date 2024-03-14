@@ -1,7 +1,7 @@
 import Options from "../utils/options.js";
 import { onError, onWarning } from "../utils/logging.js";
 import { len, assign, reduce } from "../utils/collections.js";
-import { Value } from "../reactive.js";
+import { Value, Selected } from "../reactive.js";
 import { Effect, Effector } from "../effectors.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
@@ -53,10 +53,19 @@ export class TemplateEffector extends Effector {
 				}
 				return r;
 			},
-			{}
+			{},
 		);
+
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
+		// We do need to make sure that any derived value is evaluated at this
+		// stage. This is is a bit of a tax to pay.
+		for (const k in this.bindings) {
+			const slot = subscope.slots[k];
+			if (slot.revision === -1 && slot instanceof Selected) {
+				slot.value;
+			}
+		}
 		if (this.isComponent && subscope !== scope) {
 			subscope.isComponentBoundary =
 				this.name || this.template.name || true;
@@ -106,7 +115,7 @@ class TemplateEffect extends Effect {
 						if (!n) {
 							onWarning(
 								`Effector #${i} cannot resolve the following path from the root`,
-								{ path: _.nodePath, root }
+								{ path: _.nodePath, root },
 							);
 						}
 						return n;
@@ -153,7 +162,7 @@ class TemplateEffect extends Effect {
 							k,
 							n,
 							/* force to override */ true,
-							false
+							false,
 						);
 					}
 
@@ -165,12 +174,12 @@ class TemplateEffect extends Effect {
 
 					DOM.after(
 						i === 0 ? this.node : this.views[i - 1].root,
-						root
+						root,
 					);
 					if (!root.parentNode) {
 						onError(
 							"TemplateEffect: view root node should always have a parent",
-							{ i, root, view }
+							{ i, root, view },
 						);
 					}
 
@@ -201,7 +210,7 @@ class TemplateEffect extends Effect {
 										effector,
 										root,
 										refs,
-									}
+									},
 								);
 							const res = effector.apply(node, this.scope);
 							Options.debug && console.groupEnd();
@@ -250,7 +259,7 @@ class TemplateEffect extends Effect {
 				this.controller = createController(
 					this.effector.controller,
 					this.scope,
-					this.node
+					this.node,
 				);
 			}
 			for (const [name, handlers] of this.controller.events.entries()) {
@@ -302,7 +311,7 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false
+				false,
 			);
 		return res;
 	}
@@ -325,9 +334,9 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false
+				false,
 			);
-		return super.unmount();
+		return this.mounted ? super.unmount() : this;
 	}
 
 	dispose() {
