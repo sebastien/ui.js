@@ -2,6 +2,10 @@
 	visibility: hidden;
 }
 
+.nolink {
+	text-decoration: none;
+}
+
 .nocolor {
 	color: transparent;
 }
@@ -32,12 +36,14 @@
 	border-radius: var(--rounded-2);
 }
 
-.rounded > *:first-child {
+.rounded>*:first-child,
+.rounded-t {
 	border-top-left-radius: var(--rounded-2);
 	border-top-right-radius: var(--rounded-2);
 }
 
-.rounded > *:last-child {
+.rounded>*:last-child,
+.rounded-b {
 	border-bottom-left-radius: var(--rounded-2);
 	border-bottom-right-radius: var(--rounded-2);
 }
@@ -46,12 +52,14 @@
 	border-radius: var(--rounded-4);
 }
 
-.rounder > *:first-child {
+.rounder>*:first-child,
+.rounder-t {
 	border-top-left-radius: var(--rounded-4);
 	border-top-right-radius: var(--rounded-4);
 }
 
-.rounder > *:last-child {
+.rounder>*:last-child,
+.rounder-b {
 	border-bottom-left-radius: var(--rounded-4);
 	border-bottom-right-radius: var(--rounded-4);
 }
@@ -75,6 +83,36 @@
 	height: 2.25em;
 }
 
+.tabs {
+	background-color: var(--page-bg-alt);
+	padding: var(--pad-2);
+	padding-bottom: 0px;
+	border-bottom: 1px solid (--box-bd);
+}
+
+.tab {
+	display: inline-flex;
+	align-items: center;
+	padding-left: var(--pad-2);
+	padding-right: var(--pad-2);
+	border: 1px solid var(--box-bd);
+	position: relative;
+	bottom: -1px;
+	background-color: var(--page-bg);
+	cursor: pointer;
+	opacity: 0.5;
+}
+
+.tab:hover {
+	opacity: 0.75;
+}
+
+.tab.selected,
+.tab[data-selected=true] {
+	border-bottom-color: var(--page-bg);
+	opacity: 1.0;
+}
+
 .pill {
 	display: inline-flex;
 	align-items: center;
@@ -83,6 +121,7 @@
 	padding-right: var(--pad-2);
 	--element-bg: var(--color-grey-9);
 	background-color: var(--element-bg);
+	border-color: var(--element-bg);
 }
 
 .pill.blue .pill.output,
@@ -114,6 +153,12 @@
 .pill[data-type~="error"] {
 	--element-bg: var(--color-red-7);
 }
+
+.pill.transparent {
+	background-color: transparent;
+	border-width: 1px;
+}
+
 
 /**
  * ## Font
@@ -176,11 +221,11 @@
 	border: var(--box-bd-w) solid var(--box-bd);
 }
 
-.bd-h > * {
+.bd-h>* {
 	border-right: var(--box-bd-w) solid var(--box-bd);
 }
 
-.bd-h > *:last-child {
+.bd-h>*:last-child {
 	border-right: 0px solid var(--box-bd);
 }
 
@@ -189,11 +234,11 @@
 	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 
-.bd-v > * {
+.bd-v>* {
 	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 
-.bd-v > *:last-child {
+.bd-v>*:last-child {
 	border-bottom: 0px solid var(--box-bd);
 }
 
@@ -213,11 +258,11 @@
 	border-left: var(--box-bd-w) solid var(--box-bd);
 }
 
-.lined > * {
+.lined>* {
 	border-bottom: var(--box-bd-w) solid var(--box-bd);
 }
 
-.lined > *:last-child {
+.lined>*:last-child {
 	border-width: 0px;
 }
 
@@ -229,13 +274,23 @@
 	border-style: dashed;
 }
 
-.row.lined > * {
+.row.lined>* {
 	border-bottom: unset;
 	border-right: var(--box-bd-w) solid var(--box-bd);
 }
 
-.lined > *:last-child {
+.lined>*:last-child {
 	border-width: 0px;
+}
+
+table.gap {
+	border-spacing: var(--gap);
+	border-collapse: collapse;
+}
+
+table.padded td,
+table.padded th {
+	padding: var(--pad);
 }
 
 table.grid {
@@ -318,6 +373,10 @@ table.lined {
 	box-shadow: 0px 2px 2px #0000000a;
 }
 
+.smallest {
+	font-size: var(--font-size-0);
+}
+
 .smaller {
 	font-size: var(--font-size-1);
 }
@@ -363,23 +422,31 @@ table.lined {
 	text-transform: uppercase;
 }
 
+.prefixed:before {
+	content: attr(data-prefix);
+}
+
+.suffixed:after {
+	content: attr(data-suffix);
+}
+
 .center {
 	text-align: center;
 }
 
-.slash > *:after {
+.slash>*:after {
 	content: "/";
 }
 
-.slash > *:last-child:after {
+.slash>*:last-child:after {
 	content: "";
 }
 
-.comma > *:after {
+.comma>*:after {
 	content: ",";
 }
 
-.comma > *:last-child:after {
+.comma>*:last-child:after {
 	content: "";
 }
 
@@ -430,42 +497,53 @@ table.lined {
 	--shadow-depth: 1;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-1 {
 	--shadow-depth: 2;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-2 {
 	--shadow-depth: 3;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-3 {
 	--shadow-depth: 4;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-4 {
 	--shadow-depth: 5;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-5 {
 	--shadow-depth: 6;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-6 {
 	--shadow-depth: 7;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-7 {
 	--shadow-depth: 8;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-8 {
 	--shadow-depth: 9;
 	box-shadow: var(--shadow-low);
 }
+
 .shadow-9 {
 	--shadow-depth: 10;
 	box-shadow: var(--shadow-low);
-} /* @end */
+}
+
+/* @end */
 
 .shadow-left {
 	box-shadow: var(--shadow-low-left);
@@ -475,75 +553,66 @@ table.lined {
    * range(10).map(_ => `\n  .bg-${_} {background-color:color-mix(in srgb, var(--color-current), var(--color-background-t) ${Math.floor(100-(25*_/10))}%);  }`)
    */
 .bg-0 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 100%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 100%);
 }
+
 .bg-1 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 97%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 97%);
 }
+
 .bg-2 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 95%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 95%);
 }
+
 .bg-3 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 92%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 92%);
 }
+
 .bg-4 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 90%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 90%);
 }
+
 .bg-5 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 87%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 87%);
 }
+
 .bg-6 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 85%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 85%);
 }
+
 .bg-7 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 82%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 82%);
 }
+
 .bg-8 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 80%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 80%);
 }
+
 .bg-9 {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--color-background-t) 77%
-	);
-} /* @end */
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--color-background-t) 77%);
+}
+
+/* @end */
 
 .bevel {
 	border: var(--box-bd-w) solid #ffffff20;

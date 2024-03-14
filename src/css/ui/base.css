@@ -182,6 +182,10 @@ a[href].nolink:hover {
 	white-space: nowrap;
 }
 
+.wrap {
+	text-wrap: nowrap;
+}
+
 .noselect {
 	user-select: none;
 }

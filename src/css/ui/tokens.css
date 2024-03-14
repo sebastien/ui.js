@@ -172,12 +172,8 @@ variations).
 	--shadow-floating: 4px 4px 4px #0000000a;
 
 	--shadow-depth: 1;
-	--shadow-low: calc(1.5px * var(--shadow-depth))
-		calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
-		color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
-	--shadow-low-left: calc(-1.5px * var(--shadow-depth))
-		calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth))
-		color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
+	--shadow-low: calc(1.5px * var(--shadow-depth)) calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth)) color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
+	--shadow-low-left: calc(-1.5px * var(--shadow-depth)) calc(1.75px * var(--shadow-depth)) calc(3px * var(--shadow-depth)) color-mix(in srgb, var(--color-current), var(--color-background-t) 80%);
 
 	/*
    * ## Page
@@ -190,6 +186,7 @@ variations).
    * ## Boxes
   */
 	--box-bd: #e0e0e0;
+	--box-bd-lt: color-mix(in srgb, var(--box-bd), var(--color-background-t) 80%);
 	--box-bd-w: 1px;
 
 	/*
@@ -216,43 +213,29 @@ variations).
    * ## Controls
   */
 	--control-color: var(--color-text);
-	--control-bd-ltr: color-mix(
-		in srgb,
-		var(--color-text),
-		var(--page-bg-0p) 93%
-	);
-	--control-bd-lt: color-mix(
-		in srgb,
-		var(--color-text),
-		var(--page-bg-0p) 83%
-	);
+	--control-bd-ltr: color-mix(in srgb,
+			var(--color-text),
+			var(--page-bg-0p) 93%);
+	--control-bd-lt: color-mix(in srgb,
+			var(--color-text),
+			var(--page-bg-0p) 83%);
 	--control-bd: color-mix(in srgb, var(--color-text), var(--page-bg-0p) 75%);
-	--control-bd-dk: color-mix(
-		in srgb,
-		var(--color-text),
-		var(--page-bg-0p) 65%
-	);
-	--control-bd-dkr: color-mix(
-		in srgb,
-		var(--color-text),
-		var(--page-bg-0p) 50%
-	);
+	--control-bd-dk: color-mix(in srgb,
+			var(--color-text),
+			var(--page-bg-0p) 65%);
+	--control-bd-dkr: color-mix(in srgb,
+			var(--color-text),
+			var(--page-bg-0p) 50%);
 	--control-bg: var(--color-primary);
-	--control-bg-focused: color-mix(
-		in srgb,
-		var(--color-primary),
-		var(--page-bg-0p) 50%
-	);
-	--control-bg-hover: color-mix(
-		in srgb,
-		var(--color-primary),
-		var(--page-bg-0p) 60%
-	);
-	--control-bg-selected: color-mix(
-		in srgb,
-		var(--color-primary),
-		var(--page-bg-0p) 75%
-	);
+	--control-bg-focused: color-mix(in srgb,
+			var(--color-primary),
+			var(--page-bg-0p) 50%);
+	--control-bg-hover: color-mix(in srgb,
+			var(--color-primary),
+			var(--page-bg-0p) 60%);
+	--control-bg-selected: color-mix(in srgb,
+			var(--color-primary),
+			var(--page-bg-0p) 75%);
 	--control-line-height: 1.15em;
 	--control-font-size: var(--font-size-3);
 
