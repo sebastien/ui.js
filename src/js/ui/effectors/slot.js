@@ -23,7 +23,7 @@ export class SlotEffector extends Effector {
 		if (!templateName) {
 			onError(
 				`SlotEffector: template is not specified, use ContentEffector instead`,
-				{ nodePath, selector },
+				{ nodePath, selector }
 			);
 		} else if (typeof templateName === "string") {
 			// TODO: We should replace these by Enum
@@ -40,7 +40,7 @@ export class SlotEffector extends Effector {
 				"SlotEffector: template should be string, selector or effector",
 				{
 					template: templateName,
-				},
+				}
 			);
 		}
 	}
@@ -58,7 +58,7 @@ export class SlotEffector extends Effector {
 						Templates.get(this.templateName) ||
 						onError(
 							`SlotEffector: Could not find template '${this.templateName}'`,
-							[...Templates.keys()],
+							[...Templates.keys()]
 						);
 					break;
 				case "eff":
@@ -100,11 +100,13 @@ export class SlotEffector extends Effector {
 					node,
 					effect_scope,
 					this.templateName,
-					effect,
-				).init()
+					effect
+			  ).init()
 			: effect;
 	}
 }
+
+// FIXME: Should probably be a subclass of SingleSlotEffect
 
 // --
 // This wraps another effect and changes the template.
@@ -114,7 +116,7 @@ class DynamicTemplateEffect extends Effect {
 		templateSelector instanceof Selector ||
 			onError(
 				"DynamicTemplateEffect: template selector is not a Selector instance",
-				{ templateSelector, effector, node, scope },
+				{ templateSelector, effector, node, scope }
 			);
 		this.effect = effect;
 	}
@@ -124,13 +126,13 @@ class DynamicTemplateEffect extends Effect {
 			? typeof template === "string"
 				? Templates.get(template)
 				: template instanceof Effector
-					? template
-					: null
+				? template
+				: null
 			: null;
 		res ||
 			onError(
 				`DynamicTemplateEffect: unable to resolve template '${template}'`,
-				{ template },
+				{ template }
 			);
 		return res;
 	}
@@ -157,6 +159,28 @@ class DynamicTemplateEffect extends Effect {
 				}
 			}
 		}
+	}
+	// NOTE: Same as SingleSlotEffect
+	mount(...args) {
+		this.effect?.mount(...args);
+		return super.mount(...args);
+	}
+	unmount(...args) {
+		this.effect.unmount(...args);
+		return super.unmount(...args);
+	}
+	bind(...args) {
+		this.effect?.bind(...args);
+		return super.bind(...args);
+	}
+	unbind(...args) {
+		this.effect.unbind(...args);
+		return super.unbind(...args);
+	}
+	dispose(...args) {
+		this.effect?.dispose(...args);
+		this.effect = undefined;
+		return super.dispose(...args);
 	}
 }
 
@@ -194,7 +218,7 @@ class SingleSlotEffect extends SlotEffect {
 		if (!this.effect) {
 			const node = createComment(
 				// FIXME: add a better description of that part
-				`_|SingleSlotEffect`,
+				`_|SingleSlotEffect`
 			);
 			DOM.after(this.node, node);
 
@@ -209,7 +233,7 @@ class SingleSlotEffect extends SlotEffect {
 			} else {
 				this.effect = this.template.apply(
 					node, // node
-					this.scope,
+					this.scope
 				);
 				this.mounted && this.effect.mount();
 				return this.effect;
@@ -225,6 +249,14 @@ class SingleSlotEffect extends SlotEffect {
 	unmount(...args) {
 		this.effect.unmount(...args);
 		return super.unmount(...args);
+	}
+	bind(...args) {
+		this.effect?.bind(...args);
+		return super.bind(...args);
+	}
+	unbind(...args) {
+		this.effect.unbind(...args);
+		return super.unbind(...args);
 	}
 	dispose(...args) {
 		this.effect?.dispose(...args);
@@ -258,7 +290,11 @@ class MappingSlotEffect extends SlotEffect {
 
 		const { target, path } = this.effector.selector;
 		// NOTE: Target should not be null
-
+		console.log("MAPPING SLOT", this.effector.selector.toString(), "=", {
+			current,
+			previous,
+			items: this.items,
+		});
 		// FIXME: This should be moved to the slot effector. We also need
 		// to retrieve the key.
 		// ### Case: Empty
@@ -288,7 +324,7 @@ class MappingSlotEffect extends SlotEffect {
 						node, // node
 						// FIXME: Should we set the key to null?
 						scope.derive({ [target || "_"]: current }, path), // scope
-						true, // isEmpty
+						true // isEmpty
 					);
 					items.set(null, new_item);
 					this.mounted && new_item.mount();
@@ -304,14 +340,14 @@ class MappingSlotEffect extends SlotEffect {
 					const subscope = scope.derive(
 						{ [target || "_"]: current[i] },
 						[...path, i],
-						i,
+						i
 					);
 					const new_item = this.createItem(
 						this.template,
 						node, // node
 						subscope,
 						undefined,
-						i,
+						i
 					);
 					items.set(i, new_item);
 					this.mounted && new_item.mount();
@@ -330,17 +366,17 @@ class MappingSlotEffect extends SlotEffect {
 					}
 				}
 			}
-			// We cleanup any item that is not used anymore
-			let j = current.length;
-			let item = null;
-			while ((item = items.get(j))) {
-				item.mounted && item.unmount();
-				item.dispose();
-				items.delete(j);
-				j++;
-			}
-			//this.value = [...current];
-			this.value = current;
+			// // We cleanup any item that is not used anymore
+			// let j = current.length;
+			// let item = null;
+			// while ((item = items.get(j))) {
+			// 	item.mounted && item.unmount();
+			// 	item.dispose();
+			// 	items.delete(j);
+			// 	j++;
+			// }
+			// //this.value = [...current];
+			// this.value = current;
 		} else {
 			// ### Case: Object
 			const items = this.items ? this.items : (this.items = new Map());
@@ -350,14 +386,14 @@ class MappingSlotEffect extends SlotEffect {
 					const subscope = scope.derive(
 						{ [target || "_"]: current[k] },
 						[...path, k],
-						k,
+						k
 					);
 					const new_item = this.createItem(
 						this.template,
 						node, // node
 						subscope,
 						undefined,
-						k,
+						k
 					);
 					items.set(k, new_item);
 					this.mounted && new_item.mount();
@@ -368,23 +404,42 @@ class MappingSlotEffect extends SlotEffect {
 					}
 				}
 			}
-			const to_dispose = new Set();
-			for (const k of items.keys()) {
+			// const to_dispose = new Set();
+			// for (const k of items.keys()) {
+			// 	if (current[k] === undefined) {
+			// 		const item = items.get(k);
+			// 		if (item) {
+			// 			item.mounted && item.unmount();
+			// 			item.dispose();
+			// 		}
+			// 		to_dispose.add(k);
+			// 	}
+			// }
+			// for (const k of to_dispose) {
+			// 	this.items.delete(k);
+			// }
+			// //this.value = { ...current };
+			// this.value = current;
+		}
+		// FIXME: By the look of it there's not guarantee the order is preserved,
+		// we should make sure that the nodes are mounted in the right
+		// order.
+		// --
+		// This is the cleanup method common to both
+		if (!(isCurrentEmpty || isCurrentAtom)) {
+			for (const k of [...this.items.keys()]) {
 				if (current[k] === undefined) {
-					const item = items.get(k);
+					const item = this.items.get(k);
 					if (item) {
 						item.mounted && item.unmount();
 						item.dispose();
 					}
-					to_dispose.add(k);
+					this.items.delete(k);
 				}
 			}
-			for (const k of to_dispose) {
-				this.items.delete(k);
-			}
-			//this.value = { ...current };
-			this.value = current;
 		}
+		// TODO: We could do a copy, but I don't think it's necessary.
+		this.value = current;
 		return this;
 	}
 
@@ -393,7 +448,7 @@ class MappingSlotEffect extends SlotEffect {
 	createItem(template, node, scope, isEmpty = false, key = undefined) {
 		// TODO: Should have a better comment
 		const root = createComment(
-			`out:content=${this.effector.selector.toString()}#${key || 0}`,
+			`out:content=${this.effector.selector.toString()}#${key || 0}`
 		);
 		// We need to insert the node before as the template needs a parent
 		if (!node.parentNode) {
@@ -402,7 +457,7 @@ class MappingSlotEffect extends SlotEffect {
 				{
 					node,
 					path: scope.path,
-				},
+				}
 			);
 		} else {
 			// TODO: Should use DOM.after
@@ -412,8 +467,8 @@ class MappingSlotEffect extends SlotEffect {
 		return template
 			? template.apply(
 					root, // node
-					scope,
-				)
+					scope
+			  )
 			: null;
 	}
 	mount(...args) {
@@ -431,6 +486,22 @@ class MappingSlotEffect extends SlotEffect {
 			}
 		}
 		return super.unmount(...args);
+	}
+	bind(...args) {
+		if (this.items) {
+			for (const item of this.items.values()) {
+				item?.bind();
+			}
+		}
+		return super.bind(...args);
+	}
+	unbind(...args) {
+		if (this.items) {
+			for (const item of this.items.values()) {
+				item?.unbind();
+			}
+		}
+		return super.unbind(...args);
 	}
 	dispose(...args) {
 		if (this.items) {

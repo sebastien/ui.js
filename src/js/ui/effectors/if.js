@@ -39,16 +39,18 @@ class IfEffect extends Effect {
 					// NOTE: Apply already calls init()
 				}
 				// TODO: We should instead hide
-				if (!this.state.mounted) {
-					this.state.mount();
-				}
+				console.log("BINDING EFFECT", this.selector?.toString());
+				!this.state.bound && this.state.bind();
+				!this.state.mounted && this.state.mount();
 				this.visible = true;
 			} else {
-				if (this.state?.mounted) {
-					this.state.unmount();
-					// We'll only dispose of the state when we dispose
-					// of the whole effect.
+				if (this.visible) {
+					console.log("UNBINDING EFFECT", this.selector?.toString());
+					this.state?.bound && this.state.unbind();
+					this.state?.mounted && this.state.unmount();
 				}
+				// We'll only dispose of the state when we dispose
+				// of the whole effect.
 				this.visible = false;
 			}
 		}

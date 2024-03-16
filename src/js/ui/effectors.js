@@ -143,7 +143,10 @@ export class Effect {
 			this.apply();
 		};
 		this.subs = selector
-			? selector.inputs.map((_, i) => this.scope.sub(handler(i), _.path))
+			? selector.inputs.map((_, i) =>
+					// NOTE: sub may return undefined
+					this.scope.sub(handler(i), _.path)?.enable(false)
+			  )
 			: null;
 	}
 
@@ -153,6 +156,8 @@ export class Effect {
 			onError(`Effector bound more than once: ${this.mounted}`, {
 				effector: this,
 			});
+		} else {
+			this.subs && this.subs.forEach((_) => _ && _.enable());
 		}
 		this.bound += 1;
 		return this;
@@ -167,6 +172,8 @@ export class Effect {
 			onError(`Effector bound more than once: ${this.bound}`, {
 				effector: this,
 			});
+		} else {
+			this.subs && this.subs.forEach((_) => _ && _.enable(false));
 		}
 		this.bound = 0;
 		return this;
@@ -234,10 +241,8 @@ export class Effect {
 	dispose() {
 		// The effector may not have been mounted, or may already have been
 		// unmounted at that point.
-		if (this.mounted) {
-			this.unmount();
-		}
-		this.unbind();
+		this.monted && this.unmount();
+		this.bound && this.unbind();
 		return this;
 	}
 
