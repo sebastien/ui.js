@@ -128,7 +128,6 @@ export class MappingEffect extends Effect {
 				effector,
 				this.template.id
 			);
-			console.log("MAPPING NODE", k, "=", res);
 		}
 		// TODO: We should remove the ammping items that haven't been updated
 		for (const [k, [rev]] of mapping.entries()) {

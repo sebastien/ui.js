@@ -251,17 +251,19 @@ class SingleSlotEffect extends SlotEffect {
 		return super.unmount(...args);
 	}
 	bind(...args) {
-		this.effect?.bind(...args);
+		// The effect may have already been bound during initial render
+		this.effect && !this.effect.bound && this.effect.bind(...args);
 		return super.bind(...args);
 	}
 	unbind(...args) {
-		this.effect.unbind(...args);
+		this.effect?.unbind(...args);
 		return super.unbind(...args);
 	}
 	dispose(...args) {
+		const res = super.dispose(...args);
 		this.effect?.dispose(...args);
 		this.effect = undefined;
-		return super.dispose(...args);
+		return res;
 	}
 }
 
@@ -289,12 +291,6 @@ class MappingSlotEffect extends SlotEffect {
 		const isCurrentAtom = isAtom(current);
 
 		const { target, path } = this.effector.selector;
-		// NOTE: Target should not be null
-		console.log("MAPPING SLOT", this.effector.selector.toString(), "=", {
-			current,
-			previous,
-			items: this.items,
-		});
 		// FIXME: This should be moved to the slot effector. We also need
 		// to retrieve the key.
 		// ### Case: Empty
@@ -490,7 +486,8 @@ class MappingSlotEffect extends SlotEffect {
 	bind(...args) {
 		if (this.items) {
 			for (const item of this.items.values()) {
-				item?.bind();
+				// Item may have been bound during first render
+				item && !item.bound && item.bind();
 			}
 		}
 		return super.bind(...args);

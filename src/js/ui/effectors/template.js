@@ -53,7 +53,7 @@ export class TemplateEffector extends Effector {
 				}
 				return r;
 			},
-			{},
+			{}
 		);
 
 		const subscope =
@@ -115,7 +115,7 @@ class TemplateEffect extends Effect {
 						if (!n) {
 							onWarning(
 								`Effector #${i} cannot resolve the following path from the root`,
-								{ path: _.nodePath, root },
+								{ path: _.nodePath, root }
 							);
 						}
 						return n;
@@ -162,7 +162,7 @@ class TemplateEffect extends Effect {
 							k,
 							n,
 							/* force to override */ true,
-							false,
+							false
 						);
 					}
 
@@ -174,12 +174,12 @@ class TemplateEffect extends Effect {
 
 					DOM.after(
 						i === 0 ? this.node : this.views[i - 1].root,
-						root,
+						root
 					);
 					if (!root.parentNode) {
 						onError(
 							"TemplateEffect: view root node should always have a parent",
-							{ i, root, view },
+							{ i, root, view }
 						);
 					}
 
@@ -210,7 +210,7 @@ class TemplateEffect extends Effect {
 										effector,
 										root,
 										refs,
-									},
+									}
 								);
 							const res = effector.apply(node, this.scope);
 							Options.debug && console.groupEnd();
@@ -259,7 +259,7 @@ class TemplateEffect extends Effect {
 				this.controller = createController(
 					this.effector.controller,
 					this.scope,
-					this.node,
+					this.node
 				);
 			}
 			for (const [name, handlers] of this.controller.events.entries()) {
@@ -311,7 +311,7 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false,
+				false
 			);
 		return res;
 	}
@@ -334,16 +334,19 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false,
+				false
 			);
 		return this.mounted ? super.unmount() : this;
 	}
 
 	dispose() {
+		const res = super.dispose();
 		for (const view of this.views) {
 			for (const state of view.states) {
 				state?.dispose();
 			}
+			// FIXME: Not clear why this is not already done.
+			view.root?.parentNode?.removeChild(view.root);
 		}
 		this.views = [];
 
@@ -354,7 +357,7 @@ class TemplateEffect extends Effect {
 		//     scope: this.scope,
 		//   })
 		// );
-		return super.dispose();
+		return res;
 	}
 }
 
