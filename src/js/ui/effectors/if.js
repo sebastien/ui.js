@@ -31,22 +31,21 @@ class IfEffect extends Effect {
 
 		if (previous === undefined || a !== b) {
 			if (a) {
+				// The branch is visible
 				if (this.state === undefined) {
 					this.state = this.effector.template.apply(
 						this.node,
-						this.scope
+						this.scope,
 					);
 					// NOTE: Apply already calls init()
 				}
-				// TODO: We should instead hide
-				// !this.state.bound && this.state.bind();
-				// !this.state.mounted && this.state.mount();
+				!this.state.bound && this.state.bind();
+				!this.state.mounted && this.state.mount();
 				this.visible = true;
 			} else {
-				// if (this.visible) {
-				// 	this.state?.bound && this.state.unbind();
-				// 	this.state?.mounted && this.state.unmount();
-				// }
+				// The branch is not visible
+				this.state?.bound && this.state.unbind();
+				this.state?.mounted && this.state.unmount();
 				// We'll only dispose of the state when we dispose
 				// of the whole effect.
 				this.visible = false;
