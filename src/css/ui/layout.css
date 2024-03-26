@@ -2,6 +2,10 @@
    * ## Box Model
 */
 
+.inline {
+	display: inline-block;
+}
+
 .sticky {
 	position: sticky;
 }

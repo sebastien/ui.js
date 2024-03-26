@@ -116,4 +116,9 @@ label:active,
 label:focus {
 	outline: 0px solid transparent;
 }
+
+summary::-webkit-details-marker {
+	display: none;
+}
+
 /* EOF */

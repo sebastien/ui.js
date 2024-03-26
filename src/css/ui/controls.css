@@ -826,6 +826,15 @@ menu>li>.label>.detail {
 	color: var(--color-text-alt);
 }
 
+details summary::before {
+	content: attr(data-marker);
+	margin-right: 5px;
+}
+
+details[open] summary::before {
+	content: attr(data-marker-open);
+}
+
 /* For Webkit (Safari, Chrome) */
 ::-webkit-scrollbar {
 	width: 8px;
