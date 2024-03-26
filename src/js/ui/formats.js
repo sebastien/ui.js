@@ -59,19 +59,25 @@ const durationUnits = [
 	{ name: "m", value: 60 }, // Minutes
 	{ name: "s", value: 1 }, // Seconds
 ];
+
 export const duration = (seconds) => {
-	if (!typeof seconds !== "number") {
+	if (typeof seconds !== "number") {
 		return null;
 	}
 	const parts = [];
+	let v = Math.abs(seconds);
 	for (const { name, value } of durationUnits) {
-		if (seconds >= value) {
-			const t = Math.floor(seconds / value);
+		if (v >= value) {
+			const t = Math.floor(v / value);
 			parts.push(`${t}${name}`);
-			seconds -= t * value;
+			v -= t * value;
 		}
 	}
-	return parts.length ? parts.join(" ") : `${seconds.toFixed(2)}s`;
+	return parts.length
+		? parts.join(" ")
+		: v === Math.floor(v)
+			? `${Math.floor(v)}`
+			: `${v.toFixed(2)}s`;
 };
 
 export const swallow = () => "";
