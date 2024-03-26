@@ -6,6 +6,13 @@ export const def = (...rest) => {
 	}
 };
 
+export const extractor = (key) =>
+	typeof key === "function"
+		? key
+		: key
+			? (_) => (_ ? _[key] : undefined)
+			: idem;
+
 export const pipe = (v, ...f) => {
 	let r = v;
 	for (let i = 0; i < f.length; i++) {
@@ -28,7 +35,7 @@ export const memo = (guards, functor) => {
 				return w;
 			}
 		},
-		Memoized
+		Memoized,
 	);
 	if (!scope.has(true)) {
 		scope.set(true, functor());

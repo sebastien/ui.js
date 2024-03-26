@@ -1,5 +1,5 @@
 import { type, isObject, isIterable } from "./values.js";
-import { idem } from "./func.js";
+import { idem, extractor } from "./func.js";
 
 // --
 // ## Structures
@@ -39,6 +39,41 @@ export const reduce = (v, f, r) => {
 		return r;
 	}
 };
+
+export const occurrences = (v) => {
+	if (isObject(v) || v instanceof Array) {
+		const m = new Map();
+		for (const i in v) {
+			const w = v[i];
+			m.set(w, (m.get(w) || 0) + 1);
+		}
+		return m;
+	} else {
+		const m = new Map();
+		m.set(v, 1);
+		return m;
+	}
+};
+export const unique = (v) => {
+	if (isObject(v) || v instanceof Array) {
+		const r = new Set();
+		for (const i in v) {
+			r.add(v[i]);
+		}
+		return [...r];
+	} else {
+		return [v];
+	}
+};
+export const flatten = (v, processor = undefined) =>
+	reduce(
+		v,
+		(r, v, i) => {
+			const w = processor ? processor(v, i) : v;
+			return w instanceof Array ? r.concat(flatten(w)) : (r.push(w), r);
+		},
+		[],
+	);
 
 export const grouped = (collection, extractor, processor = undefined) =>
 	reduce(
@@ -145,18 +180,12 @@ export const sorted = (
 	ordering = 1,
 	comparator = cmp,
 ) => {
-	const extractor =
-		typeof key === "function"
-			? key
-			: key
-				? (_) => (_ ? _[key] : undefined)
-				: idem;
+	const ext = extractor(key);
 	const res =
 		collection instanceof Array ? [].concat(collection) : list(collection);
 	res.sort(
 		(a, b) =>
-			ordering *
-			(key ? comparator(extractor(a), extractor(b)) : comparator(a, b)),
+			ordering * (key ? comparator(ext(a), ext(b)) : comparator(a, b)),
 	);
 
 	return res;
@@ -196,7 +225,7 @@ export const entries = (value) =>
 	reduce(value, (r, value, key) => (r.push({ key, value }), r), []);
 
 export const filter = (v, f) => {
-	if (v === undefined) {
+	if (v === undefined || f === undefined || f === null) {
 		return v;
 	} else if (v instanceof Array) {
 		return v.filter(f);
@@ -218,7 +247,7 @@ export const filter = (v, f) => {
 		}
 		return res;
 	} else {
-		return f(v);
+		return v;
 	}
 };
 

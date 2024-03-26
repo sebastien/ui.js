@@ -4,6 +4,7 @@ import {
 	cmp,
 	copy,
 	filter,
+	flatten,
 	grouped,
 	len,
 	map,
@@ -12,17 +13,21 @@ import {
 	removeAt,
 	reverse,
 	entries,
+	occurrences,
+	unique,
 	sorted,
 	toggle,
 	set,
 } from "./utils/collections.js";
-import { type, bool } from "./utils/values.js";
+import { type, bool, symbols } from "./utils/values.js";
 import { pipe } from "./utils/func.js";
 import formats from "./formats.js";
 import { lerp } from "./utils/math.js";
 import query from "./utils/query.js";
 import { setTrace } from "./utils/logging.js";
 import { drag } from "./interaction.js";
+import { repeat } from "./utils/async.js";
+import { getJSON, getText } from "./utils/http.js";
 import data from "./utils/data.js";
 
 // This is mapped to `$` in formatters
@@ -46,12 +51,14 @@ export const API = {
 	type,
 	copy,
 	entries,
+	flatten,
 	filter,
 	grouped,
 	len,
 	pipe,
 	lerp,
 	map,
+	occurrences,
 	range,
 	reduce,
 	removeAt,
@@ -59,9 +66,14 @@ export const API = {
 	setTrace,
 	sorted,
 	set,
+	repeat,
 	toggle,
 	query,
 	formats,
 	drag,
+	symbols,
+	getJSON,
+	getText,
+	unique,
 };
 export default API;
