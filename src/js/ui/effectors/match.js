@@ -31,8 +31,8 @@ class MatchEffect extends Effect {
 				guard instanceof Function
 					? guard(value)
 					: guard === true ||
-					  value === guard ||
-					  cmp(value, guard) == 0
+						value === guard ||
+						cmp(value, guard) == 0
 			) {
 				index = i;
 				branch = b;
@@ -88,8 +88,10 @@ class MatchEffect extends Effect {
 	dispose() {
 		for (let i = 0; i < this.states.length; i++) {
 			const branch = this.states[i];
-			branch.mounted && branch.unmount();
-			branch.dispose();
+			if (branch) {
+				branch.mounted && branch.unmount();
+				branch.dispose();
+			}
 			this.states[i] = undefined;
 		}
 		this.currentBranchIndex = undefined;
