@@ -35,7 +35,9 @@
 							x:if="entry.value,selection,#->{value === null || value == undefined || typeof value !== 'object' || selection && selection.indexOf(key) !== -1}">
 							<slot template="Inspector" value="entry.value" />
 						</span>
+						<!--
 						<span class="selectable" x:else>…</span>
+						-->
 					</li>
 				</ul>
 			</slot>
@@ -47,7 +49,9 @@
 							x:if="entry.value,selection,#->{value === null || value == undefined || typeof value !== 'object' || selection && selection.indexOf(key) !== -1}">
 							<slot template="Inspector" value="entry.value" />
 						</span>
+						<!--
 						<span x:else>…</span>
+						-->
 					</li>
 				</ul>
 			</slot>

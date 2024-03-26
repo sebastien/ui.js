@@ -19,7 +19,7 @@ export const not = (_) => !bool(_);
 export const empty = (_) =>
 	_
 		? (_ instanceof Array && _.length == 0) ||
-		  (_ instanceof Object && Object.getOwnPropertyNames(_).length === 0)
+			(_ instanceof Object && Object.getOwnPropertyNames(_).length === 0)
 			? true
 			: false
 		: true;
@@ -28,8 +28,8 @@ export const asDate = (value) =>
 	value && typeof value === "number"
 		? new Date(value * 1000)
 		: value && value instanceof Date
-		? value
-		: new Date();
+			? value
+			: new Date();
 
 export const date = (value) => {
 	const d = asDate(value);
@@ -147,12 +147,12 @@ export const timetuple = (_) =>
 					_[2], // Day
 					_[3], // Hour
 					_[4], // Minute
-					_[5] // Second
-				)
-		  )
+					_[5], // Second
+				),
+			)
 		: _ instanceof Date
-		? _
-		: null;
+			? _
+			: null;
 
 const htmlParser = globalThis.DOMParser ? new DOMParser() : null;
 const json = (_) => (_ === undefined ? "" : JSON.stringify(_));
@@ -165,11 +165,11 @@ export const html = htmlParser
 				res.appendChild(doc.body.firstChild);
 			}
 			return res;
-	  }
+		}
 	: (value) => {
 			onError("HTML Parser not available");
 			return value;
-	  };
+		};
 export const debug = (value, scope) => {
 	console.log("[uijs.debug] Slot value:", { value, scope });
 	return value;

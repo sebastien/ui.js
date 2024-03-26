@@ -352,7 +352,9 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 		const v = attr.value;
 		if (!v.trim()) {
 			// Bindings will be inherited from scope
-			bindings[name] = undefined;
+			// NOTE: this used to be `undefined` instead of parseSelector,
+			// but it didn't work, so I think this is better.
+			bindings[name] = parseSelector(name);
 		} else if (matchLiteralValue(v)) {
 			// This is a literal expression
 			bindings[name] = parseLiteralValue(v);
