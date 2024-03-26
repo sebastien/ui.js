@@ -13,13 +13,13 @@ label {
 	cursor: pointer;
 	user-select: none;
 }
+
 .action:hover {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--page-bg-0p) 95%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--page-bg-0p) 95%);
 }
+
  .selectable {
 	cursor: pointer;
 	user-select: none;
@@ -27,20 +27,16 @@ label {
 }
 
 .selectable:hover {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--page-bg-0p) 95%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--page-bg-0p) 95%);
 }
 
 .selectable.selected,
 .selectable[data-selected="true"] {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--page-bg-0p) 90%
-	);
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--page-bg-0p) 90%);
 }
 
 .editable[data-placeholder]:before {
@@ -96,6 +92,7 @@ label {
 	box-sizing: border-box;
 	border-radius: 4px;
 }
+
 .indent-icon {
 	--item-indent: var(--icon-size);
 }
@@ -106,45 +103,58 @@ label {
 .indent-1 {
 	--item-indent: var(--pad-1);
 }
+
 .indent-2 {
 	--item-indent: var(--pad-2);
 }
+
 .indent-3 {
 	--item-indent: var(--pad-3);
 }
+
 .indent-4 {
 	--item-indent: var(--pad-4);
 }
+
 .indent-5 {
 	--item-indent: var(--pad-5);
 }
+
 .indent-6 {
 	--item-indent: var(--pad-6);
 }
+
 .indent-7 {
 	--item-indent: var(--pad-7);
 }
+
 .indent-8 {
 	--item-indent: var(--pad-8);
-} /* @end */
+}
+
+/* @end */
 
 .items .item {
 	--item-depth: 1;
 }
+
 .items .items .item {
 	--item-depth: 2;
 }
+
 .items .items .items .item {
 	--item-depth: 3;
 }
+
 .items .items .items .items .item {
 	--item-depth: 4;
 }
+
 .items .items .items .items .items .item {
 	--item-depth: 5;
 }
 
-.item > .fill {
+.item>.fill {
 	flex-grow: 1;
 }
 
@@ -200,8 +210,7 @@ textarea:hover,
 .input:hover,
 .textarea:hover,
 .input.hover,
-.textarea.hover {
-}
+.textarea.hover {}
 
 input:focus,
 textarea:focus,
@@ -271,7 +280,6 @@ textarea.transparent:hover,
 	box-shadow: unset;
 	top: unset;
 	left: unset;
-	padding: unset;
 	border: unset;
 	outline: unset;
 }
@@ -329,17 +337,13 @@ button,
 	--button-bg: var(--color-grey-8);
 	--button-bg-active: var(--color-grey-5);
 
-	--button-bd-active: color-mix(
-		in srgb,
-		var(--color-bg-active),
-		var(--page-bg-0p) 50%
-	);
+	--button-bd-active: color-mix(in srgb,
+			var(--color-bg-active),
+			var(--page-bg-0p) 50%);
 	--button-bd: color-mix(in srgb, var(--button-bg), var(--color-low) 10%);
-	--button-bd-hover: color-mix(
-		in srgb,
-		var(--button-bg-hover),
-		var(--color-low) 10%
-	);
+	--button-bd-hover: color-mix(in srgb,
+			var(--button-bg-hover),
+			var(--color-low) 10%);
 
 	--button-ol-hover: var(--color-grey-7);
 	--button-ol: transparent;
@@ -380,6 +384,7 @@ button.focus,
 	outline-color: var(--button-ol-focus);
 	color: var(--button-txt-focus);
 }
+
 button:hover,
 button.hover,
 .button:hover,
@@ -389,6 +394,7 @@ button.hover,
 	outline-color: var(--button-ol-hover);
 	color: var(--button-txt-hover);
 }
+
 button:active,
 button.active,
 button.selected,
@@ -465,11 +471,13 @@ button.large,
 	font-size: var(--font-size-3);
 	padding: var(--pad-3) var(--pad-4);
 }
+
 button.larger,
 .button.larger {
 	font-size: var(--font-size-4);
 	padding: var(--pad-3) var(--pad-5);
 }
+
 /**
  * ### Button Colors
 */
@@ -561,11 +569,9 @@ button.label,
 	outline-color: transparent;
 	min-width: unset;
 	--button-txt: var(--button-bg);
-	--button-txt-hover: color-mix(
-		in srgb,
-		var(--button-txt),
-		var(--page-bg-0p) 50%
-	);
+	--button-txt-hover: color-mix(in srgb,
+			var(--button-txt),
+			var(--page-bg-0p) 50%);
 }
 
 .button.primary.label {
@@ -610,6 +616,7 @@ button.dimmed,
 .button.dimmed {
 	opacity: var(--opacity-dimmed);
 }
+
 button.dimmed:hover,
 .button.dimmed:hover {
 	opacity: 1;
@@ -620,6 +627,7 @@ button.label,
 	background-color: transparent;
 	border: 0px solid transparent;
 }
+
 button.label:hover,
 button.label:focus,
 .button.label:hover,
@@ -627,26 +635,28 @@ button.label:focus,
 	background-color: transparent;
 	outline: unset;
 }
+
 button.label:focus,
-.button.label:focus {
-}
+.button.label:focus {}
+
 button.label:active,
 .button.label:active {
 	background-color: transparent;
 	outline: unset;
 }
+
 .select {
 	display: flex;
 	flex-direction: column;
 }
 
-.select > button,
-.select > .button,
-.select > .option,
-.select > button:hover,
-.select > button:focus,
-.select > .button:hover,
-.select > .button:focus {
+.select>button,
+.select>.button,
+.select>.option,
+.select>button:hover,
+.select>button:focus,
+.select>.button:hover,
+.select>.button:focus {
 	text-shadow: unset;
 	box-shadow: unset;
 	left: unset;
@@ -654,40 +664,36 @@ button.label:active,
 	padding: var(--pad-1) var(--pad-2);
 }
 
-.select.as-underline > button,
-.select.as-underline > .button,
-.select.as-underline > .option,
-.select.as-underline > button:hover,
-.select.as-underline > button:focus,
-.select.as-underline > .button:hover,
-.select.as-underline > .button:focus {
+.select.as-underline>button,
+.select.as-underline>.button,
+.select.as-underline>.option,
+.select.as-underline>button:hover,
+.select.as-underline>button:focus,
+.select.as-underline>.button:hover,
+.select.as-underline>.button:focus {
 	border: 0px solid transparent;
 	border-bottom: 1px solid transparent;
 }
 
-.select.as-underline > .option:hover,
-.select.as-underline > .button:hover,
-.select.as-underline > button:hover {
+.select.as-underline>.option:hover,
+.select.as-underline>.button:hover,
+.select.as-underline>button:hover {
 	background-color: transparent;
 	color: var(--color-primary);
-	border-color: color-mix(
-		in srgb,
-		var(--color-primary),
-		rgba(var(--color-high-transparent), 0) 50%
-	);
+	border-color: color-mix(in srgb,
+			var(--color-primary),
+			rgba(var(--color-high-transparent), 0) 50%);
 }
 
-.select.as-underline > .option.selected,
-.select.as-underline > .button.selected,
-.select.as-underline > button.selected,
-.select.as-underline > button:active {
+.select.as-underline>.option.selected,
+.select.as-underline>.button.selected,
+.select.as-underline>button.selected,
+.select.as-underline>button:active {
 	background-color: transparent;
 	color: var(--color-primary);
-	border-color: color-mix(
-		in srgb,
-		var(--color-primary),
-		rgba(var(--color-high-transparent), 0) 75%
-	);
+	border-color: color-mix(in srgb,
+			var(--color-primary),
+			rgba(var(--color-high-transparent), 0) 75%);
 }
 
 .field {
@@ -695,7 +701,8 @@ button.label:active,
 	justify-items: stretch;
 	align-items: center;
 }
-.field > .fill {
+
+.field>.fill {
 	flex-grow: 1;
 }
 
@@ -713,7 +720,7 @@ button.label:active,
 	border: 1px solid var(--control-bd);
 }
 
-.panel > header {
+.panel>header {
 	font-weight: bold;
 }
 
@@ -759,15 +766,17 @@ menu.popup {
 	scrollbar-color: var(--color-primary);
 	scrollbar-width: thin;
 }
-.menu > hr,
-menu > hr {
+
+.menu>hr,
+menu>hr {
 	border: 0px solid transparent;
 	background: transparent;
 	margin: 0px;
 	border-top: 1px solid var(--color-bd);
 }
-.menu > hr:after,
-menu > hr:after {
+
+.menu>hr:after,
+menu>hr:after {
 	content: attr(data-label);
 	display: block;
 	opacity: 0.75;
@@ -776,8 +785,9 @@ menu > hr:after {
 	line-height: 1em;
 	padding: 12px 8px 8px;
 }
-.menu > li,
-menu > li {
+
+.menu>li,
+menu>li {
 	display: flex;
 	align-items: center;
 	padding: 6px 8px;
@@ -786,32 +796,30 @@ menu > li {
 	cursor: pointer;
 }
 
-.menu > li:hover,
-menu > li:hover {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--page-bg-0p) 95%
-	);
+.menu>li:hover,
+menu>li:hover {
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--page-bg-0p) 95%);
 }
-.menu > li.selected,
-menu > li.selected {
-	background-color: color-mix(
-		in srgb,
-		var(--color-current),
-		var(--page-bg-0p) 90%
-	);
+
+.menu>li.selected,
+menu>li.selected {
+	background-color: color-mix(in srgb,
+			var(--color-current),
+			var(--page-bg-0p) 90%);
 }
-.menu > li > .label,
-menu > li > .label {
+
+.menu>li>.label,
+menu>li>.label {
 	display: block;
 	flex-grow: 1;
 	font-size: var(--font-size-1_5);
 	color: var(--color-text);
 }
 
-.menu > li > .label > .detail,
-menu > li > .label > .detail {
+.menu>li>.label>.detail,
+menu>li>.label>.detail {
 	display: block;
 	font-weight: 400;
 	font-size: var(--font-size-1);
@@ -820,26 +828,34 @@ menu > li > .label > .detail {
 
 /* For Webkit (Safari, Chrome) */
 ::-webkit-scrollbar {
-	width: 8px; /* width of the entire scrollbar */
+	width: 8px;
+	/* width of the entire scrollbar */
 }
 
 ::-webkit-scrollbar-track {
-	background-color: transparent; /* color of the tracking area */
+	background-color: transparent;
+	/* color of the tracking area */
 }
 
 ::-webkit-scrollbar-thumb {
-	background-color: var(--color-grey-8); /* color of the scroll thumb */
-	border-radius: 0px; /* roundness of the scroll thumb */
-	border: 3px solid transparent; /* creates padding around scroll thumb */
+	background-color: var(--color-grey-8);
+	/* color of the scroll thumb */
+	border-radius: 0px;
+	/* roundness of the scroll thumb */
+	border: 3px solid transparent;
+	/* creates padding around scroll thumb */
 }
 
 /* For Firefox */
 * {
-	scrollbar-width: thin; /* "auto" or "thin" */
-	scrollbar-color: var(--color-grey-8) transparent; /* thumb and track color */
+	scrollbar-width: thin;
+	/* "auto" or "thin" */
+	scrollbar-color: var(--color-grey-8) transparent;
+	/* thumb and track color */
 }
 
 /* For IE and Edge */
 body {
-	-ms-overflow-style: -ms-autohiding-scrollbar; /* auto-hide scrollbars in Edge and IE */
+	-ms-overflow-style: -ms-autohiding-scrollbar;
+	/* auto-hide scrollbars in Edge and IE */
 }

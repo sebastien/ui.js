@@ -67,13 +67,13 @@ variations).
 	--color-white: #ffffff;
 	--color-white-0p: #ffffff00;
 	--color-cyan: #00aeb3;
-	--color-blue: #00a0dc;
+	--color-blue: #1173cd;
 	--color-purple: #8d6cab;
 	--color-red: #dd5143;
-	--color-orange: #e68523;
+	--color-orange: #f17a08;
 	--color-yellow: #edb220;
 	--color-pink: #dc4b89;
-	--color-green: #7cb82f;
+	--color-green: #98d338;
 	--color-grey: #86888a;
 
 	--color-value: var(--color-primary);

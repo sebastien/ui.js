@@ -124,31 +124,36 @@
 	border-color: var(--element-bg);
 }
 
-.pill.blue .pill.output,
+.pill.blue,
+.pill.output,
 .pill[data-color~="blue"],
 .pill[data-type~="output"] {
 	--element-bg: var(--color-blue);
 }
 
-.pill.green .pill.success,
+.pill.green,
+.pill.success,
 .pill[data-color~="green"],
 .pill[data-type~="success"] {
 	--element-bg: var(--color-green-7);
 }
 
-.pill.yellow .pill.info,
+.pill.yellow,
+.pill.info,
 .pill[data-color~="yellow"],
 .pill[data-type~="info"] {
 	--element-bg: var(--color-yellow-7);
 }
 
-.pill.orange .pill.warning,
+.pill.orange,
+.pill.warning,
 .pill[data-color~="orange"],
 .pill[data-type~="warning"] {
 	--element-bg: var(--color-orange-7);
 }
 
-.pill.red .pill.error,
+.pill.red,
+.pill.error,
 .pill[data-color~="red"],
 .pill[data-type~="error"] {
 	--element-bg: var(--color-red-7);
@@ -172,6 +177,7 @@
 	font-weight: 300;
 }
 
+.regular,
 .noweight {
 	font-weight: 400;
 }
