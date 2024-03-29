@@ -24,7 +24,7 @@ variations).
 
 	--font-code: var(--font-mono);
 	--font-code-line-height: var(--font-mono);
-	--font-code-size: calc(14 / 14 * 1em);
+	--font-code-size: calc(12 / 14 * 1em);
 
 	--font-control: "Jost", sans-serif;
 	--font-control-line-height: 1.25em;
@@ -57,7 +57,7 @@ variations).
 	/**
 	 * ## Typography
 	*/
-	--text-max-width: 55ch;
+	--text-width: 55ch;
 
 	/*
    * ## Colors
@@ -181,6 +181,7 @@ variations).
 	--page-bg: var(--color-high);
 	--page-bg-0p: var(--color-high-0p);
 	--page-bg-alt: color-mix(in srgb, var(--page-bg-0p), var(--color-low) 5%);
+	--page-width: 960px;
 
 	/*
    * ## Boxes

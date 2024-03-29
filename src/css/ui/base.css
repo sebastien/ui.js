@@ -70,7 +70,7 @@ hr {
 }
 
 p {
-	max-width: var(--text-max-width);
+	max-width: var(--text-width);
 }
 
 .code,
@@ -122,11 +122,11 @@ h6 {
 dt {
 	font-weight: bold;
 	margin-top: 1.25em;
-	max-width: var(--text-max-width);
+	max-width: var(--text-width);
 }
 
 dd {
-	max-width: var(--text-max-width);
+	max-width: var(--text-width);
 	margin-left: 0.5ch;
 	padding-left: 1.25em;
 	padding-top: 0.5em;

@@ -438,6 +438,7 @@ table.lined {
 
 .center {
 	text-align: center;
+	justify-content: center;
 }
 
 .slash>*:after {
