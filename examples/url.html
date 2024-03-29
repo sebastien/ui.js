@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― URL Parameters</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div>
+		<p>Filling in the form will persist the form data in the URL, which
+			is done by creating event handlers for the data cells corresponding
+			to the <code>username</code> and <code>email</code> inputs.</p>
+		<slot template="Form"></slot>
+	</div>
+
+
+	<template name="Form" inout:username inout:email on:username="#->{console.log('username changed',_)}"
+		on:email="#->{console.log('email changed',_)}">
+		<div class="stack gap-2">
+			<div class="row">
+				<label class="w-1b" for="username">User name</label>
+				<input class="fill" name="username" out:value="username" placeholder="Enter you username"></input>
+			</div>
+			<div class="row">
+				<label class="w-1b" for="email">Email</label>
+				<input class="fill" name="email" out:value="email" placeholder="Enter your email"></input>
+			</div>
+		</div>
+	</template>
+
+
+	<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
+	<script type="module">
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
+</html>

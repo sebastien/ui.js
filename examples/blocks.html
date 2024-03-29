@@ -6,12 +6,12 @@
 		<title>UIjs ― Blocks</title>
 		<link
 			rel="stylesheet"
-			href="../lib/css/ui.css"
+			href="../src/css/ui.css"
 			type="text/css"
 			media="all"
 		/>
 		<script type="importmap">
-			{ "imports": { "@ui.js": "/lib/js/ui.js", "@ui/": "/lib/js/ui/" } }
+			{ "imports": { "@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/" } }
 		</script>
 	</head>
 	<body>
@@ -153,7 +153,7 @@
 		<script type="module">
 			import { controller } from "@ui.js";
 			import { autoresize } from "@ui/interaction.js";
-			import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
+			import { marked } from "https://cdn.jsdelivr.net/npm/marked/src/marked.esm.js";
 			const Cell = ({ on, scope, state }) => {
 				on.SourceChanged((event) => {
 					autoresize(event);

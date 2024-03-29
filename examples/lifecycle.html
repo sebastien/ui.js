@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Lifecycle</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/" } }
+		</script>
+</head>
+
+<body>
+	<div>
+		<p name="description">Illustrates how the component <code>mount</code> and
+			<code>unmount</code> events can be used to trigger effects.
+		</p>
+		<slot template="Items"></slot>
+	</div>
+
+	<template name="Items" inout:mounted="0" out:items="($.array(10,true))">
+		<table class="padded lined w-4b">
+			<thead>
+				<tr>
+					<th class="bold">Mounted</th>
+					<td class="tr" out:content="mounted|text"></td>
+				</tr>
+			</thead>
+			<tbody x:for="items">
+				<tr>
+					<td colspan="2">
+						<!-- We bind the `on:remove` even to remove the element when the Remove
+			 button is clicked -->
+						<slot template="Item" mounted="mounted" on:remove="items=items,#->{$.removeAt(items,key)}"></slot>
+					</td>
+				</tr>
+			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan="2" class="tr pt-1 pb-1">
+						<button on:click="items=items->{[...items, {}]}">Add item</button>
+					</td>
+				</tr>
+			</tfoot>
+		</table>
+	</template>
+
+	<!-- The item component has a `mounted` cell that is shared with the parent. 
+	 When it is mounted, the total is increased. -->
+	<template name="Item" inout:mounted on:mount="mounted=mounted->{(mounted||0)+1}"
+		on:unmount="mounted=mounted->{(mounted||0)-1}">
+		<div class="with-hover row pt-1 pb-1">
+			<span class="fill">
+				Component
+			</span>
+			<!-- Clicking on the remove button triggers a `remove`` custom event which
+		is handled by the parent component -->
+			<button class="small show-hover" on:click="!remove">Remove</button>
+		</div>
+	</template>
+	<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
+	<script type="module">
+		import ui from "@ui.js";
+		ui();
+	</script>
+</body>
+
+</html>
