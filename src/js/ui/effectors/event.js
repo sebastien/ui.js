@@ -40,14 +40,14 @@ class EventEffect extends Effect {
 				this.scope.update(
 					directive.assign[0],
 					v,
-					directive.force ? true : false,
+					directive.force ? true : false
 				);
 			} else {
 				for (const i in directive.assign) {
 					this.scope.update(
 						directive.assign[i],
 						v ? v[i] : undefined,
-						directive.force ? true : false,
+						directive.force ? true : false
 					);
 				}
 			}
@@ -58,7 +58,7 @@ class EventEffect extends Effect {
 			this.scope.update(
 				directive.slot,
 				handler ? v : event.target.value,
-				directive.force ? true : false,
+				directive.force ? true : false
 			);
 		}
 		if (directive.event) {
@@ -71,7 +71,7 @@ class EventEffect extends Effect {
 					: event,
 				this.scope,
 				this.node,
-				directive.stops ? false : true,
+				directive.stops ? false : true
 			);
 		}
 		if (directive.stops) {

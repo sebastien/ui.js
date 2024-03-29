@@ -12,7 +12,7 @@ import {
 import API from "../api.js";
 import { Formats } from "../formats.js";
 import { map, values, reduce } from "../utils/collections.js";
-import { Selector, SelectorInput } from "../selector.js";
+import { Reactor, Fused, Selector, SelectorInput } from "../selector.js";
 import { onError } from "../utils/logging.js";
 
 // ----------------------------------------------------------------------------
@@ -33,10 +33,10 @@ const PATH = or(
 		opt(capture("[@/_\\.]", "type")),
 		list("([a-zA-Z_0-9]+|#)", text("."), "chunk", 0, 7),
 		// FIXME: Not sure what the card is for
-		opt(capture(text("*"), "card")),
+		opt(capture(text("*"), "card"))
 	),
 	capture(text("#"), "isKey"),
-	capture(text("."), "isCurrent"),
+	capture(text("."), "isCurrent")
 );
 
 const CODE = seq(text("{"), capture("[^\\}]+", "code"), text("}"));
@@ -46,7 +46,7 @@ const FORMAT = seq(text("|"), or(capture("[a-zA-Z_0-9]+", "formatter"), CODE));
 const TARGET = seq(capture("[a-zA-Z_0-9]+", "target"), text("="));
 const SELECTION = seq(
 	or(EXPR, CODE, PATH),
-	opt(list(FORMAT, "", "format", 0, 5)),
+	opt(list(FORMAT, "", "format", 0, 5))
 );
 
 const INPUT = seq(opt(capture("[a-zA-Z]+", "key"), text("=")), SELECTION);
@@ -54,7 +54,7 @@ const PROCESSOR = seq(text("->{"), capture(".+", "processor"), text("}"), "$");
 const SELECTOR = seq(
 	opt(TARGET),
 	list(INPUT, ",", "inputs", 0, 7),
-	opt(PROCESSOR),
+	opt(PROCESSOR)
 );
 
 // ----------------------------------------------------------------------------
@@ -77,7 +77,7 @@ export const createFunction = (args, body) => {
 	}
 };
 
-export const parseSelector = (text) => {
+export const parseSelector = (text, args = undefined) => {
 	const parsed = parse(text, RE_SELECTOR, true);
 	if (!parsed || parsed.index !== 0) {
 		onError("Could not parse selector at all", { text });
@@ -119,7 +119,7 @@ export const parseSelector = (text) => {
 						} else if (code) {
 							const f = createFunction(
 								["value", "scope"],
-								`const _=value;return (${code})`,
+								`const _=value;return (${code})`
 							);
 							if (f) {
 								// This is for when printing selectors
@@ -129,25 +129,33 @@ export const parseSelector = (text) => {
 						}
 						return r;
 					},
-					[],
-				),
+					[]
+				)
 			);
 			return r;
 		},
-		[],
+		[]
 	);
 
 	// TODO: Support code and expr in selector input
-	const inputs = map(
-		values(match.inputs),
-		(_, i) =>
-			new SelectorInput(
-				_.isCurrent ? "." : _.isKey ? "#" : _.type,
-				_.isCurrent ? ["_"] : _.isKey ? ["#"] : [...values(_.chunk)],
-				_.card === "*",
-				formats[i],
-			),
-	);
+	const inputs = [
+		...(args ? args.map((_) => new SelectorInput(_.split("."))) : []),
+		...map(
+			values(match.inputs),
+			(_, i) =>
+				new SelectorInput(
+					_.isCurrent ? "." : _.isKey ? "#" : _.type,
+					_.isCurrent
+						? ["_"]
+						: _.isKey
+						? ["#"]
+						: [...values(_.chunk)],
+					_.card === "*",
+					formats[i]
+				)
+		),
+	];
+
 	return new Selector(
 		// Inputs
 		inputs,
@@ -157,11 +165,11 @@ export const parseSelector = (text) => {
 					[...inputs.map((v) => normInput(v.path.at(-1))), "$"],
 					`const _=${normInput(inputs[0].path.at(-1))};return (${
 						match.processor
-					})`,
-				)
+					})`
+			  )
 			: null,
 		// Target
-		match.target,
+		match.target
 	);
 };
 
@@ -199,22 +207,22 @@ export const parseLiteralValue = (text) => {
 				(text.startsWith("{") && text.endsWith("}")))
 			? JSON.parse(text)
 			: text && text.startsWith("(") && text.endsWith(")")
-				? createFunction(["$"], `{return ${text}}`)(API)
-				: text &&
-					  ((text.startsWith("'") && text.endsWith("'")) ||
-							(text.startsWith('"') && text.endsWith('"')))
-					? text.substring(1, text.length - 1)
-					: RE_NUMBER.test(text)
-						? parseFloat(text)
-						: text === "true"
-							? true
-							: text === "false"
-								? false
-								: text
-									? text
-									: undefined;
+			? createFunction(["$"], `{return ${text}}`)(API)
+			: text &&
+			  ((text.startsWith("'") && text.endsWith("'")) ||
+					(text.startsWith('"') && text.endsWith('"')))
+			? text.substring(1, text.length - 1)
+			: RE_NUMBER.test(text)
+			? parseFloat(text)
+			: text === "true"
+			? true
+			: text === "false"
+			? false
+			: text
+			? text
+			: undefined;
 	} catch (error) {
-		onError("Could not parse literal value", { text });
+		onError("Could not parse literal value", { text, error });
 		return null;
 	}
 };
@@ -242,7 +250,7 @@ const RE_ON = new RegExp(
 				// We may need to assign to multiple slots
 				capture(list(SLOT, ",", "assign", 0, 4)),
 				opt(capture(text("!"), "force")),
-				text("="),
+				text("=")
 			),
 			opt(
 				// FIXME: Don't agree with that, it should be:
@@ -257,12 +265,12 @@ const RE_ON = new RegExp(
 							text("->"),
 							text("{"),
 							capture(not(or(text("}!"), "}$"), ".+"), "handler"),
-							text("}"),
+							text("}")
 						),
 						// A value processor list like `|len`
-						seq(text("|"), capture("\\w+(,\\w+)*", "processors")),
-					),
-				),
+						seq(text("|"), capture("\\w+(,\\w+)*", "processors"))
+					)
+				)
 			),
 			opt(
 				// The event itself
@@ -279,19 +287,19 @@ const RE_ON = new RegExp(
 								text("{"),
 								capture(
 									not(or(text("}!"), "}$"), ".+"),
-									"eventProcessor",
+									"eventProcessor"
 								),
-								text("}"),
-							),
-						),
-					),
-				),
+								text("}")
+							)
+						)
+					)
+				)
 			),
 			opt(capture(text("."), "stops")),
-			"$",
+			"$"
 		),
-		seq(capture(SLOT, "slot")),
-	),
+		seq(capture(SLOT, "slot"))
+	)
 );
 export const parseOnDirective = (value) => {
 	const match = parse(value, RE_ON, true);
@@ -307,7 +315,9 @@ export const parseOnDirective = (value) => {
 		return null;
 	} else {
 		const res = makematch(match);
-		res.assign = Object.values(res.assign).map((_) => _.split("."));
+		res.assign = res.assign
+			? Object.values(res.assign).map((_) => _.split("."))
+			: [];
 		return res;
 	}
 };
@@ -340,32 +350,41 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 			continue;
 		}
 		// HTML attributes can't do camelCase.
-		const name = attr.name
-			.split(":")
+		const items = attr.name.split(":");
+		const ns = items.length ? items[0] : null;
+		const name = items
 			.at(-1)
 			.split("-")
 			.map((v, i) =>
-				i === 0 ? v : `${v.charAt(0).toUpperCase()}${v.substring(1)}`,
+				i === 0 ? v : `${v.charAt(0).toUpperCase()}${v.substring(1)}`
 			)
 			.join("");
 
 		const v = attr.value;
-		if (!v.trim()) {
-			// Bindings will be inherited from scope
-			// NOTE: this used to be `undefined` instead of parseSelector,
-			// but it didn't work, so I think this is better.
-			bindings[name] = parseSelector(name);
-		} else if (matchLiteralValue(v)) {
-			// This is a literal expression
-			bindings[name] = parseLiteralValue(v);
-		} else if (matchLiteralSelector(v)) {
-			// This is an inline selector
-			bindings[name] = parseLiteralSelector(v);
-		} else if (withSelectors && matchSelector(v)) {
-			bindings[name] = parseSelector(v);
-		} else {
-			// Otherwise it's a string
-			bindings[name] = v;
+		switch (ns) {
+			case "on":
+				// The reactor wraps a selector and feeds the event name
+				// as first argument.
+				bindings[name] = new Reactor(name, parseSelector(v, [name]));
+				break;
+			default: {
+				const sel = !v.trim()
+					? // Bindings will be inherited from scope
+					  // NOTE: this used to be `undefined` instead of parseSelector,
+					  // but it didn't work, so I think this is better.
+					  parseSelector(name)
+					: matchLiteralValue(v)
+					? // This is a literal expression
+					  parseLiteralValue(v)
+					: matchLiteralSelector(v)
+					? // This is an inline selector
+					  parseLiteralSelector(v)
+					: withSelectors && matchSelector(v)
+					? parseSelector(v)
+					: // Otherwise it's a string
+					  v;
+				bindings[name] = ns === "inout" ? new Fused(name, sel) : sel;
+			}
 		}
 	}
 	return bindings;
@@ -421,11 +440,11 @@ export const createProcessorBody = (inputs, processors) => {
 			? "scope.key"
 			: `scope.get([${_.split(".")
 					.map((_) => `"${_}"`)
-					.join(",")}])`,
+					.join(",")}])`
 	);
 	return createProcessorExpression(
 		processors,
-		l.length === 0 ? "_" : l.length === 1 ? l[0] : `[${l.join(",")}]`,
+		l.length === 0 ? "_" : l.length === 1 ? l[0] : `[${l.join(",")}]`
 	);
 };
 

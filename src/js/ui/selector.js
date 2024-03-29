@@ -1,5 +1,4 @@
 import { onError } from "./utils/logging.js";
-import { Formats } from "./formats.js";
 import { commonPath } from "./path.js";
 
 // -- topic:directives
@@ -91,7 +90,7 @@ export class Selector {
 		this.isMany = inputs.length === 1 && inputs[0].isMany;
 		this.type = inputs.reduce(
 			(r, v) => (v.key ? SelectorType.Mapping : r),
-			inputs.length > 1 ? SelectorType.List : SelectorType.Atom,
+			inputs.length > 1 ? SelectorType.List : SelectorType.Atom
 		);
 		this.fields = inputs.map((_) => _.key || _.path.at(-1));
 		this.target = target;
@@ -121,4 +120,18 @@ export class Selector {
 	}
 }
 
+// NOTE: Not the best name, but basically an effect/reaction to an event
+export class Reactor {
+	constructor(name, selector) {
+		this.name = name;
+		this.selector = selector;
+	}
+}
+
+export class Fused {
+	constructor(name, selector) {
+		this.name = name;
+		this.selector = selector;
+	}
+}
 // EOF

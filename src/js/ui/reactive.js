@@ -14,6 +14,9 @@ export class Subscription {
 		this.origin = origin;
 		this.isActive = true;
 	}
+	disable() {
+		return this.enable(false);
+	}
 	enable(value = true) {
 		this.isActive = value;
 		return this;
@@ -80,7 +83,7 @@ export class Subscribable {
 	}
 
 	// FIXME: We should track subscriptions,
-	sub(handler, path, offset = 0) {
+	sub(handler, path = null, offset = 0) {
 		let topic = null;
 		for (const _ of this.topics(path, offset, true)) {
 			topic = _;
@@ -173,6 +176,9 @@ export class Cell extends Subscribable {
 	get(path, offset) {
 		throw NotImplementedError();
 	}
+
+	bind() {}
+	unbind() {}
 }
 
 export class Value extends Cell {
@@ -254,6 +260,18 @@ export class Value extends Cell {
 					: callback.apply(cell, [_]));
 		};
 		return value.then(updater);
+	}
+}
+
+// TODO: We should have a Fused cells value here.
+// export class Proxied extends Value {
+// }
+
+// Represents a source of events.
+export class Signal extends Value {
+	set(value, path = null, offset = 0) {
+		// We always force the set
+		return super.set(value, path, offset, true);
 	}
 }
 

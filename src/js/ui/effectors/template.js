@@ -1,8 +1,9 @@
 import Options from "../utils/options.js";
 import { onError, onWarning } from "../utils/logging.js";
 import { len, assign, reduce } from "../utils/collections.js";
-import { Value, Selected } from "../reactive.js";
+import { Value, Selected, Signal } from "../reactive.js";
 import { Effect, Effector } from "../effectors.js";
+import { Reactor, Fused } from "../selector.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
@@ -25,7 +26,6 @@ export class TemplateEffector extends Effector {
 		this.isComponent = isComponent;
 		this.controller = undefined;
 	}
-
 	apply(node, scope, attributes) {
 		// If there's a controller attached to the template, we retrieve it.
 		// We don't do it earlier so that we leave a chance for the controller
@@ -40,16 +40,31 @@ export class TemplateEffector extends Effector {
 		// When the template is applied, it may come with default bindings
 		// that override the parent context binding. The slots here define
 		// these values.
+		const reactors = [];
 		const slots = reduce(
 			// The bindings here are defined at the template level.
 			this.bindings,
 			(r, v, k) => {
 				const cell = scope.slots[k];
-				// Here we only add to  slot if there is no parent cell
-				// in the scope, or if the cell is a value with no value
-				// just yet.
-				if (!cell || (cell instanceof Value && cell.revision === -1)) {
-					r[k] = v;
+				if (v instanceof Fused) {
+					// FIXME: If we have a selector in an `inout` cell, we may get
+					// two different behaviour when the cell is defined and when
+					// it's not.
+					r[k] = cell ? cell : v.selector;
+				} else if (v instanceof Reactor) {
+					// We have a reactor, so that means that's an event handler.
+					reactors.push(v);
+					r[k] = new Signal();
+				} else {
+					// Here we only add to  slot if there is no parent cell
+					// in the scope, or if the cell is a value with no value
+					// just yet.
+					if (
+						!cell ||
+						(cell instanceof Value && cell.revision === -1)
+					) {
+						r[k] = v;
+					}
 				}
 				return r;
 			},
@@ -58,11 +73,28 @@ export class TemplateEffector extends Effector {
 
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
+		const subscriptions =
+			reactors.length > 0
+				? reactors.map(({ name, selector }) =>
+						subscope.slots[name]
+							.sub(() => {
+								const v = subscope.eval(selector, true);
+								if (selector.target) {
+									// NOTE: We use update here as we don't
+									// want to create a new slot.
+									subscope.update(selector.target, v);
+								}
+								return v;
+							})
+							.enable(false)
+				  )
+				: null;
 		// We do need to make sure that any derived value is evaluated at this
 		// stage. This is is a bit of a tax to pay.
 		for (const k in this.bindings) {
 			const slot = subscope.slots[k];
 			if (slot.revision === -1 && slot instanceof Selected) {
+				// This forces an evaluation of the slot.
 				slot.value;
 			}
 		}
@@ -71,20 +103,27 @@ export class TemplateEffector extends Effector {
 				this.name || this.template.name || true;
 		}
 		// NOTE: There's a question where we should call init()
-		return new TemplateEffect(this, node, subscope, attributes).init();
+		return new TemplateEffect(
+			this,
+			node,
+			subscope,
+			attributes,
+			subscriptions
+		).init();
 	}
 }
 
 class TemplateEffect extends Effect {
 	// We keep a global map of all the template effector states, it's like
 	// the list of all components that were created.
-	constructor(effector, node, scope, attributes) {
+	constructor(effector, node, scope, attributes, subscriptions) {
 		super(effector, node, scope);
 		// The id of a template is expected to be its local path root.
 		this.id = makeKey(effector.name);
 		// Attributes can be passed and will be added to each view node. Typically
 		// these would be class attributes from a top-level component instance.
 		this.attributes = attributes;
+		this.subscriptions = subscriptions;
 		this.views = [];
 		// FIXME: We should make this lazy (ie only create on bind)
 		this.controller = this.effector.controller
@@ -268,11 +307,21 @@ class TemplateEffect extends Effect {
 				}
 			}
 		}
+		if (this.subscriptions) {
+			for (const sub of this.subscriptions) {
+				sub.enable();
+			}
+		}
 		// TODO: Should we trigger a bind event?
 		return super.bind();
 	}
 
 	unbind() {
+		if (this.subscriptions) {
+			for (const sub of this.subscriptions) {
+				sub.disable();
+			}
+		}
 		if (this.controller) {
 			// TODO: Should we trigger unbind?
 			for (const [name, handlers] of this.controller.events.entries()) {
@@ -307,7 +356,7 @@ class TemplateEffect extends Effect {
 		}
 		this.effector.isComponent &&
 			this.scope.triggerEvent(
-				"Mount",
+				"mount",
 				undefined,
 				this.scope,
 				this.node,
@@ -330,7 +379,7 @@ class TemplateEffect extends Effect {
 		}
 		this.effector.isComponent &&
 			this.scope.triggerEvent(
-				"Unmount",
+				"unmount",
 				undefined,
 				this.scope,
 				this.node,

@@ -70,33 +70,9 @@ export class EffectScope extends Scope {
 	}
 
 	triggerEvent(name, data, origin = this, node, bubbles = true) {
-		let scope = this;
 		let count = 0;
-		while (scope) {
-			const handlers = scope.handlers.get(name);
-			handlers &&
-				handlers.forEach((handler) => {
-					try {
-						const res = handler(data, origin, scope, node);
-						count += 1;
-						// TODO: This could be stop
-						if (res === false) {
-							return count;
-						}
-					} catch (exception) {
-						onError(`${name}: Handler failed`, {
-							handler,
-							exception,
-							data,
-						});
-					}
-				});
-			scope = scope.parent;
-			// The scope is a boundary, and we don't bubble, this means
-			// an early exit.
-			if (scope && scope.isComponentBoundary && !bubbles) {
-				return count;
-			}
+		if (this.slots[name]) {
+			this.slots[name].set({ name, data, origin });
 		}
 		return count;
 	}
