@@ -10,8 +10,8 @@ export const extractor = (key) =>
 	typeof key === "function"
 		? key
 		: key
-			? (_) => (_ ? _[key] : undefined)
-			: idem;
+		? (_) => (_ ? _[key] : undefined)
+		: idem;
 
 export const pipe = (v, ...f) => {
 	let r = v;
@@ -35,7 +35,7 @@ export const memo = (guards, functor) => {
 				return w;
 			}
 		},
-		Memoized,
+		Memoized
 	);
 	if (!scope.has(true)) {
 		scope.set(true, functor());

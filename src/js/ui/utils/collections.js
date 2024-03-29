@@ -4,7 +4,7 @@ import { idem, extractor } from "./func.js";
 // --
 // ## Structures
 //
-export const asMappable = (f) => (_) => (_ instanceof Array ? _.map(f) : f(_));
+export const asMappable = (f) => (_) => _ instanceof Array ? _.map(f) : f(_);
 
 // NOTE: This comes largely from <https://observablehq.com/@sebastien/boilerplate>
 
@@ -13,10 +13,10 @@ export const list = (_) =>
 	_ instanceof Array
 		? _
 		: _ instanceof Map
-			? [_.values]
-			: _ !== null && _ !== undefined
-				? [_]
-				: [];
+		? [_.values]
+		: _ !== null && _ !== undefined
+		? [_]
+		: [];
 
 export const reduce = (v, f, r) => {
 	if (v === undefined) {
@@ -72,7 +72,7 @@ export const flatten = (v, processor = undefined) =>
 			const w = processor ? processor(v, i) : v;
 			return w instanceof Array ? r.concat(flatten(w)) : (r.push(w), r);
 		},
-		[],
+		[]
 	);
 
 export const grouped = (collection, extractor, processor = undefined) =>
@@ -83,7 +83,7 @@ export const grouped = (collection, extractor, processor = undefined) =>
 			(r[g] = r[g] || []).push(processor ? processor(v) : v);
 			return r;
 		},
-		{},
+		{}
 	);
 
 export const set = (collection, key, value) => {
@@ -106,11 +106,17 @@ export const set = (collection, key, value) => {
 	}
 };
 
-export const array = (count, creator = null) => {
+export const array = (count, creator = undefined) => {
 	const res = new Array(count);
+	const is_function = typeof creator === "function";
 	while (count) {
 		count--;
-		res[count] = creator ? creator(count) : count;
+		res[count] =
+			creator === undefined
+				? count
+				: is_function
+				? creator(count)
+				: creator;
 	}
 	return res;
 };
@@ -178,14 +184,14 @@ export const sorted = (
 	collection,
 	key = undefined,
 	ordering = 1,
-	comparator = cmp,
+	comparator = cmp
 ) => {
 	const ext = extractor(key);
 	const res =
 		collection instanceof Array ? [].concat(collection) : list(collection);
 	res.sort(
 		(a, b) =>
-			ordering * (key ? comparator(ext(a), ext(b)) : comparator(a, b)),
+			ordering * (key ? comparator(ext(a), ext(b)) : comparator(a, b))
 	);
 
 	return res;
