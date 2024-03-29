@@ -106,8 +106,9 @@ export class MappingEffect extends Effect {
 		}
 		let i = 0;
 		for (const k in items) {
-			const existing = mapping.get(k);
-			let ctx = (existing && existing[1]) || undefined;
+			// Entry is `[revision, context]`
+			const entry = mapping.get(k);
+			let ctx = (entry && entry[1]) || undefined;
 			if (!ctx) {
 				ctx = Object.create(context);
 				// We make sure that we can recurse this effect.
@@ -115,10 +116,9 @@ export class MappingEffect extends Effect {
 				ctx[Cell.Input] = [items[k], k];
 				mapping.set(k, [revision, ctx]);
 			} else {
-				console.log("INPUT", ctx[Cell.Input]);
 				ctx[Cell.Input][0] = items[k];
 				ctx[Cell.Input][1] = k;
-				existing[k] = revision;
+				entry[0] = revision;
 			}
 			// TODO: We should probably store the output DOM node?
 			const res = this.template.render(
@@ -131,7 +131,6 @@ export class MappingEffect extends Effect {
 		}
 		// TODO: We should remove the ammping items that haven't been updated
 		for (const [k, [rev]] of mapping.entries()) {
-			console.log("ENTRY", k, rev);
 			if (rev !== revision) {
 				console.log("TODO: Mapping remove key", k);
 			}
