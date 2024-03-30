@@ -42,52 +42,69 @@ export class TemplateEffector extends Effector {
 		// these values.
 		const reactors = [];
 		const slots = reduce(
-			// The bindings here are defined at the template level.
-			this.bindings,
+			this.bindings.handlers,
 			(r, v, k) => {
-				const cell = scope.slots[k];
-				if (v instanceof Fused) {
-					// FIXME: If we have a selector in an `inout` cell, we may get
-					// two different behaviour when the cell is defined and when
-					// it's not.
-					r[k] = cell ? cell : v.selector;
-				} else if (v instanceof Reactor) {
+				if (v instanceof Reactor) {
 					// We have a reactor, so that means that's an event handler.
 					reactors.push(v);
-					r[k] = new Signal();
-				} else {
-					// Here we only add to  slot if there is no parent cell
-					// in the scope, or if the cell is a value with no value
-					// just yet.
-					if (
-						!cell ||
-						(cell instanceof Value && cell.revision === -1)
-					) {
-						r[k] = v;
+					if (r[k] === undefined) {
+						r[k] = new Signal();
 					}
 				}
 				return r;
 			},
-			{}
+			reduce(
+				// The bindings here are defined at the template level.
+				this.bindings.slots,
+				(r, v, k) => {
+					const cell = scope.slots[k];
+					if (v instanceof Fused) {
+						// FIXME: If we have a selector in an `inout` cell, we may get
+						// two different behaviour when the cell is defined and when
+						// it's not.
+						r[k] = cell ? cell : v.selector;
+					} else {
+						// Here we only add to  slot if there is no parent cell
+						// in the scope, or if the cell is a value with no value
+						// just yet.
+						if (
+							!cell ||
+							(cell instanceof Value && cell.revision === -1)
+						) {
+							r[k] = v;
+						}
+					}
+					return r;
+				},
+				{}
+			)
 		);
 
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
 		const subscriptions =
 			reactors.length > 0
-				? reactors.map(({ name, selector }) =>
-						subscope.slots[name]
-							.sub(() => {
-								const v = subscope.eval(selector, true);
-								if (selector.target) {
-									// NOTE: We use update here as we don't
-									// want to create a new slot.
-									subscope.update(selector.target, v);
-								}
-								return v;
-							})
-							.enable(false)
-				  )
+				? reactors.reduce((r, { name, selector }) => {
+						if (!selector) {
+							return r;
+						}
+						const s = subscope.slots[name].sub(() => {
+							const v = subscope.eval(selector, true);
+							if (selector.target) {
+								// NOTE: We use update here as we don't
+								// want to create a new slot.
+								subscope.update(selector.target, v);
+							}
+							return v;
+						});
+						s.enable(false);
+						if (r === null) {
+							return [s];
+						} else {
+							r.push(s);
+							return r;
+						}
+				  }, null)
 				: null;
 		// We do need to make sure that any derived value is evaluated at this
 		// stage. This is is a bit of a tax to pay.

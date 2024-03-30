@@ -14,7 +14,9 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	// We retrieve the `template` and `selector` from the attributes.
 	const template = parseLiteral(node.getAttribute("template"));
 
-	// FIXME: I'm not even sure we're using that anymore
+	// Selector can be used as an alias for x:for, but it's not really
+	// recommended. It just happens that `x:for` uses the `SlotEffector`
+	// as well under the hood, but that may change.
 	const selector = node.hasAttribute("selector")
 		? parseSelector(node.getAttribute("selector"))
 		: null;
@@ -56,7 +58,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 				const name = child.getAttribute("name");
 				// TODO: If the container has just one child and the child
 				// has an element we should unwrap it.
-				bindings[name] = new ViewEffector(
+				bindings.slots[name] = new ViewEffector(
 					null,
 					null,
 					createView(processor, container, `${templateName}.{name}`)
@@ -95,44 +97,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 			node
 		);
 	}
-	return new SlotEffector(path, selector, template, undefined, bindings);
-
-	// NOTE: Previous behaviour, left for reference
-	// const select = node.getAttribute("select");
-	// if (select) {
-	//   const selector = parseSelector(select);
-	//   const content = contentAsFragment(node);
-	//   // TODO: Content should be used as placeholder
-	//   const template =
-	//     parseTemplate(node.getAttribute("template")) ||
-	//     createTemplate(
-	//       content,
-	//       makeKey(templateName ? `${templateName}_fragment` : "fragment"),
-	//       false /*no cloning needed*/
-	//     );
-
-	//   console.log("SLOT TEMPLATE", node, template);
-	//   const key = makeKey(
-	//     node.dataset.id || node.getAttribute("name") || template
-	//   );
-	//   const effector = new SlotEffector(
-	//     nodePath(node, root),
-	//     selector,
-	//     template,
-	//     getNodeEventHandlers(node),
-	//     key
-	//   );
-
-	//   // We replace the slot by a placeholder node. This means that there should
-	//   // be no slot placeholder at that point.
-	//   replaceNodeWithPlaceholder(
-	//     node,
-	//     `${key}|Slot|${template.name || template}|${selector.toString()}`
-	//   );
-	//   return effector;
-	// } else {
-	//   return null;
-	// }
+	return new SlotEffector(path, selector, template, bindings);
 };
 
 // EOF

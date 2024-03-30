@@ -1,7 +1,9 @@
 import { onError } from "../utils/logging.js";
 import { isEmpty, isAtom } from "../utils/values.js";
+import { reduce } from "../utils/collections.js";
 import { DOM, createComment } from "../utils/dom.js";
 import { Effector, Effect } from "../effectors.js";
+import { Signal } from "../reactive.js";
 import { Selector } from "../selector.js";
 import { Templates } from "../templates.js";
 
@@ -9,21 +11,17 @@ import { Templates } from "../templates.js";
 // NOTE: I think the only thing that a slot effector has to do is
 // to detect add remove and relay these.
 export class SlotEffector extends Effector {
-	constructor(nodePath, selector, templateName, handlers, bindings) {
+	constructor(nodePath, selector, templateName, bindings) {
 		super(nodePath, selector);
 		// TODO: Selectors for slots should not have a format, slots pass
 		// down the value directly to a template.
-		//
-		// The handlers map event names to the path at which the incoming
-		// events should be stored/relayed.
-		this.handlers = handlers;
 		this.bindings = bindings;
 		// Note that template name can also be a selector here.
 		this.templateName = templateName;
 		if (!templateName) {
 			onError(
 				`SlotEffector: template is not specified, use ContentEffector instead`,
-				{ nodePath, selector },
+				{ nodePath, selector }
 			);
 		} else if (typeof templateName === "string") {
 			// TODO: We should replace these by Enum
@@ -40,7 +38,7 @@ export class SlotEffector extends Effector {
 				"SlotEffector: template should be string, selector or effector",
 				{
 					template: templateName,
-				},
+				}
 			);
 		}
 	}
@@ -58,7 +56,7 @@ export class SlotEffector extends Effector {
 						Templates.get(this.templateName) ||
 						onError(
 							`SlotEffector: Could not find template '${this.templateName}'`,
-							[...Templates.keys()],
+							[...Templates.keys()]
 						);
 					break;
 				case "eff":
@@ -71,28 +69,52 @@ export class SlotEffector extends Effector {
 	}
 
 	apply(node, scope) {
-		// If we have bindings, we may need to derive a local scope, so that
-		// new slots can be created without affecting the parent and that
-		// parent slots are not overridden. The exception, however, being
-		// that the bindings are all defined in the parent scope.
-		let should_derive = this.selector?.target ? true : false;
-		if (this.bindings) {
-			for (const k in this.bindings) {
-				const v = this.bindings[k];
-				// If we find a defined binding that has no corresponding
-				// slot, then we need to derive a new scope.
-				if (v !== undefined || !scope.slots[k]) {
-					should_derive = true;
-					break;
-				}
-			}
-		}
-		const effect_scope = should_derive
-			? scope.derive(this.bindings)
-			: scope;
+		const reactors = !this.bindings
+			? null
+			: reduce(
+					this.bindings.handlers,
+					(r, v) => {
+						if (r === null) {
+							return [v];
+						} else {
+							r.push(v);
+							return r;
+						}
+					},
+					null
+			  );
+		const slots = !this.bindings
+			? null
+			: reduce(
+					this.bindings.slots,
+					(r, v, k) => {
+						r = r === null ? {} : r;
+						if (
+							scope.slots[k] &&
+							v instanceof Selector &&
+							v.isSimpleReference
+						) {
+							r[k] = scope.slots[k];
+						} else {
+							r[k] = v;
+						}
+						return r;
+					},
+					this.selector?.target
+						? { [this.selector.target]: this.selector }
+						: null
+			  );
+
+		const effect_scope = slots ? scope.derive(slots) : scope;
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
-			: SingleSlotEffect)(this, node, effect_scope, this.template).init();
+			: SingleSlotEffect)(
+			this,
+			node,
+			effect_scope,
+			this.template,
+			reactors
+		).init();
 
 		return this.templateType === "sel"
 			? new DynamicTemplateEffect(
@@ -100,8 +122,8 @@ export class SlotEffector extends Effector {
 					node,
 					effect_scope,
 					this.templateName,
-					effect,
-				).init()
+					effect
+			  ).init()
 			: effect;
 	}
 }
@@ -116,7 +138,7 @@ class DynamicTemplateEffect extends Effect {
 		templateSelector instanceof Selector ||
 			onError(
 				"DynamicTemplateEffect: template selector is not a Selector instance",
-				{ templateSelector, effector, node, scope },
+				{ templateSelector, effector, node, scope }
 			);
 		this.effect = effect;
 	}
@@ -126,13 +148,13 @@ class DynamicTemplateEffect extends Effect {
 			? typeof template === "string"
 				? Templates.get(template)
 				: template instanceof Effector
-					? template
-					: null
+				? template
+				: null
 			: null;
 		res ||
 			onError(
 				`DynamicTemplateEffect: unable to resolve template '${template}'`,
-				{ template },
+				{ template }
 			);
 		return res;
 	}
@@ -187,27 +209,27 @@ class DynamicTemplateEffect extends Effect {
 // This is the generic, abstract version of a slot effect. This is
 // specialized by `SingleSlotEffect` and `MultipleSlotEffect`.
 class SlotEffect extends Effect {
-	constructor(effector, node, scope, template) {
+	constructor(effector, node, scope, template, reactors) {
 		super(effector, node, scope);
-		this.handlers = {};
+		this.reactors = reactors;
 		this.template = template;
-		// FIXME: This is redundant with the Slot.apply(), and should
-		// should probably be reviewed/reworked.
-		if (this.effector.bindings) {
-			this.scope.define(this.effector.bindings, true);
-		}
-		// We do t he same for the template, but only in case it's
-		// undefined.
-		if (template && template.bindings) {
-			// And the templates complement it
-			this.scope.defaults(template.bindings);
-		}
+		// // FIXME: This is redundant with the Slot.apply(), and should
+		// // should probably be reviewed/reworked.
+		// if (this.effector.bindings) {
+		// 	this.scope.define(this.effector.bindings, true);
+		// }
+		// // We do t he same for the template, but only in case it's
+		// // undefined.
+		// if (template && template.bindings) {
+		// 	// And the templates complement it
+		// 	this.scope.defaults(template.bindings);
+		// }
 	}
 }
 
 class SingleSlotEffect extends SlotEffect {
-	constructor(effector, node, scope, template) {
-		super(effector, node, scope, template);
+	constructor(effector, node, scope, template, reactors) {
+		super(effector, node, scope, template, reactors);
 		this.effect = undefined;
 	}
 
@@ -218,7 +240,7 @@ class SingleSlotEffect extends SlotEffect {
 		if (!this.effect) {
 			const node = createComment(
 				// FIXME: add a better description of that part
-				`_|SingleSlotEffect`,
+				`_|SingleSlotEffect`
 			);
 			DOM.after(this.node, node);
 
@@ -233,7 +255,7 @@ class SingleSlotEffect extends SlotEffect {
 			} else {
 				this.effect = this.template.apply(
 					node, // node
-					this.scope,
+					this.scope
 				);
 				this.mounted && this.effect.mount();
 				return this.effect;
@@ -320,7 +342,7 @@ class MappingSlotEffect extends SlotEffect {
 						node, // node
 						// FIXME: Should we set the key to null?
 						scope.derive({ [target || "_"]: current }, path), // scope
-						true, // isEmpty
+						true // isEmpty
 					);
 					items.set(null, new_item);
 					this.mounted && new_item.mount();
@@ -336,14 +358,14 @@ class MappingSlotEffect extends SlotEffect {
 					const subscope = scope.derive(
 						{ [target || "_"]: current[i] },
 						[...path, i],
-						i,
+						i
 					);
 					const new_item = this.createItem(
 						this.template,
 						node, // node
 						subscope,
 						undefined,
-						i,
+						i
 					);
 					items.set(i, new_item);
 					this.mounted && new_item.mount();
@@ -362,17 +384,6 @@ class MappingSlotEffect extends SlotEffect {
 					}
 				}
 			}
-			// // We cleanup any item that is not used anymore
-			// let j = current.length;
-			// let item = null;
-			// while ((item = items.get(j))) {
-			// 	item.mounted && item.unmount();
-			// 	item.dispose();
-			// 	items.delete(j);
-			// 	j++;
-			// }
-			// //this.value = [...current];
-			// this.value = current;
 		} else {
 			// ### Case: Object
 			const items = this.items ? this.items : (this.items = new Map());
@@ -382,14 +393,14 @@ class MappingSlotEffect extends SlotEffect {
 					const subscope = scope.derive(
 						{ [target || "_"]: current[k] },
 						[...path, k],
-						k,
+						k
 					);
 					const new_item = this.createItem(
 						this.template,
 						node, // node
 						subscope,
 						undefined,
-						k,
+						k
 					);
 					items.set(k, new_item);
 					this.mounted && new_item.mount();
@@ -400,22 +411,6 @@ class MappingSlotEffect extends SlotEffect {
 					}
 				}
 			}
-			// const to_dispose = new Set();
-			// for (const k of items.keys()) {
-			// 	if (current[k] === undefined) {
-			// 		const item = items.get(k);
-			// 		if (item) {
-			// 			item.mounted && item.unmount();
-			// 			item.dispose();
-			// 		}
-			// 		to_dispose.add(k);
-			// 	}
-			// }
-			// for (const k of to_dispose) {
-			// 	this.items.delete(k);
-			// }
-			// //this.value = { ...current };
-			// this.value = current;
 		}
 		// FIXME: By the look of it there's not guarantee the order is preserved,
 		// we should make sure that the nodes are mounted in the right
@@ -444,7 +439,7 @@ class MappingSlotEffect extends SlotEffect {
 	createItem(template, node, scope, isEmpty = false, key = undefined) {
 		// TODO: Should have a better comment
 		const root = createComment(
-			`out:content=${this.effector.selector.toString()}#${key || 0}`,
+			`out:content=${this.effector.selector.toString()}#${key || 0}`
 		);
 		// We need to insert the node before as the template needs a parent
 		if (!node.parentNode) {
@@ -453,7 +448,7 @@ class MappingSlotEffect extends SlotEffect {
 				{
 					node,
 					path: scope.path,
-				},
+				}
 			);
 		} else {
 			// TODO: Should use DOM.after
@@ -463,8 +458,8 @@ class MappingSlotEffect extends SlotEffect {
 		return template
 			? template.apply(
 					root, // node
-					scope,
-				)
+					scope
+			  )
 			: null;
 	}
 	mount(...args) {

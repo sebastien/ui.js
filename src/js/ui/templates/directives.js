@@ -343,7 +343,8 @@ export const extractLiteralBindings = (node, blacklist) =>
 // is also used in components.
 export const extractBindings = (node, blacklist, withSelectors = true) => {
 	// We extract the bindings from the attributes
-	const bindings = {};
+	const handlers = {};
+	const slots = {};
 	// TODO: That should be unified with the directives
 	for (const attr of node.attributes || []) {
 		if (blacklist && blacklist.indexOf(attr.name) !== -1) {
@@ -365,7 +366,10 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 			case "on":
 				// The reactor wraps a selector and feeds the event name
 				// as first argument.
-				bindings[name] = new Reactor(name, parseSelector(v, [name]));
+				handlers[name] = new Reactor(
+					name,
+					v && v.trim().length ? parseSelector(v, [name]) : null
+				);
 				break;
 			default: {
 				const sel = !v.trim()
@@ -383,11 +387,11 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 					? parseSelector(v)
 					: // Otherwise it's a string
 					  v;
-				bindings[name] = ns === "inout" ? new Fused(name, sel) : sel;
+				slots[name] = ns === "inout" ? new Fused(name, sel) : sel;
 			}
 		}
 	}
-	return bindings;
+	return { handlers, slots };
 };
 
 // FIXME: Not sure this is still needed
