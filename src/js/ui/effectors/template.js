@@ -27,6 +27,7 @@ export class TemplateEffector extends Effector {
 		this.controller = undefined;
 	}
 	apply(node, scope, attributes) {
+		console.log("APPLYING TEMPLATE WITH ATTRIBUTES", { attributes });
 		// If there's a controller attached to the template, we retrieve it.
 		// We don't do it earlier so that we leave a chance for the controller
 		// to be found.
@@ -82,6 +83,7 @@ export class TemplateEffector extends Effector {
 
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
+		// FIXME: Same as effector/slot
 		const subscriptions =
 			reactors.length > 0
 				? reactors.reduce((r, { name, selector }) => {
@@ -108,7 +110,7 @@ export class TemplateEffector extends Effector {
 				: null;
 		// We do need to make sure that any derived value is evaluated at this
 		// stage. This is is a bit of a tax to pay.
-		for (const k in this.bindings) {
+		for (const k in this.bindings.slots) {
 			const slot = subscope.slots[k];
 			if (slot.revision === -1 && slot instanceof Selected) {
 				// This forces an evaluation of the slot.

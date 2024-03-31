@@ -684,6 +684,44 @@ export class Scope extends Cell {
 		}
 	}
 
+	// TODO: Not sure it's the best place.
+	// --
+	// Given a list of `Reactor` instances, binds the reactors to the
+	// existing slots;
+	reactions(reactors) {
+		return reactors.length > 0
+			? reactors.reduce((r, { name, selector }) => {
+					if (!selector) {
+						return r;
+					}
+					if (!this.slots[name]) {
+						onError("Slot undefined, can't bind reactor", {
+							name,
+							reactor: name,
+							selector: selector,
+						});
+						return r;
+					}
+					const s = this.slots[name].sub(() => {
+						const v = this.eval(selector, true);
+						if (selector.target) {
+							// NOTE: We use update here as we don't
+							// want to create a new slot.
+							this.update(selector.target, v);
+						}
+						return v;
+					});
+					s.enable(false);
+					if (r === null) {
+						return [s];
+					} else {
+						r.push(s);
+						return r;
+					}
+			  }, null)
+			: null;
+	}
+
 	// --
 	// Returns a cell the represents the selected value. In the easy case,
 	// where the selector has only one input and no transform, this returns

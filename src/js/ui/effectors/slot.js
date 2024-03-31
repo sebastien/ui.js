@@ -2,7 +2,7 @@ import { onError } from "../utils/logging.js";
 import { isEmpty, isAtom } from "../utils/values.js";
 import { reduce } from "../utils/collections.js";
 import { DOM, createComment } from "../utils/dom.js";
-import { Effector, Effect } from "../effectors.js";
+import { Effector, Effect, EffectScope } from "../effectors.js";
 import { Signal } from "../reactive.js";
 import { Selector } from "../selector.js";
 import { Templates } from "../templates.js";
@@ -69,58 +69,91 @@ export class SlotEffector extends Effector {
 	}
 
 	apply(node, scope) {
-		const reactors = !this.bindings
+		// We need to extract the slots and reactors first.
+		const reactors = [];
+		const is_inline = this.templateType === "eff";
+		// FIXME: This should probably be shared with templates
+		// --
+		// All the bindings/reactors defined at the `slot` declaration
+		// work to override the template's defaults. In case the slot
+		// is applied multiple time (mapping slot), then corresponding
+		// cells will be shared. This means that these are all cells.
+		const cells = !this.bindings
 			? null
 			: reduce(
 					this.bindings.handlers,
-					(r, v) => {
+					(r, v, k) => {
+						reactors.push(v);
 						if (r === null) {
-							return [v];
+							return { [k]: new Signal() };
+						} else if (r[k] === undefined) {
+							r[k] = new Signal();
+							return r;
 						} else {
-							r.push(v);
 							return r;
 						}
 					},
-					null
-			  );
-		const slots = !this.bindings
-			? null
-			: reduce(
-					this.bindings.slots,
-					(r, v, k) => {
-						r = r === null ? {} : r;
-						if (
-							scope.slots[k] &&
-							v instanceof Selector &&
-							v.isSimpleReference
-						) {
-							r[k] = scope.slots[k];
-						} else {
-							r[k] = v;
-						}
-						return r;
-					},
-					this.selector?.target
-						? { [this.selector.target]: this.selector }
-						: null
+					reduce(
+						this.bindings.slots,
+						(r, v, k) => {
+							r = r === null ? {} : r;
+							if (
+								!v ||
+								(scope.slots[k] &&
+									v instanceof Selector &&
+									v.isSimpleReference)
+							) {
+								// If it's a simple reference, then we pass
+								// it as-is. It has to be explicit, as the
+								// template may have a slot of their own with
+								// the same name, and we don't want to accidentally
+								// have it override the parent. For instance,
+								// you have <template name="Item" out:value>…</template>
+								// and there's already a `value` cell in the
+								// current scope.
+								// --
+								// We only copy the slot from the parent if
+								// we have an isolated scope, which is when
+								// we have a named template.
+								if (!is_inline) {
+									r[k] = scope.slots[k];
+								}
+								return r;
+							} else {
+								r[k] = v;
+								return r;
+							}
+						},
+						this.selector?.target
+							? { [this.selector.target]: this.selector }
+							: null
+					)
 			  );
 
-		const effect_scope = slots ? scope.derive(slots) : scope;
+		// If there was a template name given, it means we're rendering
+		// a component, and so we need to create an isolated scope. Otherwise
+		// it's an inline template, and we simply derive the current scope.
+		const subscope = is_inline
+			? scope.derive(cells)
+			: new EffectScope(null, scope.path, scope.key).define(cells);
+		const subscriptions = subscope.reactions(reactors);
+
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
 			: SingleSlotEffect)(
 			this,
 			node,
-			effect_scope,
+			subscope,
 			this.template,
-			reactors
+			cells,
+			subscriptions
 		).init();
 
 		return this.templateType === "sel"
 			? new DynamicTemplateEffect(
 					this,
 					node,
-					effect_scope,
+					subscope,
 					this.templateName,
 					effect
 			  ).init()
@@ -209,27 +242,35 @@ class DynamicTemplateEffect extends Effect {
 // This is the generic, abstract version of a slot effect. This is
 // specialized by `SingleSlotEffect` and `MultipleSlotEffect`.
 class SlotEffect extends Effect {
-	constructor(effector, node, scope, template, reactors) {
+	constructor(effector, node, scope, template, subscriptions) {
 		super(effector, node, scope);
-		this.reactors = reactors;
 		this.template = template;
-		// // FIXME: This is redundant with the Slot.apply(), and should
-		// // should probably be reviewed/reworked.
-		// if (this.effector.bindings) {
-		// 	this.scope.define(this.effector.bindings, true);
-		// }
-		// // We do t he same for the template, but only in case it's
-		// // undefined.
-		// if (template && template.bindings) {
-		// 	// And the templates complement it
-		// 	this.scope.defaults(template.bindings);
-		// }
+		this.subscriptions = subscriptions;
+	}
+
+	bind() {
+		if (this.subscriptions) {
+			for (const sub of this.subscriptions) {
+				sub.enable();
+			}
+		}
+		// TODO: Should we trigger a bind event?
+		return super.bind();
+	}
+
+	unbind() {
+		if (this.subscriptions) {
+			for (const sub of this.subscriptions) {
+				sub.disable();
+			}
+		}
+		return super.unbind();
 	}
 }
 
 class SingleSlotEffect extends SlotEffect {
-	constructor(effector, node, scope, template, reactors) {
-		super(effector, node, scope, template, reactors);
+	constructor(effector, node, scope, template) {
+		super(effector, node, scope, template);
 		this.effect = undefined;
 	}
 
@@ -244,18 +285,14 @@ class SingleSlotEffect extends SlotEffect {
 			);
 			DOM.after(this.node, node);
 
-			// TODO: We should only derive a scope if we have bindings there
-			// if (this.effector.bindings) {
-			//   scope.updateLocal(this.effector.bindings);
-			// }
-
 			// NOTE: No need to call .init(), it's done by apply.
 			if (!this.template) {
 				return null;
 			} else {
 				this.effect = this.template.apply(
 					node, // node
-					this.scope
+					this.scope,
+					this.effector.cells
 				);
 				this.mounted && this.effect.mount();
 				return this.effect;
@@ -458,7 +495,8 @@ class MappingSlotEffect extends SlotEffect {
 		return template
 			? template.apply(
 					root, // node
-					scope
+					scope,
+					this.effector.cells
 			  )
 			: null;
 	}
