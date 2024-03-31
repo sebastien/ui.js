@@ -70,7 +70,6 @@ export class SlotEffector extends Effector {
 
 	apply(node, scope) {
 		// We need to extract the slots and reactors first.
-		const reactors = [];
 		const is_inline = this.templateType === "eff";
 		// FIXME: This should probably be shared with templates
 		// --
@@ -78,6 +77,7 @@ export class SlotEffector extends Effector {
 		// work to override the template's defaults. In case the slot
 		// is applied multiple time (mapping slot), then corresponding
 		// cells will be shared. This means that these are all cells.
+		const reactors = [];
 		const cells = !this.bindings
 			? null
 			: reduce(
@@ -85,9 +85,9 @@ export class SlotEffector extends Effector {
 					(r, v, k) => {
 						reactors.push(v);
 						if (r === null) {
-							return { [k]: new Signal() };
+							return { [k]: new Signal(k) };
 						} else if (r[k] === undefined) {
-							r[k] = new Signal();
+							r[k] = new Signal(k);
 							return r;
 						} else {
 							return r;
@@ -136,7 +136,7 @@ export class SlotEffector extends Effector {
 		const subscope = is_inline
 			? scope.derive(cells)
 			: new EffectScope(null, scope.path, scope.key).define(cells);
-		const subscriptions = subscope.reactions(reactors);
+		const subscriptions = subscope.reactions(reactors, scope);
 
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
@@ -242,9 +242,10 @@ class DynamicTemplateEffect extends Effect {
 // This is the generic, abstract version of a slot effect. This is
 // specialized by `SingleSlotEffect` and `MultipleSlotEffect`.
 class SlotEffect extends Effect {
-	constructor(effector, node, scope, template, subscriptions) {
+	constructor(effector, node, scope, template, cells, subscriptions) {
 		super(effector, node, scope);
 		this.template = template;
+		this.cells = cells;
 		this.subscriptions = subscriptions;
 	}
 
@@ -269,8 +270,8 @@ class SlotEffect extends Effect {
 }
 
 class SingleSlotEffect extends SlotEffect {
-	constructor(effector, node, scope, template) {
-		super(effector, node, scope, template);
+	constructor(effector, node, scope, template, cells, subscriptions) {
+		super(effector, node, scope, template, cells, subscriptions);
 		this.effect = undefined;
 	}
 
@@ -292,7 +293,9 @@ class SingleSlotEffect extends SlotEffect {
 				this.effect = this.template.apply(
 					node, // node
 					this.scope,
-					this.effector.cells
+					null,
+					this.cells,
+					this.subscriptions
 				);
 				this.mounted && this.effect.mount();
 				return this.effect;
@@ -329,8 +332,8 @@ class SingleSlotEffect extends SlotEffect {
 // --
 // Implements the mapping of a slot for each item of a collection.
 class MappingSlotEffect extends SlotEffect {
-	constructor(effector, node, scope, template) {
-		super(effector, node, scope, template);
+	constructor(effector, node, scope, template, cells, subscriptions) {
+		super(effector, node, scope, template, cells, subscriptions);
 		// FIXME: This may not be necessary anymore
 		// We always go through a change
 		// this.selection.alwaysChange = true;
@@ -496,7 +499,8 @@ class MappingSlotEffect extends SlotEffect {
 			? template.apply(
 					root, // node
 					scope,
-					this.effector.cells
+					null, // Attributes
+					this.cells
 			  )
 			: null;
 	}

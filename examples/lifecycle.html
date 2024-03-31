@@ -19,7 +19,7 @@
 		<slot template="Items"></slot>
 	</div>
 
-	<template name="Items" inout:mounted="0" out:items="($.array(10,true))">
+	<template name="Items" inout:mounted="0" out:items="($.array(1,true))">
 		<table class="padded lined w-4b">
 			<thead>
 				<tr>
@@ -32,8 +32,10 @@
 					<td colspan="2">
 						<!-- We bind the `on:remove` even to remove the element when the Remove
 			 button is clicked -->
-						<slot template="Item" mounted="mounted"
-							on:remove="items=items,#->{console.log('REMOVE'),$.removeAt(items,key)}"></slot>
+						<slot template="Item" mounted="mounted" xxxon:remove="remove->{console.log('ITEM REMOVED FROM ITEMS')}"
+							xxxon:xxxremove="items=items,#->{console.log('REMOVE'),$.removeAt(items,key)}"
+							on:remove="items=items,#->{$.removeAt(items,key)}" </slot>
+
 					</td>
 				</tr>
 			</tbody>
@@ -50,8 +52,8 @@
 	<!-- The item component has a `mounted` cell that is shared with the parent. 
 	 When it is mounted, the total is increased. -->
 	<template name="Item" inout:mounted on:mount="mounted=mounted->{(mounted||0)+1}"
-		on:unmount="mounted=mounted->{(mounted||0)-1}" on:remove>
-		<div class="with-hover row pt-1 pb-1">
+		on:unmount="mounted=mounted->{(mounted||0)-1}" on:remove="remove->{console.log('ITEM REMOVED')}">
+		<div class=" with-hover row pt-1 pb-1">
 			<span class="fill">
 				Component
 			</span>

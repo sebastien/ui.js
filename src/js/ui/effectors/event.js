@@ -32,7 +32,6 @@ class EventEffect extends Effect {
 	handle(event) {
 		const { handler, processor, directive } = this.effector;
 		const v = handler ? handler(event, this.scope, this.node, API) : null;
-		console.log("XXX HANDLER", event);
 		// TODO: Do something about that
 		if (directive.assign) {
 			// NOTE: We update here, meaning that we only create a new slot

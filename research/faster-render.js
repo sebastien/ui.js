@@ -449,7 +449,6 @@ class RenderState {
 		const rev = this.revision++;
 		// First step is to populate the context with the extracted slot
 		// value from the arguments.
-		console.log("XXX TEMPLATE", { value }, this.template);
 		for (const [s, v] of matchesOf(this.template.input, value)) {
 			this.context[s.id] = v;
 			queue.push(s);
@@ -460,7 +459,6 @@ class RenderState {
 		while (queue.length) {
 			const cell = queue.pop();
 			const derived = derivations.get(cell.id);
-			console.log("XXX TRIGGER", cell.id);
 			if (derived) {
 				for (const cid of derived) {
 					// We skip any cell that already has been processed in this

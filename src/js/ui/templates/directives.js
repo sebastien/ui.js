@@ -371,24 +371,33 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 					v && v.trim().length ? parseSelector(v, [name]) : null
 				);
 				break;
-			default: {
-				const sel = !v.trim()
-					? // Bindings will be inherited from scope
-					  // NOTE: this used to be `undefined` instead of parseSelector,
-					  // but it didn't work, so I think this is better.
-					  parseSelector(name)
-					: matchLiteralValue(v)
-					? // This is a literal expression
-					  parseLiteralValue(v)
-					: matchLiteralSelector(v)
-					? // This is an inline selector
-					  parseLiteralSelector(v)
-					: withSelectors && matchSelector(v)
-					? parseSelector(v)
-					: // Otherwise it's a string
-					  v;
-				slots[name] = ns === "inout" ? new Fused(name, sel) : sel;
-			}
+			case "in":
+			case "out":
+			case "inout":
+			case "":
+				{
+					const sel = !v.trim()
+						? // Bindings will be inherited from scope
+						  // NOTE: this used to be `undefined` instead of parseSelector,
+						  // but it didn't work, so I think this is better.
+						  parseSelector(name)
+						: matchLiteralValue(v)
+						? // This is a literal expression
+						  parseLiteralValue(v)
+						: matchLiteralSelector(v)
+						? // This is an inline selector
+						  parseLiteralSelector(v)
+						: withSelectors && matchSelector(v)
+						? parseSelector(v)
+						: // Otherwise it's a string
+						  v;
+					slots[name] = ns === "inout" ? new Fused(name, sel) : sel;
+				}
+				break;
+			default:
+				// Technically we should probably issue a warning here for
+				// unsupported namespace
+				break;
 		}
 	}
 	return { handlers, slots };

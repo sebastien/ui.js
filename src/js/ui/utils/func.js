@@ -6,6 +6,8 @@ export const def = (...rest) => {
 	}
 };
 
+export const asTrue = () => true;
+
 export const extractor = (key) =>
 	typeof key === "function"
 		? key

@@ -1,7 +1,7 @@
 import { cmp } from "./utils/delta.js";
+import { asTrue } from "./utils/func.js";
 import { RuntimeError, NotImplementedError } from "./utils/errors.js";
-import { Selector } from "./selector.js";
-import { SelectorType } from "./selector.js";
+import { Reactor, Selector, SelectorType } from "./selector.js";
 import { map, last, access, patch } from "./utils/collections.js";
 import { onError } from "./utils/logging.js";
 import API from "./api.js";
@@ -95,7 +95,9 @@ export class Subscribable {
 			if (!topic.has(Subscription)) {
 				topic.set(Subscription, [sub]);
 			} else {
-				topic.get(Subscription).push(sub);
+				// We insert the handler ahead, it's always latest first
+				// and oldest last.
+				topic.get(Subscription).splice(0, 0, sub);
 			}
 			return sub;
 		}
@@ -269,6 +271,10 @@ export class Value extends Cell {
 
 // Represents a source of events.
 export class Signal extends Value {
+	constructor(name) {
+		super(undefined, name, asTrue);
+	}
+
 	set(value, path = null, offset = 0) {
 		// We always force the set
 		return super.set(value, path, offset, true);
@@ -688,31 +694,13 @@ export class Scope extends Cell {
 	// --
 	// Given a list of `Reactor` instances, binds the reactors to the
 	// existing slots;
-	reactions(reactors) {
+	reactions(reactors, scope = this) {
 		return reactors.length > 0
-			? reactors.reduce((r, { name, selector }) => {
-					if (!selector) {
+			? reactors.reduce((r, reactor) => {
+					const s = this.reaction(reactor, scope);
+					if (!s) {
 						return r;
-					}
-					if (!this.slots[name]) {
-						onError("Slot undefined, can't bind reactor", {
-							name,
-							reactor: name,
-							selector: selector,
-						});
-						return r;
-					}
-					const s = this.slots[name].sub(() => {
-						const v = this.eval(selector, true);
-						if (selector.target) {
-							// NOTE: We use update here as we don't
-							// want to create a new slot.
-							this.update(selector.target, v);
-						}
-						return v;
-					});
-					s.enable(false);
-					if (r === null) {
+					} else if (r === null) {
 						return [s];
 					} else {
 						r.push(s);
@@ -720,6 +708,52 @@ export class Scope extends Cell {
 					}
 			  }, null)
 			: null;
+	}
+
+	reaction(reactor, scope = this) {
+		if (!reactor) {
+			return null;
+		} else if (reactor instanceof Reactor) {
+			const name = reactor.name;
+			if (!reactor.selector) {
+				return null;
+			}
+			if (!this.slots[name]) {
+				onError("Slot undefined, can't bind reactor", {
+					name,
+					reactor,
+				});
+				return null;
+			}
+			const s = this.slots[name].sub(() => {
+				// NOTE: The reactions need to be evaluated in the scope
+				// they were declared in, but will need to have the
+				// event as well.
+				const v = scope.eval(
+					reactor.selector,
+					true,
+					// If the scope of the reaction is different,
+					// we need to pre-fill overridden values.
+					this !== scope
+						? {
+								[name]: this.slots[name].value,
+								"#": this.key,
+						  }
+						: null
+				);
+				if (reactor.selector.target) {
+					// NOTE: We use update here as we don't
+					// want to create a new slot.
+					scope.update(reactor.selector.target, v);
+				}
+				return v;
+			});
+			s.enable(false);
+			return s;
+		} else {
+			onError("Expected Reactor, got", { value: reactor });
+			return null;
+		}
 	}
 
 	// --
@@ -754,13 +788,25 @@ export class Scope extends Cell {
 		}
 	}
 
-	eval(selector) {
+	// --
+	// A simple wrapper around `Scope.get()` that uses an override object
+	// map, where values will be sourced first. This is useful in event
+	// handlers where we need to surface the event and its key, without
+	// clashing with the local scope. Conceptually, event handlers
+	// act as dataflow bridges.
+	evalInput(input, overrides = null) {
+		const v = overrides ? overrides[input.path[0]] : undefined;
+		return input.formatted(v === undefined ? this.get(input.path) : v);
+	}
+
+	eval(selector, _, overrides = null) {
 		if (!selector) {
 			return this.get("_");
 		}
+
 		if (selector.format) {
 			const inputs = selector.inputs.map((_) =>
-				_.formatted(this.get(_.path))
+				this.evalInput(_, overrides)
 			);
 			try {
 				return selector.format(...[...inputs, API]);
@@ -775,17 +821,15 @@ export class Scope extends Cell {
 		} else {
 			switch (selector.type) {
 				case SelectorType.Atom:
-					return selector.inputs[0].formatted(
-						this.get(selector.inputs[0].path)
-					);
+					return this.evalInput(selector.inputs[0], overrides);
 				case SelectorType.List:
 					return selector.inputs.map((_) =>
-						_.formatted(this.get(_.path))
+						this.evalInput(_, overrides)
 					);
 				case SelectorType.Map:
 					return selector.inputs.reduce(
 						(r, _) => (
-							(r[_.name] = _.formatted(this.get(_.path))), r
+							(r[_.name] = this.evalInput(_, overrides)), r
 						),
 						{}
 					);

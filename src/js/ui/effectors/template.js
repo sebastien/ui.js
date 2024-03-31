@@ -26,8 +26,7 @@ export class TemplateEffector extends Effector {
 		this.isComponent = isComponent;
 		this.controller = undefined;
 	}
-	apply(node, scope, attributes) {
-		console.log("APPLYING TEMPLATE WITH ATTRIBUTES", { attributes });
+	apply(node, scope, attributes, cells) {
 		// If there's a controller attached to the template, we retrieve it.
 		// We don't do it earlier so that we leave a chance for the controller
 		// to be found.
@@ -48,8 +47,10 @@ export class TemplateEffector extends Effector {
 				if (v instanceof Reactor) {
 					// We have a reactor, so that means that's an event handler.
 					reactors.push(v);
-					if (r[k] === undefined) {
-						r[k] = new Signal();
+					// If there's no cell to subscribe to in the new slots
+					// or in the parent scope, then we create a signal.
+					if (r[k] === undefined && scope.slots[k] === undefined) {
+						r[k] = new Signal(k);
 					}
 				}
 				return r;
@@ -58,19 +59,21 @@ export class TemplateEffector extends Effector {
 				// The bindings here are defined at the template level.
 				this.bindings.slots,
 				(r, v, k) => {
-					const cell = scope.slots[k];
+					const parent_cell = scope.slots[k];
 					if (v instanceof Fused) {
-						// FIXME: If we have a selector in an `inout` cell, we may get
-						// two different behaviour when the cell is defined and when
+						// FIXME: If we have a selector in an `inout` parent_cell, we may get
+						// two different behaviour when the parent_cell is defined and when
 						// it's not.
-						r[k] = cell ? cell : v.selector;
+						r[k] = parent_cell ? parent_cell : v.selector;
 					} else {
-						// Here we only add to  slot if there is no parent cell
-						// in the scope, or if the cell is a value with no value
+						// Here we only add to  slot if there is no parent parent_cell
+						// in the scope, or if the parent_cell is a value with no value
 						// just yet.
 						if (
-							!cell ||
-							(cell instanceof Value && cell.revision === -1)
+							!parent_cell ||
+							(v !== undefined &&
+								parent_cell instanceof Value &&
+								parent_cell.revision === -1)
 						) {
 							r[k] = v;
 						}
