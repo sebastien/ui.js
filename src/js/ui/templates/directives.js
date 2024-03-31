@@ -352,7 +352,7 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 		}
 		// HTML attributes can't do camelCase.
 		const items = attr.name.split(":");
-		const ns = items.length ? items[0] : null;
+		const ns = items.length > 1 ? items[0] : null;
 		const name = items
 			.at(-1)
 			.split("-")
@@ -375,6 +375,7 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 			case "out":
 			case "inout":
 			case "":
+			case null:
 				{
 					const sel = !v.trim()
 						? // Bindings will be inherited from scope

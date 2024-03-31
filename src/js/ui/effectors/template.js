@@ -87,30 +87,8 @@ export class TemplateEffector extends Effector {
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
 		// FIXME: Same as effector/slot
-		const subscriptions =
-			reactors.length > 0
-				? reactors.reduce((r, { name, selector }) => {
-						if (!selector) {
-							return r;
-						}
-						const s = subscope.slots[name].sub(() => {
-							const v = subscope.eval(selector, true);
-							if (selector.target) {
-								// NOTE: We use update here as we don't
-								// want to create a new slot.
-								subscope.update(selector.target, v);
-							}
-							return v;
-						});
-						s.enable(false);
-						if (r === null) {
-							return [s];
-						} else {
-							r.push(s);
-							return r;
-						}
-				  }, null)
-				: null;
+		const subscriptions = subscope.reactions(reactors);
+
 		// We do need to make sure that any derived value is evaluated at this
 		// stage. This is is a bit of a tax to pay.
 		for (const k in this.bindings.slots) {
