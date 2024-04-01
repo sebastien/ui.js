@@ -52,6 +52,7 @@ export const onOnAttribute = (processor, attr, root, name) => {
 					.join("")}; return (${directive.eventProcessor})`
 		  )
 		: null;
+	console.log("XXX ON", { directive, name });
 	node.removeAttribute(attr.name);
 	// FIXME: A `<slot out:XXX>` node  may have `on:XXX` attributes as well, in which
 	// case they've already been processed at that point.

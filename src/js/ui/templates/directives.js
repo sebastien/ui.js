@@ -11,7 +11,7 @@ import {
 } from "../utils/reparser.js";
 import API from "../api.js";
 import { Formats } from "../formats.js";
-import { map, values, reduce } from "../utils/collections.js";
+import { map, values, reduce, len } from "../utils/collections.js";
 import { Reactor, Fused, Selector, SelectorInput } from "../selector.js";
 import { onError } from "../utils/logging.js";
 
@@ -315,9 +315,20 @@ export const parseOnDirective = (value) => {
 		return null;
 	} else {
 		const res = makematch(match);
-		res.assign = res.assign
-			? Object.values(res.assign).map((_) => _.split("."))
-			: [];
+		if (!res.assign && len(res.inputs) === 1) {
+			// We can have a handler that is like `on:change=username`, which
+			// basically means "assign the value
+			res.assign = res.inputs[0].split(".");
+			if (!res.handler) {
+				res.handler = "event.currentTarget.value";
+			}
+		} else {
+			res.assign = res.assign
+				? Object.values(res.assign).map((_) => _.split("."))
+				: len(res.inputs) === 1
+				? res.inputs[0].split(".")
+				: [];
+		}
 		return res;
 	}
 };
