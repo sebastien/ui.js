@@ -355,6 +355,20 @@ export const copy = (value) => {
 export const append = (value, item) => {
 	if (value instanceof Array) {
 		return [...value, item];
+	} else if (value instanceof Map) {
+		let k = len(value);
+		while (value.has(k)) {
+			k++;
+		}
+		const r = new Map(value);
+		r.set(k, item);
+		return r;
+	} else if (isObject(value)) {
+		let k = len(value);
+		while (value[k] !== undefined) {
+			k++;
+		}
+		return { ...value, [k]: item };
 	} else {
 		return value;
 	}
@@ -373,8 +387,8 @@ export const removeAt = (value, key) => {
 		const res = new Map(value);
 		res.clear(key);
 		return res;
-	} else if (typeof value === "object") {
-		const res = { ...res };
+	} else if (isObject(value)) {
+		const res = { ...value };
 		delete res[key];
 		return res;
 	} else {

@@ -44,6 +44,7 @@ class EventEffect extends Effect {
 				);
 			} else {
 				for (const i in directive.assign) {
+					console.log("ASSIGN*", directive.assign[i], v[i]);
 					this.scope.update(
 						directive.assign[i],
 						v ? v[i] : undefined,

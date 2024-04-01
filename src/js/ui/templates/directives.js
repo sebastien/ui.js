@@ -318,7 +318,7 @@ export const parseOnDirective = (value) => {
 		if (!res.assign && len(res.inputs) === 1) {
 			// We can have a handler that is like `on:change=username`, which
 			// basically means "assign the value
-			res.assign = res.inputs[0].split(".");
+			res.assign = [res.inputs[0].split(".")];
 			if (!res.handler) {
 				res.handler = "event.currentTarget.value";
 			}
@@ -326,7 +326,7 @@ export const parseOnDirective = (value) => {
 			res.assign = res.assign
 				? Object.values(res.assign).map((_) => _.split("."))
 				: len(res.inputs) === 1
-				? res.inputs[0].split(".")
+				? [res.inputs[0].split(".")]
 				: [];
 		}
 		return res;
