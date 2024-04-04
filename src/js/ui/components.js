@@ -30,7 +30,7 @@ export class Component {
 		store,
 		path,
 		slots,
-		attributes
+		attributes,
 	) {
 		this.id = id;
 		this.anchor = anchor;
@@ -57,7 +57,7 @@ export class Component {
 export const createComponent = (node, store, templates = Templates) => {
 	const bindings = extractBindings(node, ["template", "id"]);
 	// TODO: What about event handlers?
-	const slots = Object.assign(bindings, extractSlots(node));
+	const slots = Object.assign(bindings.slots, extractSlots(node));
 	const templateName = node.getAttribute("template");
 	const id = node.getAttribute("id");
 
@@ -75,7 +75,7 @@ export const createComponent = (node, store, templates = Templates) => {
 				node,
 				templateName,
 				templates,
-			}
+			},
 		);
 		return null;
 	}
@@ -107,7 +107,7 @@ export const createComponent = (node, store, templates = Templates) => {
 		store,
 		undefined,
 		slots,
-		attributes
+		attributes,
 	);
 };
 

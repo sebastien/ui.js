@@ -633,4 +633,8 @@ table.lined {
 	border-left-color: #00000020;
 }
 
+.can-select {
+	user-select: text !important;
+}
+
 /* EOF */

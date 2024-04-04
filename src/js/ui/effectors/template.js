@@ -3,7 +3,7 @@ import { onError, onWarning } from "../utils/logging.js";
 import { len, assign, reduce } from "../utils/collections.js";
 import { Value, Selected, Signal } from "../reactive.js";
 import { Effect, Effector } from "../effectors.js";
-import { Reactor, Fused } from "../selector.js";
+import { Selector, Reactor, Fused } from "../selector.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
@@ -59,12 +59,20 @@ export class TemplateEffector extends Effector {
 				// The bindings here are defined at the template level.
 				this.bindings.slots,
 				(r, v, k) => {
+					// NOTE: Similar to SlotEffect.apply
 					const parent_cell = scope.slots[k];
 					if (v instanceof Fused) {
 						// FIXME: If we have a selector in an `inout` parent_cell, we may get
 						// two different behaviour when the parent_cell is defined and when
 						// it's not.
-						r[k] = parent_cell ? parent_cell : v.selector;
+						r[k] = parent_cell
+							? parent_cell
+							: // If it's fused and we don't find a parent cell, then
+								// return the selector (if it's one), or we wrap the raw
+								// value in a cell.
+								v.selector instanceof Selector
+								? v.selector
+								: new Value(v.selector, k);
 					} else {
 						// Here we only add to  slot if there is no parent parent_cell
 						// in the scope, or if the parent_cell is a value with no value
@@ -80,8 +88,8 @@ export class TemplateEffector extends Effector {
 					}
 					return r;
 				},
-				{}
-			)
+				{},
+			),
 		);
 
 		const subscope =
@@ -108,7 +116,7 @@ export class TemplateEffector extends Effector {
 			node,
 			subscope,
 			attributes,
-			subscriptions
+			subscriptions,
 		).init();
 	}
 }
@@ -154,7 +162,7 @@ class TemplateEffect extends Effect {
 						if (!n) {
 							onWarning(
 								`Effector #${i} cannot resolve the following path from the root`,
-								{ path: _.nodePath, root }
+								{ path: _.nodePath, root },
 							);
 						}
 						return n;
@@ -201,7 +209,7 @@ class TemplateEffect extends Effect {
 							k,
 							n,
 							/* force to override */ true,
-							false
+							false,
 						);
 					}
 
@@ -213,12 +221,12 @@ class TemplateEffect extends Effect {
 
 					DOM.after(
 						i === 0 ? this.node : this.views[i - 1].root,
-						root
+						root,
 					);
 					if (!root.parentNode) {
 						onError(
 							"TemplateEffect: view root node should always have a parent",
-							{ i, root, view }
+							{ i, root, view },
 						);
 					}
 
@@ -249,7 +257,7 @@ class TemplateEffect extends Effect {
 										effector,
 										root,
 										refs,
-									}
+									},
 								);
 							const res = effector.apply(node, this.scope);
 							Options.debug && console.groupEnd();
@@ -298,7 +306,7 @@ class TemplateEffect extends Effect {
 				this.controller = createController(
 					this.effector.controller,
 					this.scope,
-					this.node
+					this.node,
 				);
 			}
 			for (const [name, handlers] of this.controller.events.entries()) {
@@ -360,7 +368,7 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false
+				false,
 			);
 		return res;
 	}
@@ -383,7 +391,7 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false
+				false,
 			);
 		return this.mounted ? super.unmount() : this;
 	}
