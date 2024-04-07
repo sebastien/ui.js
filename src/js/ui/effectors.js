@@ -1,5 +1,5 @@
 import { onError } from "./utils/logging.js";
-import { Scope } from "./reactive.js";
+import { Value, Scope } from "./reactive.js";
 
 // --
 // ## Effectors
@@ -71,8 +71,18 @@ export class EffectScope extends Scope {
 
 	triggerEvent(name, data, origin = this, node, bubbles = true) {
 		let count = 0;
-		if (this.slots[name]) {
+		const cell = this.slots[name];
+		if (!cell) {
+			// Nothing to do here
+		} else if (cell instanceof Value) {
 			this.slots[name].set({ name, data, origin });
+		} else {
+			onError("Cell is not a value, cannot set it:", {
+				cell,
+				event: name,
+				data,
+				origin,
+			});
 		}
 		return count;
 	}

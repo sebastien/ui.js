@@ -14,16 +14,28 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	// We retrieve the `template` and `selector` from the attributes.
 	const template = parseLiteral(node.getAttribute("template"));
 
-	// FIXME: I'm not even sure we're using that anymore
+	// Selector can be used as an alias for x:for, but it's not really
+	// recommended. It just happens that `x:for` uses the `SlotEffector`
+	// as well under the hood, but that may change.
 	const selector = node.hasAttribute("selector")
 		? parseSelector(node.getAttribute("selector"))
 		: null;
 
-	const bindings = extractBindings(node, ["template", "selector"]);
+	const bindings = extractBindings(node, [
+		"template",
+		"selector",
+		"class",
+		"id",
+	]);
 	// NOTE: We should probably remove the attributes
 	// for (const attr of [...(node.attributes || [])]) {
 	// 	node.removeAttribute(attr.name);
 	// }
+	const attributes = ["class", "id"].reduce(
+		(r, v) =>
+			node.hasAttribute(v) ? (r.set(v, node.getAttribute(v)), r) : r,
+		new Map(),
+	);
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.
@@ -56,10 +68,10 @@ export const onSlotNode = (processor, node, root, templateName) => {
 				const name = child.getAttribute("name");
 				// TODO: If the container has just one child and the child
 				// has an element we should unwrap it.
-				bindings[name] = new ViewEffector(
+				bindings.slots[name] = new ViewEffector(
 					null,
 					null,
-					createView(processor, container, `${templateName}.{name}`)
+					createView(processor, container, `${templateName}.{name}`),
 				);
 				node.removeChild(child);
 			}
@@ -75,7 +87,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	// We remove the slot node from the template object, as we don't
 	// want it to appear in the output. We replace it with a placeholder.
 	const key = makeKey(
-		node.dataset.id || node.getAttribute("name") || template
+		node.dataset.id || node.getAttribute("name") || template,
 	);
 
 	const path = nodePath(node, root);
@@ -83,7 +95,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		node,
 		`${key}|Slot|${template?.name || template || "_"}|${
 			selector ? selector.toString() : "."
-		}`
+		}`,
 	);
 	// TODO: Like for components, we may have <slot name="XXX"> which then
 	// contain a slot effector. That slot effector should then be put
@@ -92,47 +104,10 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	if (!template && node.children.length === 0) {
 		console.warn(
 			"[ui.js/slot] Slot may be missing 'template' attribute, as it does not have any contents",
-			node
+			node,
 		);
 	}
-	return new SlotEffector(path, selector, template, undefined, bindings);
-
-	// NOTE: Previous behaviour, left for reference
-	// const select = node.getAttribute("select");
-	// if (select) {
-	//   const selector = parseSelector(select);
-	//   const content = contentAsFragment(node);
-	//   // TODO: Content should be used as placeholder
-	//   const template =
-	//     parseTemplate(node.getAttribute("template")) ||
-	//     createTemplate(
-	//       content,
-	//       makeKey(templateName ? `${templateName}_fragment` : "fragment"),
-	//       false /*no cloning needed*/
-	//     );
-
-	//   console.log("SLOT TEMPLATE", node, template);
-	//   const key = makeKey(
-	//     node.dataset.id || node.getAttribute("name") || template
-	//   );
-	//   const effector = new SlotEffector(
-	//     nodePath(node, root),
-	//     selector,
-	//     template,
-	//     getNodeEventHandlers(node),
-	//     key
-	//   );
-
-	//   // We replace the slot by a placeholder node. This means that there should
-	//   // be no slot placeholder at that point.
-	//   replaceNodeWithPlaceholder(
-	//     node,
-	//     `${key}|Slot|${template.name || template}|${selector.toString()}`
-	//   );
-	//   return effector;
-	// } else {
-	//   return null;
-	// }
+	return new SlotEffector(path, selector, template, bindings, attributes);
 };
 
 // EOF

@@ -20,9 +20,8 @@ label {
 			var(--page-bg-0p) 95%);
 }
 
- .selectable {
+.selectable {
 	cursor: pointer;
-	user-select: none;
 	background-color: transparent;
 }
 

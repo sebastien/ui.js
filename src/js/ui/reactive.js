@@ -1,7 +1,7 @@
 import { cmp } from "./utils/delta.js";
+import { asTrue } from "./utils/func.js";
 import { RuntimeError, NotImplementedError } from "./utils/errors.js";
-import { Selector } from "./selector.js";
-import { SelectorType } from "./selector.js";
+import { Reactor, Selector, SelectorType } from "./selector.js";
 import { map, last, access, patch } from "./utils/collections.js";
 import { onError } from "./utils/logging.js";
 import API from "./api.js";
@@ -95,7 +95,9 @@ export class Subscribable {
 			if (!topic.has(Subscription)) {
 				topic.set(Subscription, [sub]);
 			} else {
-				topic.get(Subscription).push(sub);
+				// We insert the handler ahead, it's always latest first
+				// and oldest last.
+				topic.get(Subscription).splice(0, 0, sub);
 			}
 			return sub;
 		}
@@ -122,7 +124,7 @@ export class Subscribable {
 		if (path === null) {
 			return this._notifyTopics(
 				value,
-				path === null ? this._topics : this.topic(path, offset)
+				path === null ? this._topics : this.topic(path, offset),
 			);
 		} else {
 			let topic = undefined;
@@ -155,7 +157,7 @@ export class Subscribable {
 						value ? value[k] : undefined,
 						v,
 						limit,
-						depth + 1
+						depth + 1,
 					);
 				}
 			}
@@ -269,6 +271,10 @@ export class Value extends Cell {
 
 // Represents a source of events.
 export class Signal extends Value {
+	constructor(name) {
+		super(undefined, name, asTrue);
+	}
+
 	set(value, path = null, offset = 0) {
 		// We always force the set
 		return super.set(value, path, offset, true);
@@ -288,8 +294,8 @@ export class Selected extends Cell {
 			selector.type === SelectorType.List
 				? new Array(inputs.length)
 				: selector.type === SelectorType.Map
-				? {}
-				: undefined;
+					? {}
+					: undefined;
 		this.revision = -1;
 	}
 
@@ -329,12 +335,12 @@ export class Selected extends Cell {
 					t === SelectorType.Atom
 						? null
 						: t === SelectorType.Mapping
-						? this.selector.fields[i]
-						: i;
+							? this.selector.fields[i]
+							: i;
 				this.subscriptions[i] = input.sub(
 					(...rest) => this.onInputUpdated(i, k, ...rest),
 					this.selector.inputs[i].path,
-					1
+					1,
 				);
 			}
 		}
@@ -347,7 +353,7 @@ export class Selected extends Cell {
 				input.unsub(
 					this.subscriptions[i],
 					this.selector.inputs[i].path,
-					1
+					1,
 				);
 				this.subscriptions[i] = undefined;
 			}
@@ -417,7 +423,11 @@ export class Selected extends Cell {
 		const extracted = this.inputs.map((input, i) => {
 			const sel = this.selector.inputs[i];
 			return sel.formatted(
-				access(input instanceof Cell ? input.value : input, sel.path, 1)
+				access(
+					input instanceof Cell ? input.value : input,
+					sel.path,
+					1,
+				),
 			);
 		});
 		let res = undefined;
@@ -470,8 +480,8 @@ export class Scope extends Cell {
 			? Object.create(
 					parent instanceof Scope
 						? parent.slots
-						: map(parent, (_, k) => new Value(_, k))
-			  )
+						: map(parent, (_, k) => new Value(_, k)),
+				)
 			: {};
 		this.parent = parent instanceof Scope ? parent : null;
 	}
@@ -533,7 +543,7 @@ export class Scope extends Cell {
 					if (v !== undefined) {
 						onError(
 							`Unsupported case for slot: trying to assign a value to slot ${k} which is not a Value cell`,
-							{ slot, value: v }
+							{ slot, value: v },
 						);
 					} else {
 						// All good here, it's undefined;
@@ -562,7 +572,13 @@ export class Scope extends Cell {
 		if (name) {
 			return (
 				this.slots.hasOwnProperty(name)
-					? [{ scope: this, value: this.get([name]) }]
+					? [
+							{
+								scope: this,
+								cell: this.slots[name],
+								value: this.get([name]),
+							},
+						]
 					: []
 			).concat(this.parent ? this.parent.declared(name) : []);
 		} else {
@@ -613,7 +629,7 @@ export class Scope extends Cell {
 				if (value instanceof Cell) {
 					onError(
 						"Scope.set: cannot assign a cell to an existing slot",
-						{ path, slot, value }
+						{ path, slot, value },
 					);
 				} else {
 					slot.set(value, undefined, undefined, force);
@@ -635,7 +651,7 @@ export class Scope extends Cell {
 				// will create `{children:[undefined,<value>]}`.
 				return this.set(
 					path[0],
-					patch(undefined, path, value, undefined, 1)
+					patch(undefined, path, value, undefined, 1),
 				);
 			} else {
 				return slot.patch(value, path, 1);
@@ -684,6 +700,72 @@ export class Scope extends Cell {
 		}
 	}
 
+	// TODO: Not sure it's the best place.
+	// --
+	// Given a list of `Reactor` instances, binds the reactors to the
+	// existing slots;
+	reactions(reactors, scope = this) {
+		return reactors.length > 0
+			? reactors.reduce((r, reactor) => {
+					const s = this.reaction(reactor, scope);
+					if (!s) {
+						return r;
+					} else if (r === null) {
+						return [s];
+					} else {
+						r.push(s);
+						return r;
+					}
+				}, null)
+			: null;
+	}
+
+	reaction(reactor, scope = this) {
+		if (!reactor) {
+			return null;
+		} else if (reactor instanceof Reactor) {
+			const name = reactor.name;
+			if (!reactor.selector) {
+				return null;
+			}
+			if (!this.slots[name]) {
+				onError("Slot undefined, can't bind reactor", {
+					name,
+					reactor,
+				});
+				return null;
+			}
+			const s = this.slots[name].sub(() => {
+				// NOTE: The reactions need to be evaluated in the scope
+				// they were declared in, but will need to have the
+				// event as well.
+				const v = scope.eval(
+					reactor.selector,
+					true,
+					// If the scope of the reaction is different,
+					// we need to pre-fill overridden values.
+					this !== scope
+						? {
+								[name]: this.slots[name].value,
+								"#": this.key,
+							}
+						: null,
+				);
+				if (reactor.selector.target) {
+					// NOTE: We use update here as we don't
+					// want to create a new slot.
+					scope.update(reactor.selector.target, v);
+				}
+				return v;
+			});
+			s.enable(false);
+			return s;
+		} else {
+			onError("Expected Reactor, got", { value: reactor });
+			return null;
+		}
+	}
+
 	// --
 	// Returns a cell the represents the selected value. In the easy case,
 	// where the selector has only one input and no transform, this returns
@@ -716,13 +798,25 @@ export class Scope extends Cell {
 		}
 	}
 
-	eval(selector) {
+	// --
+	// A simple wrapper around `Scope.get()` that uses an override object
+	// map, where values will be sourced first. This is useful in event
+	// handlers where we need to surface the event and its key, without
+	// clashing with the local scope. Conceptually, event handlers
+	// act as dataflow bridges.
+	evalInput(input, overrides = null) {
+		const v = overrides ? overrides[input.path[0]] : undefined;
+		return input.formatted(v === undefined ? this.get(input.path) : v);
+	}
+
+	eval(selector, _, overrides = null) {
 		if (!selector) {
 			return this.get("_");
 		}
+
 		if (selector.format) {
 			const inputs = selector.inputs.map((_) =>
-				_.formatted(this.get(_.path))
+				this.evalInput(_, overrides),
 			);
 			try {
 				return selector.format(...[...inputs, API]);
@@ -737,19 +831,17 @@ export class Scope extends Cell {
 		} else {
 			switch (selector.type) {
 				case SelectorType.Atom:
-					return selector.inputs[0].formatted(
-						this.get(selector.inputs[0].path)
-					);
+					return this.evalInput(selector.inputs[0], overrides);
 				case SelectorType.List:
 					return selector.inputs.map((_) =>
-						_.formatted(this.get(_.path))
+						this.evalInput(_, overrides),
 					);
 				case SelectorType.Map:
 					return selector.inputs.reduce(
 						(r, _) => (
-							(r[_.name] = _.formatted(this.get(_.path))), r
+							(r[_.name] = this.evalInput(_, overrides)), r
 						),
-						{}
+						{},
 					);
 				default:
 					onError("Unsupported selector type", selector.type, {

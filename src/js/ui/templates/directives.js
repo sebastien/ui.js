@@ -11,7 +11,7 @@ import {
 } from "../utils/reparser.js";
 import API from "../api.js";
 import { Formats } from "../formats.js";
-import { map, values, reduce } from "../utils/collections.js";
+import { map, values, reduce, len } from "../utils/collections.js";
 import { Reactor, Fused, Selector, SelectorInput } from "../selector.js";
 import { onError } from "../utils/logging.js";
 
@@ -315,9 +315,20 @@ export const parseOnDirective = (value) => {
 		return null;
 	} else {
 		const res = makematch(match);
-		res.assign = res.assign
-			? Object.values(res.assign).map((_) => _.split("."))
-			: [];
+		if (!res.assign && len(res.inputs) === 1) {
+			// We can have a handler that is like `on:change=username`, which
+			// basically means "assign the value
+			res.assign = [res.inputs[0].split(".")];
+			if (!res.handler) {
+				res.handler = "event.currentTarget.value";
+			}
+		} else {
+			res.assign = res.assign
+				? Object.values(res.assign).map((_) => _.split("."))
+				: len(res.inputs) === 1
+				? [res.inputs[0].split(".")]
+				: [];
+		}
 		return res;
 	}
 };
@@ -343,7 +354,8 @@ export const extractLiteralBindings = (node, blacklist) =>
 // is also used in components.
 export const extractBindings = (node, blacklist, withSelectors = true) => {
 	// We extract the bindings from the attributes
-	const bindings = {};
+	const handlers = {};
+	const slots = {};
 	// TODO: That should be unified with the directives
 	for (const attr of node.attributes || []) {
 		if (blacklist && blacklist.indexOf(attr.name) !== -1) {
@@ -351,7 +363,7 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 		}
 		// HTML attributes can't do camelCase.
 		const items = attr.name.split(":");
-		const ns = items.length ? items[0] : null;
+		const ns = items.length > 1 ? items[0] : null;
 		const name = items
 			.at(-1)
 			.split("-")
@@ -365,29 +377,42 @@ export const extractBindings = (node, blacklist, withSelectors = true) => {
 			case "on":
 				// The reactor wraps a selector and feeds the event name
 				// as first argument.
-				bindings[name] = new Reactor(name, parseSelector(v, [name]));
+				handlers[name] = new Reactor(
+					name,
+					v && v.trim().length ? parseSelector(v, [name]) : null
+				);
 				break;
-			default: {
-				const sel = !v.trim()
-					? // Bindings will be inherited from scope
-					  // NOTE: this used to be `undefined` instead of parseSelector,
-					  // but it didn't work, so I think this is better.
-					  parseSelector(name)
-					: matchLiteralValue(v)
-					? // This is a literal expression
-					  parseLiteralValue(v)
-					: matchLiteralSelector(v)
-					? // This is an inline selector
-					  parseLiteralSelector(v)
-					: withSelectors && matchSelector(v)
-					? parseSelector(v)
-					: // Otherwise it's a string
-					  v;
-				bindings[name] = ns === "inout" ? new Fused(name, sel) : sel;
-			}
+			case "in":
+			case "out":
+			case "inout":
+			case "":
+			case null:
+				{
+					const sel = !v.trim()
+						? // Bindings will be inherited from scope
+						  // NOTE: this used to be `undefined` instead of parseSelector,
+						  // but it didn't work, so I think this is better.
+						  parseSelector(name)
+						: matchLiteralValue(v)
+						? // This is a literal expression
+						  parseLiteralValue(v)
+						: matchLiteralSelector(v)
+						? // This is an inline selector
+						  parseLiteralSelector(v)
+						: withSelectors && matchSelector(v)
+						? parseSelector(v)
+						: // Otherwise it's a string
+						  v;
+					slots[name] = ns === "inout" ? new Fused(name, sel) : sel;
+				}
+				break;
+			default:
+				// Technically we should probably issue a warning here for
+				// unsupported namespace
+				break;
 		}
 	}
-	return bindings;
+	return { handlers, slots };
 };
 
 // FIXME: Not sure this is still needed

@@ -1,5 +1,5 @@
 .invisible {
-	visibility: hidden;
+	opacity: 0.0;
 }
 
 .nolink {
@@ -415,6 +415,11 @@ table.lined {
 	font-family: var(--font-sans) !important;
 }
 
+.monospace {
+	font-variation-settings: 'MONO' 1;
+	/* Enable full monospace */
+}
+
 .mono {
 	font-family: var(--font-mono) !important;
 }
@@ -631,6 +636,10 @@ table.lined {
 	border: var(--box-bd-w) solid #ffffff20;
 	border-top-color: #00000020;
 	border-left-color: #00000020;
+}
+
+.can-select {
+	user-select: text !important;
 }
 
 /* EOF */

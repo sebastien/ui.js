@@ -55,10 +55,9 @@ export class Component {
 // corresponding template in `Templates` and creates a new `Component`
 // replacing the given `node` and then rendering the component.
 export const createComponent = (node, store, templates = Templates) => {
-	const slots = Object.assign(
-		extractBindings(node, ["template", "id"]),
-		extractSlots(node),
-	);
+	const bindings = extractBindings(node, ["template", "id"]);
+	// TODO: What about event handlers?
+	const slots = Object.assign(bindings.slots, extractSlots(node));
 	const templateName = node.getAttribute("template");
 	const id = node.getAttribute("id");
 

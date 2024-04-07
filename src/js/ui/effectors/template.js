@@ -3,7 +3,7 @@ import { onError, onWarning } from "../utils/logging.js";
 import { len, assign, reduce } from "../utils/collections.js";
 import { Value, Selected, Signal } from "../reactive.js";
 import { Effect, Effector } from "../effectors.js";
-import { Reactor, Fused } from "../selector.js";
+import { Selector, Reactor, Fused } from "../selector.js";
 import { pathNode } from "../path.js";
 import { DOM } from "../utils/dom.js";
 import { makeKey } from "../utils/ids.js";
@@ -26,7 +26,7 @@ export class TemplateEffector extends Effector {
 		this.isComponent = isComponent;
 		this.controller = undefined;
 	}
-	apply(node, scope, attributes) {
+	apply(node, scope, attributes, cells, subscriptions) {
 		// If there's a controller attached to the template, we retrieve it.
 		// We don't do it earlier so that we leave a chance for the controller
 		// to be found.
@@ -42,56 +42,64 @@ export class TemplateEffector extends Effector {
 		// these values.
 		const reactors = [];
 		const slots = reduce(
-			// The bindings here are defined at the template level.
-			this.bindings,
+			this.bindings.handlers,
 			(r, v, k) => {
-				const cell = scope.slots[k];
-				if (v instanceof Fused) {
-					// FIXME: If we have a selector in an `inout` cell, we may get
-					// two different behaviour when the cell is defined and when
-					// it's not.
-					r[k] = cell ? cell : v.selector;
-				} else if (v instanceof Reactor) {
+				if (v instanceof Reactor) {
 					// We have a reactor, so that means that's an event handler.
 					reactors.push(v);
-					r[k] = new Signal();
-				} else {
-					// Here we only add to  slot if there is no parent cell
-					// in the scope, or if the cell is a value with no value
-					// just yet.
-					if (
-						!cell ||
-						(cell instanceof Value && cell.revision === -1)
-					) {
-						r[k] = v;
+					// If there's no cell to subscribe to in the new slots
+					// or in the parent scope, then we create a signal.
+					if (r[k] === undefined && scope.slots[k] === undefined) {
+						r[k] = new Signal(k);
 					}
 				}
 				return r;
 			},
-			{}
+			reduce(
+				// The bindings here are defined at the template level.
+				this.bindings.slots,
+				(r, v, k) => {
+					// NOTE: Similar to SlotEffect.apply
+					const parent_cell = scope.slots[k];
+					if (v instanceof Fused) {
+						// FIXME: If we have a selector in an `inout` parent_cell, we may get
+						// two different behaviour when the parent_cell is defined and when
+						// it's not.
+						r[k] = parent_cell
+							? parent_cell
+							: // If it's fused and we don't find a parent cell, then
+								// return the selector (if it's one), or we wrap the raw
+								// value in a cell.
+								v.selector instanceof Selector
+								? v.selector
+								: new Value(v.selector, k);
+					} else {
+						// Here we only add to  slot if there is no parent parent_cell
+						// in the scope, or if the parent_cell is a value with no value
+						// just yet.
+						if (
+							!parent_cell ||
+							(v !== undefined &&
+								parent_cell instanceof Value &&
+								parent_cell.revision === -1)
+						) {
+							r[k] = v;
+						}
+					}
+					return r;
+				},
+				{},
+			),
 		);
 
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
-		const subscriptions =
-			reactors.length > 0
-				? reactors.map(({ name, selector }) =>
-						subscope.slots[name]
-							.sub(() => {
-								const v = subscope.eval(selector, true);
-								if (selector.target) {
-									// NOTE: We use update here as we don't
-									// want to create a new slot.
-									subscope.update(selector.target, v);
-								}
-								return v;
-							})
-							.enable(false)
-				  )
-				: null;
+		// FIXME: Same as effector/slot
+		const subs = subscope.reactions(reactors);
+
 		// We do need to make sure that any derived value is evaluated at this
 		// stage. This is is a bit of a tax to pay.
-		for (const k in this.bindings) {
+		for (const k in this.bindings.slots) {
 			const slot = subscope.slots[k];
 			if (slot.revision === -1 && slot instanceof Selected) {
 				// This forces an evaluation of the slot.
@@ -108,7 +116,7 @@ export class TemplateEffector extends Effector {
 			node,
 			subscope,
 			attributes,
-			subscriptions
+			subs,
 		).init();
 	}
 }
@@ -154,7 +162,7 @@ class TemplateEffect extends Effect {
 						if (!n) {
 							onWarning(
 								`Effector #${i} cannot resolve the following path from the root`,
-								{ path: _.nodePath, root }
+								{ path: _.nodePath, root },
 							);
 						}
 						return n;
@@ -201,7 +209,7 @@ class TemplateEffect extends Effect {
 							k,
 							n,
 							/* force to override */ true,
-							false
+							false,
 						);
 					}
 
@@ -213,12 +221,12 @@ class TemplateEffect extends Effect {
 
 					DOM.after(
 						i === 0 ? this.node : this.views[i - 1].root,
-						root
+						root,
 					);
 					if (!root.parentNode) {
 						onError(
 							"TemplateEffect: view root node should always have a parent",
-							{ i, root, view }
+							{ i, root, view },
 						);
 					}
 
@@ -249,7 +257,7 @@ class TemplateEffect extends Effect {
 										effector,
 										root,
 										refs,
-									}
+									},
 								);
 							const res = effector.apply(node, this.scope);
 							Options.debug && console.groupEnd();
@@ -298,7 +306,7 @@ class TemplateEffect extends Effect {
 				this.controller = createController(
 					this.effector.controller,
 					this.scope,
-					this.node
+					this.node,
 				);
 			}
 			for (const [name, handlers] of this.controller.events.entries()) {
@@ -360,7 +368,7 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false
+				false,
 			);
 		return res;
 	}
@@ -383,7 +391,7 @@ class TemplateEffect extends Effect {
 				undefined,
 				this.scope,
 				this.node,
-				false
+				false,
 			);
 		return this.mounted ? super.unmount() : this;
 	}

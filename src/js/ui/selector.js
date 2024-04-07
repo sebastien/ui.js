@@ -112,6 +112,18 @@ export class Selector {
 		Object.freeze(this.path);
 	}
 
+	// --
+	// Tells if the selector is a simple reference, like `value` or `value=value`.
+	get isSimpleReference() {
+		return (
+			this.format === null &&
+			!this.isMany &&
+			this.inputs.length === 1 &&
+			this.inputs[0].path.length == 1 &&
+			(!this.target || this.inputs[0].path[0] === this.target)
+		);
+	}
+
 	toString() {
 		const event = this.event
 			? `!${this.event}${this.stops ? "." : ""}`
