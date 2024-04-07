@@ -127,15 +127,14 @@ export class SlotEffector extends Effector {
 									// `k=job` and the slot name is `item`.
 									// Note that this won't work if the
 									// input name has a length > 1
-									console.log("V", v);
 									r[k] = scope.slots[v.inputs[0].path[0]];
 								}
-								return r;
 							} else {
 								r[k] = v;
-								return r;
 							}
+							return r;
 						},
+						// This is the initial value
 						this.selector?.target
 							? { [this.selector.target]: this.selector }
 							: null,
@@ -149,7 +148,6 @@ export class SlotEffector extends Effector {
 			? scope.derive(cells)
 			: new EffectScope(null, scope.path, scope.key).define(cells);
 		const subscriptions = subscope.reactions(reactors, scope);
-
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
 			: SingleSlotEffect)(

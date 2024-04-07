@@ -124,7 +124,7 @@ export class Subscribable {
 		if (path === null) {
 			return this._notifyTopics(
 				value,
-				path === null ? this._topics : this.topic(path, offset)
+				path === null ? this._topics : this.topic(path, offset),
 			);
 		} else {
 			let topic = undefined;
@@ -157,7 +157,7 @@ export class Subscribable {
 						value ? value[k] : undefined,
 						v,
 						limit,
-						depth + 1
+						depth + 1,
 					);
 				}
 			}
@@ -294,8 +294,8 @@ export class Selected extends Cell {
 			selector.type === SelectorType.List
 				? new Array(inputs.length)
 				: selector.type === SelectorType.Map
-				? {}
-				: undefined;
+					? {}
+					: undefined;
 		this.revision = -1;
 	}
 
@@ -335,12 +335,12 @@ export class Selected extends Cell {
 					t === SelectorType.Atom
 						? null
 						: t === SelectorType.Mapping
-						? this.selector.fields[i]
-						: i;
+							? this.selector.fields[i]
+							: i;
 				this.subscriptions[i] = input.sub(
 					(...rest) => this.onInputUpdated(i, k, ...rest),
 					this.selector.inputs[i].path,
-					1
+					1,
 				);
 			}
 		}
@@ -353,7 +353,7 @@ export class Selected extends Cell {
 				input.unsub(
 					this.subscriptions[i],
 					this.selector.inputs[i].path,
-					1
+					1,
 				);
 				this.subscriptions[i] = undefined;
 			}
@@ -423,7 +423,11 @@ export class Selected extends Cell {
 		const extracted = this.inputs.map((input, i) => {
 			const sel = this.selector.inputs[i];
 			return sel.formatted(
-				access(input instanceof Cell ? input.value : input, sel.path, 1)
+				access(
+					input instanceof Cell ? input.value : input,
+					sel.path,
+					1,
+				),
 			);
 		});
 		let res = undefined;
@@ -476,8 +480,8 @@ export class Scope extends Cell {
 			? Object.create(
 					parent instanceof Scope
 						? parent.slots
-						: map(parent, (_, k) => new Value(_, k))
-			  )
+						: map(parent, (_, k) => new Value(_, k)),
+				)
 			: {};
 		this.parent = parent instanceof Scope ? parent : null;
 	}
@@ -539,7 +543,7 @@ export class Scope extends Cell {
 					if (v !== undefined) {
 						onError(
 							`Unsupported case for slot: trying to assign a value to slot ${k} which is not a Value cell`,
-							{ slot, value: v }
+							{ slot, value: v },
 						);
 					} else {
 						// All good here, it's undefined;
@@ -568,7 +572,13 @@ export class Scope extends Cell {
 		if (name) {
 			return (
 				this.slots.hasOwnProperty(name)
-					? [{ scope: this, value: this.get([name]) }]
+					? [
+							{
+								scope: this,
+								cell: this.slots[name],
+								value: this.get([name]),
+							},
+						]
 					: []
 			).concat(this.parent ? this.parent.declared(name) : []);
 		} else {
@@ -619,7 +629,7 @@ export class Scope extends Cell {
 				if (value instanceof Cell) {
 					onError(
 						"Scope.set: cannot assign a cell to an existing slot",
-						{ path, slot, value }
+						{ path, slot, value },
 					);
 				} else {
 					slot.set(value, undefined, undefined, force);
@@ -641,7 +651,7 @@ export class Scope extends Cell {
 				// will create `{children:[undefined,<value>]}`.
 				return this.set(
 					path[0],
-					patch(undefined, path, value, undefined, 1)
+					patch(undefined, path, value, undefined, 1),
 				);
 			} else {
 				return slot.patch(value, path, 1);
@@ -706,7 +716,7 @@ export class Scope extends Cell {
 						r.push(s);
 						return r;
 					}
-			  }, null)
+				}, null)
 			: null;
 	}
 
@@ -738,8 +748,8 @@ export class Scope extends Cell {
 						? {
 								[name]: this.slots[name].value,
 								"#": this.key,
-						  }
-						: null
+							}
+						: null,
 				);
 				if (reactor.selector.target) {
 					// NOTE: We use update here as we don't
@@ -806,7 +816,7 @@ export class Scope extends Cell {
 
 		if (selector.format) {
 			const inputs = selector.inputs.map((_) =>
-				this.evalInput(_, overrides)
+				this.evalInput(_, overrides),
 			);
 			try {
 				return selector.format(...[...inputs, API]);
@@ -824,14 +834,14 @@ export class Scope extends Cell {
 					return this.evalInput(selector.inputs[0], overrides);
 				case SelectorType.List:
 					return selector.inputs.map((_) =>
-						this.evalInput(_, overrides)
+						this.evalInput(_, overrides),
 					);
 				case SelectorType.Map:
 					return selector.inputs.reduce(
 						(r, _) => (
 							(r[_.name] = this.evalInput(_, overrides)), r
 						),
-						{}
+						{},
 					);
 				default:
 					onError("Unsupported selector type", selector.type, {
