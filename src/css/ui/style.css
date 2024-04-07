@@ -415,6 +415,11 @@ table.lined {
 	font-family: var(--font-sans) !important;
 }
 
+.monospace {
+	font-variation-settings: 'MONO' 1;
+	/* Enable full monospace */
+}
+
 .mono {
 	font-family: var(--font-mono) !important;
 }

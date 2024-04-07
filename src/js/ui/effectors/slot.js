@@ -11,11 +11,12 @@ import { Templates } from "../templates.js";
 // NOTE: I think the only thing that a slot effector has to do is
 // to detect add remove and relay these.
 export class SlotEffector extends Effector {
-	constructor(nodePath, selector, templateName, bindings) {
+	constructor(nodePath, selector, templateName, bindings, attributes) {
 		super(nodePath, selector);
 		// TODO: Selectors for slots should not have a format, slots pass
 		// down the value directly to a template.
 		this.bindings = bindings;
+		this.attributes = attributes;
 		// Note that template name can also be a selector here.
 		this.templateName = templateName;
 		if (!templateName) {
@@ -303,7 +304,7 @@ class SingleSlotEffect extends SlotEffect {
 				this.effect = this.template.apply(
 					node, // node
 					this.scope,
-					null,
+					this.effector.attributes,
 					this.cells,
 					this.subscriptions,
 				);
@@ -509,7 +510,7 @@ class MappingSlotEffect extends SlotEffect {
 			? template.apply(
 					root, // node
 					scope,
-					null, // Attributes
+					this.effector.attributes, // Attributes
 					this.cells,
 				)
 			: null;

@@ -26,7 +26,7 @@ export class TemplateEffector extends Effector {
 		this.isComponent = isComponent;
 		this.controller = undefined;
 	}
-	apply(node, scope, attributes, cells) {
+	apply(node, scope, attributes, cells, subscriptions) {
 		// If there's a controller attached to the template, we retrieve it.
 		// We don't do it earlier so that we leave a chance for the controller
 		// to be found.
@@ -95,7 +95,7 @@ export class TemplateEffector extends Effector {
 		const subscope =
 			this.isComponent || len(slots) > 0 ? scope.derive(slots) : scope;
 		// FIXME: Same as effector/slot
-		const subscriptions = subscope.reactions(reactors);
+		const subs = subscope.reactions(reactors);
 
 		// We do need to make sure that any derived value is evaluated at this
 		// stage. This is is a bit of a tax to pay.
@@ -116,7 +116,7 @@ export class TemplateEffector extends Effector {
 			node,
 			subscope,
 			attributes,
-			subscriptions,
+			subs,
 		).init();
 	}
 }

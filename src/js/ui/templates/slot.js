@@ -21,11 +21,21 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		? parseSelector(node.getAttribute("selector"))
 		: null;
 
-	const bindings = extractBindings(node, ["template", "selector"]);
+	const bindings = extractBindings(node, [
+		"template",
+		"selector",
+		"class",
+		"id",
+	]);
 	// NOTE: We should probably remove the attributes
 	// for (const attr of [...(node.attributes || [])]) {
 	// 	node.removeAttribute(attr.name);
 	// }
+	const attributes = ["class", "id"].reduce(
+		(r, v) =>
+			node.hasAttribute(v) ? (r.set(v, node.getAttribute(v)), r) : r,
+		new Map(),
+	);
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.
@@ -61,7 +71,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 				bindings.slots[name] = new ViewEffector(
 					null,
 					null,
-					createView(processor, container, `${templateName}.{name}`)
+					createView(processor, container, `${templateName}.{name}`),
 				);
 				node.removeChild(child);
 			}
@@ -77,7 +87,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	// We remove the slot node from the template object, as we don't
 	// want it to appear in the output. We replace it with a placeholder.
 	const key = makeKey(
-		node.dataset.id || node.getAttribute("name") || template
+		node.dataset.id || node.getAttribute("name") || template,
 	);
 
 	const path = nodePath(node, root);
@@ -85,7 +95,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 		node,
 		`${key}|Slot|${template?.name || template || "_"}|${
 			selector ? selector.toString() : "."
-		}`
+		}`,
 	);
 	// TODO: Like for components, we may have <slot name="XXX"> which then
 	// contain a slot effector. That slot effector should then be put
@@ -94,10 +104,10 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	if (!template && node.children.length === 0) {
 		console.warn(
 			"[ui.js/slot] Slot may be missing 'template' attribute, as it does not have any contents",
-			node
+			node,
 		);
 	}
-	return new SlotEffector(path, selector, template, bindings);
+	return new SlotEffector(path, selector, template, bindings, attributes);
 };
 
 // EOF
