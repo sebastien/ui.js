@@ -1,4 +1,5 @@
 PORT?=8001
+TIMESTAMP:=$(shell date +"%Y%m%dT%H%M%S%3N")
 SOURCES_JS=$(call get-sources,src/js,js)
 SOURCES_CSS=$(call get-sources,src/css,css)
 SOURCES_JSON=$(call get-sources,src/json,json)
@@ -87,6 +88,10 @@ dist/css/%: src/css/% run/.has-npm-uglifycss
 	echo "--- Compressing $< into $@"
 	$(call use-bin,uglifycss) --ugly-comments --output "$@" $<
 
+src/js/ui/version.js: FORCE
+	@mkdir -p "$(dir $@)"
+	echo 'export const updated="$(TIMESTAMP)";' > $@
+
 run/.has-npm-%: run/.has-cmd-bun
 	@if [ -z "$$(which $* 2> /dev/null)" ]; then
 		bun install %
@@ -107,6 +112,12 @@ run/.has-cmd-%:
 		mkdir -p "$(dir $@)"
 		touch "$@"
 	fi
+
+release: src/js/ui/version.js
+	@git add "$<"
+	git commit "$<" -m "[Release] Release $(TIMESTAMP)"
+	git tag -a "release" -m "Release $(TIMESTAMP)"
+	git push origin --tags
 
 
 print-%:
