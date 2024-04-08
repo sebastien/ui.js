@@ -104,6 +104,20 @@
 	right: 0px;
 }
 
+.expand-h {
+	position: absolute;
+	box-sizing: border-box;
+	top: 0px;
+	bottom: 0px;
+}
+
+.expand-w {
+	position: absolute;
+	box-sizing: border-box;
+	left: 0px;
+	right: 0px;
+}
+
 .fit {
 	box-sizing: border-box;
 	width: 100%;

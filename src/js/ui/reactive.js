@@ -288,6 +288,7 @@ export class Selected extends Cell {
 		this.selector = selector;
 		this.comparator = comparator;
 		this.subscriptions = new Array(inputs.length);
+		this._value = undefined;
 		// NOTE: We should optimize and use this to do incremental
 		// updates.
 		this._inputsValue =

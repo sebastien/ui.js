@@ -22,7 +22,7 @@ import {
 import { type, bool, symbols } from "./utils/values.js";
 import { pipe } from "./utils/func.js";
 import formats from "./formats.js";
-import { lerp } from "./utils/math.js";
+import { lerp, prel } from "./utils/math.js";
 import query from "./utils/query.js";
 import { setTrace } from "./utils/logging.js";
 import { drag } from "./interaction.js";
@@ -57,6 +57,7 @@ export const API = {
 	len,
 	pipe,
 	lerp,
+	prel,
 	map,
 	occurrences,
 	range,

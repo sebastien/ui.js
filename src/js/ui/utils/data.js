@@ -1,4 +1,4 @@
-import { each, reduce, assign, values, keys } from "./collections.js";
+import { map, each, reduce, assign, values, keys } from "./collections.js";
 import { Skip, isObject, Enum } from "./values.js";
 import { capitalize } from "./text.js";
 
@@ -32,7 +32,7 @@ export const Types = Enum(
 	"String",
 	"Number",
 	"Collection",
-	"Structure"
+	"Structure",
 );
 
 export class Sampler {
@@ -105,7 +105,7 @@ export const schema = (data) => {
 				r.push(v);
 				return r;
 			}, []),
-			definition
+			definition,
 		);
 		if (type === Types.Structure) {
 			const name = path
@@ -147,28 +147,35 @@ export const categories = (series, normalizer = null) =>
 		return r;
 	});
 
-export const describe = (series) => {
-	const res = reduce(
-		series,
-		(r, v) => {
-			r.min = Math.min(r.min === undefined ? v : r.min, v);
-			r.max = Math.max(r.max === undefined ? v : r.min, v);
-			r.total += v;
-			r.count += 1;
+export const describe = (series, key = undefined) => {
+	if (series && key && typeof key === "string") {
+		return describe(
+			reduce(series, (r, v) => (r.push(v ? v[key] : undefined), r), []),
+		);
+	}
+	const seed = {
+		min: undefined,
+		max: undefined,
+		total: 0,
+		count: 0,
+		mean: 0,
+		variance: 0,
+		deviation: 0,
+		values: series,
+	};
+	const res =
+		reduce(
+			series,
+			(r, v) => {
+				r.min = Math.min(r.min === undefined ? v : r.min, v);
+				r.max = Math.max(r.max === undefined ? v : r.min, v);
+				r.total += v;
+				r.count += 1;
 
-			return r;
-		},
-		{
-			min: undefined,
-			max: undefined,
-			total: 0,
-			count: 0,
-			mean: 0,
-			variance: 0,
-			deviation: 0,
-			values: series,
-		}
-	);
+				return r;
+			},
+			seed,
+		) || seed;
 	res.mean = res.total / res.count;
 	// FROM: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
 	// We do a two pass-algorithm as it's safer
@@ -180,7 +187,7 @@ export const describe = (series) => {
 				const dm = v - m;
 				return r + dm * dm;
 			},
-			0
+			0,
 		) / res.count;
 	res.deviation = Math.sqrt(res.variance);
 	return res;
