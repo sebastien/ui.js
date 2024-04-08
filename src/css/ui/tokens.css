@@ -24,7 +24,7 @@ variations).
 
 	--font-code: var(--font-mono);
 	--font-code-line-height: var(--font-mono);
-	--font-code-size: calc(13 / 14 * 1em);
+	--font-code-size: calc(12 / 14 * 1em);
 
 	--font-control: "Jost", sans-serif;
 	--font-control-line-height: 1.25em;
