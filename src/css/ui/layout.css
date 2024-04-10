@@ -19,10 +19,12 @@
 	position: relative;
 }
 
+.rel,
 .pos-rel {
 	position: relative;
 }
 
+.abs,
 .pos-abs {
 	position: absolute;
 }
@@ -46,7 +48,6 @@
 
 .to-l {
 	left: 0;
-	transform: translateX(-100%);
 }
 
 .pannable,

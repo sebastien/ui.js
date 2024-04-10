@@ -43,6 +43,7 @@
 .overflow {
 	overflow: auto;
 }
+
 /*
    * ## Hover Behaviour
   */
@@ -50,7 +51,16 @@
 .with-hover {
 	position: relative;
 }
-.show-menu > .menu,
+
+.show-menu>.menu,
+.show-menu>menu {
+	position: absolute;
+	top: 100%;
+	left: 0px;
+}
+
+.show-menu>.menu,
+.show-menu>menu,
 .with-hover .show-hover {
 	visibility: hidden;
 	pointer-events: none;
@@ -61,18 +71,16 @@
 }
 
 .with-hover:hover .show-hover,
-.show-menu:hover > .menu,
+.show-menu:hover>.menu,
+.show-menu:hover>menu,
 .with-hover .show-hover:hover {
 	visibility: visible;
 	pointer-events: auto;
 	opacity: 1;
 }
 
-.show-menu:hover > .menu {
-	bottom: 0px;
-	left: 0px;
-	transform: translateY(100%);
-}
+
+
 
 .hover:hover .hovered {
 	background-color: var(--control-bg-hover);
@@ -81,6 +89,7 @@
 .focus-undim {
 	transition: opacity 0.25s;
 }
+
 .focus-undim:hover,
 .focus-undim:hover .dim,
 .focus-undim:hover .dimmer,

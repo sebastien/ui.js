@@ -25,6 +25,7 @@ label {
 	background-color: transparent;
 }
 
+.hoverable:hover,
 .selectable:hover {
 	background-color: color-mix(in srgb,
 			var(--color-current),

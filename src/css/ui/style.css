@@ -84,7 +84,6 @@
 }
 
 .tabs {
-	background-color: var(--page-bg-alt);
 	padding: var(--pad-2);
 	padding-bottom: 0px;
 	border-bottom: 1px solid (--box-bd);
@@ -98,7 +97,6 @@
 	border: 1px solid var(--box-bd);
 	position: relative;
 	bottom: -1px;
-	background-color: var(--page-bg);
 	cursor: pointer;
 	opacity: 0.5;
 }
