@@ -338,9 +338,11 @@ export class Selected extends Cell {
 						: t === SelectorType.Mapping
 							? this.selector.fields[i]
 							: i;
+				// The input is going to be like `cell.property.…`
+				const path = this.selector.inputs[i].path;
 				this.subscriptions[i] = input.sub(
 					(...rest) => this.onInputUpdated(i, k, ...rest),
-					this.selector.inputs[i].path,
+					path,
 					1,
 				);
 			}
@@ -519,7 +521,7 @@ export class Scope extends Cell {
 				const w = slots[k];
 				// If the given value is a selector, then we create a selection
 				// (ie a derived value).
-				const v = w instanceof Selector ? this.select(w) : w;
+				const v = w instanceof Selector ? this.select(w, k) : w;
 
 				// We only define the own slots
 				const slot = this.slots.hasOwnProperty(k)
@@ -530,8 +532,9 @@ export class Scope extends Cell {
 				// defined.
 				if (replace || slot === undefined) {
 					this.slots[k] = v instanceof Cell ? v : new Value(v, k);
-					// If we had a previous scope cell, we need to unbind it.
-					if (w && w instanceof Cell) {
+					// If we had a previous scope cell, which is different from the assigned
+					// value, we need to unbind it.
+					if (w && w instanceof Cell && w !== v) {
 						w.unbind();
 					}
 				} else if (skipDefined && slot.revision >= -1) {
@@ -771,7 +774,7 @@ export class Scope extends Cell {
 	// Returns a cell the represents the selected value. In the easy case,
 	// where the selector has only one input and no transform, this returns
 	// the select cell.
-	select(selector) {
+	select(selector, name = undefined) {
 		if (!selector) {
 			return null;
 		}
@@ -793,6 +796,9 @@ export class Scope extends Cell {
 			return inputs[0];
 		} else {
 			const cell = new Selected(selector, inputs);
+			if (name) {
+				cell.name = name;
+			}
 			// We'll need to make sure that there's an equivalent unbind
 			cell.bind();
 			return cell;
