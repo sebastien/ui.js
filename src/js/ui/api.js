@@ -17,6 +17,7 @@ import {
 	unique,
 	sorted,
 	toggle,
+	values,
 	set,
 } from "./utils/collections.js";
 import { type, bool, symbols } from "./utils/values.js";
@@ -51,6 +52,7 @@ export const API = {
 	type,
 	copy,
 	entries,
+	values,
 	flatten,
 	filter,
 	grouped,

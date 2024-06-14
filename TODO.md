@@ -3,6 +3,8 @@
 - Syntax: `{.sadasd}` for selectors, `([1,2,4])` for JavaScript,
   otherwise literals.
 
+- Syntax: `selected,item.name->[selected===name?null:name]` is weird.
+
 - Components: should be `x:Icon` or `x-icon` instead of
   `slot name=Icon`.
 
