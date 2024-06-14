@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UIjs ― Tree View</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/" } }
+		</script>
+	<style>
+		.item[data-type="module"]:before {
+			content: "M";
+		}
+	</style>
+
+</head>
+
+<body>
+	<!-- FIXME: We need to sort out the selectors:
+	 1/ Selector references and derivations
+	 2/ JavaScript values
+	 3/ JavaScript code to be executed
+-->
+	<div class="row fit-screen stretched lined nogap">
+		<slot template="Browser" items="(fetch('symbols.json').then(_=>_.json()))"></slot>
+	</div>
+	<!-- ------------------------------------------------------------------
+
+		BROWSER
+
+		------------------------------------------------------------------- -->
+	<template name="Browser" in:items>
+		<div class="row">
+			<slot template="List" items="items" type="'module'"></slot>
+			<!--  TODO: This does not work -->
+			<slot template="List" items="items,type->{console.log('TODO: THAT SHOULD BE SOMETHING items',{type,items})}"
+				type="'module'"></slot>
+		</div>
+	</template>
+
+
+	<!-- ------------------------------------------------------------------
+
+		TREE
+
+		------------------------------------------------------------------- -->
+	<template name="List" in:items in:type out:sorted="items->{console.log('sorted',items),$.sorted(items, _ => _.name)}">
+		<div class="stack fill lined fit-h indent-icon">
+			<ul class="stack items" x:for="item=items">
+				<li class="item selectable" out:data-type="type"><span out:content="item.name"></span></li>
+			</ul>
+		</div>
+	</template>
+
+	<!-- ------------------------------------------------------------------
+		MAIN SCRIPT
+		------------------------------------------------------------------- -->
+	<script type="module">
+		// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
+		import ui from "@ui.js";
+		const data = await fetch("./symbols.json")
+		console.log(data)
+		ui();
+	</script>
+</body>
+
+</html>

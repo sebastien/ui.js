@@ -184,11 +184,7 @@ export class Effect {
 		// this could also be done at the scope level by creating a reducer or
 		// just assigning the node there.
 		if (this.selector?.target && !this.selector?.isMany) {
-			console.log("XXX FIXME Skipping scope.et", {
-				target: this.selector.target,
-				value,
-			});
-			// this.scope.set(this.selector.target, value);
+			this.scope.set(this.selector.target, value);
 		}
 		return this.unify(value, this.value);
 	}
