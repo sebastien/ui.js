@@ -3,6 +3,8 @@ export const Context = {};
 const FIELD_SEP = String.fromCharCode(31);
 Object.freeze(Context);
 
+// TODO: Should be a slot maybe?
+//
 export class Cell {
 	static Id = 0;
 

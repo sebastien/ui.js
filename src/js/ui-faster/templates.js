@@ -91,15 +91,24 @@ export class Application extends Selection {
 	}
 }
 
+// --
+// Takes the given `component` function, and returns its derivation 
+// template, creating it if necessary. The creation of the template inspects
+// the function to extract its arguments signature,
 export const template = (component) => {
 	if (component.template) {
 		return component.template;
 	} else {
+		// We extract the signature from the component function 
+		// definition. Each argument is then assigned in `args`, which
+		// will hold the shape of the input.
 		const args = [];
 		for (const { path, name } of getSignature(component).args) {
 			const input = new Argument(name);
 			assign(args, path, input);
 		}
+		// We create a template effect that starts with an injection of the
+		// arguments into the rendered context.
 		const res = (component.template = new TemplateEffect(
 			new Injection(args),
 			undefined,
@@ -107,10 +116,12 @@ export const template = (component) => {
 			component.name
 		));
 		res.template = component(...args);
+		res.args = args;
 		return res;
 	}
 };
 
+// Creates a new `Selection` out of the given arguments.
 export const select = (args) =>
 	args instanceof Selection ? args : new Selection(new Injection(args));
 
