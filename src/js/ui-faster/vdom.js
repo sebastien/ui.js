@@ -1,5 +1,5 @@
 import { Effect, AttributeEffect, FormattingEffect } from "./effects.js";
-import { Cell } from "./cells.js";
+import { Slot } from "./cells.js";
 import { isObject } from "./utils/types.js";
 import { onError } from "./utils/logging.js";
 
@@ -45,7 +45,7 @@ export class VNode {
 
 			this.attributes.set([ns, name], 			v instanceof Effect
 				? v
-				: v instanceof Cell
+				: v instanceof Slot
 				? new AttributeEffect(v)
 				: v);
 		}
@@ -53,7 +53,7 @@ export class VNode {
 		this.children = children.map((_) =>
 			_ instanceof Effect
 				? _
-				: _ instanceof Cell
+				: _ instanceof Slot
 				? new FormattingEffect(_)
 				: _
 		);
@@ -100,7 +100,7 @@ export class VNode {
 	// NOTE: Only for the VNode.render we need an extra `id` argument, as
 	// the VNode has no id, so it is just using the parent `id`.
 	render(parent, position, context, effector, id) {
-		const existing = context[id + Cell.Node];
+		const existing = context[id + Slot.Node];
 		if (!existing) {
 			const node = this.clone();
 			for (const [path, effect] of this.effects) {
@@ -116,7 +116,7 @@ export class VNode {
 					child.parentNode.removeChild(child);
 				}
 			}
-			context[id + Cell.Node] = node;
+			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node);
 		} else {
 			for (const [path, effect] of this.effects) {

@@ -1,3 +1,5 @@
+// TODO: This needs to support assignment within the signature
+
 // --
 // Retrieves the arguments from a function declaration.
 export const getSignature = (func) => {

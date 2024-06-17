@@ -5,7 +5,7 @@ Object.freeze(Context);
 
 // TODO: Should be a slot maybe?
 //
-export class Cell {
+export class Slot {
 	static Id = 0;
 
 	// These are the offsets in for the identifiers. Ids are incremented
@@ -18,19 +18,19 @@ export class Cell {
 	static Revision = 5;
 
 	static Match(template, data, res = []) {
-		if (template instanceof Cell) {
+		if (template instanceof Slot) {
 			if (template.input) {
-				Cell.Match(template.input, data, res);
+				Slot.Match(template.input, data, res);
 			}
 			res.push([template, data]);
 		} else if (template instanceof Map) {
 			const is_map = data instanceof Map;
 			if (data !== null && data !== undefined) {
 				for (const k of template.keys()) {
-					Cell.Match(
+					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res
+						res,
 					);
 				}
 			}
@@ -38,10 +38,10 @@ export class Cell {
 			const is_map = data instanceof Map;
 			if (data !== null && data !== undefined) {
 				for (const k in template) {
-					Cell.Match(
+					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res
+						res,
 					);
 				}
 			}
@@ -53,9 +53,9 @@ export class Cell {
 		// There's a bit of a trick with the way we manage ids. The first
 		// 10 are reserved, and then we leave 9 identifiers that can be
 		// used by each cell to store additional data in the context.
-		this.id = (1 + Cell.Id++) * 10;
+		this.id = (1 + Slot.Id++) * 10;
 	}
-	
+
 	// --
 	// Tells if the cell is of the given `type:int`.
 	isa(type) {
@@ -67,4 +67,11 @@ export class Cell {
 	}
 }
 
+export class Cell extends Slot {
+	constructor(value = undefined, name = undefined) {
+		super();
+		this.value = value;
+		this.name = name;
+	}
+}
 // EOF

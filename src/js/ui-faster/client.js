@@ -1,7 +1,7 @@
 import { DOMEffector } from "./effectors.js";
 import { h } from "./vdom.js";
 import { template, $ } from "./templates.js";
-import { Cell } from "./cells.js";
+import { Slot } from "./cells.js";
 
 const globals = {
 	context: {},
@@ -18,12 +18,12 @@ const render = (
 ) => {
 	const tmpl = template(component);
 	const ctx = (context[tmpl.id] = context[tmpl.id] ?? Object.create(context));
-	ctx[Cell.Parent] = context;
-	ctx[Cell.Input] = data;
-	if (!ctx[Cell.Node]) {
-		ctx[Cell.Node] = document.createDocumentFragment();
+	ctx[Slot.Parent] = context;
+	ctx[Slot.Input] = data;
+	if (!ctx[Slot.Node]) {
+		ctx[Slot.Node] = document.createDocumentFragment();
 	}
-	const node = ctx[Cell.Node];
+	const node = ctx[Slot.Node];
 	const res = tmpl.render(node, position, ctx, effector);
 	// Appending only at the end is the best way to speed up the initial rendering.
 	if (!node.parentElement) {

@@ -1,6 +1,6 @@
-import { Cell } from "./cells.js";
+import { Slot } from "./cells.js";
 
-export class Effect extends Cell {
+export class Effect extends Slot {
 	constructor(input) {
 		super();
 		this.input = input;
@@ -9,7 +9,6 @@ export class Effect extends Cell {
 	render(node, position, context, effector) {
 		effector.ensureContent(node, position, context[this.id]);
 	}
-
 }
 export class TemplateEffect extends Effect {
 	constructor(inputs, template, args, name) {
@@ -36,8 +35,8 @@ export class ApplicationEffect extends Effect {
 		let ctx = context[this.id];
 		if (!context[this.id]) {
 			ctx = {};
-			ctx[Cell.Parent] = context;
-			ctx[Cell.Input] = context[Cell.Input];
+			ctx[Slot.Parent] = context;
+			ctx[Slot.Input] = context[Slot.Input];
 			context[this.id] = ctx;
 		}
 		return this.template.render(node, position, ctx, effector, this.id);
@@ -53,9 +52,9 @@ export class ConditionalEffect extends Effect {
 		context = this.input.applyContext(context);
 		const value = context[this.input.id];
 		// State is [previousBranchIndex, [...<context for each branch>]]
-		let state = context[this.id + Cell.State];
+		let state = context[this.id + Slot.State];
 		if (!state) {
-			context[this.id + Cell.State] = state = [
+			context[this.id + Slot.State] = state = [
 				undefined,
 				new Array(this.branches.length).fill(null),
 			];
@@ -84,18 +83,17 @@ export class ConditionalEffect extends Effect {
 		}
 
 		// We store the created/updated node
-		return (state[1][i][Cell.Node] = match.render(
+		return (state[1][i][Slot.Node] = match.render(
 			node,
 			position,
 			state[1][i],
 			effector,
-			this.id
+			this.id,
 		));
 	}
 }
 
 export class MappingEffect extends Effect {
-
 	constructor(input, template) {
 		super(input);
 		this.template = template;
@@ -107,14 +105,14 @@ export class MappingEffect extends Effect {
 		const items = context[this.input.id];
 		// We retrieve the corresponding mapping state, typically `undefined`
 		// on the first run.
-		let mapping = context[this.id + Cell.State];
+		let mapping = context[this.id + Slot.State];
 		// We retrieve the revision number, which we set to `1` at first.
-		const revision = (context[this.id + Cell.Revision] =
-			(context[this.id + Cell.Revision] || 0) + 1);
+		const revision = (context[this.id + Slot.Revision] =
+			(context[this.id + Slot.Revision] || 0) + 1);
 		// If there's no mapping defined, we create a new `Map`, which will
 		// be used to hold the state.
 		if (!mapping) {
-			context[this.id + Cell.State] = mapping = new Map();
+			context[this.id + Slot.State] = mapping = new Map();
 		}
 		// Now we iterate over the keys for each item.
 		let i = 0;
@@ -124,7 +122,7 @@ export class MappingEffect extends Effect {
 			// An entry is `[revision, context]`
 			const entry = mapping.get(k);
 			let ctx = (entry && entry[1]) || undefined;
-			// If there's no context, then we have a new key. 
+			// If there's no context, then we have a new key.
 			if (!ctx) {
 				// We start by creating a derived context, so that derivations
 				// won't affect the parent context.
@@ -134,16 +132,16 @@ export class MappingEffect extends Effect {
 				// --
 				// FIXME: That won't nullify other derivations already applied.
 				// We need to detail this.
-				ctx[this.id + Cell.State] = null;
+				ctx[this.id + Slot.State] = null;
 				// We set the basic input for the context as the item's value
 				// and its key.
-				ctx[Cell.Input] = [items[k], k];
+				ctx[Slot.Input] = [items[k], k];
 				// We register the mapped value and context in the mapping.
 				mapping.set(k, [revision, ctx]);
 			} else {
 				// TODO: Shouldn't we detect if there's a change there?
-				ctx[Cell.Input][0] = items[k];
-				ctx[Cell.Input][1] = k;
+				ctx[Slot.Input][0] = items[k];
+				ctx[Slot.Input][1] = k;
 				// Only the revision has changed in the entry.
 				entry[0] = revision;
 			}
@@ -153,7 +151,7 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id
+				this.template.id,
 			);
 		}
 		// TODO: We should remove the ammping items that haven't been updated
@@ -172,16 +170,17 @@ export class FormattingEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
-		const text = context[this.input.id];
+		const input = context[this.input.id];
+		const output = this.format(input);
 		const textNode = context[this.id];
 		if (!textNode) {
 			return (context[this.id] = effector.ensureText(
 				node,
 				position,
-				text
+				output,
 			));
 		} else {
-			textNode.data = text;
+			textNode.data = output;
 			return textNode;
 		}
 	}
@@ -195,7 +194,7 @@ export class AttributeEffect extends Effect {
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		const input = context[this.input.id];
-		const output = this.format ? this.format(input)  : input;
+		const output = this.format ? this.format(input) : input;
 		// TODO: If it's a style, we should merge it as an object
 		node.value = output;
 		return node;
