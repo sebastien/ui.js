@@ -28,12 +28,11 @@
 	<template name="Inspector" in:value out:type="${value|type}" inout:selection="[]" inout:summary="(true)">
 		<slot x:match="type">
 			<slot x:case="object">
-				<ul class="comma curlies dim-ab" x:for="entry=value|entries">
-					<li class="pl-2" on:click="selection=selection,key->{$.toggle([...(selection||[])],key)}.">
-						<span class="selectable mono dim small"><span out:content="entry.key"></span>:</span>
-						<span
-							x:if="entry.value,selection,#->{value === null || value == undefined || typeof value !== 'object' || selection && selection.indexOf(key) !== -1}">
-							<slot template="Inspector" value="entry.value" />
+				<ul class="Object comma curlies dim-ab" x:for="entry=value|entries">
+					<li class="ObjectItem pl-2" on:click="selection=selection,key->{$.toggle([...(selection||[])],key)}.">
+						<span class="ObjectKey selectable mono dim small"><span out:content="entry.key"></span>:</span>
+						<span class="ObjectValue">
+							<slot template="Inspector" value="entry.value" pouet="('pouet')" />
 						</span>
 						<!--
 						<span class="selectable" x:else>…</span>
@@ -42,10 +41,10 @@
 				</ul>
 			</slot>
 			<slot x:case="array">
-				<ul class="comma brackets dim-ab" x:for="entry=value|entries">
-					<li class="pl-2" on:click="selection=selection,key->{$.toggle([...(selection||[])],key)}.">
-						<span class="selectable mono dim small">#<span out:content="entry.key"></span>:</span>
-						<span
+				<ul class="Array comma brackets dim-ab" x:for="entry=value|entries">
+					<li class="ArrayItem pl-2" on:click="selection=selection,key->{$.toggle([...(selection||[])],key)}.">
+						<span class="ArrayKey selectable mono dim small">#<span out:content="entry.key"></span>:</span>
+						<span class="ArrayValue"
 							x:if="entry.value,selection,#->{value === null || value == undefined || typeof value !== 'object' || selection && selection.indexOf(key) !== -1}">
 							<slot template="Inspector" value="entry.value" />
 						</span>
@@ -56,16 +55,17 @@
 				</ul>
 			</slot>
 			<slot x:case="string">
-				<span class="quotes dim-ab" out:content="value"></span>
+				<span class="String quotes dim-ab" out:content="value"></span>
 			</slot>
 			<slot x:case="boolean">
-				<input type="checkbox" disabled out:checked="value->{value ? true : null}"></code>
+				<input class="Boolean" type="checkbox" disabled out:checked="value->{value ? true : null}"></code>
 			</slot>
 			<slot x:case="number">
-				<code out:content="value"></code>
+				<code class="Number" out:content="value"></code>
 			</slot>
 			<slot x:otherwise>
-				<span class="selectable" out:content="type"></span>
+				<span class="Unknown selectable" out:content="type"
+					out:pouet="value,type->{console.log('XXX Unknown',{value,type})}"></span>
 			</slot>
 	</template>
 	<!-- ------------------------------------------------------------------------

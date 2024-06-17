@@ -5,6 +5,11 @@ export class Effect extends Cell {
 		super();
 		this.input = input;
 	}
+
+	render(node, position, context, effector) {
+		effector.ensureContent(node, position, context[this.id]);
+	}
+
 }
 export class TemplateEffect extends Effect {
 	constructor(inputs, template, args, name) {
@@ -90,34 +95,56 @@ export class ConditionalEffect extends Effect {
 }
 
 export class MappingEffect extends Effect {
+
 	constructor(input, template) {
 		super(input);
 		this.template = template;
 	}
+
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
+		// We retrieve the mapped items, which are bound to this cell id.
 		const items = context[this.input.id];
+		// We retrieve the corresponding mapping state, typically `undefined`
+		// on the first run.
 		let mapping = context[this.id + Cell.State];
+		// We retrieve the revision number, which we set to `1` at first.
 		const revision = (context[this.id + Cell.Revision] =
 			(context[this.id + Cell.Revision] || 0) + 1);
-
+		// If there's no mapping defined, we create a new `Map`, which will
+		// be used to hold the state.
 		if (!mapping) {
 			context[this.id + Cell.State] = mapping = new Map();
 		}
+		// Now we iterate over the keys for each item.
 		let i = 0;
+		// Note that the keys `k` will be strings, even if `items` is an Array.
 		for (const k in items) {
-			// Entry is `[revision, context]`
+			// We get any previously stored entry.
+			// An entry is `[revision, context]`
 			const entry = mapping.get(k);
 			let ctx = (entry && entry[1]) || undefined;
+			// If there's no context, then we have a new key. 
 			if (!ctx) {
+				// We start by creating a derived context, so that derivations
+				// won't affect the parent context.
 				ctx = Object.create(context);
-				// We make sure that we can recurse this effect.
+				// We make sure that we can recurse this effect by nullifying
+				// the current node reference.
+				// --
+				// FIXME: That won't nullify other derivations already applied.
+				// We need to detail this.
 				ctx[this.id + Cell.State] = null;
+				// We set the basic input for the context as the item's value
+				// and its key.
 				ctx[Cell.Input] = [items[k], k];
+				// We register the mapped value and context in the mapping.
 				mapping.set(k, [revision, ctx]);
 			} else {
+				// TODO: Shouldn't we detect if there's a change there?
 				ctx[Cell.Input][0] = items[k];
 				ctx[Cell.Input][1] = k;
+				// Only the revision has changed in the entry.
 				entry[0] = revision;
 			}
 			// TODO: We should probably store the output DOM node?
@@ -157,6 +184,21 @@ export class FormattingEffect extends Effect {
 			textNode.data = text;
 			return textNode;
 		}
+	}
+}
+
+export class AttributeEffect extends Effect {
+	constructor(input, format) {
+		super(input);
+		this.format = format;
+	}
+	render(node, position, context, effector) {
+		context = this.input.applyContext(context);
+		const input = context[this.input.id];
+		const output = this.format ? this.format(input)  : input;
+		// TODO: If it's a style, we should merge it as an object
+		node.value = output;
+		return node;
 	}
 }
 // EOF

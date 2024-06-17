@@ -9,7 +9,20 @@ import { Cell } from "./cells.js";
 import { getSignature } from "./utils/inspect.js";
 import { assign } from "./utils/collections.js";
 
-export class Injection extends Cell {
+// --
+// Derivations are cells that have the ability to derive the current context
+// into a new context using `applyContext`. The derivation is idempotent, meaning
+// that `applyContext(context)` will return the same result given the same context,
+// typically by mutating the `context` and registering the return value within it.
+export class Derivation extends Cell {
+	// When a cell is applied to given context, it can create a derived
+	// context.
+	applyContext(context) {
+		return context;
+	}
+}
+
+export class Injection extends Derivation {
 	constructor(args) {
 		super();
 		this.args = args;
@@ -26,9 +39,10 @@ export class Injection extends Cell {
 		return derived;
 	}
 }
-export class Selection extends Cell {
+
+export class Selection extends Derivation {
 	then(func) {
-		return new Derivation(this, func);
+		return new Application(this, func);
 	}
 
 	fmt(text) {
@@ -50,6 +64,7 @@ export class Selection extends Cell {
 		}
 		return new ConditionalEffect(this, branches);
 	}
+
 	map(component) {
 		return new MappingEffect(this, template(component));
 	}
@@ -62,7 +77,7 @@ export class Argument extends Selection {
 	}
 }
 
-export class Derivation extends Selection {
+export class Application extends Selection {
 	constructor(input, transform) {
 		super();
 		this.input = input;

@@ -141,6 +141,15 @@ export class SlotEffector extends Effector {
 							: null,
 					),
 				);
+		// FIXME: When  we're passing a slot down derived from a cell within
+		// a for loop, eg:
+		// - `x:for="entry=value|entries"
+		// - `<slot value=entry.value>`
+		// 
+		// This means that for every update, `entry` must be fetched from
+		// the parent scope, however as `entry` will change for each
+		// iteration it can't be subscribed to. Note that this only applied
+		// to cells that represented an iterated value.
 
 		// If there was a template name given, it means we're rendering
 		// a component, and so we need to create an isolated scope. Otherwise
@@ -149,6 +158,7 @@ export class SlotEffector extends Effector {
 			? scope.derive(cells)
 			: new EffectScope(null, scope.path, scope.key).define(cells);
 		const subscriptions = subscope.reactions(reactors, scope);
+		console.log("XXX BINDING", this.template, ":", this.bindings)
 		const effect = new (this.selector?.isMany
 			? MappingSlotEffect
 			: SingleSlotEffect)(

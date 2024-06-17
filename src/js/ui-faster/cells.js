@@ -6,6 +6,8 @@ Object.freeze(Context);
 export class Cell {
 	static Id = 0;
 
+	// These are the offsets in for the identifiers. Ids are incremented
+	// by a step of 10 and start at 10.
 	static Parent = 0;
 	static Input = 1;
 	static Node = 2;
@@ -44,19 +46,18 @@ export class Cell {
 		}
 		return res;
 	}
+
 	constructor() {
 		// There's a bit of a trick with the way we manage ids. The first
 		// 10 are reserved, and then we leave 9 identifiers that can be
 		// used by each cell to store additional data in the context.
 		this.id = (1 + Cell.Id++) * 10;
 	}
-
-	applyContext(context, data) {
-		return context;
-	}
-
-	render(node, position, context, effector) {
-		effector.ensureContent(node, position, context[this.id]);
+	
+	// --
+	// Tells if the cell is of the given `type:int`.
+	isa(type) {
+		return this.id % type === 0;
 	}
 
 	toString() {

@@ -1,10 +1,18 @@
-import { Effect, FormattingEffect } from "./effects.js";
+import { Effect, AttributeEffect, FormattingEffect } from "./effects.js";
 import { Cell } from "./cells.js";
 import { isObject } from "./utils/types.js";
 import { onError } from "./utils/logging.js";
 
 export class VNode {
+
+	// --
+	// Returns a list of effects defined in the given node, recursively.
 	static Effects(node, path = [], res = []) {
+		for (const [k,v] of node.attributes.entries()) {
+			if (v instanceof Effect) {
+				res.push([[...path, k], v]);
+			}
+		}
 		for (let i = 0; i < node.children.length; i++) {
 			const v = node.children[i];
 			if (v instanceof Effect) {
@@ -14,6 +22,10 @@ export class VNode {
 			}
 		}
 		return res;
+	}
+
+	static ResolvePath(node, path) {
+		return path.reduce((r, v) => v instanceof Array ? (v[0]?r.getAttributeNodeNS(v[0],v[1]):r.getAttributeNode(v[1])) :r.childNodes[v], node);
 	}
 
 	constructor(ns, name, attributes, children) {
@@ -29,7 +41,13 @@ export class VNode {
 			if (name === "_") {
 				name = "class";
 			}
-			this.attributes.set([ns, name], attributes[k]);
+			const v = attributes[k]
+
+			this.attributes.set([ns, name], 			v instanceof Effect
+				? v
+				: v instanceof Cell
+				? new AttributeEffect(v)
+				: v);
 		}
 		// We make sure that cells are wrapped in formatting effects.
 		this.children = children.map((_) =>
@@ -86,17 +104,23 @@ export class VNode {
 		if (!existing) {
 			const node = this.clone();
 			for (const [path, effect] of this.effects) {
-				const child = path.reduce((r, v) => r.childNodes[v], node);
+				// Path is like `[int|[str|undefined,str]]`
+				const child = VNode.ResolvePath(node, path);
 				effect.render(child, position, context, effector);
-				// FIXME: This should probably be replacing the placeholder?
-				// It's a first render, so we keep track of the placeholder
-				child.parentNode.removeChild(child);
+				switch (child.nodeType) {
+					case Node.ATTRIBUTE_NODE:
+						break
+					default:
+					// FIXME: This should probably be replacing the placeholder?
+					// It's a first render, so we keep track of the placeholder
+					child.parentNode.removeChild(child);
+				}
 			}
 			context[id + Cell.Node] = node;
 			return effector.appendChild(parent, node);
 		} else {
 			for (const [path, effect] of this.effects) {
-				const child = path.reduce((r, v) => r.childNodes[v], existing);
+				const child = VNode.ResolvePath(existing, path);
 				effect.render(child, position, context, effector);
 			}
 			return existing;
@@ -104,6 +128,9 @@ export class VNode {
 	}
 }
 
+// --
+// Defines a proxy behaviour that dynamically creates `VNode` factories
+// within a given namespace.
 class VDOMFactoryProxy {
 	constructor(namespace) {
 		this.namespace = namespace;
