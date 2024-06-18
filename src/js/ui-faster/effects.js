@@ -1,4 +1,4 @@
-import { Slot } from "./cells.js";
+import { Context, Slot } from "./cells.js";
 
 export class Effect extends Slot {
 	constructor(input) {
@@ -170,8 +170,18 @@ export class FormattingEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
+		const render_id = this.id + Slot.Render;
+		console.log("RID", this.id, Slot.Render, render_id);
+		if (!context[render_id]) {
+			const self = this;
+			const formatting_rerender = () =>
+				self.render(node, position, context, effector);
+			context[render_id] = formatting_rerender;
+			this.input.sub(formatting_rerender, context);
+			console.log("XXXX SUB RENDER", context);
+		}
 		const input = context[this.input.id];
-		const output = this.format(input);
+		const output = this.format ? this.format(input) : `${input}`;
 		const textNode = context[this.id];
 		if (!textNode) {
 			return (context[this.id] = effector.ensureText(
@@ -198,6 +208,57 @@ export class AttributeEffect extends Effect {
 		// TODO: If it's a style, we should merge it as an object
 		node.value = output;
 		return node;
+	}
+}
+
+export class EventHandlerEffect extends Effect {
+	// --
+	// Ensures that the given `handler` function has a corresponding effect.
+	static Ensure(handler) {
+		if (!handler.effect) {
+			handler.effect = new EventHandlerEffect(handler);
+		}
+		return handler.effect;
+	}
+	constructor(handler, event) {
+		super();
+		this.handler = handler;
+		this.event = event;
+		this.wrapper = (event, ...rest) => {
+			// TODO: We should set the context we're in.
+			const res = handler(event);
+			// TODO: We should do post-processing.
+			return res;
+		};
+		const uijs = (globalThis.uijs = globalThis.uijs || {});
+		uijs[`H${this.id}`] = this.wrapper;
+	}
+
+	render(node, position, context, effector) {
+		if (context[this.id + Slot.State] === undefined) {
+			const state = (context[this.id + Slot.State] = {
+				context: context,
+				wrapper: (...args) => {
+					Context.Run(context, this.wrapper, args);
+				},
+			});
+			// TODO: Should include the context id in the wrapper
+			node.ownerElement.addEventListener(
+				node.nodeName.substring(2),
+				state.wrapper,
+			);
+			node.ownerElement.removeAttributeNode(node);
+		}
+		// context = this.input.applyContext(context);
+		// const input = context[this.input.id];
+		// const output = this.format ? this.format(input) : input;
+		// // TODO: If it's a style, we should merge it as an object
+		// node.value = output;
+		return node;
+	}
+
+	toString() {
+		return `globalThis.uijs?.H${this.id}(...arguments)`;
 	}
 }
 // EOF

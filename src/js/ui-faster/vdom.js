@@ -1,14 +1,30 @@
-import { Effect, AttributeEffect, FormattingEffect } from "./effects.js";
+import {
+	Effect,
+	AttributeEffect,
+	FormattingEffect,
+	EventHandlerEffect,
+} from "./effects.js";
 import { Slot } from "./cells.js";
 import { isObject } from "./utils/types.js";
 import { onError } from "./utils/logging.js";
 
-export class VNode {
+const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
 
+function camelToKebab(str) {
+	return (
+		str
+			// Look for any lowercase letter followed by an uppercase letter
+			.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+			// Convert the entire string to lowercase
+			.toLowerCase()
+	);
+}
+
+export class VNode {
 	// --
 	// Returns a list of effects defined in the given node, recursively.
 	static Effects(node, path = [], res = []) {
-		for (const [k,v] of node.attributes.entries()) {
+		for (const [k, v] of node.attributes.entries()) {
 			if (v instanceof Effect) {
 				res.push([[...path, k], v]);
 			}
@@ -25,7 +41,15 @@ export class VNode {
 	}
 
 	static ResolvePath(node, path) {
-		return path.reduce((r, v) => v instanceof Array ? (v[0]?r.getAttributeNodeNS(v[0],v[1]):r.getAttributeNode(v[1])) :r.childNodes[v], node);
+		return path.reduce(
+			(r, v) =>
+				v instanceof Array
+					? v[0]
+						? r.getAttributeNodeNS(v[0], v[1])
+						: r.getAttributeNode(v[1])
+					: r.childNodes[v],
+			node,
+		);
 	}
 
 	constructor(ns, name, attributes, children) {
@@ -41,21 +65,32 @@ export class VNode {
 			if (name === "_") {
 				name = "class";
 			}
-			const v = attributes[k]
-
-			this.attributes.set([ns, name], 			v instanceof Effect
-				? v
-				: v instanceof Slot
-				? new AttributeEffect(v)
-				: v);
+			const v = attributes[k];
+			const m = RE_ATTRIBUTE.exec(k);
+			if (m && m.groups.event) {
+				name = name.toLowerCase();
+				this.attributes.set(
+					[ns, name],
+					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v,
+				);
+			} else {
+				this.attributes.set(
+					[ns, camelToKebab(name)],
+					v instanceof Effect
+						? v
+						: v instanceof Slot
+							? new AttributeEffect(v)
+							: v,
+				);
+			}
 		}
 		// We make sure that cells are wrapped in formatting effects.
 		this.children = children.map((_) =>
 			_ instanceof Effect
 				? _
 				: _ instanceof Slot
-				? new FormattingEffect(_)
-				: _
+					? new FormattingEffect(_)
+					: _,
 		);
 		this.template = this.materialize();
 		this._effects = null;
@@ -109,11 +144,11 @@ export class VNode {
 				effect.render(child, position, context, effector);
 				switch (child.nodeType) {
 					case Node.ATTRIBUTE_NODE:
-						break
+						break;
 					default:
-					// FIXME: This should probably be replacing the placeholder?
-					// It's a first render, so we keep track of the placeholder
-					child.parentNode.removeChild(child);
+						// FIXME: This should probably be replacing the placeholder?
+						// It's a first render, so we keep track of the placeholder
+						child.parentNode.removeChild(child);
 				}
 			}
 			context[id + Slot.Node] = node;
@@ -147,7 +182,7 @@ class VDOMFactoryProxy {
 					: new VNode(this.namespace, property, null, [
 							attributes,
 							...args,
-					  ]);
+						]);
 			scope.set(property, res);
 			return res;
 		}

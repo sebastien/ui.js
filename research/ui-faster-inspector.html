@@ -21,9 +21,10 @@
 		const Inspector = (value, isExpanded) => {
 			console.log("EXPANDED", isExpanded)
 			const toggleExpanded = (event) => {
-				console.log("EXPANDED HANDLER", event)
+				console.log("EXPANDED HANDLER", event, isExpanded)
+				isExpanded.toggle()
 			}
-			return value
+			return h.span(isExpanded, value
 				.then(_ => (_ === undefined || _ === null ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
 				.match({
 					[["object", "map"]]: isExpanded.match({
@@ -33,7 +34,7 @@
 							value.map((value, key) => h.li(
 								{_: "pl-2"},
 								h.span({_: "mono dim small"}, key.then(_ => `${_}: `)), value.apply(Inspector)))),
-						"": h.ul({_: "comma curlies dim-ab"}, "Object ", value.fmt(_ => `${Object.keys(_).length}`), " keys")
+						"": h.ul({_: "comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.fmt(_ => `${Object.keys(_).length}`), " keys")
 					}),
 					"array": h.ul(
 						{_: "comma brackets dim-ab"},
@@ -42,7 +43,7 @@
 							{_: "pl-2"},
 							h.span({_: "mono dim small"}, key.then(_ => `#${_}: `)), value.apply(Inspector)))),
 					"": h.span(value.fmt())
-				})
+				}))
 		}
 
 

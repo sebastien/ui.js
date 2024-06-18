@@ -5,7 +5,7 @@ import {
 	ApplicationEffect,
 	FormattingEffect,
 } from "./effects.js";
-import { Slot, Cell } from "./cells.js";
+import { Context, Slot, Cell } from "./cells.js";
 import { getSignature } from "./utils/inspect.js";
 import { assign } from "./utils/collections.js";
 
@@ -23,14 +23,17 @@ export class Derivation extends Slot {
 }
 
 export class Injection extends Derivation {
-	constructor(args) {
+	constructor(args, derived = false) {
 		super();
 		this.args = args;
+		// When `derived` is true, the new context will inherit from the parent
+		// context, otherwise it will be blank.
+		this.derived = derived;
 	}
 	applyContext(context) {
 		const data = context[Slot.Input];
 		const derived = (context[this.id] =
-			context[this.id] ?? Object.create(context));
+			context[this.id] ?? (this.derived ? Object.create(context) : {}));
 		derived[Slot.Parent] = context;
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of Slot.Match(this.args, data)) {
@@ -73,12 +76,75 @@ export class Selection extends Derivation {
 	map(component) {
 		return new MappingEffect(this, template(component));
 	}
+
+	// ========================================================================
+	// CONTEXT-RELATED
+	// ========================================================================
+
+	sub(handler, context = Context.Get()) {
+		if (context) {
+			const subs = (context[this.id + Slot.Sub] =
+				context[this.id + Slot.Sub] ?? []);
+			subs.push(handler);
+			console.log("SUB", this.id, ":", context, handler);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	unsub(handler, context = Context.Get()) {
+		if (context) {
+			const subs = (context[this.id + Slot.PubSub] =
+				context[this.id + Slot.PubSub] ?? []);
+			const i = subs.indexOf(handler);
+			if (i >= 0) {
+				subs.splice(i, 1);
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
 }
 
 export class Argument extends Selection {
 	constructor(name) {
 		super(name);
 		this.name = name;
+	}
+
+	get value() {
+		return this.get();
+	}
+
+	set value(value) {
+		this.set(value);
+	}
+
+	// TODO: Should this be there?
+	set(value) {
+		const context = Context.Stack.at(-1);
+		if (context) {
+			const previous = context[this.id];
+			context[this.id] = value;
+			console.log("SET", this.id, "=", value, ":", context);
+			// TODO: Should we update the revision?
+			return previous;
+		} else {
+			throw new Exception("Cell.set() invoked outside of context");
+		}
+	}
+
+	get() {
+		const context = Context.Stack.at(-1);
+		return context ? context[this.id] : context;
+	}
+
+	toggle() {
+		return this.set(this.get() ? false : true);
 	}
 }
 
@@ -108,7 +174,6 @@ export const template = (component) => {
 		// definition. Each argument is then assigned in `args`, which
 		// will hold the shape of the input.
 		const args = [];
-		console.log("SIG", getSignature(component));
 		for (const { path, name } of getSignature(component).args) {
 			const input = new Argument(name);
 			assign(args, path, input);
@@ -116,7 +181,8 @@ export const template = (component) => {
 		// We create a template effect that starts with an injection of the
 		// arguments into the rendered context.
 		const res = (component.template = new TemplateEffect(
-			new Injection(args),
+			// A `template` is for a component, so the injection is *not* derived.
+			new Injection(args, false),
 			undefined,
 			args,
 			component.name,
