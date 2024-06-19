@@ -17,7 +17,7 @@ export class Context {
 			Context.Stack.pop();
 			return true;
 		} else {
-			return False;
+			return false;
 		}
 	}
 	static Run(context, functor, args) {
@@ -35,13 +35,15 @@ export class Slot {
 
 	// These are the offsets in for the identifiers. Ids are incremented
 	// by a step of 10 and start at 10.
-	static Parent = 1; // Offset for the parent context
-	static Input = 2; // Offset of the input
-	static Node = 3; // Offset of the node
-	static State = 4; // Offset of the state
-	static Render = 5; // Offset of the render data
-	static Revision = 6; // Offset of the revision number
-	static Sub = 7; // Offset of the pub/sub
+	static Owner = "owner"; // Offset for the parent context
+	static Parent = "parent"; // Offset for the parent context
+	static Input = "input"; // Offset of the input
+	static Node = 1; // Offset of the node
+	static State = 2; // Offset of the state
+	static Render = 3; // Offset of the render data
+	static Value = 4; // Offset of the revision number
+	static Revision = 5; // Offset of the revision number
+	static Sub = 6; // Offset of the pub/sub
 
 	static Match(template, data, res = []) {
 		if (template instanceof Slot) {
@@ -94,12 +96,51 @@ export class Slot {
 	}
 }
 
-// FIXME: Not sure what Cell is for
-export class Cell extends Slot {
-	constructor(value = undefined, name = undefined) {
-		super();
-		this.default = value;
-		this.name = name;
+export class Observable {
+	constructor(value) {
+		this.value = value;
+		this.subs = undefined;
+	}
+
+	pub(value, context=Context.Get()) {
+		if (context) {
+			if (this.subs) {
+				let count = 0;
+				for (const handler of this.subs) {
+					count += 1;
+					// TODO: Should catch exceptions
+					if (handler(value, this, context) === false) {
+						break
+					}
+				}
+				return count 
+			} else {
+				null
+			}
+		} else {
+			return undefined
+		}
+	}
+
+	sub(handler) {
+		const subs = this.subs = this.subs ?? [];
+		subs.push(handler);
+		return true;
+	}
+
+	unsub(handler) {
+		if (this.subs) {
+			const i = this.subs.indexOf(handler);
+			if (i >= 0) {
+				this.subs.splice(i, 1);
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 }
+
 // EOF

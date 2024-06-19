@@ -18,6 +18,7 @@ const render = (
 ) => {
 	const tmpl = template(component);
 	const ctx = (context[tmpl.id] = context[tmpl.id] ?? Object.create(context));
+	ctx[Slot.Owner] = tmpl;
 	ctx[Slot.Parent] = context;
 	ctx[Slot.Input] = data;
 	if (!ctx[Slot.Node]) {

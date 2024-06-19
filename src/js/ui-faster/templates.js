@@ -5,7 +5,7 @@ import {
 	ApplicationEffect,
 	FormattingEffect,
 } from "./effects.js";
-import { Context, Slot, Cell } from "./cells.js";
+import { Context, Slot, Observable  } from "./cells.js";
 import { getSignature } from "./utils/inspect.js";
 import { assign } from "./utils/collections.js";
 
@@ -34,6 +34,7 @@ export class Injection extends Derivation {
 		const data = context[Slot.Input];
 		const derived = (context[this.id] =
 			context[this.id] ?? (this.derived ? Object.create(context) : {}));
+		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of Slot.Match(this.args, data)) {
@@ -81,34 +82,15 @@ export class Selection extends Derivation {
 	// CONTEXT-RELATED
 	// ========================================================================
 
-	sub(handler, context = Context.Get()) {
-		if (context) {
-			const subs = (context[this.id + Slot.Sub] =
-				context[this.id + Slot.Sub] ?? []);
-			subs.push(handler);
-			console.log("SUB", this.id, ":", context, handler);
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	unsub(handler, context = Context.Get()) {
-		if (context) {
-			const subs = (context[this.id + Slot.PubSub] =
-				context[this.id + Slot.PubSub] ?? []);
-			const i = subs.indexOf(handler);
-			if (i >= 0) {
-				subs.splice(i, 1);
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
+	applyContext(context) {
+		const ctx = super.applyContext(context)
+		// We define a subscription array for the selection.
+		ctx[this.id + Slot.Sub] = new Observable();
+		return ctx;
 	}
 }
+
+
 
 export class Argument extends Selection {
 	constructor(name) {
@@ -129,12 +111,14 @@ export class Argument extends Selection {
 		const context = Context.Stack.at(-1);
 		if (context) {
 			const previous = context[this.id];
-			context[this.id] = value;
+			context[this.id][0] = value;
 			console.log("SET", this.id, "=", value, ":", context);
+			this.pub(value, context)
 			// TODO: Should we update the revision?
 			return previous;
 		} else {
-			throw new Exception("Cell.set() invoked outside of context");
+			console.error("COULD NOT SET, NO CONTEXT", this, context)
+			throw new Error("Cell.set() invoked outside of context");
 		}
 	}
 
@@ -198,14 +182,15 @@ export const select = Object.assign(
 	(args) =>
 		args instanceof Selection ? args : new Selection(new Injection(args)),
 	{
-		cells: new Proxy(
-			{},
-			{
-				get: (scope, property) => {
-					return new Cell(undefined, property);
-				},
-			},
-		),
+		// NOTE: Disabling
+		// cells: new Proxy(
+		// 	{},
+		// 	{
+		// 		get: (scope, property) => {
+		// 			return new Cell(undefined, property);
+		// 		},
+		// 	},
+		// ),
 	},
 );
 

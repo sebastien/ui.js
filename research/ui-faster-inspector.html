@@ -19,9 +19,7 @@
 		import {h, $, render} from "@ui/client.js"
 
 		const Inspector = (value, isExpanded) => {
-			console.log("EXPANDED", isExpanded)
 			const toggleExpanded = (event) => {
-				console.log("EXPANDED HANDLER", event, isExpanded)
 				isExpanded.toggle()
 			}
 			return h.span(isExpanded, value

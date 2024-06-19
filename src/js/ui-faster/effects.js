@@ -34,9 +34,11 @@ export class ApplicationEffect extends Effect {
 		// one, so that we don't leak values.
 		let ctx = context[this.id];
 		if (!context[this.id]) {
-			ctx = {};
-			ctx[Slot.Parent] = context;
-			ctx[Slot.Input] = context[Slot.Input];
+			ctx = {
+			[Slot.Owner] : this,
+			[Slot.Parent] : context,
+			[Slot.Input] : context[Slot.Input],
+			};
 			context[this.id] = ctx;
 		}
 		return this.template.render(node, position, ctx, effector, this.id);
@@ -79,7 +81,12 @@ export class ConditionalEffect extends Effect {
 				console.log("TODO: Conditional unmoutn previous branch", state);
 			}
 			state[0] = i;
-			state[1][i] = state[1][i] ?? Object.create(context);
+			if (!state[1][i]) {
+				const ctx = Object.create(context);
+				ctx[Slot.Owner] = this;
+				ctx[Slot.Parent] = context;
+				state[1][i] = ctx;
+			}
 		}
 
 		// We store the created/updated node
@@ -127,6 +134,8 @@ export class MappingEffect extends Effect {
 				// We start by creating a derived context, so that derivations
 				// won't affect the parent context.
 				ctx = Object.create(context);
+				ctx[Slot.Parent] = context;
+				ctx[Slot.Owner] = this;
 				// We make sure that we can recurse this effect by nullifying
 				// the current node reference.
 				// --
@@ -171,7 +180,6 @@ export class FormattingEffect extends Effect {
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		const render_id = this.id + Slot.Render;
-		console.log("RID", this.id, Slot.Render, render_id);
 		if (!context[render_id]) {
 			const self = this;
 			const formatting_rerender = () =>
@@ -182,6 +190,7 @@ export class FormattingEffect extends Effect {
 		}
 		const input = context[this.input.id];
 		const output = this.format ? this.format(input) : `${input}`;
+		console.log("RID", this.id, Slot.Render, render_id, {input,output});
 		const textNode = context[this.id];
 		if (!textNode) {
 			return (context[this.id] = effector.ensureText(
@@ -235,6 +244,8 @@ export class EventHandlerEffect extends Effect {
 	}
 
 	render(node, position, context, effector) {
+		console.log("EVENT HANDLER", context);
+	
 		if (context[this.id + Slot.State] === undefined) {
 			const state = (context[this.id + Slot.State] = {
 				context: context,
