@@ -22,7 +22,7 @@
 			const toggleExpanded = (event) => {
 				isExpanded.toggle()
 			}
-			return h.span(isExpanded, value
+			return value
 				.then(_ => (_ === undefined || _ === null ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
 				.match({
 					[["object", "map"]]: isExpanded.match({
@@ -41,7 +41,7 @@
 							{_: "pl-2"},
 							h.span({_: "mono dim small"}, key.then(_ => `#${_}: `)), value.apply(Inspector)))),
 					"": h.span(value.fmt())
-				}))
+				})
 		}
 
 

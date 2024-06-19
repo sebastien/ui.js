@@ -122,6 +122,7 @@ export class Observable {
 	}
 
 	pub(value) {
+			console.log("PUB", value)
 		if (this.subs) {
 			let count = 0;
 			for (const handler of this.subs) {

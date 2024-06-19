@@ -6,6 +6,23 @@ export class Effect extends Slot {
 		this.input = input;
 	}
 
+	subrender(node, position, context, effector) {
+		const render_id = this.id + Slot.Render;
+		if (!context[render_id]) {
+			const rerender = () =>
+				this.render(node, position, context, effector);
+			context[render_id] = rerender;
+			this.input.sub(rerender, context);
+		}
+	}
+
+	unsubrender( context) {
+		const render_id = this.id + Slot.Render;
+		if (context[render_id]) {
+			this.input.sub(context[render_id],context);
+		}
+	}
+
 	render(node, position, context, effector) {
 		effector.ensureContent(node, position, context[this.id]);
 	}
@@ -51,10 +68,13 @@ export class ConditionalEffect extends Effect {
 		this.branches = branches;
 	}
 	render(node, position, context, effector) {
+		console.log("CONDITIONAL RENDER", {node,position,context,effector})
 		context = this.input.applyContext(context);
+		this.subrender(node,position,context,effector)
 		const value = context[this.input.id];
 		// State is [previousBranchIndex, [...<context for each branch>]]
 		let state = context[this.id + Slot.State];
+		console.log("COND VALUE", value, "->", state)
 		if (!state) {
 			context[this.id + Slot.State] = state = [
 				undefined,
@@ -179,14 +199,7 @@ export class FormattingEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
-		const render_id = this.id + Slot.Render;
-		// Create
-		if (!context[render_id]) {
-			const formatting_rerender = () =>
-				this.render(node, position, context, effector);
-			context[render_id] = formatting_rerender;
-			this.input.sub(formatting_rerender, context);
-		}
+		this.subrender(node,position,context,effector)
 		const input = context[this.input.id];
 		const output = this.format ? this.format(input) : `${input}`;
 		const textNode = context[this.id];
