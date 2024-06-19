@@ -26,6 +26,7 @@ export const onSlotNode = (processor, node, root, templateName) => {
 	// for (const attr of [...(node.attributes || [])]) {
 	// 	node.removeAttribute(attr.name);
 	// }
+	console.log("XXX SLOT BINDINGS:", bindings);
 
 	// If the node has a `template` node, then the contents will be interpreted
 	// as the inputs to be given to the template upon rendering.

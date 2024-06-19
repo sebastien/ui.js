@@ -149,6 +149,7 @@ export class SlotEffector extends Effector {
 			subscriptions
 		).init();
 
+		console.log("XXX SLOT CELLS", cells, this.bindings);
 		return this.templateType === "sel"
 			? new DynamicTemplateEffect(
 					this,

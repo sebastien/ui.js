@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>UIjs ― Tree View</title>
+	<title>UI.js ― Tree View</title>
 	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
 	<script type="importmap">
 			{ "imports": { "@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/" } }
@@ -14,8 +14,7 @@
 <body>
 	<div class="row fit-screen stretched lined nogap">
 		<div class="stack w-2col bd shadow-2 rounded shadow-left shadow-8 bg-3 pad-4 scroll-v">
-			<slot template="Tree" items="(fetch('tree.json').then(_=>_.json()))"
-				debug-items="([{label:'A',children:[{label:'B0',children:[{label:'C0'}]},{label:'B1'}]}])" />
+			<slot template="Tree" items="($.getJSON('tree.json'))" />
 		</div>
 	</div>
 	<!-- ------------------------------------------------------------------
@@ -25,6 +24,7 @@
 		------------------------------------------------------------------- -->
 	<template name="Tree" in:items>
 		<div class="stack fill lined fit-h indent-icon">
+			<span out:content="items|debug|count"></span>
 			<ul class="stack" x:for="item=items">
 				<slot template="Node" item="item"></slot>
 			</ul>
@@ -76,7 +76,6 @@
 		MAIN SCRIPT
 		------------------------------------------------------------------- -->
 	<script type="module">
-		// import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
 		import ui from "@ui.js";
 		ui();
 	</script>
