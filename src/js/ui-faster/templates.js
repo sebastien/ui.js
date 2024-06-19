@@ -85,8 +85,20 @@ export class Selection extends Derivation {
 	applyContext(context) {
 		const ctx = super.applyContext(context)
 		// We define a subscription array for the selection.
-		ctx[this.id + Slot.Sub] = new Observable();
+		if (ctx[this.id+Slot.Value] === undefined) {
+			ctx[this.id + Slot.Value] = new Observable(undefined, ctx, this.id);
+		}
 		return ctx;
+	}
+
+	sub(handler, context=Context.Get()) {
+		const obs = context && context[this.id + Slot.Value];
+		return obs ? obs.sub(handler) : null;
+	}
+
+	unsub(handler, context=Context.Get()) {
+		const obs = context && context[this.id + Slot.Value];
+		return obs ? obs.unsub(handler) : null;
 	}
 }
 
@@ -107,14 +119,11 @@ export class Argument extends Selection {
 	}
 
 	// TODO: Should this be there?
-	set(value) {
-		const context = Context.Stack.at(-1);
+	set(value, context=Context.Get()) {
 		if (context) {
-			const previous = context[this.id];
-			context[this.id][0] = value;
-			console.log("SET", this.id, "=", value, ":", context);
-			this.pub(value, context)
-			// TODO: Should we update the revision?
+			const obs = context[this.id+Slot.Value];
+			const previous = obs.value;
+			obs.set(value)
 			return previous;
 		} else {
 			console.error("COULD NOT SET, NO CONTEXT", this, context)

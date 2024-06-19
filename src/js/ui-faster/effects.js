@@ -180,17 +180,15 @@ export class FormattingEffect extends Effect {
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		const render_id = this.id + Slot.Render;
+		// Create
 		if (!context[render_id]) {
-			const self = this;
 			const formatting_rerender = () =>
-				self.render(node, position, context, effector);
+				this.render(node, position, context, effector);
 			context[render_id] = formatting_rerender;
 			this.input.sub(formatting_rerender, context);
-			console.log("XXXX SUB RENDER", context);
 		}
 		const input = context[this.input.id];
 		const output = this.format ? this.format(input) : `${input}`;
-		console.log("RID", this.id, Slot.Render, render_id, {input,output});
 		const textNode = context[this.id];
 		if (!textNode) {
 			return (context[this.id] = effector.ensureText(
@@ -244,8 +242,6 @@ export class EventHandlerEffect extends Effect {
 	}
 
 	render(node, position, context, effector) {
-		console.log("EVENT HANDLER", context);
-	
 		if (context[this.id + Slot.State] === undefined) {
 			const state = (context[this.id + Slot.State] = {
 				context: context,

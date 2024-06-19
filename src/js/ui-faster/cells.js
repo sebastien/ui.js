@@ -38,12 +38,11 @@ export class Slot {
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
 	static Input = "input"; // Offset of the input
-	static Node = 1; // Offset of the node
-	static State = 2; // Offset of the state
-	static Render = 3; // Offset of the render data
-	static Value = 4; // Offset of the revision number
-	static Revision = 5; // Offset of the revision number
-	static Sub = 6; // Offset of the pub/sub
+	static Value = 1; // Offset of the observable value
+	static Revision = 2; // Offset of the revision number
+	static Node = 3; // Offset of the node
+	static State = 4; // Offset of the state
+	static Render = 5; // Offset of the render data
 
 	static Match(template, data, res = []) {
 		if (template instanceof Slot) {
@@ -97,28 +96,44 @@ export class Slot {
 }
 
 export class Observable {
-	constructor(value) {
-		this.value = value;
+
+	//--
+	//Observables wrap a value, and map it to a specific id within a context.
+	constructor(value, context, id) {
+		this.id = id
 		this.subs = undefined;
+		this.context = context;
+		this.revision = -1;
+		if (value !== undefined){this.set(value)}
 	}
 
-	pub(value, context=Context.Get()) {
-		if (context) {
-			if (this.subs) {
-				let count = 0;
-				for (const handler of this.subs) {
-					count += 1;
-					// TODO: Should catch exceptions
-					if (handler(value, this, context) === false) {
-						break
-					}
+	get value() {
+		return this.context[this.id]
+	}
+
+	set(value) {
+		if (this.revision === -1 || value !== this.value) {
+			// If the value changes, we updated the context, local value,
+			// revision number and 
+			this.context[this.id] = value;
+			this.revision++;
+			this.pub(value)
+		}
+	}
+
+	pub(value) {
+		if (this.subs) {
+			let count = 0;
+			for (const handler of this.subs) {
+				count += 1;
+				// TODO: Should catch exceptions
+				if (handler(value, this) === false) {
+					break
 				}
-				return count 
-			} else {
-				null
 			}
+			return count 
 		} else {
-			return undefined
+			null
 		}
 	}
 
