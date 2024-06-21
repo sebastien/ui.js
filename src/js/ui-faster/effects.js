@@ -16,10 +16,10 @@ export class Effect extends Slot {
 		}
 	}
 
-	unsubrender( context) {
+	unsubrender(context) {
 		const render_id = this.id + Slot.Render;
 		if (context[render_id]) {
-			this.input.sub(context[render_id],context);
+			this.input.sub(context[render_id], context);
 		}
 	}
 
@@ -52,9 +52,9 @@ export class ApplicationEffect extends Effect {
 		let ctx = context[this.id];
 		if (!context[this.id]) {
 			ctx = {
-			[Slot.Owner] : this,
-			[Slot.Parent] : context,
-			[Slot.Input] : context[Slot.Input],
+				[Slot.Owner]: this,
+				[Slot.Parent]: context,
+				[Slot.Input]: context[Slot.Input],
 			};
 			context[this.id] = ctx;
 		}
@@ -68,26 +68,26 @@ export class ConditionalEffect extends Effect {
 		this.branches = branches;
 	}
 	render(node, position, context, effector) {
-		console.log("CONDITIONAL RENDER", {node,position,context,effector})
 		context = this.input.applyContext(context);
-		this.subrender(node,position,context,effector)
+		this.subrender(node, position, context, effector);
 		const value = context[this.input.id];
 		// State is [previousBranchIndex, [...<context for each branch>]]
 		let state = context[this.id + Slot.State];
-		console.log("COND VALUE", value, "->", state)
 		if (!state) {
 			context[this.id + Slot.State] = state = [
 				undefined,
 				new Array(this.branches.length).fill(null),
 			];
 		}
+		// We determine the branch that is currently active
 		let i = 0;
 		let match = undefined;
+		const value_str = `${value}`;
 		for (const [expected, predicate, branch] of this.branches) {
 			if (!match && expected === "" && !predicate) {
 				match = branch;
 			} else if (
-				(expected !== undefined && expected === value) ||
+				(expected !== undefined && expected === value_str) ||
 				(predicate && predicate(value))
 			) {
 				match = branch;
@@ -95,6 +95,7 @@ export class ConditionalEffect extends Effect {
 			}
 			i++;
 		}
+		// We detect of there's a change in branch
 		if (i != state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
@@ -102,6 +103,7 @@ export class ConditionalEffect extends Effect {
 			}
 			state[0] = i;
 			if (!state[1][i]) {
+				console.log("CREATING BRANCH", i);
 				const ctx = Object.create(context);
 				ctx[Slot.Owner] = this;
 				ctx[Slot.Parent] = context;
@@ -110,13 +112,16 @@ export class ConditionalEffect extends Effect {
 		}
 
 		// We store the created/updated node
-		return (state[1][i][Slot.Node] = match.render(
+		console.log("RENDERING CONDITIONAL", { node, position });
+		const res = (state[1][i][Slot.Node] = match.render(
 			node,
 			position,
 			state[1][i],
 			effector,
 			this.id,
 		));
+		console.log("RESULTING COND RENDER", { res, node, position });
+		return res;
 	}
 }
 
@@ -199,7 +204,7 @@ export class FormattingEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
-		this.subrender(node,position,context,effector)
+		this.subrender(node, position, context, effector);
 		const input = context[this.input.id];
 		const output = this.format ? this.format(input) : `${input}`;
 		const textNode = context[this.id];
