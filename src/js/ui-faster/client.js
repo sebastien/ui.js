@@ -21,11 +21,17 @@ const render = (
 	ctx[Slot.Owner] = tmpl;
 	ctx[Slot.Parent] = context;
 	ctx[Slot.Input] = data;
+	let is_fragment = false;
 	if (!ctx[Slot.Node]) {
 		ctx[Slot.Node] = document.createDocumentFragment();
+		is_fragment = true;
 	}
 	const node = ctx[Slot.Node];
 	const res = tmpl.render(node, position, ctx, effector);
+	if (is_fragment) {
+		ctx[Slot.Node].uiParentElement = parent;
+		ctx[Slot.Node].uiParentOffset = position;
+	}
 	// Appending only at the end is the best way to speed up the initial rendering.
 	if (!node.parentElement) {
 		// NOTE: The fragment will be emptied from its contents.

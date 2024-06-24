@@ -48,7 +48,7 @@ export class VNode {
 						? r.getAttributeNodeNS(v[0], v[1])
 						: r.getAttributeNode(v[1])
 					: r.childNodes[v],
-			node,
+			node
 		);
 	}
 
@@ -71,7 +71,7 @@ export class VNode {
 				name = name.toLowerCase();
 				this.attributes.set(
 					[ns, name],
-					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v,
+					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v
 				);
 			} else {
 				this.attributes.set(
@@ -79,8 +79,8 @@ export class VNode {
 					v instanceof Effect
 						? v
 						: v instanceof Slot
-							? new AttributeEffect(v)
-							: v,
+						? new AttributeEffect(v)
+						: v
 				);
 			}
 		}
@@ -89,8 +89,8 @@ export class VNode {
 			_ instanceof Effect
 				? _
 				: _ instanceof Slot
-					? new FormattingEffect(_)
-					: _,
+				? new FormattingEffect(_)
+				: _
 		);
 		this.template = this.materialize();
 		this._effects = null;
@@ -136,6 +136,12 @@ export class VNode {
 	// the VNode has no id, so it is just using the parent `id`.
 	render(parent, position, context, effector, id) {
 		const existing = context[id + Slot.Node];
+		console.log(
+			"RENDER",
+			parent.uiParentElement,
+			//{ parent, position, context, effector, id },
+			this
+		);
 		if (!existing) {
 			const node = this.clone();
 			for (const [path, effect] of this.effects) {
@@ -152,11 +158,14 @@ export class VNode {
 				}
 			}
 			context[id + Slot.Node] = node;
-			return effector.appendChild(parent, node);
+			return effector.appendChild(parent, node, position);
 		} else {
 			for (const [path, effect] of this.effects) {
 				const child = VNode.ResolvePath(existing, path);
 				effect.render(child, position, context, effector);
+			}
+			if (!existing.parentNode) {
+				effector.appendChild(parent, existing, position);
 			}
 			return existing;
 		}
@@ -182,7 +191,7 @@ class VDOMFactoryProxy {
 					: new VNode(this.namespace, property, null, [
 							attributes,
 							...args,
-						]);
+					  ]);
 			scope.set(property, res);
 			return res;
 		}

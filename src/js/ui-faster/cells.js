@@ -20,6 +20,17 @@ export class Context {
 			return false;
 		}
 	}
+	// --
+	// Clear the given `context` so that the given `id` and 9 next slots
+	// are nullified.
+	static Clear(ctx, id) {
+		for (let i = 0; i < 10; i++) {
+			const sid = id + i;
+			if (!ctx.hasOwnProperty(i)) {
+				ctx[sid] = null;
+			}
+		}
+	}
 	static Run(context, functor, args) {
 		// TODO: should really be contextual if multiple threads.
 		Context.Push(context);
@@ -57,7 +68,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res,
+						res
 					);
 				}
 			}
@@ -68,7 +79,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res,
+						res
 					);
 				}
 			}
@@ -96,50 +107,50 @@ export class Slot {
 }
 
 export class Observable {
-
 	//--
 	//Observables wrap a value, and map it to a specific id within a context.
 	constructor(value, context, id) {
-		this.id = id
+		this.id = id;
 		this.subs = undefined;
 		this.context = context;
 		this.revision = -1;
-		if (value !== undefined){this.set(value)}
+		if (value !== undefined) {
+			this.set(value);
+		}
 	}
 
 	get value() {
-		return this.context[this.id]
+		return this.context[this.id];
 	}
 
 	set(value) {
 		if (this.revision === -1 || value !== this.value) {
 			// If the value changes, we updated the context, local value,
-			// revision number and 
+			// revision number and
 			this.context[this.id] = value;
 			this.revision++;
-			this.pub(value)
+			this.pub(value);
 		}
 	}
 
 	pub(value) {
-			console.log("PUB", value)
 		if (this.subs) {
 			let count = 0;
 			for (const handler of this.subs) {
 				count += 1;
 				// TODO: Should catch exceptions
 				if (handler(value, this) === false) {
-					break
+					break;
 				}
 			}
-			return count 
+			return count;
 		} else {
-			null
+			null;
 		}
 	}
 
 	sub(handler) {
-		const subs = this.subs = this.subs ?? [];
+		const subs = (this.subs = this.subs ?? []);
 		subs.push(handler);
 		return true;
 	}

@@ -32,16 +32,38 @@ export class DOMEffector {
 		return this.appendChild(parent, node);
 	}
 
-	appendChild(parent, child) {
+	appendChild(parent, child, position) {
 		if (!parent) {
 			return child;
 		}
-		if (parent.nodeType === Node.COMMENT_NODE) {
+		// There is a special case where the component is created with a fragment
+		// as a parent. This is typically for a root component, and as the document fragment
+		// is emptied after the first pass (for performance), we need on
+		// subsequent passes to append the child where the fragment was mounted.
+		else if (
+			parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
+			parent.uiParentElement !== undefined
+		) {
+			return this.appendChild(
+				parent.uiParentElement,
+				child,
+				parent.uiParentPosition + position
+			);
+		} else if (parent.nodeType === Node.COMMENT_NODE) {
 			parent.parentNode.insertBefore(child, parent);
 		} else {
 			parent.appendChild(child);
 		}
 		return child;
+	}
+
+	unmount(node) {
+		if (parent.nodeType === Node.ATTRIBUTE_NODE) {
+			node.ownerElement.removeAttributeNode(node);
+		} else {
+			node.parentNode.removeChild(node);
+		}
+		return node;
 	}
 }
 // EOF

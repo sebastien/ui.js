@@ -6,6 +6,9 @@ export class Effect extends Slot {
 		this.input = input;
 	}
 
+	// --
+	// Registers the render function to be triggered when the input
+	// changes.
 	subrender(node, position, context, effector) {
 		const render_id = this.id + Slot.Render;
 		if (!context[render_id]) {
@@ -16,10 +19,13 @@ export class Effect extends Slot {
 		}
 	}
 
-	unsubrender( context) {
+	// --
+	// Unregisters the render function to be triggered when the input
+	// changes.
+	unsubrender(context) {
 		const render_id = this.id + Slot.Render;
 		if (context[render_id]) {
-			this.input.sub(context[render_id],context);
+			this.input.sub(context[render_id], context);
 		}
 	}
 
@@ -52,9 +58,9 @@ export class ApplicationEffect extends Effect {
 		let ctx = context[this.id];
 		if (!context[this.id]) {
 			ctx = {
-			[Slot.Owner] : this,
-			[Slot.Parent] : context,
-			[Slot.Input] : context[Slot.Input],
+				[Slot.Owner]: this,
+				[Slot.Parent]: context,
+				[Slot.Input]: context[Slot.Input],
 			};
 			context[this.id] = ctx;
 		}
@@ -65,16 +71,15 @@ export class ApplicationEffect extends Effect {
 export class ConditionalEffect extends Effect {
 	constructor(input, branches) {
 		super(input);
+		// TODO: Should we normalize the branches?
 		this.branches = branches;
 	}
 	render(node, position, context, effector) {
-		console.log("CONDITIONAL RENDER", {node,position,context,effector})
 		context = this.input.applyContext(context);
-		this.subrender(node,position,context,effector)
+		this.subrender(node, position, context, effector);
 		const value = context[this.input.id];
 		// State is [previousBranchIndex, [...<context for each branch>]]
 		let state = context[this.id + Slot.State];
-		console.log("COND VALUE", value, "->", state)
 		if (!state) {
 			context[this.id + Slot.State] = state = [
 				undefined,
@@ -82,12 +87,15 @@ export class ConditionalEffect extends Effect {
 			];
 		}
 		let i = 0;
+		// TODO: We should get rid of that, it's slow
+		const strvalue = `${value}`;
 		let match = undefined;
 		for (const [expected, predicate, branch] of this.branches) {
 			if (!match && expected === "" && !predicate) {
 				match = branch;
+				break;
 			} else if (
-				(expected !== undefined && expected === value) ||
+				(expected !== undefined && expected === strvalue) ||
 				(predicate && predicate(value))
 			) {
 				match = branch;
@@ -98,24 +106,30 @@ export class ConditionalEffect extends Effect {
 		if (i != state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
-				console.log("TODO: Conditional unmoutn previous branch", state);
+				const ctx = state[1][state[0]];
+				if (ctx) {
+					effector.unmount(ctx[Slot.Node]);
+				}
 			}
 			state[0] = i;
 			if (!state[1][i]) {
+				// We derive a new state and we make sure that we clear
+				// the slots for this cell in the context, so that we'll
+				// set new values.
 				const ctx = Object.create(context);
+				Context.Clear(ctx, this.id);
 				ctx[Slot.Owner] = this;
 				ctx[Slot.Parent] = context;
-				state[1][i] = ctx;
+				ctx[this.id] = state[1][i] = ctx;
 			}
 		}
-
 		// We store the created/updated node
 		return (state[1][i][Slot.Node] = match.render(
 			node,
 			position,
 			state[1][i],
 			effector,
-			this.id,
+			this.id
 		));
 	}
 }
@@ -180,7 +194,7 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id,
+				this.template.id
 			);
 		}
 		// TODO: We should remove the ammping items that haven't been updated
@@ -199,7 +213,7 @@ export class FormattingEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
-		this.subrender(node,position,context,effector)
+		this.subrender(node, position, context, effector);
 		const input = context[this.input.id];
 		const output = this.format ? this.format(input) : `${input}`;
 		const textNode = context[this.id];
@@ -207,7 +221,7 @@ export class FormattingEffect extends Effect {
 			return (context[this.id] = effector.ensureText(
 				node,
 				position,
-				output,
+				output
 			));
 		} else {
 			textNode.data = output;
@@ -265,7 +279,7 @@ export class EventHandlerEffect extends Effect {
 			// TODO: Should include the context id in the wrapper
 			node.ownerElement.addEventListener(
 				node.nodeName.substring(2),
-				state.wrapper,
+				state.wrapper
 			);
 			node.ownerElement.removeAttributeNode(node);
 		}

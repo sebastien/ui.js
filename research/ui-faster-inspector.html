@@ -27,20 +27,20 @@
 				.match({
 					[["object", "map"]]: isExpanded.match({
 						[true]: h.ul(
-							{_: "comma curlies dim-ab", onClick: toggleExpanded},
+							{_: "Object isExpanded comma curlies dim-ab", onClick: toggleExpanded},
 							// The input should be [Slot(#0.0), Slot(#0.1)]
 							value.map((value, key) => h.li(
 								{_: "pl-2"},
 								h.span({_: "mono dim small"}, key.then(_ => `${_}: `)), value.apply(Inspector)))),
-						"": h.ul({_: "comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.fmt(_ => `${Object.keys(_).length}`), " keys")
+						"": h.ul({_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.fmt(_ => `${Object.keys(_).length}`), " keys")
 					}),
 					"array": h.ul(
-						{_: "comma brackets dim-ab"},
+						{_: "Array isExpanded comma brackets dim-ab"},
 						// The input should be [Slot(#0), Slot(#1)]
 						value.map((value, key) => h.li(
 							{_: "pl-2"},
 							h.span({_: "mono dim small"}, key.then(_ => `#${_}: `)), value.apply(Inspector)))),
-					"": h.span(value.fmt())
+					"": h.span({_: "Value"}, value.fmt())
 				})
 		}
 

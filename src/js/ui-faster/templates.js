@@ -5,9 +5,14 @@ import {
 	ApplicationEffect,
 	FormattingEffect,
 } from "./effects.js";
-import { Context, Slot, Observable  } from "./cells.js";
+import { Context, Slot, Observable } from "./cells.js";
 import { getSignature } from "./utils/inspect.js";
 import { assign } from "./utils/collections.js";
+
+// TODO: Shouldn't that be an Input?
+// TODO: Not of these don't belong in templates, they are really about
+// managing and processing input (derivations, selections), while templates
+// are about wrapping all of that.
 
 // --
 // Derivations are cells that have the ability to derive the current context
@@ -55,7 +60,10 @@ export class Selection extends Derivation {
 			this,
 			typeof formatter === "function"
 				? formatter
-				: () => (text ? `${text}` : text),
+				: (value) =>
+						value === null || value === undefined
+							? null
+							: `${value}`
 		);
 	}
 
@@ -83,26 +91,24 @@ export class Selection extends Derivation {
 	// ========================================================================
 
 	applyContext(context) {
-		const ctx = super.applyContext(context)
+		const ctx = super.applyContext(context);
 		// We define a subscription array for the selection.
-		if (ctx[this.id+Slot.Value] === undefined) {
+		if (ctx[this.id + Slot.Value] === undefined) {
 			ctx[this.id + Slot.Value] = new Observable(undefined, ctx, this.id);
 		}
 		return ctx;
 	}
 
-	sub(handler, context=Context.Get()) {
+	sub(handler, context = Context.Get()) {
 		const obs = context && context[this.id + Slot.Value];
 		return obs ? obs.sub(handler) : null;
 	}
 
-	unsub(handler, context=Context.Get()) {
+	unsub(handler, context = Context.Get()) {
 		const obs = context && context[this.id + Slot.Value];
 		return obs ? obs.unsub(handler) : null;
 	}
 }
-
-
 
 export class Argument extends Selection {
 	constructor(name) {
@@ -119,14 +125,14 @@ export class Argument extends Selection {
 	}
 
 	// TODO: Should this be there?
-	set(value, context=Context.Get()) {
+	set(value, context = Context.Get()) {
 		if (context) {
-			const obs = context[this.id+Slot.Value];
+			const obs = context[this.id + Slot.Value];
 			const previous = obs.value;
-			obs.set(value)
+			obs.set(value);
 			return previous;
 		} else {
-			console.error("COULD NOT SET, NO CONTEXT", this, context)
+			console.error("COULD NOT SET, NO CONTEXT", this, context);
 			throw new Error("Cell.set() invoked outside of context");
 		}
 	}
@@ -178,7 +184,7 @@ export const template = (component) => {
 			new Injection(args, false),
 			undefined,
 			args,
-			component.name,
+			component.name
 		));
 		res.template = component(...args);
 		res.args = args;
@@ -200,7 +206,7 @@ export const select = Object.assign(
 		// 		},
 		// 	},
 		// ),
-	},
+	}
 );
 
 export const $ = select;

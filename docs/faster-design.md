@@ -27,3 +27,11 @@ which allows for shadowing cell values, for instance, when iterating over a sequ
 
 ## HTML Fragments
 
+## SSR
+
+SSR is about pre-rendering components and the server and then picking up
+(quickly) on the client side. Baseline is to replace the component with an
+updated version. This breaks down when the whole page is a component, so instead
+it's about being able to replace/update components selectively based on updates,
+typically when loading updated data through API requests.
+
