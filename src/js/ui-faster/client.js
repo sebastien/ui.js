@@ -22,12 +22,15 @@ const render = (
 	ctx[Slot.Parent] = context;
 	ctx[Slot.Input] = data;
 	let is_fragment = false;
+	// Using a DocumentFragment really speeds up an initial render.
 	if (!ctx[Slot.Node]) {
 		ctx[Slot.Node] = document.createDocumentFragment();
 		is_fragment = true;
 	}
 	const node = ctx[Slot.Node];
 	const res = tmpl.render(node, position, ctx, effector);
+	// The effector will detect if the parent is a DocumentFragment, and if
+	// the `ui*` fields have been set, this will be used instead.
 	if (is_fragment) {
 		ctx[Slot.Node].uiParentElement = parent;
 		ctx[Slot.Node].uiParentOffset = position;

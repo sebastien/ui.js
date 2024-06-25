@@ -49,6 +49,40 @@ export class Injection extends Derivation {
 	}
 }
 
+// --
+// Utility class that offers the `case` and `else` methods for branches/
+// conditionals.
+class Branches {
+	constructor() {
+		this.branches = [];
+		this.elseBranch = undefined;
+	}
+
+	// --
+	// Chainable function to define a branch, condition can be a function
+	// or a value. If the function is an array, then it will be interpreted
+	// as "any of the given values"
+	case(...args) {
+		if (args.length === 1) {
+			return this.else(template);
+		}
+		const condition =
+			args.length === 2 ? args[0] : args.slice(0, args.length - 1);
+		const template = args[args.length - 1];
+		this.branches.push([
+			condition instanceof Function ? 3 : args.length > 2 ? 2 : 1,
+			condition,
+			template,
+		]);
+		return this;
+	}
+
+	else(template) {
+		this.elseBranch = template;
+		return this;
+	}
+}
+
 export class Selection extends Derivation {
 	then(func) {
 		return new Application(this, func);
@@ -60,10 +94,9 @@ export class Selection extends Derivation {
 			this,
 			typeof formatter === "function"
 				? formatter
-				: (value) =>
-						value === null || value === undefined
-							? null
-							: `${value}`
+				: formatter === null || formatter === undefined
+				? formatter
+				: `${formatter}`
 		);
 	}
 
@@ -71,15 +104,9 @@ export class Selection extends Derivation {
 		return new ApplicationEffect(this, template(tmpl));
 	}
 
-	match(cases) {
-		const branches = [];
-		// TODO: we should do parsing here
-		for (const [k, v] of Object.entries(cases)) {
-			for (const _ of k.split(",")) {
-				branches.push([_, null, v]);
-			}
-		}
-		return new ConditionalEffect(this, branches);
+	match(...branches) {
+		const b = branches.reduce((r, v) => (v(r), r), new Branches());
+		return new ConditionalEffect(this, b.branches, b.elseBranch);
 	}
 
 	map(component) {

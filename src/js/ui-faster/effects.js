@@ -53,14 +53,16 @@ export class ApplicationEffect extends Effect {
 		this.template = template;
 	}
 	render(node, position, context, effector) {
+		context = this.input.applyContext(context);
 		// When we apply we create a new context detached from the previous
 		// one, so that we don't leak values.
 		let ctx = context[this.id];
 		if (!context[this.id]) {
+			console.log("NEW APPLICATION EFFECT", this, context);
 			ctx = {
 				[Slot.Owner]: this,
 				[Slot.Parent]: context,
-				[Slot.Input]: context[Slot.Input],
+				[Slot.Input]: context[this.input.id],
 			};
 			context[this.id] = ctx;
 		}
@@ -69,11 +71,13 @@ export class ApplicationEffect extends Effect {
 }
 
 export class ConditionalEffect extends Effect {
-	constructor(input, branches) {
+	constructor(input, branches = [], elseBranch = undefined) {
 		super(input);
 		// TODO: Should we normalize the branches?
 		this.branches = branches;
+		this.elseBranch = elseBranch;
 	}
+
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		this.subrender(node, position, context, effector);
@@ -87,21 +91,36 @@ export class ConditionalEffect extends Effect {
 			];
 		}
 		let i = 0;
-		// TODO: We should get rid of that, it's slow
-		const strvalue = `${value}`;
 		let match = undefined;
-		for (const [expected, predicate, branch] of this.branches) {
-			if (!match && expected === "" && !predicate) {
-				match = branch;
-				break;
-			} else if (
-				(expected !== undefined && expected === strvalue) ||
-				(predicate && predicate(value))
-			) {
-				match = branch;
-				break;
+		for (const [type, condition, effect] of this.branches) {
+			switch (type) {
+				case 3: // Function
+					if (condition(value)) {
+						match = effect;
+					}
+					break;
+				case 2: // Array of values
+					for (const v of condition) {
+						if (v == value) {
+							match = effect;
+							break;
+						}
+					}
+					break;
+				default:
+					if (condition == value) {
+						match = effect;
+						break;
+					}
 			}
-			i++;
+			if (match !== undefined) {
+				break;
+			} else {
+				i++;
+			}
+		}
+		if (match === undefined) {
+			match = this.elseBranch;
 		}
 		if (i != state[0]) {
 			// We need to unmount the previous state
@@ -124,13 +143,10 @@ export class ConditionalEffect extends Effect {
 			}
 		}
 		// We store the created/updated node
-		return (state[1][i][Slot.Node] = match.render(
-			node,
-			position,
-			state[1][i],
-			effector,
-			this.id
-		));
+		return (state[1][i][Slot.Node] =
+			match === undefined
+				? undefined
+				: match.render(node, position, state[1][i], effector, this.id));
 	}
 }
 
@@ -213,18 +229,27 @@ export class FormattingEffect extends Effect {
 	}
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
+		// TODO: We need to know when we need to unrender/clear
 		this.subrender(node, position, context, effector);
 		const input = context[this.input.id];
-		const output = this.format ? this.format(input) : `${input}`;
-		const textNode = context[this.id];
-		if (!textNode) {
-			return (context[this.id] = effector.ensureText(
-				node,
-				position,
-				output
-			));
+		const previous = context[this.id + Slot.State];
+		const textNode = context[this.id + Slot.Node];
+		// We make sure to guard a re-render, and only proceed if there'sure
+		// a data change.
+		if (input !== previous || textNode === undefined) {
+			const output = this.format ? this.format(input) : `${input}`;
+			context[this.id + Slot.State] = input;
+			if (!textNode) {
+				return (context[this.id + Slot.Node] = effector.ensureText(
+					node,
+					position,
+					output
+				));
+			} else {
+				textNode.data = output;
+				return textNode;
+			}
 		} else {
-			textNode.data = output;
 			return textNode;
 		}
 	}

@@ -1,3 +1,6 @@
+// --
+// A simple effector for the DOM, inserts nodes and attributes at given position relative
+// to a parent, supporting document fragments.
 export class DOMEffector {
 	ensureContent(parent, position, content) {
 		const t = typeof content;
@@ -12,6 +15,7 @@ export class DOMEffector {
 		}
 	}
 
+	// TODO: Implement position support
 	ensureText(parent, position, text) {
 		const child = document.createTextNode(`${text}`);
 		return this.appendChild(parent, child);
@@ -25,6 +29,7 @@ export class DOMEffector {
 		}
 	}
 
+	// TODO: Implement position support
 	ensureNode(parent, position, ns, name) {
 		const node = ns
 			? document.createElementNS(ns, name)
@@ -32,6 +37,7 @@ export class DOMEffector {
 		return this.appendChild(parent, node);
 	}
 
+	// TODO: Implement position support
 	appendChild(parent, child, position) {
 		if (!parent) {
 			return child;
