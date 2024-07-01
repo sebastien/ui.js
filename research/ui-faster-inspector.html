@@ -18,15 +18,29 @@
 	<script type="module">
 		import {h, $, render} from "@ui/client.js"
 
+		// TODO: we sould have `const Inspector = component((value, isExpanded)=>…)
+		// and then be able to do Inspector({form:slot,…}).
 		const Inspector = (value, isExpanded) => {
+			// If the Inspector is called first, then it will add the template to 
+			// the function. If it's called a second time, then it will just return
+			// the application of the template, so that we can do Inspector({value:slot, …})
 			const toggleExpanded = (event) => {
-				console.log("TOGGLE", {event})
 				isExpanded.toggle()
 				event.stopPropagation()
 			}
-			return value
-				.then(_ => (_ === undefined || _ === null ? "undefined" : _ instanceof Map ? "map" : _ instanceof Array ? "array" : typeof _))
-				.match(
+			const type = value.apply(_ => (
+				_ === undefined || _ === null
+					? "undefined"
+					: _ instanceof Map
+						? "map"
+						: _ instanceof Array
+							? "array"
+							: typeof _
+			));
+			// NOTE: This is really not as nice as the HTML equivalent.
+			return h.div(
+				"Type ", h.em(type),
+				type.match(
 					_ => _.case("object", "map",
 						isExpanded.match(
 							_ => _.case(true, h.ul(
@@ -35,9 +49,10 @@
 								value.map((value, key) => h.li(
 									{_: "pl-2"},
 									// TODO: The application does not seem to be passing the value down
-									h.span({_: "mono dim small"}, key.then(_ => `${_}: `)), value.apply(Inspector))))
+									// TODO: The application should probably be more like `Inspector(value)`
+									h.span({_: "mono dim small"}, key.text(_ => `${_}: `)), /*value.render(Inspector)*/"Inspector")))
 							),
-							_ => _.else(h.ul({_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.fmt(_ => `${Object.keys(_).length}`), " keys")))),
+							_ => _.else(h.ul({_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.text(_ => `${Object.keys(_).length}`), " keys")))),
 					_ => _.case("array",
 						isExpanded.match(
 							_ => _.case(true, h.ul(
@@ -45,10 +60,10 @@
 								// The input should be [Slot(#0), Slot(#1)]
 								value.map((value, key) => h.li(
 									{_: "pl-2"},
-									h.span({_: "mono dim small"}, key.then(_ => `#${_}: `)), value.apply(Inspector))))),
+									h.span({_: "mono dim small"}, key.text(_ => `#${_}: `)), "value.render(Inspector)")))),
 							_ => _.else(
-								h.ul({_: "Array isCollapsed comma brackets dim-ab", onClick: toggleExpanded}, "Array ", value.fmt(_ => `${_.length}`), " items"))),
-						_ => _.else(h.span({_: "Value"}, value.fmt()))))
+								h.ul({_: "Array isCollapsed comma brackets dim-ab", onClick: toggleExpanded}, "Array ", value.text(_ => `${_.length}`), " items"))),
+						_ => _.else(h.span({_: "Value"}, value.text())))))
 		}
 
 

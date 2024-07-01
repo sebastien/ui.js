@@ -58,7 +58,6 @@ export class ApplicationEffect extends Effect {
 		// one, so that we don't leak values.
 		let ctx = context[this.id];
 		if (!context[this.id]) {
-			console.log("NEW APPLICATION EFFECT", this, context);
 			ctx = {
 				[Slot.Owner]: this,
 				[Slot.Parent]: context,

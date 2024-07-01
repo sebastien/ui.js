@@ -116,7 +116,7 @@ export class VNode {
 		}
 		for (const child of this.children) {
 			if (child instanceof Effect) {
-				node.appendChild(document.createComment(child.toString()));
+				node.appendChild(document.createComment(`Effect:${child}`));
 			} else if (child instanceof Node) {
 				node.appendChild(child.cloneNode(true));
 			} else if (child instanceof VNode) {
@@ -135,13 +135,10 @@ export class VNode {
 	// NOTE: Only for the VNode.render we need an extra `id` argument, as
 	// the VNode has no id, so it is just using the parent `id`.
 	render(parent, position, context, effector, id) {
+		// This will create the VNode if it doesn't exist, rendering effects
+		// as they go. Otherwise only the effects will be renderer, and the
+		// node will be attached to the parent.
 		const existing = context[id + Slot.Node];
-		console.log(
-			"RENDER",
-			parent.uiParentElement,
-			//{ parent, position, context, effector, id },
-			this
-		);
 		if (!existing) {
 			const node = this.clone();
 			for (const [path, effect] of this.effects) {
@@ -151,10 +148,18 @@ export class VNode {
 				switch (child.nodeType) {
 					case Node.ATTRIBUTE_NODE:
 						break;
+					case Node.COMMENT_NODE:
+						// FIXME: If we remove the placeholder, then some
+						// effects will have problems, like conditionals and
+						// mapping. The others should be fine without.
+						break;
 					default:
-						// FIXME: This should probably be replacing the placeholder?
-						// It's a first render, so we keep track of the placeholder
-						child.parentNode.removeChild(child);
+						onError(
+							"vdom",
+							"Effect bound to unsupported node type",
+							{ NodeType: child.nodeType }
+						);
+						break;
 				}
 			}
 			context[id + Slot.Node] = node;
@@ -180,6 +185,7 @@ class VDOMFactoryProxy {
 		this.namespace = namespace;
 	}
 	get(scope, property) {
+		// TODO: Support `h.Fragment`
 		if (scope.has(property)) {
 			return scope.get(property);
 		} else {

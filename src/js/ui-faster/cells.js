@@ -102,7 +102,7 @@ export class Slot {
 
 	toString() {
 		//return `${FIELD_SEP}${this.id}${FIELD_SEP}`;
-		return `Slot(${this.id})`;
+		return `${this.constructor.name}(${this.id})`;
 	}
 }
 

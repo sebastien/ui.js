@@ -38,15 +38,23 @@ export class DOMEffector {
 	}
 
 	// TODO: Implement position support
-	appendChild(parent, child, position) {
+	appendChild(parent, child, position = 0) {
 		if (!parent) {
 			return child;
 		}
+		// if (parent.nodeType !== Node.COMMENT_NODE) {
+		// 	while (parent.childNodes.length < position) {
+		// 		parent.appendChild(
+		// 			document.createComment(`P${parent.childNodes.length}`)
+		// 		);
+		// 	}
+		// }
+
 		// There is a special case where the component is created with a fragment
 		// as a parent. This is typically for a root component, and as the document fragment
 		// is emptied after the first pass (for performance), we need on
 		// subsequent passes to append the child where the fragment was mounted.
-		else if (
+		if (
 			parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
 			parent.uiParentElement !== undefined
 		) {
@@ -56,7 +64,20 @@ export class DOMEffector {
 				parent.uiParentPosition + position
 			);
 		} else if (parent.nodeType === Node.COMMENT_NODE) {
-			parent.parentNode.insertBefore(child, parent);
+			if (!parent.parentNode) {
+				console.error("Parent comment node has no parent", {
+					parent,
+					child,
+				});
+				return child;
+			} else {
+				parent.parentNode.insertBefore(child, parent);
+			}
+			// FIXME: THat doesn't work
+			// } else if (parent.childNodes[position] !== child) {
+			// 	// Nothing to do, the node is here
+			// } else if (parent.childNodes.length > position) {
+			// 	parent.insertBefore(child, parent.childNodes[position]);
 		} else {
 			parent.appendChild(child);
 		}

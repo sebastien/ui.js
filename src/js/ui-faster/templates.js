@@ -37,6 +37,10 @@ export class Injection extends Derivation {
 	}
 	applyContext(context) {
 		const data = context[Slot.Input];
+		// NOTE: This won't work if we have for instance the same component
+		// rendered multiple time in the same context. In this case, it will
+		// keep the same context. However, if there's just one instance of the
+		// injection, then it's all good, as it will have a unique id.
 		const derived = (context[this.id] =
 			context[this.id] ?? (this.derived ? Object.create(context) : {}));
 		derived[Slot.Owner] = this;
@@ -84,11 +88,11 @@ class Branches {
 }
 
 export class Selection extends Derivation {
-	then(func) {
+	apply(func) {
 		return new Application(this, func);
 	}
 
-	fmt(formatter) {
+	text(formatter) {
 		// FIXME: Not that
 		return new FormattingEffect(
 			this,
@@ -100,7 +104,7 @@ export class Selection extends Derivation {
 		);
 	}
 
-	apply(tmpl) {
+	render(tmpl) {
 		return new ApplicationEffect(this, template(tmpl));
 	}
 
