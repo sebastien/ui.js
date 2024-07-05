@@ -27,24 +27,41 @@ export class Derivation extends Slot {
 	}
 }
 
+// --
+// An injections remaps `args` as an array
 export class Injection extends Derivation {
-	constructor(args, derived = false) {
+	constructor(args, derived = false, extraction = undefined) {
 		super();
+		// This is the arguments structure that is going to be injected. Typically
+		// this is a list of arguments, like `[Argument, Argument]`, but it could
+		// also be a list with a dict like `[{label:Argument,id:Argument,style:Argument],Argument]`
 		this.args = args;
+		// Extraction is also a structure containing `Argument` values (and
+		// potentially regular JS values. It helps reshaped a value from the
+		// current context before injecting it into the sub context.
+		this.extraction = extraction;
 		// When `derived` is true, the new context will inherit from the parent
 		// context, otherwise it will be blank.
 		this.derived = derived;
 	}
 	applyContext(context) {
-		const data = context[Slot.Input];
+		// First we extract an initial data from the extraction pattern,
+		// if any.
+		const data = this.extraction
+			? Slot.Expand(this.extraction, context)
+			: context[Slot.Input];
 		// NOTE: This won't work if we have for instance the same component
 		// rendered multiple time in the same context. In this case, it will
 		// keep the same context. However, if there's just one instance of the
 		// injection, then it's all good, as it will have a unique id.
 		const derived = (context[this.id] =
 			context[this.id] ?? (this.derived ? Object.create(context) : {}));
+		// We set the derived context.
 		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
+		derived[Slot.Input] = data;
+		// TODO: This is where we would copy cells/slots that are passed
+		// with `out` or `inout`.
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of Slot.Match(this.args, data)) {
 			derived[c.id] = v;
@@ -205,18 +222,29 @@ export const template = (component) => {
 		// will hold the shape of the input.
 		const args = [];
 		for (const { path, name } of getSignature(component).args) {
-			const input = new Argument(name);
-			assign(args, path, input);
+			assign(args, path, new Argument(name));
 		}
 		// We create a template effect that starts with an injection of the
 		// arguments into the rendered context.
 		const res = (component.template = new TemplateEffect(
 			// A `template` is for a component, so the injection is *not* derived.
 			new Injection(args, false),
-			undefined,
+			undefined, // TODO: Not sure why undefined works in that case
 			args,
 			component.name
 		));
+		component.apply = (...extraction) => {
+			// At this point args is going to be of similar shape as the
+			// `args` above, where some values may be `Argument` and some
+			// others may be regular values.
+			return new TemplateEffect(
+				// A `template` is for a component, so the injection is *not* derived.
+				new Injection(args, false, extraction),
+				component.template,
+				args,
+				component.name
+			);
+		};
 		res.template = component(...args);
 		res.args = args;
 		return res;

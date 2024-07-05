@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Inspector (Preact)</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui.js": "../src/js/ui.js", "@ui/": "../src/js/ui/"} }
+		</script>
+</head>
+
+<body>
+	<div id="Inspector">
+	</div>
+
+
+	<script type="module">
+		import {signal} from 'https://esm.sh/spellcaster@4.0.1/spellcaster.js';
+		import {tags, text, repeat} from 'https://esm.sh/spellcaster@4.0.1/hyperscript.js';
+		import {$} from "@ui.js"
+
+		const {ul, span, li} = tags
+		const Inspector = (value) => {
+			const t = $.formats.type(value)
+			// NOTE: This won't be updatable as there's no conditional support
+			switch (t) {
+				case "object":
+				case "map":
+					return ul({className: "comma curlies dim-ab"},
+						repeat($.entries(value),
+							({key, value}) =>
+								li({className: "pl-2"}, [
+									span({className: "mono dim small"}, text(key))])));
+				case "array":
+					return ul({className: "comma brackets dim-ab"},
+						repeat(value, (value, i) =>
+							li({className: "pl-2"}, [
+								span({className: "mono dim small"}, text(i)),
+							])));
+				default:
+					return h("span", {}, text(value))
+			}
+
+		}
+		const logs = await fetch(
+			"inspector-speed.json"
+		).then((_) => _.json())
+
+
+
+		document.getElementById("Inspector").appendChild(Inspector(logs))
+
+		// Initialize htm with Preact
+		/*
+		const html = htm.bind(h);
+
+		function Inspector({value}) {
+			const t = $.formats.type(value)
+			switch (t) {
+				case "object":
+				case "map":
+					return h("ul", {
+						className: "comma curlies dim-ab"
+					}, $.entries(value).map(({key, value}) => h("li", {className: "pl-2"},
+						h("span", {className: "mono dim small"}, `${key}: `),
+						Inspector({value}))))
+				case "array":
+					return h("ul", {
+						className: "comma brackets dim-ab"
+					}, ...value.map((v, i) => h("li", {className: "pl-2"},
+						h("span", {className: "mono dim small"}, `#${i}: `),
+						Inspector({value: v}))))
+				default:
+					return h("span", {}, `${value}`)
+			}
+		}
+		const logs = await fetch(
+			"inspector-speed.json"
+		).then((_) => _.json())
+
+		// Run: Scripting:2333ms, Rendering:2401ms
+		// Heap(max):65Mb, Nodes(max):322k
+		render(Inspector({value: {logs}}), document.getElementById("Inspector"));
+		*/
+	</script>
+</body>
+
+</html>

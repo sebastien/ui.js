@@ -17,6 +17,7 @@
 
 	<script type="module">
 		import {h, $, render} from "@ui/client.js"
+		const {div, em, ul, li, span} = h;
 
 		// TODO: we sould have `const Inspector = component((value, isExpanded)=>…)
 		// and then be able to do Inspector({form:slot,…}).
@@ -28,43 +29,42 @@
 				isExpanded.toggle()
 				event.stopPropagation()
 			}
-			const type = value.apply(_ => (
-				_ === undefined || _ === null
-					? "undefined"
-					: _ instanceof Map
-						? "map"
-						: _ instanceof Array
-							? "array"
-							: typeof _
-			));
+			const type = value.apply(_ => _ === undefined || _ === null
+				? "undefined"
+				: _ instanceof Map
+					? "map"
+					: _ instanceof Array
+						? "array"
+						: typeof _
+			);
 			// NOTE: This is really not as nice as the HTML equivalent.
-			return h.div(
-				"Type ", h.em(type),
+			return div(
+				"Type ", em(type),
 				type.match(
 					_ => _.case("object", "map",
 						isExpanded.match(
-							_ => _.case(true, h.ul(
+							_ => _.case(true, ul(
 								{_: "Object isExpanded comma curlies dim-ab", onClick: toggleExpanded},
 								// The input should be [Slot(#0.0), Slot(#0.1)]
-								value.map((value, key) => h.li(
+								value.map((value, key) => li(
 									{_: "pl-2"},
 									// TODO: The application does not seem to be passing the value down
 									// TODO: The application should probably be more like `Inspector(value)`
-									h.span({_: "mono dim small"}, key.text(_ => `${_}: `)), /*value.render(Inspector)*/"Inspector")))
+									span({_: "mono dim small"}, key.text(_ => `${_}: `)), Inspector.apply(value))))
 							),
-							_ => _.else(h.ul({_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.text(_ => `${Object.keys(_).length}`), " keys")))),
+							_ => _.else(ul({_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.text(_ => `${Object.keys(_).length}`), " keys")))),
 					_ => _.case("array",
 						isExpanded.match(
-							_ => _.case(true, h.ul(
+							_ => _.case(true, ul(
 								{_: "Array isExpanded comma brackets dim-ab"},
 								// The input should be [Slot(#0), Slot(#1)]
-								value.map((value, key) => h.li(
+								value.map((value, key) => li(
 									{_: "pl-2"},
-									h.span({_: "mono dim small"}, key.text(_ => `#${_}: `)), "value.render(Inspector)")))),
+									span({_: "mono dim small"}, key.text(_ => `#${_}: `)), Inspector.apply(value))))),
 							_ => _.else(
-								h.ul({_: "Array isCollapsed comma brackets dim-ab", onClick: toggleExpanded}, "Array ", value.text(_ => `${_.length}`), " items"))),
-						_ => _.else(h.span({_: "Value"}, value.text())))))
-		}
+								ul({_: "Array isCollapsed comma brackets dim-ab", onClick: toggleExpanded}, "Array ", value.text(_ => `${_.length}`), " items")))),
+					_ => _.else(span({_: "Value"}, value.text()))))
+		};
 
 
 		const logs = await fetch(

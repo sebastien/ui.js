@@ -124,9 +124,7 @@ export class VNode {
 			} else if (child !== null && child !== undefined) {
 				node.appendChild(document.createTextNode(`${child}`));
 			} else {
-				onError([VNode, "materialize"], "Unsupported node type", {
-					child,
-				});
+				// pass: this null or undefined.
 			}
 		}
 		return node;

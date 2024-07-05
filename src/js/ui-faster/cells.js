@@ -87,6 +87,57 @@ export class Slot {
 		return res;
 	}
 
+	// --
+	// Walks the template, and replaces any Slot with its value from
+	// the given context.
+	static *Walk(template) {
+		if (template instanceof Slot) {
+			yield template;
+		} else if (template instanceof Map) {
+			for (const v of template.values()) {
+				for (const _ of Slot.Walk(v)) {
+					yield _;
+				}
+			}
+		} else if (template instanceof Array) {
+			for (let i = 0; i < template.length; i++) {
+				for (const _ of Slot.Walk(template[i])) {
+					yield _;
+				}
+			}
+		} else if (Object.getPrototypeOf(template) === Object.prototype) {
+			for (const k in template) {
+				for (const _ of Slot.Walk(template[k])) {
+					yield _;
+				}
+			}
+		}
+	}
+
+	// --
+	// Walks the template, and replaces any Slot with its value from
+	// the given context.
+	static Expand(template, context) {
+		if (template instanceof Slot) {
+			return context ? context[template.id] : undefined;
+		} else if (template instanceof Map) {
+			const res = new Map();
+			for (const [k, v] of template.entries()) {
+				res.set(k, Slot.Expand(v));
+			}
+		} else if (template instanceof Array) {
+			return template.map((_) => Slot.Expand(_, context));
+		} else if (Object.getPrototypeOf(template) === Object.prototype) {
+			const res = {};
+			for (const k in template) {
+				res[k] = Slot.Expand(template[k]);
+			}
+			return res;
+		} else {
+			return template;
+		}
+	}
+
 	constructor() {
 		// There's a bit of a trick with the way we manage ids. The first
 		// 10 are reserved, and then we leave 9 identifiers that can be
