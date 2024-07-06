@@ -209,6 +209,8 @@ export class Application extends Selection {
 	}
 }
 
+// TODO: This should be moved to HyperScript, probably.
+//
 // --
 // Takes the given `component` function, and returns its derivation
 // template, creating it if necessary. The creation of the template inspects
@@ -240,7 +242,7 @@ export const template = (component) => {
 			return new TemplateEffect(
 				// A `template` is for a component, so the injection is *not* derived.
 				new Injection(args, false, extraction),
-				component.template,
+				component.template, // FIXME: Not sure why we reference the other TemplateEffect
 				args,
 				component.name
 			);

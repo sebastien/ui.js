@@ -55,33 +55,39 @@ export class VNode {
 	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
-		this.attributes = new Map();
-		for (const k in attributes) {
-			let [ns, name] = k.split(":");
-			if (!name) {
-				name = ns;
-				ns = undefined;
-			}
-			if (name === "_") {
-				name = "class";
-			}
-			const v = attributes[k];
-			const m = RE_ATTRIBUTE.exec(k);
-			if (m && m.groups.event) {
-				name = name.toLowerCase();
-				this.attributes.set(
-					[ns, name],
-					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v
-				);
-			} else {
-				this.attributes.set(
-					[ns, camelToKebab(name)],
-					v instanceof Effect
-						? v
-						: v instanceof Slot
-						? new AttributeEffect(v)
-						: v
-				);
+		if (attributes instanceof Map) {
+			this.attributes = attributes;
+		} else {
+			this.attributes = new Map();
+			for (const k in attributes) {
+				let [ns, name] = k.split(":");
+				if (!name) {
+					name = ns;
+					ns = undefined;
+				}
+				if (name === "_") {
+					name = "class";
+				}
+				const v = attributes[k];
+				const m = RE_ATTRIBUTE.exec(k);
+				if (m && m.groups.event) {
+					name = name.toLowerCase();
+					this.attributes.set(
+						[ns, name],
+						typeof v === "function"
+							? EventHandlerEffect.Ensure(v)
+							: v
+					);
+				} else {
+					this.attributes.set(
+						[ns, camelToKebab(name)],
+						v instanceof Effect
+							? v
+							: v instanceof Slot
+							? new AttributeEffect(v)
+							: v
+					);
+				}
 			}
 		}
 		// We make sure that cells are wrapped in formatting effects.
@@ -108,7 +114,10 @@ export class VNode {
 	}
 
 	materialize() {
-		const node = document.createElement(this.name);
+		const node =
+			this.name === "#fragment"
+				? document.createDocumentFragment()
+				: document.createElement(this.name);
 		for (const [[ns, name], value] of this.attributes.entries()) {
 			ns
 				? node.setAttributeNS(ns, name, value)

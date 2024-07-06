@@ -15,7 +15,7 @@ export class Effect extends Slot {
 			const rerender = () =>
 				this.render(node, position, context, effector);
 			context[render_id] = rerender;
-			this.input.sub(rerender, context);
+			this.input?.sub(rerender, context);
 		}
 	}
 
@@ -25,7 +25,7 @@ export class Effect extends Slot {
 	unsubrender(context) {
 		const render_id = this.id + Slot.Render;
 		if (context[render_id]) {
-			this.input.sub(context[render_id], context);
+			this.input?.sub(context[render_id], context);
 		}
 	}
 
@@ -222,15 +222,18 @@ export class MappingEffect extends Effect {
 }
 
 export class FormattingEffect extends Effect {
-	constructor(input, format) {
+	constructor(input, format, placeholder = null) {
 		super(input);
 		this.format = format;
+		this.placeholder = placeholder;
 	}
 	render(node, position, context, effector) {
-		context = this.input.applyContext(context);
+		// TODO: If input is undefined, we'll need to determine the inputs
+		// dynamically.
+		context = this.input ? this.input.applyContext(context) : context;
 		// TODO: We need to know when we need to unrender/clear
 		this.subrender(node, position, context, effector);
-		const input = context[this.input.id];
+		const input = context[this.input?.id];
 		const previous = context[this.id + Slot.State];
 		const textNode = context[this.id + Slot.Node];
 		// We make sure to guard a re-render, and only proceed if there'sure
@@ -288,8 +291,10 @@ export class EventHandlerEffect extends Effect {
 			// TODO: We should do post-processing.
 			return res;
 		};
-		const uijs = (globalThis.uijs = globalThis.uijs || {});
-		uijs[`H${this.id}`] = this.wrapper;
+		// NOTE: This is a first pass at SSR with incremental loading
+		// of components.
+		// const uijs = (globalThis.uijs = globalThis.uijs || {});
+		// uijs[`H${this.id}`] = this.wrapper;
 	}
 
 	render(node, position, context, effector) {
