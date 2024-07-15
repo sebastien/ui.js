@@ -45,6 +45,7 @@ export class Injection extends Derivation {
 		this.derived = derived;
 	}
 	applyContext(context) {
+		console.log("XXX INJECTION", { context }, this);
 		// First we extract an initial data from the extraction pattern,
 		// if any.
 		const data = this.extraction
@@ -141,19 +142,23 @@ export class Selection extends Derivation {
 	applyContext(context) {
 		const ctx = super.applyContext(context);
 		// We define a subscription array for the selection.
-		if (ctx[this.id + Slot.Value] === undefined) {
-			ctx[this.id + Slot.Value] = new Observable(undefined, ctx, this.id);
+		if (ctx[this.id + Slot.Observable] === undefined) {
+			ctx[this.id + Slot.Observable] = new Observable(
+				undefined,
+				ctx,
+				this.id
+			);
 		}
 		return ctx;
 	}
 
 	sub(handler, context = Context.Get()) {
-		const obs = context && context[this.id + Slot.Value];
+		const obs = context && context[this.id + Slot.Observable];
 		return obs ? obs.sub(handler) : null;
 	}
 
 	unsub(handler, context = Context.Get()) {
-		const obs = context && context[this.id + Slot.Value];
+		const obs = context && context[this.id + Slot.Observable];
 		return obs ? obs.unsub(handler) : null;
 	}
 }
@@ -175,7 +180,7 @@ export class Argument extends Selection {
 	// TODO: Should this be there?
 	set(value, context = Context.Get()) {
 		if (context) {
-			const obs = context[this.id + Slot.Value];
+			const obs = context[this.id + Slot.Observable];
 			const previous = obs.value;
 			obs.set(value);
 			return previous;
@@ -192,6 +197,28 @@ export class Argument extends Selection {
 
 	toggle() {
 		return this.set(this.get() ? false : true);
+	}
+}
+
+// --
+// An extraction represents a selection of more than one arguments, mapped
+// into the resulting value.
+export class Extraction extends Selection {
+	constructor(args) {
+		super();
+		// Args is like `{id,path:[]}`
+		this.args = args;
+	}
+	applyContext(context) {
+		const scope = (context[this.id] = context[this.id] || []);
+		for (const arg of this.args) {
+			assign(
+				scope,
+				arg.path,
+				arg.id === undefined ? null : context[arg.id]
+			);
+		}
+		return context;
 	}
 }
 

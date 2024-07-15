@@ -49,7 +49,7 @@ export class Slot {
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
 	static Input = "input"; // Offset of the input
-	static Value = 1; // Offset of the observable value
+	static Observable = 1; // Offset of the observable value
 	static Revision = 2; // Offset of the revision number
 	static Node = 3; // Offset of the node
 	static State = 4; // Offset of the state

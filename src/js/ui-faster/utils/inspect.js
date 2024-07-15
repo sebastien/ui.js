@@ -87,6 +87,7 @@ export const getSignature = (func) => {
 			path: [...path, position == undefined ? key || name : position],
 			rest,
 		});
+	// TODO: We should also return the body
 	return { declaration, args };
 };
 // EOF

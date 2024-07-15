@@ -1,9 +1,10 @@
 // NOTE: We should be able to take the nodes directly from the DOM and not
 // use a VNode.
 import { VNode } from "./vdom.js";
-import { Argument, Injection } from "./templates.js";
+import { Argument, Injection, Extraction } from "./templates.js";
 import { FormattingEffect, TemplateEffect } from "./effects.js";
 import { onError } from "./utils/logging.js";
+import { getSignature } from "./utils/inspect.js";
 
 // --
 // Parses a DOM tree annotated with special attributes and generates components
@@ -139,15 +140,22 @@ class MarkupProcessor {
 				// 	break;
 				case "out:text":
 				case "out:html":
-					content = new FormattingEffect(
-						// TODO: We should probably use a DyamicSelection instead
-						// and a null formatter… Or we say that all markup effectors
-						// are either functions or values, and function arguments/selection
-						// will be extracted.
-						undefined,
-						this.getEvaluatorFunction(a.value, scope, node),
-						children
-					);
+					{
+						const processor = this.getFunction(
+							a.value,
+							scope,
+							node
+						);
+						content = new FormattingEffect(
+							// TODO: We should probably use a DyamicSelection instead
+							// and a null formatter… Or we say that all markup effectors
+							// are either functions or values, and function arguments/selection
+							// will be extracted.
+							new Extraction(processor.args),
+							processor,
+							children
+						);
+					}
 					break;
 				default:
 					if (name.startWith("ref:")) {
@@ -172,36 +180,33 @@ class MarkupProcessor {
 		);
 	}
 
-	// --
-	// Given an expression or function body as `text`, and a `scope`
-	// as a mapping of names to `Slot` instances, this returns a function
-	// that given the `slots` will evaluate to a result.
-	getEvaluatorFunction(text, scope, node) {
-		const args = [];
-		for (const k in scope) {
-			args.push(k);
+	getFunction(text, scope, node) {
+		const { declaration, args } = getSignature(text);
+		for (const a of args) {
+			a.id = scope[a.name]?.id;
 		}
-		const body =
-			text.startsWith("{") && text.endsWith("}")
-				? text
-				: `return (${text});`;
 		try {
-			return Object.assign(new Function(...args, body), {
+			return Object.assign(new Function(`return (${text});`)(), {
+				declaration,
 				args,
-				slots: args.map((_) => scope[_]),
-				text,
 			});
 		} catch (error) {
 			onError(
-				[MarkupProcessor, "getEvaluatorFunction"],
+				[MarkupProcessor, "getFunction"],
 				"Syntax error in markup",
 				{ error, node, markup: node.outerHTML }
 			);
+			return null;
 		}
 	}
 }
 
 const DEFAULT_PROCESSOR = new MarkupProcessor();
+
+export const parameters = (node) => {
+	const proc = DEFAULT_PROCESSOR;
+	return proc.onComponent(node);
+};
 
 // --
 // The equivalent of `hyperscript.template()`.

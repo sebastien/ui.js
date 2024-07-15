@@ -239,7 +239,14 @@ export class FormattingEffect extends Effect {
 		// We make sure to guard a re-render, and only proceed if there'sure
 		// a data change.
 		if (input !== previous || textNode === undefined) {
-			const output = this.format ? this.format(input) : `${input}`;
+			const output = this.format
+				? // When the function has an `args`, we know that we need to pass
+				  // more than one argument.
+				  this.format.args
+					? this.format(...input)
+					: // Actually this form (one argument) should not be the default.
+					  this.format(input)
+				: `${input}`;
 			context[this.id + Slot.State] = input;
 			if (!textNode) {
 				return (context[this.id + Slot.Node] = effector.ensureText(
