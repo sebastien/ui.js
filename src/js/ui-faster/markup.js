@@ -9,27 +9,36 @@ import { getSignature } from "./utils/inspect.js";
 // --
 // Parses a DOM tree annotated with special attributes and generates components
 // and templates from it.
-
 class MarkupProcessor {
 	// --
 	// Main processor for a `<template>` node.
 	onTemplate(node) {
 		const name = node.getAttribute("name");
-		const declaration = this.onDeclaration(node, ["name"]);
+		const { input, scope, attributes } = this.onDeclaration(node, ["name"]);
 		const children = [];
 		for (const child of node.content.childNodes) {
-			children.push(this.onTemplateContentNode(child, declaration.scope));
+			children.push(this.onTemplateContentNode(child, scope));
 		}
-		// TODO: Should strip start and end empty nodes
 		return {
-			type: "template",
-			name,
 			template:
 				children.length === 1
 					? children[0]
 					: new VNode(undefined, "#fragment", undefined, children),
-			...declaration,
+			attributes,
+			input,
+			name,
 		};
+
+		// // TODO: Should strip start and end empty nodes
+		// return {
+		// 	type: "template",
+		// 	name,
+		// 	template:
+		// 		children.length === 1
+		// 			? children[0]
+		// 			: new VNode(undefined, "#fragment", undefined, children),
+		// 	...declaration,
+		// };
 	}
 
 	// --
@@ -51,24 +60,26 @@ class MarkupProcessor {
 	// returning a scope and arguments.
 	onDeclaration(node, excluded = []) {
 		const attributes = new Map();
-		const scope = {};
+		const args = {};
 		for (const a of node.attributes) {
 			const name = a.name;
 			// TODO: Add default value/transform
 			if (name.startsWith("in:")) {
 				const _ = new Argument(name.substring(3));
-				scope[_.name] = _;
+				args[_.name] = _;
 			} else if (name.startsWith("out:")) {
 				const _ = new Argument(name.substring(4));
-				scope[_.name] = _;
+				args[_.name] = _;
 			} else if (name.startsWith("inout:")) {
 				const _ = new Argument(name.substring(6));
-				scope[_.name] = _;
+				args[_.name] = _;
 			} else if (excluded.indexOf(name) === -1) {
 				attributes.set(name, a.value);
 			}
 		}
-		return { attributes, scope: Object.create(scope), args: [scope] };
+		// NOTE: Scope is used to keep track of the mapping between arguments
+		// and variable names.
+		return { input: args, scope: Object.create(args), attributes };
 	}
 
 	// --
@@ -180,6 +191,7 @@ class MarkupProcessor {
 		);
 	}
 
+	// FIXME: Scope is actually a mapping of arguments (slots)
 	getFunction(text, scope, node) {
 		const { declaration, args } = getSignature(text);
 		for (const a of args) {
@@ -204,41 +216,53 @@ class MarkupProcessor {
 const DEFAULT_PROCESSOR = new MarkupProcessor();
 
 export const parameters = (node) => {
-	const proc = DEFAULT_PROCESSOR;
-	return proc.onComponent(node);
+	const res = {};
+	for (const a of node.attributes) {
+		const name = a.name;
+		let argname = undefined;
+		if (name.startsWith("in:")) {
+			argname = name.substring(3);
+		} else if (name.startsWith("out:")) {
+			argname = name.substring(4);
+		} else if (name.startsWith("inout:")) {
+			argname = name.substring(6);
+		}
+		if (argname) {
+			// TODO: Should parse the value
+			res[argname] = a.value;
+		}
+	}
+	return res;
 };
 
 // --
 // The equivalent of `hyperscript.template()`.
 export const template = (name) => {
+	// We get the node for the template
 	const proc = DEFAULT_PROCESSOR;
 	const node =
 		typeof name === "string"
 			? document.querySelector(`template[name="${name}"`)
 			: name;
-	// NOTE: This mimics `templates.template()`, but I have to say the
-	// first part doesn't make sense.
-	const template = proc.onTemplate(node);
-	const effect = new TemplateEffect(
-		new Injection(template.args, false),
-		// Why is this undefined, and then why is effect passed to `apply()`?
-		undefined,
-		template.args,
-		template.name
+	// We extract the template (VNode) and the parameters (structure of Argument).
+	const { template, input } = proc.onTemplate(node);
+	// We need to return a function that can be used to create an application
+	// of the current context
+	return Object.assign(
+		(...args) => {
+			return new TemplateEffect(
+				// Injects the arguments in `pattern` from the context input, without
+				// inheriting the parent context.
+				new Injection(input, false, args),
+				template
+			);
+		},
+		{
+			component: node.getAttribute("name"),
+			template,
+			input,
+		}
 	);
-	const apply = (...extraction) =>
-		new TemplateEffect(
-			new Injection(template.args, false, extraction),
-			effect,
-			template.args,
-			template.name
-		);
-	return Object.assign(effect, {
-		template: template.template,
-		args: template.args,
-		apply,
-		effect,
-	});
 };
 
 // EOF

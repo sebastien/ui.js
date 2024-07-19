@@ -16,9 +16,9 @@
 	<div template="Message" out:message="'Hello, World'"></div>
 	-->
 	<div id="Message" out:message="('xxx')"></div>
-	<template name="Message" in:message>
+	<template name="Message" in:message out:count>
 		<div>Pouet pouet
-			<div out:text="(message,{count})=>`Hello, world: ${message}`">Loading</div>
+			<div out:text="(message,{someDataThatDoesnTExist})=>`Hello, world: ${message}`">Loading</div>
 		</div>
 	</template>
 	<!--
@@ -43,7 +43,7 @@
 	<script type="module">
 		import {template} from "@ui/markup.js"
 		import {render} from "@ui/client.js"
-		render(template("Message"), [{message: "Hello, World"}], document.getElementById("Message"));
+		render(template("Message"), {message: "Hello, World"}, document.getElementById("Message"));
 	</script>
 
 </body>

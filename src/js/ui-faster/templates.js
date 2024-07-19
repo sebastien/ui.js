@@ -37,7 +37,7 @@ export class Injection extends Derivation {
 		// also be a list with a dict like `[{label:Argument,id:Argument,style:Argument],Argument]`
 		this.args = args;
 		// Extraction is also a structure containing `Argument` values (and
-		// potentially regular JS values. It helps reshaped a value from the
+		// potentially regular JS values. It helps reshape a value from the
 		// current context before injecting it into the sub context.
 		this.extraction = extraction;
 		// When `derived` is true, the new context will inherit from the parent
