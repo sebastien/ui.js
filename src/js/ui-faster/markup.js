@@ -249,14 +249,21 @@ export const template = (name) => {
 	// We need to return a function that can be used to create an application
 	// of the current context
 	return Object.assign(
-		(...args) => {
-			return new TemplateEffect(
+		(...args) =>
+			new TemplateEffect(
 				// Injects the arguments in `pattern` from the context input, without
 				// inheriting the parent context.
-				new Injection(input, false, args),
+				new Injection(
+					input,
+					false,
+					args.length > 0
+						? Object.assign({}, args[0], {
+								children: args.slice(1),
+						  })
+						: null
+				),
 				template
-			);
-		},
+			),
 		{
 			component: node.getAttribute("name"),
 			template,

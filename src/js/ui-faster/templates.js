@@ -45,7 +45,6 @@ export class Injection extends Derivation {
 		this.derived = derived;
 	}
 	applyContext(context) {
-		console.log("XXX INJECTION", { context }, this);
 		// First we extract an initial data from the extraction pattern,
 		// if any.
 		const data = this.extraction
