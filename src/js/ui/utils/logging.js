@@ -6,6 +6,7 @@ export const onWarning = (message, ...context) => {
 export const onError = (message, ...context) => {
 	console.error("[uijs]", message, ...context);
 };
+
 export const onInfo = (message, ...context) => {
 	console.log("[uijs]", message, ...context);
 };

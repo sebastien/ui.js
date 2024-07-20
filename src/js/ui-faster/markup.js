@@ -3,7 +3,7 @@
 import { VNode } from "./vdom.js";
 import { Argument, Injection, Extraction } from "./templates.js";
 import { FormattingEffect, TemplateEffect } from "./effects.js";
-import { onError } from "./utils/logging.js";
+import { onError, onSyntaxError } from "./utils/logging.js";
 import { getSignature } from "./utils/inspect.js";
 
 // --
@@ -149,8 +149,8 @@ class MarkupProcessor {
 				// 	break;
 				// case "on:unmount":
 				// 	break;
-				case "out:text":
-				case "out:html":
+				case "x:text":
+				case "x:html":
 					{
 						const processor = this.getFunction(
 							a.value,
@@ -169,18 +169,26 @@ class MarkupProcessor {
 					}
 					break;
 				default:
-					if (name.startWith("ref:")) {
+					if (name.startsWith("ref:")) {
 						// RefEffect
-					} else if (name.startswith("out:")) {
+					} else if (name.startsWith("out:")) {
 						// AttributeEffect
-					} else if (name.startswith("on:")) {
+					} else if (name.startsWith("on:")) {
 						// EventHandlerEffect
 					} else {
-						attributes.set(name, a.value);
+						const i = name.indexOf(":");
+						attributes.set(
+							i === -1
+								? [undefined, name]
+								: [name.substring(0, i), name.substring(i + 1)],
+							a.value
+						);
 					}
 			}
 		}
-		for (const child of node.childNodes) {
+		for (const child of node.nodeName === "TEMPLATE"
+			? node.content.childNodes
+			: node.childNodes) {
 			children.push(this.onTemplateContentNode(child, scope));
 		}
 		return new VNode(
@@ -194,20 +202,24 @@ class MarkupProcessor {
 	// FIXME: Scope is actually a mapping of arguments (slots)
 	getFunction(text, scope, node) {
 		const { declaration, args } = getSignature(text);
+		let inputs = [];
 		for (const a of args) {
 			a.id = scope[a.name]?.id;
+			inputs.push(`${a.id}:${a.name}`);
 		}
+		const evaluator = new Function(
+			`{${inputs.join(",")}}`,
+			`return (${text});`
+		);
+		// TODO: We way want to separate a function that just has the body from
+		// one that has arguments.
 		try {
-			return Object.assign(new Function(`return (${text});`)(), {
+			return Object.assign(evaluator, {
 				declaration,
 				args,
 			});
 		} catch (error) {
-			onError(
-				[MarkupProcessor, "getFunction"],
-				"Syntax error in markup",
-				{ error, node, markup: node.outerHTML }
-			);
+			onSyntaxError(error, text, scope, node.outerHTML);
 			return null;
 		}
 	}

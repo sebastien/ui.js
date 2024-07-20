@@ -114,6 +114,7 @@ export class VNode {
 	}
 
 	materialize() {
+		console.log("XXX", this.name);
 		const node =
 			this.name === "#fragment"
 				? document.createDocumentFragment()

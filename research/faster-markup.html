@@ -21,8 +21,8 @@
 			<div out:text="(message,{someDataThatDoesnTExist})=>`Hello, world: ${message}`">Loading</div>
 		</div>
 	</template>
-	<!--
-	<div x:component="Inspector"></div>
+
+	<div id="Inspector"></div>
 
 	<template name="Inspector" in:value out:type="{
 			const t=value.get();
@@ -35,15 +35,16 @@
 			<code x:case="number" x:text="(value)"></code>
 			<details class="composite array" x:case="array">
 				<summary>
-					<x-for="item=value.get()">
+				</summary>
 			</details>
 		</template>
 	</template>
-	-->
+
 	<script type="module">
 		import {template} from "@ui/markup.js"
 		import {render} from "@ui/client.js"
-		render(template("Message"), {}, document.getElementById("Message"));
+		// render(template("Message"), {message: "Hello"}, document.getElementById("Message"));
+		render(template("Inspector"), {value: [1, 2, 3, 4]}, document.getElementById("Inspector"));
 	</script>
 
 </body>
