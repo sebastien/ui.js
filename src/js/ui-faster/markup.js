@@ -15,9 +15,16 @@ class MarkupProcessor {
 	onTemplate(node) {
 		const name = node.getAttribute("name");
 		const { input, scope, attributes } = this.onDeclaration(node, ["name"]);
-		const children = [];
+		let children = [];
 		for (const child of node.content.childNodes) {
-			children.push(this.onTemplateContentNode(child, scope));
+			const v = this.onTemplateNode(child, scope, children);
+			if (v === null) {
+				// pass
+			} else if (v instanceof Array) {
+				children = children.concat(v);
+			} else {
+				children.push(v);
+			}
 		}
 		return {
 			template:
@@ -28,17 +35,6 @@ class MarkupProcessor {
 			input,
 			name,
 		};
-
-		// // TODO: Should strip start and end empty nodes
-		// return {
-		// 	type: "template",
-		// 	name,
-		// 	template:
-		// 		children.length === 1
-		// 			? children[0]
-		// 			: new VNode(undefined, "#fragment", undefined, children),
-		// 	...declaration,
-		// };
 	}
 
 	// --
@@ -47,6 +43,8 @@ class MarkupProcessor {
 		const template = node.getAttribute("template");
 		const declaration = this.onDeclaration(node, ["template"]);
 		const children = [];
+		// FIXME: Actually, components may have nodes that have components
+		// already as well, so we'll need to handle that.
 		for (const child of node.childNodes) {
 			children.push(this.onRawContentNode(child));
 		}
@@ -83,7 +81,8 @@ class MarkupProcessor {
 	}
 
 	// --
-	// Processes the given node as a raw node content.
+	// Processes the given node as a raw node content, ie a node that contains
+	// no effects at all.
 	onRawContentNode(node) {
 		const children = [];
 		for (const child of node.childNodes) {
@@ -102,71 +101,34 @@ class MarkupProcessor {
 		}
 		const attributes = new Map();
 		for (const a of node.attributes) {
+			// TODO: Should support namespace
 			attributes.set(a.name, a.data);
 		}
 		return new VNode(undefined, node.nodeName, attributes, children);
 	}
 
 	// --
-	// Processes the given node as a template node, interpreting the different
-	// effects.
-	onTemplateContentNode(node, scope = {}) {
-		switch (node.nodeType) {
-			case Node.ELEMENT_NODE:
-				break;
-			case Node.COMMENT_NODE:
-				return null;
-			case Node.TEXT_NODE:
-				return node.data;
-			default:
-				return null;
-		}
-		const attributes = new Map();
-		const children = [];
-		let content = undefined;
+	// Processes the attributes of the given node, registering the corresponding
+	// effects in the attributes map.
+	onTemplateAttributes(node, scope = {}, attributes = new Map()) {
 		// NOTE: Any evaluator will be marked as having dynamic inputs, as
 		// opposed to HyperScript that uses explicit inputs through selections.
 		for (const a of node.attributes) {
 			const name = a.name;
 			switch (name) {
-				case "x-for":
-					break;
-				case "x-if":
-					break;
+				// Theseare all reserved attributes processed by templates
+				case "x:for":
+				case "x:if":
 				case "x:elif":
-					break;
 				case "x:else":
-					break;
 				case "x:match":
-					break;
 				case "x:case":
-					break;
-				// case "x:effect":
-				// 	break;
-				// case "on:init":
-				// 	break;
-				// case "on:mount":
-				// 	break;
-				// case "on:unmount":
-				// 	break;
+				case "x:effect":
+				case "on:init":
+				case "on:mount":
+				case "on:unmount":
 				case "x:text":
 				case "x:html":
-					{
-						const processor = this.getFunction(
-							a.value,
-							scope,
-							node
-						);
-						content = new FormattingEffect(
-							// TODO: We should probably use a DyamicSelection instead
-							// and a null formatter… Or we say that all markup effectors
-							// are either functions or values, and function arguments/selection
-							// will be extracted.
-							new Extraction(processor.args),
-							processor,
-							children
-						);
-					}
 					break;
 				default:
 					if (name.startsWith("ref:")) {
@@ -186,17 +148,90 @@ class MarkupProcessor {
 					}
 			}
 		}
-		for (const child of node.nodeName === "TEMPLATE"
+		return attributes;
+	}
+
+	onTemplateEffects(node, scope, content, effects = []) {
+		// if (node.hasAttribute("x:for")) { }
+		// if (node.hasAttribute("x:if")) { }
+		// if (node.hasAttribute("x:elif")) { }
+		// if (node.hasAttribute("x:else")) { }
+		// if (node.hasAttribute("x:match")) { }
+		// if (node.hasAttribute("x:case")) { }
+		// if (node.hasAttribute("x:html")) { }
+		if (node.hasAttribute("x:text")) {
+			const processor = this.getFunction(
+				node.getAttribute("x:text"),
+				scope,
+				node
+			);
+			effects.push(
+				new FormattingEffect(
+					// TODO: We should probably use a DyamicSelection instead
+					// and a null formatter… Or we say that all markup effectors
+					// are either functions or values, and function arguments/selection
+					// will be extracted.
+					new Extraction(processor.args),
+					processor,
+					content
+				)
+			);
+		}
+		return effects;
+	}
+
+	isTemplateNode(node) {
+		return node.nodeName === "TEMPLATE" || node.nodeName === "template";
+	}
+
+	// --
+	// Processes the given node as a template node, processing special
+	// attributes and content to produce effects. Note that `<template>`
+	// nodes content will be inlined.
+	onTemplateNode(node, scope = {}) {
+		switch (node.nodeType) {
+			case Node.ELEMENT_NODE:
+				// If it's an element node, we keep it.
+				break;
+			case Node.TEXT_NODE:
+				return /^[ \t\n]*$/.test(node.data) ? null : node.data;
+			case Node.COMMENT_NODE:
+				return null;
+			default:
+				return null;
+		}
+		// We get the children
+		let children = [];
+		const is_template = this.isTemplateNode(node);
+		for (const child of is_template
 			? node.content.childNodes
 			: node.childNodes) {
-			children.push(this.onTemplateContentNode(child, scope));
+			const v = this.onTemplateNode(child, scope);
+			if (v === null) {
+				// pass
+			} else if (v instanceof Array) {
+				children = children.concat(v);
+			} else if (v.name === "#fragment") {
+				children = children.concat(v.children);
+			} else {
+				children.push(v);
+			}
 		}
-		return new VNode(
-			undefined,
-			node.nodeName,
-			attributes,
-			content ? [content] : children
-		);
+		// And if we have any effect, we'll pass the children to the effects
+		// and the effects will replace the children.
+		const effects = this.onTemplateEffects(node, children, scope);
+		if (is_template) {
+			// If it's a template node, then we're just returning the effects
+			// as we don't want the node.
+			return effects.length ? effects : children;
+		} else {
+			return new VNode(
+				undefined,
+				node.nodeName,
+				this.onTemplateAttributes(node, scope),
+				effects.length ? effects : children
+			);
+		}
 	}
 
 	// FIXME: Scope is actually a mapping of arguments (slots)
@@ -219,7 +254,7 @@ class MarkupProcessor {
 				args,
 			});
 		} catch (error) {
-			onSyntaxError(error, text, scope, node.outerHTML);
+			onSyntaxError(error, text, { scope, node });
 			return null;
 		}
 	}

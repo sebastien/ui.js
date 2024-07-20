@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>UI.js ― Inspector (Preact)</title>
+	<title>UI.js ― Markup</title>
 	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
 	<script type="importmap">{ "imports": {
 			"@ui/": "../src/js/ui-faster/"
@@ -24,19 +24,21 @@
 
 	<div id="Inspector"></div>
 
-	<template name="Inspector" in:value out:type="{
-			const t=value.get();
-			return _  === null || _ === undefined ? 'null' : _ instanceof Array ? 'array' : typeof _))
-			}">
-		<template x:match="type.get()">
+	<template name="Inspector" in:value
+		out:type="value  === null || value === undefined ? 'null' : value instanceof Array ? 'array' : typeof value">
+		<template x:match="type">
 			<code x:case="null" class="symbol null">null</code>
 			<code x:case="undefined" class="symbol undefined">undefined</code>
 			<code x:case="string" x:text="(value)"></code>
+			<!--
 			<code x:case="number" x:text="(value)"></code>
 			<details class="composite array" x:case="array">
+				Details
 				<summary>
+					Summary
 				</summary>
 			</details>
+			-->
 		</template>
 	</template>
 

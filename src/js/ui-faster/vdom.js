@@ -31,30 +31,35 @@ export class VNode {
 		}
 		for (let i = 0; i < node.children.length; i++) {
 			const v = node.children[i];
+			const p = [...path];
+			if (node.name === "#fragment") {
+				p.push(i + ((p.at(-1) || 0) + (p.pop() || 0)));
+			} else {
+				p.push(i);
+			}
 			if (v instanceof Effect) {
-				res.push([[...path, i], v]);
+				res.push([p, v]);
 			} else if (v instanceof VNode) {
-				VNode.Effects(v, [...path, i], res);
+				VNode.Effects(v, p, res);
 			}
 		}
 		return res;
 	}
 
 	static ResolvePath(node, path) {
-		return path.reduce(
-			(r, v) =>
-				v instanceof Array
-					? v[0]
-						? r.getAttributeNodeNS(v[0], v[1])
-						: r.getAttributeNode(v[1])
-					: r.childNodes[v],
-			node
-		);
+		return path.reduce((r, v) => {
+			return v instanceof Array
+				? v[0]
+					? r.getAttributeNodeNS(v[0], v[1])
+					: r.getAttributeNode(v[1])
+				: r.childNodes[v];
+		}, node);
 	}
 
 	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
+		// FIXME: We should really put the processing of attributes optional, move it somewhere else.
 		if (attributes instanceof Map) {
 			this.attributes = attributes;
 		} else {
@@ -98,12 +103,19 @@ export class VNode {
 				? new FormattingEffect(_)
 				: _
 		);
-		this.template = this.materialize();
-		this._effects = null;
+		this._template = undefined;
+		this._effects = undefined;
+	}
+
+	get template() {
+		if (this._template === undefined) {
+			this._template = this.materialize();
+		}
+		return this._template;
 	}
 
 	get effects() {
-		if (!this._effects) {
+		if (this._effects === undefined) {
 			this._effects = VNode.Effects(this);
 		}
 		return this._effects;
@@ -114,11 +126,11 @@ export class VNode {
 	}
 
 	materialize() {
-		console.log("XXX", this.name);
 		const node =
 			this.name === "#fragment"
 				? document.createDocumentFragment()
 				: document.createElement(this.name);
+		// NOTE: Maybe if it's a fragment we should add one for the marker
 		for (const [[ns, name], value] of this.attributes.entries()) {
 			ns
 				? node.setAttributeNS(ns, name, value)

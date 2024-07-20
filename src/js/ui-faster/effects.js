@@ -1,4 +1,5 @@
 import { Context, Slot } from "./cells.js";
+import { onRuntimeError } from "./utils/logging.js";
 
 export class Effect extends Slot {
 	constructor(input) {
@@ -34,12 +35,9 @@ export class Effect extends Slot {
 	}
 }
 export class TemplateEffect extends Effect {
-	constructor(inputs, template, args, name) {
+	constructor(inputs, template) {
 		super(inputs);
 		this.template = template;
-		// NOTE: Not in input, the inputs are actually
-		this.args = args;
-		this.name = name;
 	}
 	render(node, position, context, effector) {
 		const derived = this.input.applyContext(context);
@@ -239,14 +237,22 @@ export class FormattingEffect extends Effect {
 		// We make sure to guard a re-render, and only proceed if there'sure
 		// a data change.
 		if (input !== previous || textNode === undefined) {
-			const output = this.format
-				? // When the function has an `args`, we know that we need to pass
-				  // more than one argument.
-				  this.format.args
-					? this.format(...input)
-					: // Actually this form (one argument) should not be the default.
-					  this.format(input)
-				: `${input}`;
+			let output = undefined;
+			try {
+				output = this.format
+					? // When the function has an `args`, we know that we need to pass
+					  // more than one argument.
+					  this.format.args
+						? this.format(...input)
+						: // Actually this form (one argument) should not be the default.
+						  this.format(input)
+					: `${input}`;
+			} catch (error) {
+				onRuntimeError(error, this.format.toString(), {
+					node: node,
+					input: this.format?.args ? [input] : input,
+				});
+			}
 			context[this.id + Slot.State] = input;
 			if (!textNode) {
 				return (context[this.id + Slot.Node] = effector.ensureText(

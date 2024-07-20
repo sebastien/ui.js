@@ -37,8 +37,19 @@ export class DOMEffector {
 		return this.appendChild(parent, node);
 	}
 
+	ensurePosition(parent, position = 0) {
+		if (parent.childNodes.length >= position - 1) {
+			return parent;
+		}
+		while (parent.childNodes.length < position - 1) {
+			parent.appendChild(document.createComment("#"));
+		}
+		return parent.childNodes[position];
+	}
+
 	// TODO: Implement position support
 	appendChild(parent, child, position = 0) {
+		// TODO: Support fragments
 		if (!parent) {
 			return child;
 		}
@@ -54,15 +65,23 @@ export class DOMEffector {
 		// as a parent. This is typically for a root component, and as the document fragment
 		// is emptied after the first pass (for performance), we need on
 		// subsequent passes to append the child where the fragment was mounted.
-		if (
-			parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
-			parent.uiParentElement !== undefined
-		) {
-			return this.appendChild(
-				parent.uiParentElement,
-				child,
-				parent.uiParentPosition + position
-			);
+		if (parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+			if (parent.uiParentElement !== undefined) {
+				return this.appendChild(
+					parent.uiParentElement,
+					child,
+					parent.uiParentPosition + position
+				);
+			} else {
+				// TODO: Position
+				if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+					for (const c of child.childNodes) {
+						parent.appendChild(c);
+					}
+				} else {
+					parent.appendChild(child);
+				}
+			}
 		} else if (parent.nodeType === Node.COMMENT_NODE) {
 			if (!parent.parentNode) {
 				console.error("Parent comment node has no parent", {
@@ -71,6 +90,7 @@ export class DOMEffector {
 				});
 				return child;
 			} else {
+				// FIXME: What about position?
 				parent.parentNode.insertBefore(child, parent);
 			}
 			// FIXME: THat doesn't work
@@ -79,7 +99,12 @@ export class DOMEffector {
 			// } else if (parent.childNodes.length > position) {
 			// 	parent.insertBefore(child, parent.childNodes[position]);
 		} else {
-			parent.appendChild(child);
+			const node = this.ensurePosition(parent, position);
+			if (node) {
+				parent.replaceChild(child, node);
+			} else {
+				parent.appendChild(child);
+			}
 		}
 		return child;
 	}

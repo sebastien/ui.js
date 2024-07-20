@@ -56,8 +56,8 @@ const render = (
 			// FIXME: We should only assign these after so that we can insert
 			// the fragment all at once instead of incrementally, this really
 			// improves performance, see `09a0be19a241a8d8c0a7dc82caf156e8acc11177`
-			uiParentElement: parent,
-			uiParentOffset: position,
+			// uiParentElement: parent,
+			// uiParentOffset: position,
 		}));
 	const res = effect.render(node, position, ctx, effector);
 	// Appending only at the end is the best way to speed up the initial rendering.
@@ -65,6 +65,7 @@ const render = (
 		// NOTE: The fragment will be emptied from its contents.
 		parent.appendChild(node);
 	}
+	console.log("RES", { res, node });
 	return res;
 };
 
