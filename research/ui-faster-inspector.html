@@ -16,15 +16,17 @@
 	</div>
 
 	<script type="module">
-		import {h, $, render} from "@ui/client.js"
+		import {render} from "@ui/client.js"
+		import {h, $} from "@ui/hyperscript.js"
 		const {div, em, ul, li, span} = h;
 
 		// TODO: we sould have `const Inspector = component((value, isExpanded)=>…)
 		// and then be able to do Inspector({form:slot,…}).
-		const Inspector = (value, isExpanded) => {
+		const Inspector = ({value, isExpanded}) => {
 			// If the Inspector is called first, then it will add the template to 
 			// the function. If it's called a second time, then it will just return
 			// the application of the template, so that we can do Inspector({value:slot, …})
+			console.log("XXX", {value, isExpanded})
 			const toggleExpanded = (event) => {
 				isExpanded.toggle()
 				event.stopPropagation()
@@ -50,20 +52,28 @@
 									{_: "pl-2"},
 									// TODO: The application does not seem to be passing the value down
 									// TODO: The application should probably be more like `Inspector(value)`
-									span({_: "mono dim small"}, key.text(_ => `${_}: `)), Inspector.apply(value))))
+									span({_: "mono dim small"}, key.text(_ => `${_}: `)), h(Inspector, {value}))))
 							),
-							_ => _.else(ul({_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded}, "Object ", value.text(_ => `${Object.keys(_).length}`), " keys")))),
-					_ => _.case("array",
-						isExpanded.match(
-							_ => _.case(true, ul(
-								{_: "Array isExpanded comma brackets dim-ab"},
-								// The input should be [Slot(#0), Slot(#1)]
-								value.map((value, key) => li(
-									{_: "pl-2"},
-									span({_: "mono dim small"}, key.text(_ => `#${_}: `)), Inspector.apply(value))))),
 							_ => _.else(
-								ul({_: "Array isCollapsed comma brackets dim-ab", onClick: toggleExpanded}, "Array ", value.text(_ => `${_.length}`), " items")))),
-					_ => _.else(span({_: "Value"}, value.text()))))
+								ul(
+									{_: "Object isCollapsed comma curlies dim-ab", onClick: toggleExpanded},
+									"Object ", value.text(_ => `${Object.keys(_).length}`), " keys")))),
+					_ => _.case("array",
+						// TODO: It would be nice to have `isExpanded.toggle(IF_TRUE, ELSE)`
+						isExpanded.match(
+							_ => _.case(true,
+								ul(
+									{_: "Array isExpanded comma brackets dim-ab"},
+									// The input should be [Slot(#0), Slot(#1)]
+									value.map((value, key) => li(
+										{_: "pl-2"},
+										span({_: "mono dim small"}, key.text(_ => `#${_}: `)), h(Inspector, {value}))))),
+							_ => _.else(
+								ul(
+									{_: "Array isCollapsed comma brackets dim-ab", onClick: toggleExpanded},
+									"Array ", value.text(_ => `${_.length}`), " items")))),
+					_ => _.else(
+						span({_: "Value"}, value.text()))))
 		};
 
 
@@ -80,7 +90,7 @@
 			return array; // Return the shuffled array
 		}
 
-		const r = (data) => render(Inspector, [data], document.getElementById("Inspector"));
+		const r = (data) => render(Inspector, {value: data}, document.getElementById("Inspector"));
 		const d = logs // logs.slice(0, 2)
 		const frame = (n) => {
 			console.group("FRAME", n)

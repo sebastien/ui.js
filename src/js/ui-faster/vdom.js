@@ -1,24 +1,6 @@
-import {
-	Effect,
-	AttributeEffect,
-	FormattingEffect,
-	EventHandlerEffect,
-} from "./effects.js";
+import { Effect } from "./effects.js";
 import { Slot } from "./cells.js";
-import { isObject } from "./utils/types.js";
 import { onError } from "./utils/logging.js";
-
-const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
-
-function camelToKebab(str) {
-	return (
-		str
-			// Look for any lowercase letter followed by an uppercase letter
-			.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-			// Convert the entire string to lowercase
-			.toLowerCase()
-	);
-}
 
 export class VNode {
 	// --
@@ -59,50 +41,8 @@ export class VNode {
 	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
-		// FIXME: We should really put the processing of attributes optional, move it somewhere else.
-		if (attributes instanceof Map) {
-			this.attributes = attributes;
-		} else {
-			this.attributes = new Map();
-			for (const k in attributes) {
-				let [ns, name] = k.split(":");
-				if (!name) {
-					name = ns;
-					ns = undefined;
-				}
-				if (name === "_") {
-					name = "class";
-				}
-				const v = attributes[k];
-				const m = RE_ATTRIBUTE.exec(k);
-				if (m && m.groups.event) {
-					name = name.toLowerCase();
-					this.attributes.set(
-						[ns, name],
-						typeof v === "function"
-							? EventHandlerEffect.Ensure(v)
-							: v
-					);
-				} else {
-					this.attributes.set(
-						[ns, camelToKebab(name)],
-						v instanceof Effect
-							? v
-							: v instanceof Slot
-							? new AttributeEffect(v)
-							: v
-					);
-				}
-			}
-		}
-		// We make sure that cells are wrapped in formatting effects.
-		this.children = children.map((_) =>
-			_ instanceof Effect
-				? _
-				: _ instanceof Slot
-				? new FormattingEffect(_)
-				: _
-		);
+		this.attributes = attributes;
+		this.children = children;
 		this._template = undefined;
 		this._effects = undefined;
 	}
@@ -197,31 +137,4 @@ export class VNode {
 	}
 }
 
-// --
-// Defines a proxy behaviour that dynamically creates `VNode` factories
-// within a given namespace.
-class VDOMFactoryProxy {
-	constructor(namespace) {
-		this.namespace = namespace;
-	}
-	get(scope, property) {
-		// TODO: Support `h.Fragment`
-		if (scope.has(property)) {
-			return scope.get(property);
-		} else {
-			const res = (attributes, ...args) =>
-				attributes !== null &&
-				attributes !== undefined &&
-				isObject(attributes)
-					? new VNode(this.namespace, property, attributes, args)
-					: new VNode(this.namespace, property, null, [
-							attributes,
-							...args,
-					  ]);
-			scope.set(property, res);
-			return res;
-		}
-	}
-}
-export const h = new Proxy(new Map(), new VDOMFactoryProxy());
 // EOF

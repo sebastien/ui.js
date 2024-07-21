@@ -1,12 +1,10 @@
 import {
 	ConditionalEffect,
 	MappingEffect,
-	TemplateEffect,
-	ApplicationEffect,
 	FormattingEffect,
+	TemplateEffect,
 } from "./effects.js";
 import { Context, Slot, Observable } from "./cells.js";
-import { getSignature } from "./utils/inspect.js";
 import { assign } from "./utils/collections.js";
 
 // TODO: Shouldn't that be an Input?
@@ -121,9 +119,10 @@ export class Selection extends Derivation {
 		);
 	}
 
-	render(tmpl) {
-		return new ApplicationEffect(this, template(tmpl));
-	}
+	// NOTE: Disabled
+	//	render(tmpl) {
+	//		return new ApplicationEffect(this, tmpl);
+	//	}
 
 	match(...branches) {
 		const b = branches.reduce((r, v) => (v(r), r), new Branches());
@@ -131,7 +130,9 @@ export class Selection extends Derivation {
 	}
 
 	map(component) {
-		return new MappingEffect(this, template(component));
+		// TODO: Check that component is what we expect (ie. probably not
+		// a component).
+		return new MappingEffect(this, component);
 	}
 
 	// ========================================================================
@@ -235,67 +236,29 @@ export class Application extends Selection {
 	}
 }
 
-// TODO: This should be moved to HyperScript, probably.
-//
 // --
-// Takes the given `component` function, and returns its derivation
-// template, creating it if necessary. The creation of the template inspects
-// the function to extract its arguments signature,
-export const template = (component) => {
-	if (component.template) {
-		return component.template;
-	} else {
-		// We extract the signature from the component function
-		// definition. Each argument is then assigned in `args`, which
-		// will hold the shape of the input.
-		const args = [];
-		for (const { path, name } of getSignature(component).args) {
-			assign(args, path, new Argument(name));
+// Takes a VDom node template, an input structure containing Argument/Cells
+// to define an injection, and an optional name. Returns a function that returns
+// a template effect that injects the arguments into the given input. That function
+// can then be used to render the component.
+export const factory = (template, input, name) =>
+	Object.assign(
+		(...args) =>
+			new TemplateEffect(
+				// Injects the arguments in `pattern` from the context input, without
+				// inheriting the parent context.
+				new Injection(input, false, null),
+				template,
+				args.length > 0
+					? Object.assign({}, args[0], {
+							children: args.slice(1),
+					  })
+					: null
+			),
+		{
+			component: name,
+			template,
+			input,
 		}
-		// We create a template effect that starts with an injection of the
-		// arguments into the rendered context.
-		const res = (component.template = new TemplateEffect(
-			// A `template` is for a component, so the injection is *not* derived.
-			new Injection(args, false),
-			undefined, // TODO: Not sure why undefined works in that case
-			args,
-			component.name
-		));
-		component.apply = (...extraction) => {
-			// At this point args is going to be of similar shape as the
-			// `args` above, where some values may be `Argument` and some
-			// others may be regular values.
-			return new TemplateEffect(
-				// A `template` is for a component, so the injection is *not* derived.
-				new Injection(args, false, extraction),
-				component.template, // FIXME: Not sure why we reference the other TemplateEffect
-				args,
-				component.name
-			);
-		};
-		res.template = component(...args);
-		res.args = args;
-		return res;
-	}
-};
-
-// Creates a new `Selection` out of the given arguments.
-export const select = Object.assign(
-	(args) =>
-		args instanceof Selection ? args : new Selection(new Injection(args)),
-	{
-		// NOTE: Disabling
-		// cells: new Proxy(
-		// 	{},
-		// 	{
-		// 		get: (scope, property) => {
-		// 			return new Cell(undefined, property);
-		// 		},
-		// 	},
-		// ),
-	}
-);
-
-export const $ = select;
-
-// EOF
+	);
+//EOF

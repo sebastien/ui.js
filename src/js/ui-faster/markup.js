@@ -1,9 +1,9 @@
 // NOTE: We should be able to take the nodes directly from the DOM and not
 // use a VNode.
 import { VNode } from "./vdom.js";
-import { Argument, Injection, Extraction } from "./templates.js";
-import { FormattingEffect, TemplateEffect } from "./effects.js";
-import { onError, onSyntaxError } from "./utils/logging.js";
+import { Argument, Extraction, factory } from "./templates.js";
+import { FormattingEffect } from "./effects.js";
+import { onSyntaxError } from "./utils/logging.js";
 import { getSignature } from "./utils/inspect.js";
 
 // --
@@ -295,27 +295,10 @@ export const template = (name) => {
 	const { template, input } = proc.onTemplate(node);
 	// We need to return a function that can be used to create an application
 	// of the current context
-	return Object.assign(
-		(...args) =>
-			new TemplateEffect(
-				// Injects the arguments in `pattern` from the context input, without
-				// inheriting the parent context.
-				new Injection(
-					input,
-					false,
-					args.length > 0
-						? Object.assign({}, args[0], {
-								children: args.slice(1),
-						  })
-						: null
-				),
-				template
-			),
-		{
-			component: node.getAttribute("name"),
-			template,
-			input,
-		}
+	return factory(
+		template,
+		input,
+		typeof name === "string" ? name : node.getAttribute("name")
 	);
 };
 

@@ -1,7 +1,6 @@
 import { DOMEffector } from "./effectors.js";
-import { h } from "./vdom.js";
-import { template, $ } from "./templates.js";
 import { parameters } from "./markup.js";
+import { template } from "./hyperscript.js";
 import { Slot } from "./cells.js";
 
 const globals = {
@@ -37,9 +36,12 @@ const render = (
 	} else {
 		Object.assign(input, data);
 	}
+	console.log("INPUT", input);
 	// We create an instance of the component, which is going to be
 	// an effect mapped with the given input.
-	const effect = component(input);
+	const effect = template(component)(input);
+	console.log("EFFECT", effect);
+
 	// We setup a context
 	const ctx = (context[effect.id] =
 		context[effect.id] ?? Object.create(context));
@@ -69,5 +71,5 @@ const render = (
 	return res;
 };
 
-export { h, $, globals, render };
+export { globals, render };
 // EOF
