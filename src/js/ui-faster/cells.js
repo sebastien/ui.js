@@ -48,7 +48,6 @@ export class Slot {
 	// by a step of 10 and start at 10.
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
-	static Input = "input"; // Offset of the input
 	static Observable = 1; // Offset of the observable value
 	static Revision = 2; // Offset of the revision number
 	static Node = 3; // Offset of the node

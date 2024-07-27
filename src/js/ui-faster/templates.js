@@ -57,7 +57,6 @@ export class Injection extends Derivation {
 		// We set the derived context.
 		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
-		derived[Slot.Input] = data;
 		// TODO: This is where we would copy cells/slots that are passed
 		// with `out` or `inout`.
 		//… where the args values are extracted and mapped to their cell ids;
@@ -129,10 +128,10 @@ export class Selection extends Derivation {
 		return new ConditionalEffect(this, b.branches, b.elseBranch);
 	}
 
-	map(component) {
+	map(func) {
 		// TODO: Check that component is what we expect (ie. probably not
 		// a component).
-		return new MappingEffect(this, component);
+		return new MappingEffect(this, func, new Selection(), new Selection());
 	}
 
 	// ========================================================================
@@ -241,24 +240,21 @@ export class Application extends Selection {
 // to define an injection, and an optional name. Returns a function that returns
 // a template effect that injects the arguments into the given input. That function
 // can then be used to render the component.
-export const factory = (template, input, name) =>
-	Object.assign(
-		(...args) =>
-			new TemplateEffect(
-				// Injects the arguments in `pattern` from the context input, without
-				// inheriting the parent context.
-				new Injection(input, false, null),
-				template,
-				args.length > 0
-					? Object.assign({}, args[0], {
-							children: args.slice(1),
-					  })
-					: null
-			),
-		{
-			component: name,
+export const application = (template, input, name) => ({
+	application: (...args) =>
+		new TemplateEffect(
+			// Injects the arguments in `pattern` from the context input, without
+			// inheriting the parent context.
+			new Injection(input, false, null),
 			template,
-			input,
-		}
-	);
+			args.length > 0
+				? Object.assign({}, args[0], {
+						children: args.slice(1),
+				  })
+				: null
+		),
+	component: name,
+	template,
+	input,
+});
 //EOF

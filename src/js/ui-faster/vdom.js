@@ -41,8 +41,8 @@ export class VNode {
 	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
-		this.attributes = attributes;
-		this.children = children;
+		this.attributes = attributes || new Map();
+		this.children = children || [];
 		this._template = undefined;
 		this._effects = undefined;
 	}

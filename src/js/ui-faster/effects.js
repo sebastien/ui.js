@@ -59,7 +59,6 @@ export class ApplicationEffect extends Effect {
 			ctx = {
 				[Slot.Owner]: this,
 				[Slot.Parent]: context,
-				[Slot.Input]: context[this.input.id],
 			};
 			context[this.id] = ctx;
 		}
@@ -148,9 +147,13 @@ export class ConditionalEffect extends Effect {
 }
 
 export class MappingEffect extends Effect {
-	constructor(input, template) {
+	constructor(input, func, valueSlot, keySlot) {
 		super(input);
-		this.template = template;
+		// TODO: template is going to be a function that should take `(value,key)`
+		// where Value and Key will be slots as part of this mapping
+		this.valueSlot = valueSlot;
+		this.keySlot = keySlot;
+		this.effect = func(valueSlot, keySlot);
 	}
 
 	render(node, position, context, effector) {
@@ -191,18 +194,20 @@ export class MappingEffect extends Effect {
 				ctx[this.id + Slot.State] = null;
 				// We set the basic input for the context as the item's value
 				// and its key.
-				ctx[Slot.Input] = [items[k], k];
+				ctx[this.valueSlot.id] = items[k];
+				ctx[this.keySlot.id] = k;
 				// We register the mapped value and context in the mapping.
 				mapping.set(k, [revision, ctx]);
 			} else {
 				// TODO: Shouldn't we detect if there's a change there?
-				ctx[Slot.Input][0] = items[k];
-				ctx[Slot.Input][1] = k;
+				ctx[this.valueSlot.id] = items[k];
+				ctx[this.keySlot.id] = k;
 				// Only the revision has changed in the entry.
 				entry[0] = revision;
 			}
+			console.log("XXX MAPPING", { template: this.template });
 			// TODO: We should probably store the output DOM node?
-			const res = this.template.render(
+			const res = this.effect.render(
 				node,
 				[position, i++],
 				ctx,
@@ -210,7 +215,7 @@ export class MappingEffect extends Effect {
 				this.template.id
 			);
 		}
-		// TODO: We should remove the ammping items that haven't been updated
+		// TODO: We should remove mapping ammping items that haven't been updated
 		for (const [k, [rev]] of mapping.entries()) {
 			if (rev !== revision) {
 				console.log("TODO: Mapping remove key", k);

@@ -1,7 +1,7 @@
 // NOTE: We should be able to take the nodes directly from the DOM and not
 // use a VNode.
 import { VNode } from "./vdom.js";
-import { Argument, Extraction, factory } from "./templates.js";
+import { Argument, Extraction, application } from "./templates.js";
 import { FormattingEffect } from "./effects.js";
 import { onSyntaxError } from "./utils/logging.js";
 import { getSignature } from "./utils/inspect.js";
@@ -295,7 +295,8 @@ export const template = (name) => {
 	const { template, input } = proc.onTemplate(node);
 	// We need to return a function that can be used to create an application
 	// of the current context
-	return factory(
+	console.log("XXXX APPLICATION", template);
+	return application(
 		template,
 		input,
 		typeof name === "string" ? name : node.getAttribute("name")

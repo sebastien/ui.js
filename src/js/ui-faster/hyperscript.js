@@ -1,4 +1,4 @@
-import { Argument, Injection, factory } from "./templates.js";
+import { Argument, Injection, application } from "./templates.js";
 import { Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
@@ -20,9 +20,10 @@ const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
 // Takes the given `component` function, and returns its derivation
 // template, creating it if necessary. The creation of the template inspects
 // the function to extract its arguments signature,
+// FIXME: Rename to application?
 export const template = (component) => {
-	if (component.factory) {
-		return component.factory;
+	if (component.application) {
+		return component.application;
 	} else {
 		// We extract the signature from the component function
 		// definition. Each argument is then assigned in `args`, which
@@ -31,25 +32,18 @@ export const template = (component) => {
 		for (const { path, name } of getSignature(component).args) {
 			assign(args, path, new Argument(name));
 		}
-
-		return (component.factory = factory(
-			component(...args),
-			args[0],
-			component.name
-		));
+		// We run the component function only once, it generates a template,
+		// and the factory function will will be used to generate an application
+		// of the template based on the given input.
+		return Object.assign(
+			component,
+			application(component(...args), args[0], component.name)
+		).application;
 	}
 };
-
-// --
-// The JSX/React-like interface to create VDOM nodes from JavaScript. This is
-// used by the `h` hyperscript function below.
-const createElement = (element, attributes, ...children) => {
-	if (typeof element === "function") {
-		return element.factory
-			? element.factory(attributes, ...children)
-			: element(attributes, ...children);
-	} else {
-		const attr = new Map();
+const createAttributes = (attributes) => {
+	const attr = new Map();
+	if (attributes) {
 		for (const k in attributes) {
 			let [ns, name] = k.split(":");
 			if (!name) {
@@ -78,9 +72,21 @@ const createElement = (element, attributes, ...children) => {
 				);
 			}
 		}
+	}
+	return attr;
+};
+// --
+// The JSX/React-like interface to create VDOM nodes from JavaScript. This is
+// used by the `h` hyperscript function below.
+const createElement = (element, attributes, ...children) => {
+	if (typeof element === "function") {
+		return element.factory
+			? element.factory(attributes, ...children)
+			: element(attributes, ...children);
+	} else {
 		return new VNode(
 			element,
-			attr,
+			createAttributes(attrutes),
 			children.map((_) =>
 				_ instanceof Effect
 					? _
@@ -112,7 +118,12 @@ export class VDOMFactoryProxy {
 				attributes !== null &&
 				attributes !== undefined &&
 				isObject(attributes)
-					? new VNode(this.namespace, property, attributes, args)
+					? new VNode(
+							this.namespace,
+							property,
+							createAttributes(attributes),
+							args
+					  )
 					: new VNode(this.namespace, property, null, [
 							attributes,
 							...args,

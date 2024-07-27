@@ -36,19 +36,15 @@ const render = (
 	} else {
 		Object.assign(input, data);
 	}
-	console.log("INPUT", input);
 	// We create an instance of the component, which is going to be
 	// an effect mapped with the given input.
 	const effect = template(component)(input);
-	console.log("EFFECT", effect);
 
 	// We setup a context
 	const ctx = (context[effect.id] =
 		context[effect.id] ?? Object.create(context));
 	ctx[Slot.Owner] = effect;
 	ctx[Slot.Parent] = context;
-	// FIXME: Not even sure we need this
-	ctx[Slot.Input] = input;
 	// We create the parent node
 	const node = (ctx[Slot.Node] =
 		ctx[Slot.Node] ||
@@ -67,7 +63,6 @@ const render = (
 		// NOTE: The fragment will be emptied from its contents.
 		parent.appendChild(node);
 	}
-	console.log("RES", { res, node });
 	return res;
 };
 
