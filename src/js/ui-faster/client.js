@@ -45,6 +45,8 @@ const render = (
 		context[effect.id] ?? Object.create(context));
 	ctx[Slot.Owner] = effect;
 	ctx[Slot.Parent] = context;
+	// The input slot is the default slot for the original input (by value).
+	ctx[Slot.Input] = data;
 	// We create the parent node
 	const node = (ctx[Slot.Node] =
 		ctx[Slot.Node] ||

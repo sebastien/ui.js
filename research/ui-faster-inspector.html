@@ -26,7 +26,6 @@
 			// If the Inspector is called first, then it will add the template to 
 			// the function. If it's called a second time, then it will just return
 			// the application of the template, so that we can do Inspector({value:slot, …})
-			console.log("XXX", {value, isExpanded})
 			const toggleExpanded = (event) => {
 				isExpanded.toggle()
 				event.stopPropagation()

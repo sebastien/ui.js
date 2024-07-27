@@ -40,8 +40,27 @@ export class TemplateEffect extends Effect {
 		this.template = template;
 	}
 	render(node, position, context, effector) {
+		if (this.template instanceof Function) {
+			this.template = this.template.template;
+		}
 		const derived = this.input.applyContext(context);
+		console.log("APPLY CONTEXT", context, "DERIVED", derived);
 		return this.template.render(node, position, derived, effector, this.id);
+	}
+}
+
+export class ComponentEffect extends Effect {
+	constructor(func, attributes) {
+		super(attributes);
+		this.func = func;
+	}
+	render(node, position, context, effector) {
+		// TODO: At rendering, we need to determine if the function has been
+		// converted to a component, ie. has a `template` and `applicator`.
+		console.log("TODO: RENDERING COMPONENT", { func: this.func });
+		// const derived = this.input.applyContext(context);
+		// return this.template.render(node, position, derived, effector, this.id);
+		//
 	}
 }
 

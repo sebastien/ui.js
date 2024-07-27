@@ -44,7 +44,7 @@ export class Injection extends Derivation {
 	}
 	applyContext(context) {
 		// First we extract an initial data from the extraction pattern,
-		// if any.
+		// if any, otherwise we default from the input slot.
 		const data = this.extraction
 			? Slot.Expand(this.extraction, context)
 			: context[Slot.Input];
@@ -241,6 +241,8 @@ export class Application extends Selection {
 // a template effect that injects the arguments into the given input. That function
 // can then be used to render the component.
 export const application = (template, input, name) => ({
+	// The application, takes arguments and maps them to the input, rendering
+	// the underlying template.
 	application: (...args) =>
 		new TemplateEffect(
 			// Injects the arguments in `pattern` from the context input, without
@@ -254,7 +256,10 @@ export const application = (template, input, name) => ({
 				: null
 		),
 	component: name,
+	// The template is going to be the static (computed once) tree of nodes
+	// and effects.
 	template,
+	//  The input is the arguments/input structure
 	input,
 });
 //EOF

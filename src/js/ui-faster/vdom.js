@@ -69,6 +69,8 @@ export class VNode {
 		const node =
 			this.name === "#fragment"
 				? document.createDocumentFragment()
+				: this.ns
+				? document.createElementNS(this.ns, this.name)
 				: document.createElement(this.name);
 		// NOTE: Maybe if it's a fragment we should add one for the marker
 		for (const [[ns, name], value] of this.attributes.entries()) {

@@ -5,6 +5,7 @@ import {
 	Effect,
 	AttributeEffect,
 	FormattingEffect,
+	ComponentEffect,
 	EventHandlerEffect,
 } from "./effects.js";
 import { assign } from "./utils/collections.js";
@@ -21,6 +22,7 @@ const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
 // template, creating it if necessary. The creation of the template inspects
 // the function to extract its arguments signature,
 // FIXME: Rename to application?
+//
 export const template = (component) => {
 	if (component.application) {
 		return component.application;
@@ -32,6 +34,9 @@ export const template = (component) => {
 		for (const { path, name } of getSignature(component).args) {
 			assign(args, path, new Argument(name));
 		}
+		// We need to set the input early, as it's going to be accessed
+		// in `createElement` if we recurse on the component.
+		component.input = args[0];
 		// We run the component function only once, it generates a template,
 		// and the factory function will will be used to generate an application
 		// of the template based on the given input.
@@ -41,6 +46,7 @@ export const template = (component) => {
 		).application;
 	}
 };
+
 const createAttributes = (attributes) => {
 	const attr = new Map();
 	if (attributes) {
@@ -80,13 +86,11 @@ const createAttributes = (attributes) => {
 // used by the `h` hyperscript function below.
 const createElement = (element, attributes, ...children) => {
 	if (typeof element === "function") {
-		return element.factory
-			? element.factory(attributes, ...children)
-			: element(attributes, ...children);
+		return new ComponentEffect(element, { ...attributes, children });
 	} else {
 		return new VNode(
-			element,
-			createAttributes(attrutes),
+			...(element instanceof Array ? element : [undefined, element]),
+			createAttributes(attributes),
 			children.map((_) =>
 				_ instanceof Effect
 					? _
@@ -118,16 +122,17 @@ export class VDOMFactoryProxy {
 				attributes !== null &&
 				attributes !== undefined &&
 				isObject(attributes)
-					? new VNode(
-							this.namespace,
-							property,
-							createAttributes(attributes),
-							args
-					  )
-					: new VNode(this.namespace, property, null, [
+					? createElement(
+							[this.namespace, property],
 							attributes,
-							...args,
-					  ]);
+							...args
+					  )
+					: createElement(
+							[this.namespace, property],
+							null,
+							attributes,
+							...args
+					  );
 			tags.set(property, res);
 			return res;
 		}

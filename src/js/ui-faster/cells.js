@@ -46,6 +46,7 @@ export class Slot {
 
 	// These are the offsets in for the identifiers. Ids are incremented
 	// by a step of 10 and start at 10.
+	static Input = "input"; // Special context value for passing values
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
 	static Observable = 1; // Offset of the observable value
