@@ -44,23 +44,26 @@ export class TemplateEffect extends Effect {
 			this.template = this.template.template;
 		}
 		const derived = this.input.applyContext(context);
-		console.log("APPLY CONTEXT", context, "DERIVED", derived);
 		return this.template.render(node, position, derived, effector, this.id);
 	}
 }
 
 export class ComponentEffect extends Effect {
-	constructor(func, attributes) {
-		super(attributes);
-		this.func = func;
+	constructor(input, component) {
+		super(input);
+		this.component = component;
 	}
 	render(node, position, context, effector) {
 		// TODO: At rendering, we need to determine if the function has been
 		// converted to a component, ie. has a `template` and `applicator`.
-		console.log("TODO: RENDERING COMPONENT", { func: this.func });
-		// const derived = this.input.applyContext(context);
-		// return this.template.render(node, position, derived, effector, this.id);
-		//
+		const derived = this.input.applyContext(context);
+		return this.component.template.render(
+			node,
+			position,
+			derived,
+			effector,
+			this.id
+		);
 	}
 }
 
@@ -166,13 +169,13 @@ export class ConditionalEffect extends Effect {
 }
 
 export class MappingEffect extends Effect {
-	constructor(input, func, valueSlot, keySlot) {
+	constructor(input, factory, valueSlot, keySlot) {
 		super(input);
 		// TODO: template is going to be a function that should take `(value,key)`
 		// where Value and Key will be slots as part of this mapping
 		this.valueSlot = valueSlot;
 		this.keySlot = keySlot;
-		this.effect = func(valueSlot, keySlot);
+		this.template = factory(valueSlot, keySlot);
 	}
 
 	render(node, position, context, effector) {
@@ -224,9 +227,8 @@ export class MappingEffect extends Effect {
 				// Only the revision has changed in the entry.
 				entry[0] = revision;
 			}
-			console.log("XXX MAPPING", { template: this.template });
 			// TODO: We should probably store the output DOM node?
-			const res = this.effect.render(
+			const res = this.template.render(
 				node,
 				[position, i++],
 				ctx,

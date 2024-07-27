@@ -11,6 +11,7 @@ import {
 import { assign } from "./utils/collections.js";
 import { getSignature } from "./utils/inspect.js";
 import { isObject } from "./utils/types.js";
+import { onError } from "./utils/logging.js";
 import { camelToKebab } from "./utils/text.js";
 
 const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
@@ -86,7 +87,17 @@ const createAttributes = (attributes) => {
 // used by the `h` hyperscript function below.
 const createElement = (element, attributes, ...children) => {
 	if (typeof element === "function") {
-		return new ComponentEffect(element, { ...attributes, children });
+		if (!element.input) {
+			onError(
+				"hyperscript.createElement",
+				"Component function is missing its `input` attribute",
+				{ component: element }
+			);
+		}
+		return new ComponentEffect(
+			new Injection(element.input, false, { ...attributes, children }),
+			element
+		);
 	} else {
 		return new VNode(
 			...(element instanceof Array ? element : [undefined, element]),

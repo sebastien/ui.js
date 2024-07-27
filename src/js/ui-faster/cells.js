@@ -123,14 +123,14 @@ export class Slot {
 		} else if (template instanceof Map) {
 			const res = new Map();
 			for (const [k, v] of template.entries()) {
-				res.set(k, Slot.Expand(v));
+				res.set(k, Slot.Expand(v, context));
 			}
 		} else if (template instanceof Array) {
 			return template.map((_) => Slot.Expand(_, context));
 		} else if (Object.getPrototypeOf(template) === Object.prototype) {
 			const res = {};
 			for (const k in template) {
-				res[k] = Slot.Expand(template[k]);
+				res[k] = Slot.Expand(template[k], context);
 			}
 			return res;
 		} else {

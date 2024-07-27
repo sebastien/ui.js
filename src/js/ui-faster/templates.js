@@ -184,7 +184,6 @@ export class Argument extends Selection {
 			obs.set(value);
 			return previous;
 		} else {
-			console.error("COULD NOT SET, NO CONTEXT", this, context);
 			throw new Error("Cell.set() invoked outside of context");
 		}
 	}

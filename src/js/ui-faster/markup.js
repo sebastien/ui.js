@@ -295,7 +295,6 @@ export const template = (name) => {
 	const { template, input } = proc.onTemplate(node);
 	// We need to return a function that can be used to create an application
 	// of the current context
-	console.log("XXXX APPLICATION", template);
 	return application(
 		template,
 		input,
