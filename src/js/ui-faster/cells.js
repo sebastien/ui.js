@@ -20,6 +20,17 @@ export class Context {
 			return false;
 		}
 	}
+	// --
+	// Clear the given `context` so that the given `id` and 9 next slots
+	// are nullified.
+	static Clear(ctx, id) {
+		for (let i = 0; i < 10; i++) {
+			const sid = id + i;
+			if (!ctx.hasOwnProperty(i)) {
+				ctx[sid] = null;
+			}
+		}
+	}
 	static Run(context, functor, args) {
 		// TODO: should really be contextual if multiple threads.
 		Context.Push(context);
@@ -35,10 +46,10 @@ export class Slot {
 
 	// These are the offsets in for the identifiers. Ids are incremented
 	// by a step of 10 and start at 10.
+	static Input = "input"; // Special context value for passing values
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
-	static Input = "input"; // Offset of the input
-	static Value = 1; // Offset of the observable value
+	static Observable = 1; // Offset of the observable value
 	static Revision = 2; // Offset of the revision number
 	static Node = 3; // Offset of the node
 	static State = 4; // Offset of the state
@@ -57,7 +68,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res,
+						res
 					);
 				}
 			}
@@ -68,12 +79,63 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res,
+						res
 					);
 				}
 			}
 		}
 		return res;
+	}
+
+	// --
+	// Walks the template, and replaces any Slot with its value from
+	// the given context.
+	static *Walk(template) {
+		if (template instanceof Slot) {
+			yield template;
+		} else if (template instanceof Map) {
+			for (const v of template.values()) {
+				for (const _ of Slot.Walk(v)) {
+					yield _;
+				}
+			}
+		} else if (template instanceof Array) {
+			for (let i = 0; i < template.length; i++) {
+				for (const _ of Slot.Walk(template[i])) {
+					yield _;
+				}
+			}
+		} else if (Object.getPrototypeOf(template) === Object.prototype) {
+			for (const k in template) {
+				for (const _ of Slot.Walk(template[k])) {
+					yield _;
+				}
+			}
+		}
+	}
+
+	// --
+	// Walks the template, and replaces any Slot with its value from
+	// the given context.
+	static Expand(template, context) {
+		if (template instanceof Slot) {
+			return context ? context[template.id] : undefined;
+		} else if (template instanceof Map) {
+			const res = new Map();
+			for (const [k, v] of template.entries()) {
+				res.set(k, Slot.Expand(v, context));
+			}
+		} else if (template instanceof Array) {
+			return template.map((_) => Slot.Expand(_, context));
+		} else if (Object.getPrototypeOf(template) === Object.prototype) {
+			const res = {};
+			for (const k in template) {
+				res[k] = Slot.Expand(template[k], context);
+			}
+			return res;
+		} else {
+			return template;
+		}
 	}
 
 	constructor() {
@@ -91,7 +153,7 @@ export class Slot {
 
 	toString() {
 		//return `${FIELD_SEP}${this.id}${FIELD_SEP}`;
-		return `Slot(${this.id})`;
+		return `${this.constructor.name}(${this.id})`;
 	}
 }
 

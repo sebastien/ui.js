@@ -1,4 +1,5 @@
 import { Context, Slot } from "./cells.js";
+import { onRuntimeError } from "./utils/logging.js";
 
 export class Effect extends Slot {
 	constructor(input) {
@@ -6,20 +7,26 @@ export class Effect extends Slot {
 		this.input = input;
 	}
 
+	// --
+	// Registers the render function to be triggered when the input
+	// changes.
 	subrender(node, position, context, effector) {
 		const render_id = this.id + Slot.Render;
 		if (!context[render_id]) {
 			const rerender = () =>
 				this.render(node, position, context, effector);
 			context[render_id] = rerender;
-			this.input.sub(rerender, context);
+			this.input?.sub(rerender, context);
 		}
 	}
 
+	// --
+	// Unregisters the render function to be triggered when the input
+	// changes.
 	unsubrender(context) {
 		const render_id = this.id + Slot.Render;
 		if (context[render_id]) {
-			this.input.sub(context[render_id], context);
+			this.input?.sub(context[render_id], context);
 		}
 	}
 
@@ -28,16 +35,35 @@ export class Effect extends Slot {
 	}
 }
 export class TemplateEffect extends Effect {
-	constructor(inputs, template, args, name) {
+	constructor(inputs, template) {
 		super(inputs);
 		this.template = template;
-		// NOTE: Not in input, the inputs are actually
-		this.args = args;
-		this.name = name;
 	}
 	render(node, position, context, effector) {
+		if (this.template instanceof Function) {
+			this.template = this.template.template;
+		}
 		const derived = this.input.applyContext(context);
 		return this.template.render(node, position, derived, effector, this.id);
+	}
+}
+
+export class ComponentEffect extends Effect {
+	constructor(input, component) {
+		super(input);
+		this.component = component;
+	}
+	render(node, position, context, effector) {
+		// TODO: At rendering, we need to determine if the function has been
+		// converted to a component, ie. has a `template` and `applicator`.
+		const derived = this.input.applyContext(context);
+		return this.component.template.render(
+			node,
+			position,
+			derived,
+			effector,
+			this.id
+		);
 	}
 }
 
@@ -47,6 +73,7 @@ export class ApplicationEffect extends Effect {
 		this.template = template;
 	}
 	render(node, position, context, effector) {
+		context = this.input.applyContext(context);
 		// When we apply we create a new context detached from the previous
 		// one, so that we don't leak values.
 		let ctx = context[this.id];
@@ -54,7 +81,6 @@ export class ApplicationEffect extends Effect {
 			ctx = {
 				[Slot.Owner]: this,
 				[Slot.Parent]: context,
-				[Slot.Input]: context[Slot.Input],
 			};
 			context[this.id] = ctx;
 		}
@@ -63,10 +89,13 @@ export class ApplicationEffect extends Effect {
 }
 
 export class ConditionalEffect extends Effect {
-	constructor(input, branches) {
+	constructor(input, branches = [], elseBranch = undefined) {
 		super(input);
+		// TODO: Should we normalize the branches?
 		this.branches = branches;
+		this.elseBranch = elseBranch;
 	}
+
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		this.subrender(node, position, context, effector);
@@ -79,56 +108,74 @@ export class ConditionalEffect extends Effect {
 				new Array(this.branches.length).fill(null),
 			];
 		}
-		// We determine the branch that is currently active
 		let i = 0;
 		let match = undefined;
-		const value_str = `${value}`;
-		for (const [expected, predicate, branch] of this.branches) {
-			if (!match && expected === "" && !predicate) {
-				match = branch;
-			} else if (
-				(expected !== undefined && expected === value_str) ||
-				(predicate && predicate(value))
-			) {
-				match = branch;
-				break;
+		for (const [type, condition, effect] of this.branches) {
+			switch (type) {
+				case 3: // Function
+					if (condition(value)) {
+						match = effect;
+					}
+					break;
+				case 2: // Array of values
+					for (const v of condition) {
+						if (v == value) {
+							match = effect;
+							break;
+						}
+					}
+					break;
+				default:
+					if (condition == value) {
+						match = effect;
+						break;
+					}
 			}
-			i++;
+			if (match !== undefined) {
+				break;
+			} else {
+				i++;
+			}
 		}
-		// We detect of there's a change in branch
+		if (match === undefined) {
+			match = this.elseBranch;
+		}
 		if (i != state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
-				console.log("TODO: Conditional unmoutn previous branch", state);
+				const ctx = state[1][state[0]];
+				if (ctx) {
+					effector.unmount(ctx[Slot.Node]);
+				}
 			}
 			state[0] = i;
 			if (!state[1][i]) {
-				console.log("CREATING BRANCH", i);
+				// We derive a new state and we make sure that we clear
+				// the slots for this cell in the context, so that we'll
+				// set new values.
 				const ctx = Object.create(context);
+				Context.Clear(ctx, this.id);
 				ctx[Slot.Owner] = this;
 				ctx[Slot.Parent] = context;
-				state[1][i] = ctx;
+				ctx[this.id] = state[1][i] = ctx;
 			}
 		}
-
 		// We store the created/updated node
-		console.log("RENDERING CONDITIONAL", { node, position });
-		const res = (state[1][i][Slot.Node] = match.render(
-			node,
-			position,
-			state[1][i],
-			effector,
-			this.id,
-		));
-		console.log("RESULTING COND RENDER", { res, node, position });
-		return res;
+		return (state[1][i][Slot.Node] =
+			match === undefined
+				? undefined
+				: match.render(node, position, state[1][i], effector, this.id));
 	}
 }
 
 export class MappingEffect extends Effect {
-	constructor(input, template) {
+	constructor(input, factory, valueSlot, keySlot) {
 		super(input);
-		this.template = template;
+		// TODO: template is going to be a function that should take `(value,key)`
+		// where Value and Key will be slots as part of this mapping
+		this.valueSlot = valueSlot;
+		this.keySlot = keySlot;
+		this.template = factory(valueSlot, keySlot);
 	}
 
 	render(node, position, context, effector) {
@@ -169,13 +216,14 @@ export class MappingEffect extends Effect {
 				ctx[this.id + Slot.State] = null;
 				// We set the basic input for the context as the item's value
 				// and its key.
-				ctx[Slot.Input] = [items[k], k];
+				ctx[this.valueSlot.id] = items[k];
+				ctx[this.keySlot.id] = k;
 				// We register the mapped value and context in the mapping.
 				mapping.set(k, [revision, ctx]);
 			} else {
 				// TODO: Shouldn't we detect if there's a change there?
-				ctx[Slot.Input][0] = items[k];
-				ctx[Slot.Input][1] = k;
+				ctx[this.valueSlot.id] = items[k];
+				ctx[this.keySlot.id] = k;
 				// Only the revision has changed in the entry.
 				entry[0] = revision;
 			}
@@ -185,10 +233,10 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id,
+				this.template.id
 			);
 		}
-		// TODO: We should remove the ammping items that haven't been updated
+		// TODO: We should remove mapping ammping items that haven't been updated
 		for (const [k, [rev]] of mapping.entries()) {
 			if (rev !== revision) {
 				console.log("TODO: Mapping remove key", k);
@@ -198,24 +246,51 @@ export class MappingEffect extends Effect {
 }
 
 export class FormattingEffect extends Effect {
-	constructor(input, format) {
+	constructor(input, format, placeholder = null) {
 		super(input);
 		this.format = format;
+		this.placeholder = placeholder;
 	}
 	render(node, position, context, effector) {
-		context = this.input.applyContext(context);
+		// TODO: If input is undefined, we'll need to determine the inputs
+		// dynamically.
+		context = this.input ? this.input.applyContext(context) : context;
+		// TODO: We need to know when we need to unrender/clear
 		this.subrender(node, position, context, effector);
-		const input = context[this.input.id];
-		const output = this.format ? this.format(input) : `${input}`;
-		const textNode = context[this.id];
-		if (!textNode) {
-			return (context[this.id] = effector.ensureText(
-				node,
-				position,
-				output,
-			));
+		const input = context[this.input?.id];
+		const previous = context[this.id + Slot.State];
+		const textNode = context[this.id + Slot.Node];
+		// We make sure to guard a re-render, and only proceed if there'sure
+		// a data change.
+		if (input !== previous || textNode === undefined) {
+			let output = undefined;
+			try {
+				output = this.format
+					? // When the function has an `args`, we know that we need to pass
+					  // more than one argument.
+					  this.format.args
+						? this.format(...input)
+						: // Actually this form (one argument) should not be the default.
+						  this.format(input)
+					: `${input}`;
+			} catch (error) {
+				onRuntimeError(error, this.format.toString(), {
+					node: node,
+					input: this.format?.args ? [input] : input,
+				});
+			}
+			context[this.id + Slot.State] = input;
+			if (!textNode) {
+				return (context[this.id + Slot.Node] = effector.ensureText(
+					node,
+					position,
+					output
+				));
+			} else {
+				textNode.data = output;
+				return textNode;
+			}
 		} else {
-			textNode.data = output;
 			return textNode;
 		}
 	}
@@ -255,8 +330,10 @@ export class EventHandlerEffect extends Effect {
 			// TODO: We should do post-processing.
 			return res;
 		};
-		const uijs = (globalThis.uijs = globalThis.uijs || {});
-		uijs[`H${this.id}`] = this.wrapper;
+		// NOTE: This is a first pass at SSR with incremental loading
+		// of components.
+		// const uijs = (globalThis.uijs = globalThis.uijs || {});
+		// uijs[`H${this.id}`] = this.wrapper;
 	}
 
 	render(node, position, context, effector) {
@@ -270,7 +347,7 @@ export class EventHandlerEffect extends Effect {
 			// TODO: Should include the context id in the wrapper
 			node.ownerElement.addEventListener(
 				node.nodeName.substring(2),
-				state.wrapper,
+				state.wrapper
 			);
 			node.ownerElement.removeAttributeNode(node);
 		}

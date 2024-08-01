@@ -1,7 +1,8 @@
 // TODO: This needs to support assignment within the signature
 
 // --
-// Retrieves the arguments from a function declaration.
+// Retrieves the arguments from a JavaScript function declaration by parsing
+// the arguments, and supporting decomposition.
 export const getSignature = (func) => {
 	// We extract the args
 	const t = func.toString();
@@ -14,13 +15,14 @@ export const getSignature = (func) => {
 	const args = [];
 	// Path is the access path from the parent structure.
 	const path = [];
-	// That'ths the offset
+	// That's the offset
 	let o = 0;
 	let position = 0;
 	let token = 0;
 	let rest = false;
 	let name = undefined;
 	let key = undefined;
+	// This is essentially a parser of a subset of JavaScript values.
 	while (o < n) {
 		const c = declaration.charAt(o);
 		switch (c) {
@@ -85,5 +87,7 @@ export const getSignature = (func) => {
 			path: [...path, position == undefined ? key || name : position],
 			rest,
 		});
+	// TODO: We should also return the body
 	return { declaration, args };
 };
+// EOF
