@@ -106,15 +106,15 @@ export class Selection extends Derivation {
 		return new Application(this, func);
 	}
 
-	text(formatter) {
+	text(formatter = undefined) {
 		// FIXME: Not that
 		return new FormattingEffect(
 			this,
 			typeof formatter === "function"
 				? formatter
 				: formatter === null || formatter === undefined
-				? formatter
-				: `${formatter}`
+					? formatter
+					: `${formatter}`,
 		);
 	}
 
@@ -145,7 +145,7 @@ export class Selection extends Derivation {
 			ctx[this.id + Slot.Observable] = new Observable(
 				undefined,
 				ctx,
-				this.id
+				this.id,
 			);
 		}
 		return ctx;
@@ -168,31 +168,6 @@ export class Argument extends Selection {
 		this.name = name;
 	}
 
-	get value() {
-		return this.get();
-	}
-
-	set value(value) {
-		this.set(value);
-	}
-
-	// TODO: Should this be there?
-	set(value, context = Context.Get()) {
-		if (context) {
-			const obs = context[this.id + Slot.Observable];
-			const previous = obs.value;
-			obs.set(value);
-			return previous;
-		} else {
-			throw new Error("Cell.set() invoked outside of context");
-		}
-	}
-
-	get() {
-		const context = Context.Stack.at(-1);
-		return context ? context[this.id] : context;
-	}
-
 	toggle() {
 		return this.set(this.get() ? false : true);
 	}
@@ -213,9 +188,22 @@ export class Extraction extends Selection {
 			assign(
 				scope,
 				arg.path,
-				arg.id === undefined ? null : context[arg.id]
+				arg.id === undefined ? null : context[arg.id],
 			);
 		}
+		return context;
+	}
+}
+
+export class DynamicEvaluation extends Selection {
+	constructor(evaluator) {
+		super();
+		this.evaluator = evaluator;
+	}
+	applyContext(context) {
+		const value = Context.Run(context, this.evaluator);
+		this.value = value;
+		context[this.id] = value;
 		return context;
 	}
 }
@@ -251,8 +239,8 @@ export const application = (template, input, name) => ({
 			args.length > 0
 				? Object.assign({}, args[0], {
 						children: args.slice(1),
-				  })
-				: null
+					})
+				: null,
 		),
 	component: name,
 	// The template is going to be the static (computed once) tree of nodes

@@ -34,7 +34,7 @@ export class Context {
 	static Run(context, functor, args) {
 		// TODO: should really be contextual if multiple threads.
 		Context.Push(context);
-		const res = functor(...args);
+		const res = args ? functor(...args) : functor();
 		Context.Pop(context);
 		return res;
 	}
@@ -68,7 +68,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res
+						res,
 					);
 				}
 			}
@@ -79,7 +79,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res
+						res,
 					);
 				}
 			}
@@ -146,6 +146,44 @@ export class Slot {
 	}
 
 	// --
+	// Retrieves the slot value in the current context.
+	get value() {
+		return this.get();
+	}
+	set value(value) {
+		this.set(value);
+	}
+
+	observable(context = Context.Get()) {
+		if (!context) {
+			onError(
+				"cells.Slot.observable",
+				"No context specified, cannot retrieve observable",
+			);
+		} else {
+			const i = this.id + Slot.Observable;
+			if (!context[i]) {
+				context[i] = new Observable(context[this.id], context, this.id);
+			}
+			return context[i];
+		}
+	}
+	get() {
+		const ctx = Context.Get();
+		return ctx ? ctx[this.id] : undefined;
+	}
+
+	set(value) {
+		// TODO: We should check if it's read-only or not
+		const ctx = Context.Get();
+		if (ctx) {
+			ctx[this.id] = value;
+			const obs = ctx[this.id + Slot.Observable];
+			obs && obs.set(value);
+		}
+	}
+
+	// --
 	// Tells if the cell is of the given `type:int`.
 	isa(type) {
 		return this.id % type === 0;
@@ -174,6 +212,10 @@ export class Observable {
 		return this.context[this.id];
 	}
 
+	set value(value) {
+		this.set(value);
+	}
+
 	set(value) {
 		if (this.revision === -1 || value !== this.value) {
 			// If the value changes, we updated the context, local value,
@@ -189,6 +231,7 @@ export class Observable {
 			let count = 0;
 			for (const handler of this.subs) {
 				count += 1;
+				// TODO: Should manage update cycles
 				// TODO: Should catch exceptions
 				if (handler(value, this) === false) {
 					break;

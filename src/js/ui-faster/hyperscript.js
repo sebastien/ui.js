@@ -1,4 +1,9 @@
-import { Argument, Injection, application } from "./templates.js";
+import {
+	Argument,
+	Injection,
+	DynamicEvaluation,
+	application,
+} from "./templates.js";
 import { Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
@@ -43,7 +48,7 @@ export const template = (component) => {
 		// of the template based on the given input.
 		return Object.assign(
 			component,
-			application(component(...args), args[0], component.name)
+			application(component(...args), args[0], component.name),
 		).application;
 	}
 };
@@ -66,7 +71,7 @@ const createAttributes = (attributes) => {
 				name = name.toLowerCase();
 				attr.set(
 					[ns, name],
-					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v
+					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v,
 				);
 			} else {
 				attr.set(
@@ -74,8 +79,8 @@ const createAttributes = (attributes) => {
 					v instanceof Effect
 						? v
 						: v instanceof Slot
-						? new AttributeEffect(v)
-						: v
+							? new AttributeEffect(v)
+							: v,
 				);
 			}
 		}
@@ -91,12 +96,12 @@ const createElement = (element, attributes, ...children) => {
 			onError(
 				"hyperscript.createElement",
 				"Component function is missing its `input` attribute",
-				{ component: element }
+				{ component: element },
 			);
 		}
 		return new ComponentEffect(
 			new Injection(element.input, false, { ...attributes, children }),
-			element
+			element,
 		);
 	} else {
 		return new VNode(
@@ -106,9 +111,9 @@ const createElement = (element, attributes, ...children) => {
 				_ instanceof Effect
 					? _
 					: _ instanceof Slot
-					? new FormattingEffect(_)
-					: _
-			)
+						? new FormattingEffect(_)
+						: _,
+			),
 		);
 	}
 };
@@ -136,14 +141,14 @@ export class VDOMFactoryProxy {
 					? createElement(
 							[this.namespace, property],
 							attributes,
-							...args
-					  )
+							...args,
+						)
 					: createElement(
 							[this.namespace, property],
 							null,
 							attributes,
-							...args
-					  );
+							...args,
+						);
 			tags.set(property, res);
 			return res;
 		}
@@ -155,8 +160,12 @@ export const h = new Proxy(createElement, new VDOMFactoryProxy());
 // Creates a new `Selection` out of the given arguments.
 export const select = Object.assign(
 	(args) =>
-		args instanceof Selection ? args : new Selection(new Injection(args)),
-	{}
+		args instanceof Function
+			? new DynamicEvaluation(args)
+			: args instanceof Selection
+				? args
+				: new Selection(new Injection(args)),
+	{},
 );
 export const $ = select;
 
