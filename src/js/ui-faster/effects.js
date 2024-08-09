@@ -1,5 +1,5 @@
 import { Context, Slot } from "./cells.js";
-import { onRuntimeError } from "./utils/logging.js";
+import { onError, onRuntimeError } from "./utils/logging.js";
 
 export class Effect extends Slot {
 	constructor(input) {
@@ -57,6 +57,13 @@ export class ComponentEffect extends Effect {
 		// TODO: At rendering, we need to determine if the function has been
 		// converted to a component, ie. has a `template` and `applicator`.
 		const derived = this.input.applyContext(context);
+		if (!this.component.isComponent) {
+			onError(
+				"effects.ComponentEffect",
+				"Given component function has not been initialised.",
+				{ component: this.component }
+			);
+		}
 		return this.component.template.render(
 			node,
 			position,

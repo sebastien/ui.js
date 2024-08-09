@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UI.js ― Lifecycle [faster]</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+	<script type="importmap">
+			{ "imports": { "@ui/": "../src/js/ui-faster/" } }
+		</script>
+</head>
+
+<body>
+	<div>
+		<p name="description">Illustrates how the component <code>mount</code> and
+			<code>unmount</code> events can be used to trigger effects.
+		</p>
+		<div id="Items">
+		</div>
+	</div>
+
+	<!-- ------------------------------------------------------------------------
+
+	 MAIN
+
+	 ------------------------------------------------------------------------ -->
+	<script type="module">
+		import {render} from "@ui/client.js"
+		import {h, $} from "@ui/hyperscript.js"
+		const {table, thead, tbody, tfoot, th, tr, td, button, div, span} = h;
+
+		// This is way more compact than with the `markup`, it's about 50% less, 
+		// but maybe slighltly less readable.
+		const Item = ({mounted, Removed}) => {
+			return div({_: "with-hover row pt-1 pb-1", onMount: _ => console.log("Mounted", _)},
+				span({_: "fill"}, "Component"),
+				button({_: "small show-hover", onClick: _ => console.log("Removing", _)}, "Remove"),
+			)
+		}
+
+		const Items = ({mounted, items}) =>
+			table({_: "padded lined w-4b"},
+				thead(
+					tr(
+						th({_: "bold"}, "Mounted"),
+						td({_: "bold"}, mounted),
+					)),
+				tbody(
+					items.map(value => tr(td({colspan: 2}, h(Item, {mounted}))))),
+				tfoot(
+					tr(
+						td({colspan: 2, _: "tr pt-1 pb-1"},
+							button({
+								_: "small show-hover",
+								onClick: event => {
+									console.log("Button clicked", {event})
+								}
+							}, "Add items")))))
+		render(Items, {items: [true], mounted: 0}, document.getElementById("Items"))
+
+	</script>
+</body>
+
+</html>

@@ -1,4 +1,4 @@
-import { Argument, Injection, application } from "./templates.js";
+import { Injection, component } from "./templates.js";
 import { Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
@@ -8,45 +8,11 @@ import {
 	ComponentEffect,
 	EventHandlerEffect,
 } from "./effects.js";
-import { assign } from "./utils/collections.js";
-import { getSignature } from "./utils/inspect.js";
 import { isObject } from "./utils/types.js";
 import { onError } from "./utils/logging.js";
 import { camelToKebab } from "./utils/text.js";
 
 const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
-
-// TODO: This should be moved to HyperScript, probably.
-//
-// --
-// Takes the given `component` function, and returns its derivation
-// template, creating it if necessary. The creation of the template inspects
-// the function to extract its arguments signature,
-// FIXME: Rename to application?
-//
-export const template = (component) => {
-	if (component.application) {
-		return component.application;
-	} else {
-		// We extract the signature from the component function
-		// definition. Each argument is then assigned in `args`, which
-		// will hold the shape of the input.
-		const args = [];
-		for (const { path, name } of getSignature(component).args) {
-			assign(args, path, new Argument(name));
-		}
-		// We need to set the input early, as it's going to be accessed
-		// in `createElement` if we recurse on the component.
-		component.input = args[0];
-		// We run the component function only once, it generates a template,
-		// and the factory function will will be used to generate an application
-		// of the template based on the given input.
-		return Object.assign(
-			component,
-			application(component(...args), args[0], component.name)
-		).application;
-	}
-};
 
 const createAttributes = (attributes) => {
 	const attr = new Map();
@@ -82,33 +48,36 @@ const createAttributes = (attributes) => {
 	}
 	return attr;
 };
-// --
+
+const normalizeChildren = (children) =>
+	children.map((_) =>
+		_ instanceof Effect
+			? _
+			: _ instanceof Slot
+			? new FormattingEffect(_)
+			: _
+	);
+
 // The JSX/React-like interface to create VDOM nodes from JavaScript. This is
 // used by the `h` hyperscript function below.
 const createElement = (element, attributes, ...children) => {
 	if (typeof element === "function") {
-		if (!element.input) {
-			onError(
-				"hyperscript.createElement",
-				"Component function is missing its `input` attribute",
-				{ component: element }
-			);
-		}
 		return new ComponentEffect(
-			new Injection(element.input, false, { ...attributes, children }),
+			new Injection(
+				element.input ? element.input : component(element).input,
+				false,
+				{
+					...attributes,
+					children: normalizeChildren(children),
+				}
+			),
 			element
 		);
 	} else {
 		return new VNode(
 			...(element instanceof Array ? element : [undefined, element]),
 			createAttributes(attributes),
-			children.map((_) =>
-				_ instanceof Effect
-					? _
-					: _ instanceof Slot
-					? new FormattingEffect(_)
-					: _
-			)
+			normalizeChildren(children)
 		);
 	}
 };

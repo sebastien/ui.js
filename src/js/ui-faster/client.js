@@ -1,6 +1,6 @@
 import { DOMEffector } from "./effectors.js";
 import { parameters } from "./markup.js";
-import { template } from "./hyperscript.js";
+import { component } from "./templates.js";
 import { Slot } from "./cells.js";
 
 const globals = {
@@ -18,13 +18,21 @@ const globals = {
  * - Render should create the root context, and simply call `TemplateEffect.render(node,position,context,effector)`
  */
 const render = (
-	component,
+	componentFunction,
 	data,
 	parent,
-	position = parent.childNodes.length,
+	position = undefined,
 	context = globals.context,
 	effector = globals.effector
 ) => {
+	// If the parent is not specified, then we try to get it from the
+	// component name.
+	parent = parent
+		? typeof parent === "string"
+			? document.getElementById(parent)
+			: parent
+		: document.getElementById(component.name);
+	position = position === undefined ? parent.childNodes.length : position;
 	// First step, we extract the parameters from the parent node, and we
 	// assign merge in the given input data.
 	const input = parameters(parent);
@@ -38,7 +46,7 @@ const render = (
 	}
 	// We create an instance of the component, which is going to be
 	// an effect mapped with the given input.
-	const effect = template(component)(input);
+	const effect = component(componentFunction)(input);
 
 	// We setup a context
 	const ctx = (context[effect.id] =

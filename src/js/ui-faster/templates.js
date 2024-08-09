@@ -6,6 +6,7 @@ import {
 } from "./effects.js";
 import { Context, Slot, Observable } from "./cells.js";
 import { assign } from "./utils/collections.js";
+import { getSignature } from "./utils/inspect.js";
 
 // TODO: Shouldn't that be an Input?
 // TODO: Not of these don't belong in templates, they are really about
@@ -239,10 +240,11 @@ export class Application extends Selection {
 // to define an injection, and an optional name. Returns a function that returns
 // a template effect that injects the arguments into the given input. That function
 // can then be used to render the component.
-export const application = (template, input, name) => ({
+export const application =
+	(template, input) =>
 	// The application, takes arguments and maps them to the input, rendering
 	// the underlying template.
-	application: (...args) =>
+	(...args) =>
 		new TemplateEffect(
 			// Injects the arguments in `pattern` from the context input, without
 			// inheriting the parent context.
@@ -253,12 +255,32 @@ export const application = (template, input, name) => ({
 						children: args.slice(1),
 				  })
 				: null
-		),
-	component: name,
-	// The template is going to be the static (computed once) tree of nodes
-	// and effects.
-	template,
-	//  The input is the arguments/input structure
-	input,
-});
+		);
+
+// --
+// Takes the given `component` function, and returns its derivation
+// template, creating it if necessary. The creation of the template inspects
+// the function to extract its arguments signature,
+// FIXME: Rename to application?
+//
+export const component = (component) => {
+	if (component.isComponent) {
+		return component;
+	} else {
+		// We extract the signature from the component function
+		// definition. Each argument is then assigned in `args`, which
+		// will hold the shape of the input.
+		const args = [];
+		for (const { path, name } of getSignature(component).args) {
+			assign(args, path, new Argument(name));
+		}
+		// We need to set the input early, as it's going to be accessed
+		// in `createElement` if we recurse on the component.
+		component.input = args[0];
+		component.template = component(...args);
+		component.application = application(component.template, args[0]);
+		component.isComponent = true;
+		return component;
+	}
+};
 //EOF
