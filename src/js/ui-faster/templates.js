@@ -169,31 +169,6 @@ export class Argument extends Selection {
 		this.name = name;
 	}
 
-	get value() {
-		return this.get();
-	}
-
-	set value(value) {
-		this.set(value);
-	}
-
-	// TODO: Should this be there?
-	set(value, context = Context.Get()) {
-		if (context) {
-			const obs = context[this.id + Slot.Observable];
-			const previous = obs.value;
-			obs.set(value);
-			return previous;
-		} else {
-			throw new Error("Cell.set() invoked outside of context");
-		}
-	}
-
-	get() {
-		const context = Context.Stack.at(-1);
-		return context ? context[this.id] : context;
-	}
-
 	toggle() {
 		return this.set(this.get() ? false : true);
 	}
@@ -217,6 +192,19 @@ export class Extraction extends Selection {
 				arg.id === undefined ? null : context[arg.id]
 			);
 		}
+		return context;
+	}
+}
+
+export class DynamicEvaluation extends Selection {
+	constructor(evaluator) {
+		super();
+		this.evaluator = evaluator;
+	}
+	applyContext(context) {
+		const value = Context.Run(context, this.evaluator);
+		this.value = value;
+		context[this.id] = value;
 		return context;
 	}
 }

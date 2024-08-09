@@ -9,7 +9,6 @@ import {
 	EventHandlerEffect,
 } from "./effects.js";
 import { isObject } from "./utils/types.js";
-import { onError } from "./utils/logging.js";
 import { camelToKebab } from "./utils/text.js";
 
 const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
@@ -124,7 +123,11 @@ export const h = new Proxy(createElement, new VDOMFactoryProxy());
 // Creates a new `Selection` out of the given arguments.
 export const select = Object.assign(
 	(args) =>
-		args instanceof Selection ? args : new Selection(new Injection(args)),
+		args instanceof Function
+			? new DynamicEvaluation(args)
+			: args instanceof Selection
+			? args
+			: new Selection(new Injection(args)),
 	{}
 );
 export const $ = select;
