@@ -132,6 +132,7 @@ export class Selection extends Derivation {
 	map(func) {
 		// TODO: Check that component is what we expect (ie. probably not
 		// a component).
+		// TODO: Why do we have two selections as argument?
 		return new MappingEffect(this, func, new Selection(), new Selection());
 	}
 
@@ -245,12 +246,6 @@ export const application =
 				: null
 		);
 
-// --
-// Takes the given `component` function, and returns its derivation
-// template, creating it if necessary. The creation of the template inspects
-// the function to extract its arguments signature,
-// FIXME: Rename to application?
-//
 export const component = (component) => {
 	if (component.isComponent) {
 		return component;
@@ -264,10 +259,10 @@ export const component = (component) => {
 		}
 		// We need to set the input early, as it's going to be accessed
 		// in `createElement` if we recurse on the component.
+		component.isComponent = true;
 		component.input = args[0];
 		component.template = component(...args);
 		component.application = application(component.template, args[0]);
-		component.isComponent = true;
 		return component;
 	}
 };

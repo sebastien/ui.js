@@ -39,8 +39,8 @@
 			)
 		}
 
-		const Items = ({mounted, items}) =>
-			table({_: "padded lined w-4b"},
+		const Items = ({mounted, items}) => {
+			return table({_: "padded lined w-4b"},
 				thead(
 					tr(
 						th({_: "bold"}, "Mounted"),
@@ -57,6 +57,7 @@
 									console.log("Button clicked", {event})
 								}
 							}, "Add items")))))
+		}
 		render(Items, {items: [true], mounted: 0}, document.getElementById("Items"))
 
 	</script>

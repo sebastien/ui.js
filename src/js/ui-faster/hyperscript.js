@@ -61,16 +61,13 @@ const normalizeChildren = (children) =>
 // used by the `h` hyperscript function below.
 const createElement = (element, attributes, ...children) => {
 	if (typeof element === "function") {
+		const c = component(element);
 		return new ComponentEffect(
-			new Injection(
-				element.input ? element.input : component(element).input,
-				false,
-				{
-					...attributes,
-					children: normalizeChildren(children),
-				}
-			),
-			element
+			new Injection(c.input, false, {
+				...attributes,
+				children: normalizeChildren(children),
+			}),
+			c
 		);
 	} else {
 		return new VNode(

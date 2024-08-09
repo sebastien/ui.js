@@ -48,6 +48,9 @@ export class TemplateEffect extends Effect {
 	}
 }
 
+// NOTE: The component effect is very similar to the template, however we
+// only dereference the `.template` at render time, as oppposed to construction
+// time, which makes it possible to have recursive templates.
 export class ComponentEffect extends Effect {
 	constructor(input, component) {
 		super(input);
@@ -69,7 +72,7 @@ export class ComponentEffect extends Effect {
 			position,
 			derived,
 			effector,
-			this.id,
+			this.id
 		);
 	}
 }
@@ -240,7 +243,7 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id,
+				this.template.id
 			);
 		}
 		// TODO: We should remove mapping ammping items that haven't been updated
@@ -274,11 +277,11 @@ export class FormattingEffect extends Effect {
 			try {
 				output = this.format
 					? // When the function has an `args`, we know that we need to pass
-						// more than one argument.
-						this.format.args
+					  // more than one argument.
+					  this.format.args
 						? this.format(...input)
 						: // Actually this form (one argument) should not be the default.
-							this.format(input)
+						  this.format(input)
 					: `${input}`;
 			} catch (error) {
 				onRuntimeError(error, this.format.toString(), {
@@ -291,7 +294,7 @@ export class FormattingEffect extends Effect {
 				return (context[this.id + Slot.Node] = effector.ensureText(
 					node,
 					position,
-					output,
+					output
 				));
 			} else {
 				textNode.data = output;
@@ -355,7 +358,7 @@ export class EventHandlerEffect extends Effect {
 			// TODO: Should include the context id in the wrapper
 			node.ownerElement.addEventListener(
 				node.nodeName.substring(2),
-				state.wrapper,
+				state.wrapper
 			);
 			node.ownerElement.removeAttributeNode(node);
 		}

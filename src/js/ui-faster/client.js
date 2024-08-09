@@ -46,7 +46,7 @@ const render = (
 	}
 	// We create an instance of the component, which is going to be
 	// an effect mapped with the given input.
-	const effect = component(componentFunction)(input);
+	const effect = component(componentFunction).application(input);
 
 	// We setup a context
 	const ctx = (context[effect.id] =
