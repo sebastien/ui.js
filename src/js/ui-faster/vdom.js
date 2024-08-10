@@ -137,6 +137,16 @@ export class VNode {
 			return existing;
 		}
 	}
+
+	unrender(context, effector, id) {
+		const existing = context[id + Slot.Node];
+		if (existing && existing.parentNode) {
+			existing.parentNode.removeChild(existing);
+			for (const [_, effect] of this.effects) {
+				effect.unrender(context, effector);
+			}
+		}
+	}
 }
 
 // EOF

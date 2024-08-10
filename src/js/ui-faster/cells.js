@@ -50,11 +50,17 @@ export class Slot {
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
 	static Observable = 1; // Offset of the observable value
+	// FIXME: Not sure if revision is useful, especially as slots
+	// can be replicated across contexts.
 	static Revision = 2; // Offset of the revision number
 	static Node = 3; // Offset of the node
 	static State = 4; // Offset of the state
 	static Render = 5; // Offset of the render data
 
+	// --
+	// Matches the given `template` against the given `data`, returning
+	// a list of tuples `[slot,value]` where slot is the original slot
+	// of the template, and `value` is either a slot or a regular value.
 	static Match(template, data, res = []) {
 		if (template instanceof Slot) {
 			if (template.input) {
@@ -68,7 +74,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res,
+						res
 					);
 				}
 			}
@@ -79,7 +85,7 @@ export class Slot {
 					Slot.Match(
 						template[k],
 						is_map ? data.get(k) : data[k],
-						res,
+						res
 					);
 				}
 			}
@@ -158,7 +164,7 @@ export class Slot {
 		if (!context) {
 			onError(
 				"cells.Slot.observable",
-				"No context specified, cannot retrieve observable",
+				"No context specified, cannot retrieve observable"
 			);
 		} else {
 			const i = this.id + Slot.Observable;
@@ -173,15 +179,69 @@ export class Slot {
 		return ctx ? ctx[this.id] : undefined;
 	}
 
-	set(value) {
+	// --
+	// We `force` by default
+	set(value, force = true) {
 		// TODO: We should check if it's read-only or not
 		const ctx = Context.Get();
 		if (ctx) {
 			ctx[this.id] = value;
 			const obs = ctx[this.id + Slot.Observable];
-			obs && obs.set(value);
+			obs && obs.set(value, force);
 		}
 	}
+
+	// ========================================================================
+	// MANIPULATION API
+	// ========================================================================
+
+	append(item) {
+		const v = this.list();
+		v.push(item instanceof Slot ? item.get() : item);
+		this.set(v, true);
+	}
+	remove(item) {
+		const v = item instanceof Slot ? item.get() : item;
+		const w = this.list();
+		const i = w.indexOf(v);
+		if (i !== -1) {
+			w.splice(i, 1);
+			this.set(w, true);
+		}
+		return w;
+	}
+	insert(index, item) {
+		const v = item instanceof Slot ? item.get() : item;
+		const w = this.list();
+		while (w.length < index) {
+			w.push(undefined);
+		}
+		w.splice(index, 0, v);
+		this.set(w, true);
+		return w;
+	}
+
+	pop(index = undefined) {
+		const w = this.list();
+		if (w.length) {
+			if (index === undefined) {
+				w.pop();
+			} else {
+				w.splice(index, 1);
+			}
+			this.set(w, true);
+		}
+		return w;
+	}
+
+	// NOTE: This does not mutate
+	list() {
+		const v = this.get();
+		return v instanceof Array ? v : [v];
+	}
+
+	dict(key = "_") {}
+	map(key = "_") {}
 
 	// --
 	// Tells if the cell is of the given `type:int`.
@@ -216,8 +276,8 @@ export class Observable {
 		this.set(value);
 	}
 
-	set(value) {
-		if (this.revision === -1 || value !== this.value) {
+	set(value, force = undefined) {
+		if (force || this.revision === -1 || value !== this.value) {
 			// If the value changes, we updated the context, local value,
 			// revision number and
 			this.context[this.id] = value;

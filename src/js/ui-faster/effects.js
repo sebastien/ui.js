@@ -13,8 +13,9 @@ export class Effect extends Slot {
 	subrender(node, position, context, effector) {
 		const render_id = this.id + Slot.Render;
 		if (!context[render_id]) {
-			const rerender = () =>
-				this.render(node, position, context, effector);
+			const rerender = () => {
+				return this.render(node, position, context, effector);
+			};
 			context[render_id] = rerender;
 			this.input?.observable(context).sub(rerender);
 		}
@@ -27,13 +28,21 @@ export class Effect extends Slot {
 		const render_id = this.id + Slot.Render;
 		if (context[render_id]) {
 			this.input?.observable(context).unsub(context[render_id]);
+			// Important: we clear the render_id so that next render
+			// `subrender` is called.
+			context[render_id] = undefined;
 		}
 	}
 
 	render(node, position, context, effector) {
 		effector.ensureContent(node, position, context[this.id]);
 	}
+
+	unrender(context, effector) {
+		this.unsubrender(context);
+	}
 }
+
 export class TemplateEffect extends Effect {
 	constructor(inputs, template) {
 		super(inputs);
@@ -45,6 +54,10 @@ export class TemplateEffect extends Effect {
 		}
 		const derived = this.input.applyContext(context);
 		return this.template.render(node, position, derived, effector, this.id);
+	}
+	unrender(context, effector) {
+		super.unrender(context, effector);
+		this.template.unrender(context, effector, this.id);
 	}
 }
 
@@ -75,6 +88,10 @@ export class ComponentEffect extends Effect {
 			this.id
 		);
 	}
+	unrender(context, effector) {
+		super.unrender(context, effector);
+		this.component.template.unrender(context, effector, this.id);
+	}
 }
 
 export class ApplicationEffect extends Effect {
@@ -95,6 +112,10 @@ export class ApplicationEffect extends Effect {
 			context[this.id] = ctx;
 		}
 		return this.template.render(node, position, ctx, effector, this.id);
+	}
+	unrender(context, effector) {
+		super.unrender(context, effector);
+		this.template.unrender(context, effector, this.id);
 	}
 }
 
@@ -176,6 +197,7 @@ export class ConditionalEffect extends Effect {
 				? undefined
 				: match.render(node, position, state[1][i], effector, this.id));
 	}
+	// TODO: Unrender
 }
 
 export class MappingEffect extends Effect {
@@ -190,6 +212,7 @@ export class MappingEffect extends Effect {
 
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
+		this.subrender(node, position, context, effector);
 		// We retrieve the mapped items, which are bound to this cell id.
 		const items = context[this.input.id];
 		// We retrieve the corresponding mapping state, typically `undefined`
@@ -243,16 +266,27 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id
+				this.template.id ?? this.id
 			);
 		}
 		// TODO: We should remove mapping ammping items that haven't been updated
+		const to_remove = [];
 		for (const [k, [rev]] of mapping.entries()) {
 			if (rev !== revision) {
-				console.log("TODO: Mapping remove key", k);
+				to_remove.push(k);
 			}
 		}
+		while (to_remove.length) {
+			const k = to_remove.pop();
+			this.template.unrender(
+				mapping.get(k)[1],
+				effector,
+				this.template.id ?? this.id
+			);
+			mapping.delete(k);
+		}
 	}
+	// NOTE: We don't do anything for unrender
 }
 
 export class FormattingEffect extends Effect {

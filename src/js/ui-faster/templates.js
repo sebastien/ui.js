@@ -43,12 +43,17 @@ export class Injection extends Derivation {
 		// context, otherwise it will be blank.
 		this.derived = derived;
 	}
+
+	// FIXME: This should be made incremental, this will be re-applied on
+	// every render.
 	applyContext(context) {
 		// First we extract an initial data from the extraction pattern,
 		// if any, otherwise we default from the input slot.
-		const data = this.extraction
-			? Slot.Expand(this.extraction, context)
-			: context[Slot.Input];
+		// const data = this.extraction
+		// 	? Slot.Expand(this.extraction, context)
+		// 	: context[Slot.Input];
+		//
+		const data = this.extraction ? this.extraction : context[Slot.Input];
 		// NOTE: This won't work if we have for instance the same component
 		// rendered multiple time in the same context. In this case, it will
 		// keep the same context. However, if there's just one instance of the
@@ -62,7 +67,19 @@ export class Injection extends Derivation {
 		// with `out` or `inout`.
 		//… where the args values are extracted and mapped to their cell ids;
 		for (const [c, v] of Slot.Match(this.args, data)) {
-			derived[c.id] = v;
+			if (v instanceof Slot) {
+				// If the target value is a slot, then we make sure that if it's
+				// removed, we update it.
+				derived[c.id] = context[v.id];
+				// NOTE: This will effectively fuse the cell, if it's updated
+				// locally, it will update upwards and vice-versa.
+				derived[c.id + Slot.Observable] =
+					context[v.id + Slot.Observable];
+				derived[c.id + Slot.Revision] = context[v.id + Slot.Revision];
+			} else {
+				// This is a regular value
+				derived[c.id] = v;
+			}
 		}
 		return derived;
 	}
