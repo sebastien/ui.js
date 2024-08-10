@@ -11,7 +11,7 @@ import {
 import { isObject } from "./utils/types.js";
 import { camelToKebab } from "./utils/text.js";
 
-const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$", "g");
+const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$");
 
 const createAttributes = (attributes) => {
 	const attr = new Map();
@@ -31,7 +31,9 @@ const createAttributes = (attributes) => {
 				name = name.toLowerCase();
 				attr.set(
 					[ns, name],
-					typeof v === "function" ? EventHandlerEffect.Ensure(v) : v
+					typeof v === "function"
+						? EventHandlerEffect.Ensure(v, name)
+						: v
 				);
 			} else {
 				attr.set(

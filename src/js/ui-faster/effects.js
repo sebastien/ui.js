@@ -39,7 +39,9 @@ export class Effect extends Slot {
 	}
 
 	unrender(context, effector) {
-		this.unsubrender(context);
+		const c = this.input ? this.input.applyContext(context) : context;
+		this.unsubrender(c);
+		return c;
 	}
 }
 
@@ -56,8 +58,8 @@ export class TemplateEffect extends Effect {
 		return this.template.render(node, position, derived, effector, this.id);
 	}
 	unrender(context, effector) {
-		super.unrender(context, effector);
-		this.template.unrender(context, effector, this.id);
+		const derived = super.unrender(context, effector);
+		this.template.unrender(derived, effector, this.id);
 	}
 }
 
@@ -89,8 +91,8 @@ export class ComponentEffect extends Effect {
 		);
 	}
 	unrender(context, effector) {
-		super.unrender(context, effector);
-		this.component.template.unrender(context, effector, this.id);
+		const derived = super.unrender(context, effector);
+		this.component.template.unrender(derived, effector, this.id);
 	}
 }
 
@@ -114,8 +116,8 @@ export class ApplicationEffect extends Effect {
 		return this.template.render(node, position, ctx, effector, this.id);
 	}
 	unrender(context, effector) {
-		super.unrender(context, effector);
-		this.template.unrender(context, effector, this.id);
+		const derived = super.unrender(derived, effector);
+		this.template.unrender(derived, effector, this.id);
 	}
 }
 
@@ -359,9 +361,12 @@ export class AttributeEffect extends Effect {
 export class EventHandlerEffect extends Effect {
 	// --
 	// Ensures that the given `handler` function has a corresponding effect.
-	static Ensure(handler) {
+	static Ensure(handler, name) {
 		if (!handler.effect) {
-			handler.effect = new EventHandlerEffect(handler);
+			handler.effect =
+				name === "onmount" || name === "onunmount"
+					? new LifecycleEventHandlerEffect(handler, name)
+					: new EventHandlerEffect(handler, name);
 		}
 		return handler.effect;
 	}
@@ -404,8 +409,34 @@ export class EventHandlerEffect extends Effect {
 		return node;
 	}
 
+	// TODO: Unrender?
+
 	toString() {
 		return `globalThis.uijs?.H${this.id}(...arguments)`;
 	}
 }
+
+export class LifecycleEventHandlerEffect extends EventHandlerEffect {
+	render(node, position, context, effector) {
+		if (context[this.id + Slot.State] === undefined) {
+			node.ownerElement.removeAttributeNode(node);
+			context[this.id + Slot.State] = true;
+		}
+		if (!context[this.id]) {
+			context[this.id] = (context[this.id] ?? 0) + 1;
+			if (this.event === "onmount") {
+				Context.Run(context, this.wrapper, [node]);
+			}
+		}
+		return node;
+	}
+	unrender(context, effector, id) {
+		context[this.id] = Math.max(0, (context[this.id] ?? 0) - 1);
+		if (context[this.id] === 0 && this.event === "onunmount") {
+			Context.Run(context, this.wrapper, context[this.id + Slot.Node]);
+		}
+		super.unrender(context, effector, id);
+	}
+}
+
 // EOF

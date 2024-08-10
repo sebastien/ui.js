@@ -1,4 +1,4 @@
-import { Effect } from "./effects.js";
+import { Effect, LifecycleEventHandlerEffect } from "./effects.js";
 import { Slot } from "./cells.js";
 import { onError } from "./utils/logging.js";
 
@@ -142,9 +142,9 @@ export class VNode {
 		const existing = context[id + Slot.Node];
 		if (existing && existing.parentNode) {
 			existing.parentNode.removeChild(existing);
-			for (const [_, effect] of this.effects) {
-				effect.unrender(context, effector);
-			}
+		}
+		for (const [_, effect] of this.effects) {
+			effect.unrender(context, effector);
 		}
 	}
 }

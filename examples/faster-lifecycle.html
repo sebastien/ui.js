@@ -27,14 +27,19 @@
 	 ------------------------------------------------------------------------ -->
 	<script type="module">
 		import {render} from "@ui/client.js"
-		import {Context} from "@ui/cells.js"
 		import {h, $} from "@ui/hyperscript.js"
 		const {table, thead, tbody, tfoot, th, tr, td, button, div, span} = h;
 
 		// This is way more compact than with the `markup`, it's about 50% less, 
-		// but maybe slighltly less readable.
+		// but maybe slighltly less readable. Readability declines are the components
+		// get bigger and more logic makes it way. The pure HTML form encourages
+		// compact handlers.
 		const Item = ({mounted, Removed, items, item, index}) => {
-			return div({_: "with-hover row pt-1 pb-1", onMount: _ => console.log("Mounted", _)},
+			return div({
+				_: "with-hover row pt-1 pb-1",
+				onMount: _ => mounted.set((mounted.value || 0) + 1),
+				onUnmount: _ => mounted.set((mounted.value || 1) - 1)
+			},
 				span({_: "fill"},
 					item.apply(item => item.label || `Item #${index.get()}`)),
 				button({
