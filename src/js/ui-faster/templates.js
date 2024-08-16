@@ -66,7 +66,7 @@ export class Injection extends Derivation {
 		// TODO: This is where we would copy cells/slots that are passed
 		// with `out` or `inout`.
 		//… where the args values are extracted and mapped to their cell ids;
-		for (const [c, v] of Slot.Match(this.args, data)) {
+		for (const [c, v] of Slot.Match(this.args, data, context)) {
 			if (v instanceof Slot) {
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
@@ -131,8 +131,8 @@ export class Selection extends Derivation {
 			typeof formatter === "function"
 				? formatter
 				: formatter === null || formatter === undefined
-				? formatter
-				: `${formatter}`
+					? formatter
+					: `${formatter}`,
 		);
 	}
 
@@ -164,7 +164,7 @@ export class Selection extends Derivation {
 			ctx[this.id + Slot.Observable] = new Observable(
 				undefined,
 				ctx,
-				this.id
+				this.id,
 			);
 		}
 		return ctx;
@@ -207,7 +207,7 @@ export class Extraction extends Selection {
 			assign(
 				scope,
 				arg.path,
-				arg.id === undefined ? null : context[arg.id]
+				arg.id === undefined ? null : context[arg.id],
 			);
 		}
 		return context;
@@ -259,8 +259,8 @@ export const application =
 			args.length > 0
 				? Object.assign({}, args[0], {
 						children: args.slice(1),
-				  })
-				: null
+					})
+				: null,
 		);
 
 export const component = (component) => {

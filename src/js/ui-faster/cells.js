@@ -61,20 +61,26 @@ export class Slot {
 	// Matches the given `template` against the given `data`, returning
 	// a list of tuples `[slot,value]` where slot is the original slot
 	// of the template, and `value` is either a slot or a regular value.
-	static Match(template, data, res = []) {
+	static Match(template, data, context = undefined, res = []) {
 		if (template instanceof Slot) {
 			if (template.input) {
-				Slot.Match(template.input, data, res);
+				Slot.Match(template.input, data, context, res);
 			}
 			res.push([template, data]);
 		} else if (template instanceof Map) {
 			const is_map = data instanceof Map;
 			if (data !== null && data !== undefined) {
 				for (const k of template.keys()) {
+					const w = is_map ? data.get(k) : data[k];
 					Slot.Match(
 						template[k],
-						is_map ? data.get(k) : data[k],
-						res
+						w instanceof Slot
+							? context
+								? context[w.id]
+								: undefined
+							: w,
+						context,
+						res,
 					);
 				}
 			}
@@ -82,10 +88,17 @@ export class Slot {
 			const is_map = data instanceof Map;
 			if (data !== null && data !== undefined) {
 				for (const k in template) {
+					const w = is_map ? data.get(k) : data[k];
+
 					Slot.Match(
 						template[k],
-						is_map ? data.get(k) : data[k],
-						res
+						w instanceof Slot
+							? context
+								? context[w.id]
+								: undefined
+							: w,
+						context,
+						res,
 					);
 				}
 			}
@@ -164,7 +177,7 @@ export class Slot {
 		if (!context) {
 			onError(
 				"cells.Slot.observable",
-				"No context specified, cannot retrieve observable"
+				"No context specified, cannot retrieve observable",
 			);
 		} else {
 			const i = this.id + Slot.Observable;
