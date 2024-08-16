@@ -25,7 +25,6 @@ export const getSignature = (func) => {
 	// This is essentially a parser of a subset of JavaScript values.
 	while (o < n) {
 		const c = declaration.charAt(o);
-		console.log(c);
 		switch (c) {
 			case "{":
 			case "[":
