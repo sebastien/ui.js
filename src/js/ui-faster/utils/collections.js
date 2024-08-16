@@ -1,3 +1,20 @@
+export const RawObjectPrototype = Object.getPrototypeOf({});
+
+export const isObject = (value) =>
+	value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
+// ===
+export function* iterkeys(v) {
+	if (v instanceof Array || isObject(v)) {
+		for (const i in v) {
+			yield i;
+		}
+	} else if (v instanceof Map) {
+		return v.keys();
+	}
+}
+
+export const keys = (_) => [...iterkeys(_)];
+
 export const assign = (scope, path, value) => {
 	let s = scope;
 	const n = path.length - 1;
