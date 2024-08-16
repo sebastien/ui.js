@@ -79,7 +79,7 @@ export class ComponentEffect extends Effect {
 			onError(
 				"effects.ComponentEffect",
 				"Given component function has not been initialised.",
-				{ component: this.component }
+				{ component: this.component },
 			);
 		}
 		return this.component.template.render(
@@ -87,7 +87,7 @@ export class ComponentEffect extends Effect {
 			position,
 			derived,
 			effector,
-			this.id
+			this.id,
 		);
 	}
 	unrender(context, effector) {
@@ -96,6 +96,53 @@ export class ComponentEffect extends Effect {
 	}
 }
 
+// --
+// Supports dynamic resolution of the component used to
+// render.
+export class DynamicComponentEffect extends Effect {
+	// --
+	// Takes an input (typically an Injection), derivation
+	// that returns a component (function) and a factory to
+	// ensure the componetn function is initialized, and
+	// then resolves the component from the derivation and
+	// renders it.
+	constructor(input, derivation, factory) {
+		super(input);
+		this.derivation = derivation;
+		this.factory = factory;
+	}
+	render(node, position, context, effector) {
+		// TODO: At rendering, we need to determine if the function has been
+		// converted to a component, ie. has a `template` and `applicator`.
+		// const derived = this.input.applyContext(context);
+		const { attributes, children, derivation } = this;
+		context = this.derivation.applyContext(context);
+		const value = context[this.derivation.id];
+		if (value !== context[this.id]) {
+			if (context[this.id] !== undefined) {
+				console.warn("TODO: Clear out the previous component");
+			}
+			const component = this.factory(value);
+			// TODO: Input is really expected to be an Injection
+			this.input.args = component.input;
+			const derived = this.input.applyContext(context);
+			context[this.id] = value;
+			return component.template.render(
+				node,
+				position,
+				derived,
+				effector,
+				this.id,
+			);
+		} else {
+			// No change
+		}
+	}
+	unrender(context, effector) {
+		const derived = super.unrender(context, effector);
+		derived[this.id]?.template.unrender(derived, effector, this.id);
+	}
+}
 export class ApplicationEffect extends Effect {
 	constructor(inputs, template) {
 		super(inputs);
@@ -268,7 +315,7 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id ?? this.id
+				this.template.id ?? this.id,
 			);
 		}
 		// TODO: We should remove mapping ammping items that haven't been updated
@@ -283,7 +330,7 @@ export class MappingEffect extends Effect {
 			this.template.unrender(
 				mapping.get(k)[1],
 				effector,
-				this.template.id ?? this.id
+				this.template.id ?? this.id,
 			);
 			mapping.delete(k);
 		}
@@ -313,11 +360,11 @@ export class FormattingEffect extends Effect {
 			try {
 				output = this.format
 					? // When the function has an `args`, we know that we need to pass
-					  // more than one argument.
-					  this.format.args
+						// more than one argument.
+						this.format.args
 						? this.format(...input)
 						: // Actually this form (one argument) should not be the default.
-						  this.format(input)
+							this.format(input)
 					: `${input}`;
 			} catch (error) {
 				onRuntimeError(error, this.format.toString(), {
@@ -330,7 +377,7 @@ export class FormattingEffect extends Effect {
 				return (context[this.id + Slot.Node] = effector.ensureText(
 					node,
 					position,
-					output
+					output,
 				));
 			} else {
 				textNode.data = output;
@@ -397,7 +444,7 @@ export class EventHandlerEffect extends Effect {
 			// TODO: Should include the context id in the wrapper
 			node.ownerElement.addEventListener(
 				node.nodeName.substring(2),
-				state.wrapper
+				state.wrapper,
 			);
 			node.ownerElement.removeAttributeNode(node);
 		}

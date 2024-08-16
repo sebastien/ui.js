@@ -277,6 +277,7 @@ export const component = (component) => {
 		// We need to set the input early, as it's going to be accessed
 		// in `createElement` if we recurse on the component.
 		component.isComponent = true;
+		// FIXME: Should probably be args, not input
 		component.input = args[0];
 		component.template = component(...args);
 		component.application = application(component.template, args[0]);
