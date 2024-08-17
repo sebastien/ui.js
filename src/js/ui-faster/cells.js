@@ -214,6 +214,23 @@ export class Slot {
 	// MANIPULATION API
 	// ========================================================================
 
+	at(index, value = undefined) {
+		const i = typeof index === "string" ? parseInt(index) : index;
+		if (value === undefined) {
+			return this.list().at(i);
+		} else if (isNaN(i)) {
+			return this.get();
+		} else {
+			const v = this.list();
+			while (v.length < i) {
+				v.push(undefined);
+			}
+			v[i] = value;
+			this.set(v, true);
+			return v;
+		}
+	}
+
 	append(item) {
 		const v = this.list();
 		v.push(item instanceof Slot ? item.get() : item);
@@ -275,8 +292,26 @@ export class Slot {
 		return v instanceof Array ? v : [v];
 	}
 
-	dict(key = "_") {}
-	map(key = "_") {}
+	dict(key = "_") {
+		const v = this.get();
+		return v === undefined || v === null
+			? {}
+			: Object.getPrototypeOf(v) === Object.prototype
+			? v
+			: { [key]: v };
+	}
+	map(key = "_") {
+		const v = this.get();
+		if (v instanceof Map) {
+			return v;
+		} else {
+			const w = new Map();
+			if (v !== undefined) {
+				w.set(key, v);
+			}
+			return w;
+		}
+	}
 
 	// --
 	// Tells if the cell is of the given `type:int`.
