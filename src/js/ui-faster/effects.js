@@ -264,6 +264,17 @@ export class ConditionalEffect extends Effect {
 	// TODO: Unrender
 }
 
+function* keys(value) {
+	if (value instanceof Array) {
+		for (let i = 0; i < value.length; i++) {
+			yield i;
+		}
+	} else {
+		for (const k in value) {
+			yield k;
+		}
+	}
+}
 export class MappingEffect extends Effect {
 	constructor(input, factory, valueSlot, keySlot) {
 		super(input);
@@ -293,7 +304,7 @@ export class MappingEffect extends Effect {
 		// Now we iterate over the keys for each item.
 		let i = 0;
 		// Note that the keys `k` will be strings, even if `items` is an Array.
-		for (const k in items) {
+		for (const k of keys(items)) {
 			// We get any previously stored entry.
 			// An entry is `[revision, context]`
 			const entry = mapping.get(k);

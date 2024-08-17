@@ -140,7 +140,8 @@ export const select = Object.assign(
 	{}
 );
 
-select.cell = (value, updater) => new Cell(value, updater);
+select.cell = (value, updater, extractor) =>
+	new Cell(value, updater, extractor);
 
 export const $ = select;
 
