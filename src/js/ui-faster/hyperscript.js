@@ -1,4 +1,4 @@
-import { Injection, component } from "./templates.js";
+import { Injection, Selection, component } from "./templates.js";
 import { Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
@@ -34,7 +34,7 @@ const createAttributes = (attributes) => {
 					[ns, name],
 					typeof v === "function"
 						? EventHandlerEffect.Ensure(v, name)
-						: v,
+						: v
 				);
 			} else {
 				attr.set(
@@ -42,8 +42,8 @@ const createAttributes = (attributes) => {
 					v instanceof Effect
 						? v
 						: v instanceof Slot
-							? new AttributeEffect(v)
-							: v,
+						? new AttributeEffect(v)
+						: v
 				);
 			}
 		}
@@ -56,8 +56,8 @@ const normalizeChildren = (children) =>
 		_ instanceof Effect
 			? _
 			: _ instanceof Slot
-				? new FormattingEffect(_)
-				: _,
+			? new FormattingEffect(_)
+			: _
 	);
 
 // The JSX/React-like interface to create VDOM nodes from JavaScript. This is
@@ -70,7 +70,7 @@ const createElement = (element, attributes, ...children) => {
 				children: normalizeChildren(children),
 			}),
 			element,
-			component, // We pass in the component factory function
+			component // We pass in the component factory function
 		);
 	} else if (typeof element === "function") {
 		const c = component(element);
@@ -79,13 +79,13 @@ const createElement = (element, attributes, ...children) => {
 				...attributes,
 				children: normalizeChildren(children),
 			}),
-			c,
+			c
 		);
 	} else {
 		return new VNode(
 			...(element instanceof Array ? element : [undefined, element]),
 			createAttributes(attributes),
-			normalizeChildren(children),
+			normalizeChildren(children)
 		);
 	}
 };
@@ -113,14 +113,14 @@ export class VDOMFactoryProxy {
 					? createElement(
 							[this.namespace, property],
 							attributes,
-							...args,
-						)
+							...args
+					  )
 					: createElement(
 							[this.namespace, property],
 							null,
 							attributes,
-							...args,
-						);
+							...args
+					  );
 			tags.set(property, res);
 			return res;
 		}
@@ -135,9 +135,9 @@ export const select = Object.assign(
 		args instanceof Function
 			? new DynamicEvaluation(args)
 			: args instanceof Selection
-				? args
-				: new Selection(new Injection(args)),
-	{},
+			? args
+			: new Selection(new Injection(args)),
+	{}
 );
 export const $ = select;
 

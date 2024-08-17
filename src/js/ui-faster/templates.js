@@ -63,23 +63,26 @@ export class Injection extends Derivation {
 		// We set the derived context.
 		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
+		derived[Slot.Name] = Object.getPrototypeOf(this).constructor.name;
 		// TODO: This is where we would copy cells/slots that are passed
 		// with `out` or `inout`.
 		//… where the args values are extracted and mapped to their cell ids;
-		for (const [c, v] of Slot.Match(this.args, data, context)) {
+		for (const [slot, v] of Slot.Match(this.args, data, context)) {
 			if (v instanceof Slot) {
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
-				derived[c.id] = context[v.id];
+				derived[slot.id] = context[v.id];
 				// NOTE: This will effectively fuse the cell, if it's updated
 				// locally, it will update upwards and vice-versa.
-				derived[c.id + Slot.Observable] =
+				derived[slot.id + Slot.Observable] =
 					context[v.id + Slot.Observable];
-				derived[c.id + Slot.Revision] = context[v.id + Slot.Revision];
+				derived[slot.id + Slot.Revision] =
+					context[v.id + Slot.Revision];
 			} else {
 				// This is a regular value
-				derived[c.id] = v;
+				derived[slot.id] = v;
 			}
+			slot.observable(derived);
 		}
 		return derived;
 	}
@@ -131,8 +134,8 @@ export class Selection extends Derivation {
 			typeof formatter === "function"
 				? formatter
 				: formatter === null || formatter === undefined
-					? formatter
-					: `${formatter}`,
+				? formatter
+				: `${formatter}`
 		);
 	}
 
@@ -159,12 +162,13 @@ export class Selection extends Derivation {
 
 	applyContext(context) {
 		const ctx = super.applyContext(context);
+		// TODO: this may be this.observable(ctx), actually
 		// We define a subscription array for the selection.
 		if (ctx[this.id + Slot.Observable] === undefined) {
 			ctx[this.id + Slot.Observable] = new Observable(
 				undefined,
 				ctx,
-				this.id,
+				this.id
 			);
 		}
 		return ctx;
@@ -186,10 +190,6 @@ export class Argument extends Selection {
 		super(name);
 		this.name = name;
 	}
-
-	toggle() {
-		return this.set(this.get() ? false : true);
-	}
 }
 
 // --
@@ -207,7 +207,7 @@ export class Extraction extends Selection {
 			assign(
 				scope,
 				arg.path,
-				arg.id === undefined ? null : context[arg.id],
+				arg.id === undefined ? null : context[arg.id]
 			);
 		}
 		return context;
@@ -259,8 +259,8 @@ export const application =
 			args.length > 0
 				? Object.assign({}, args[0], {
 						children: args.slice(1),
-					})
-				: null,
+				  })
+				: null
 		);
 
 export const component = (component) => {

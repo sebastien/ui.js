@@ -1,3 +1,4 @@
+import { onError } from "./utils/logging.js";
 const FIELD_SEP = String.fromCharCode(31);
 
 // --
@@ -49,6 +50,8 @@ export class Slot {
 	static Input = "input"; // Special context value for passing values
 	static Owner = "owner"; // Offset for the parent context
 	static Parent = "parent"; // Offset for the parent context
+	static Name = "name"; // Offset for the parent context
+
 	static Observable = 1; // Offset of the observable value
 	// FIXME: Not sure if revision is useful, especially as slots
 	// can be replicated across contexts.
@@ -80,7 +83,7 @@ export class Slot {
 								: undefined
 							: w,
 						context,
-						res,
+						res
 					);
 				}
 			}
@@ -98,7 +101,7 @@ export class Slot {
 								: undefined
 							: w,
 						context,
-						res,
+						res
 					);
 				}
 			}
@@ -177,7 +180,7 @@ export class Slot {
 		if (!context) {
 			onError(
 				"cells.Slot.observable",
-				"No context specified, cannot retrieve observable",
+				"No context specified, cannot retrieve observable"
 			);
 		} else {
 			const i = this.id + Slot.Observable;
@@ -187,9 +190,17 @@ export class Slot {
 			return context[i];
 		}
 	}
+
 	get() {
 		const ctx = Context.Get();
-		return ctx ? ctx[this.id] : undefined;
+		// TODO: I think there's an opportunity here to define how data
+		// propagation work -- local reads, or remote reads, local writes
+		// or remote writes.
+		// --
+		// We get in the observable if there is one. This means that if there
+		// is an observable, the local context will be ignored.
+		const obs = ctx[this.id + Slot.Observable];
+		return obs ? obs.get() : ctx ? ctx[this.id] : undefined;
 	}
 
 	// --
@@ -198,9 +209,15 @@ export class Slot {
 		// TODO: We should check if it's read-only or not
 		const ctx = Context.Get();
 		if (ctx) {
-			ctx[this.id] = value;
 			const obs = ctx[this.id + Slot.Observable];
-			obs && obs.set(value, force);
+			if (obs) {
+				// We have an observable so set in observable
+				obs && obs.set(value, force);
+			} else {
+				// There is no observable value, so we set in the local
+				// context.
+				ctx[this.id] = value;
+			}
 		}
 	}
 
@@ -213,6 +230,7 @@ export class Slot {
 		v.push(item instanceof Slot ? item.get() : item);
 		this.set(v, true);
 	}
+
 	remove(item) {
 		const v = item instanceof Slot ? item.get() : item;
 		const w = this.list();
@@ -223,6 +241,7 @@ export class Slot {
 		}
 		return w;
 	}
+
 	insert(index, item) {
 		const v = item instanceof Slot ? item.get() : item;
 		const w = this.list();
@@ -231,6 +250,20 @@ export class Slot {
 		}
 		w.splice(index, 0, v);
 		this.set(w, true);
+		return w;
+	}
+
+	toggle(value = undefined) {
+		const v = this.get();
+		const w =
+			value === undefined
+				? v
+					? false
+					: true
+				: v === value
+				? null
+				: value;
+		this.set(w);
 		return w;
 	}
 
@@ -268,6 +301,10 @@ export class Slot {
 	}
 }
 
+// --
+// An observable value that can be subscribed to and updated. Obsevables
+// are used to wrap and share values that can change and operate within
+// a given context.
 export class Observable {
 	//--
 	//Observables wrap a value, and map it to a specific id within a context.
@@ -281,12 +318,18 @@ export class Observable {
 		}
 	}
 
+	// --
+	// Returns the value of this observable within the context.
 	get value() {
 		return this.context[this.id];
 	}
 
 	set value(value) {
 		this.set(value);
+	}
+
+	get() {
+		return this.value;
 	}
 
 	set(value, force = undefined) {
@@ -336,5 +379,7 @@ export class Observable {
 		}
 	}
 }
+
+// TODO: A Cell is an Observable with its own context.
 
 // EOF

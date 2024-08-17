@@ -74,12 +74,22 @@ export class ComponentEffect extends Effect {
 	render(node, position, context, effector) {
 		// TODO: At rendering, we need to determine if the function has been
 		// converted to a component, ie. has a `template` and `applicator`.
+		if (!context[this.id]) {
+			// We make sure the extracted values are made observable in the context
+			for (const slot of Slot.Walk(this.input.extraction)) {
+				slot?.observable(context);
+			}
+			// NOTE: Hopefully this is cleared
+			context[this.id] = true;
+		}
 		const derived = this.input.applyContext(context);
+		// TODO: Not sure if we need to do that?
+		// derived[this.id] = undefined;
 		if (!this.component.isComponent) {
 			onError(
 				"effects.ComponentEffect",
 				"Given component function has not been initialised.",
-				{ component: this.component },
+				{ component: this.component }
 			);
 		}
 		return this.component.template.render(
@@ -87,7 +97,7 @@ export class ComponentEffect extends Effect {
 			position,
 			derived,
 			effector,
-			this.id,
+			this.id
 		);
 	}
 	unrender(context, effector) {
@@ -132,7 +142,7 @@ export class DynamicComponentEffect extends Effect {
 				position,
 				derived,
 				effector,
-				this.id,
+				this.id
 			);
 		} else {
 			// No change
@@ -157,6 +167,7 @@ export class ApplicationEffect extends Effect {
 			ctx = {
 				[Slot.Owner]: this,
 				[Slot.Parent]: context,
+				[Slot.Name]: Object.getPrototypeOf(this).constructor.name,
 			};
 			context[this.id] = ctx;
 		}
@@ -236,6 +247,7 @@ export class ConditionalEffect extends Effect {
 				const ctx = Object.create(context);
 				Context.Clear(ctx, this.id);
 				ctx[Slot.Owner] = this;
+				ctx[Slot.Name] = Object.getPrototypeOf(this).constructor.name;
 				ctx[Slot.Parent] = context;
 				ctx[this.id] = state[1][i] = ctx;
 			}
@@ -290,6 +302,7 @@ export class MappingEffect extends Effect {
 				ctx = Object.create(context);
 				ctx[Slot.Parent] = context;
 				ctx[Slot.Owner] = this;
+				ctx[Slot.Name] = Object.getPrototypeOf(this).constructor.name;
 				// We make sure that we can recurse this effect by nullifying
 				// the current node reference.
 				// --
@@ -315,7 +328,7 @@ export class MappingEffect extends Effect {
 				[position, i++],
 				ctx,
 				effector,
-				this.template.id ?? this.id,
+				this.template.id ?? this.id
 			);
 		}
 		// TODO: We should remove mapping ammping items that haven't been updated
@@ -330,7 +343,7 @@ export class MappingEffect extends Effect {
 			this.template.unrender(
 				mapping.get(k)[1],
 				effector,
-				this.template.id ?? this.id,
+				this.template.id ?? this.id
 			);
 			mapping.delete(k);
 		}
@@ -360,11 +373,11 @@ export class FormattingEffect extends Effect {
 			try {
 				output = this.format
 					? // When the function has an `args`, we know that we need to pass
-						// more than one argument.
-						this.format.args
+					  // more than one argument.
+					  this.format.args
 						? this.format(...input)
 						: // Actually this form (one argument) should not be the default.
-							this.format(input)
+						  this.format(input)
 					: `${input}`;
 			} catch (error) {
 				onRuntimeError(error, this.format.toString(), {
@@ -377,7 +390,7 @@ export class FormattingEffect extends Effect {
 				return (context[this.id + Slot.Node] = effector.ensureText(
 					node,
 					position,
-					output,
+					output
 				));
 			} else {
 				textNode.data = output;
@@ -444,7 +457,7 @@ export class EventHandlerEffect extends Effect {
 			// TODO: Should include the context id in the wrapper
 			node.ownerElement.addEventListener(
 				node.nodeName.substring(2),
-				state.wrapper,
+				state.wrapper
 			);
 			node.ownerElement.removeAttributeNode(node);
 		}

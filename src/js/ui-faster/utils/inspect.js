@@ -1,4 +1,4 @@
-// TODO: This needs to support assignment within the signature
+// TODO: This needs to support assignment within the signature, eg: `{panels, selection = "POUET"}`
 
 // --
 // Retrieves the arguments from a JavaScript function declaration by parsing
