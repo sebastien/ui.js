@@ -13,6 +13,8 @@ import { getSignature } from "./utils/inspect.js";
 // managing and processing input (derivations, selections), while templates
 // are about wrapping all of that.
 
+// TODO: Lifecycle management as well, have a `dispose()`
+
 // --
 // Derivations are cells that have the ability to derive the current context
 // into a new context using `applyContext`. The derivation is idempotent, meaning
@@ -76,6 +78,7 @@ export class Injection extends Derivation {
 				// locally, it will update upwards and vice-versa.
 				derived[slot.id + Slot.Observable] =
 					context[v.id + Slot.Observable];
+				// FIXME: Not sure about revision, that should be in observable?
 				derived[slot.id + Slot.Revision] =
 					context[v.id + Slot.Revision];
 			} else {
@@ -189,6 +192,39 @@ export class Argument extends Selection {
 	constructor(name) {
 		super(name);
 		this.name = name;
+	}
+}
+
+// --
+// A selection that stores state and that can update to and from
+// an original source.
+export class Cell extends Selection {
+	constructor(source, updater) {
+		super();
+		this.source = source;
+		this.updater = updater;
+	}
+	applyContext(context) {
+		if (context[this.id + Slot.State] === undefined) {
+			if (this.source instanceof Slot) {
+				context[this.id] = context[this.source.id];
+			}
+			// TODO: And we should also re-register
+			const handler = (value) => {
+				// It's important that we put the context here, as
+				// otherwise we'll be operating on a child context.
+				Context.Push(context);
+				try {
+					context[this.id] = value;
+					this.updater && this.updater(value);
+				} finally {
+					Context.Pop(context);
+				}
+			};
+			this.observable(context).sub(handler);
+			context[this.id + Slot.State] = handler;
+		}
+		return context;
 	}
 }
 

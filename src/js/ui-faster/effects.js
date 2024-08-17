@@ -77,7 +77,10 @@ export class ComponentEffect extends Effect {
 		if (!context[this.id]) {
 			// We make sure the extracted values are made observable in the context
 			for (const slot of Slot.Walk(this.input.extraction)) {
+				// We make sure the slot is observable, and that
+				// the context is applied.
 				slot?.observable(context);
+				slot?.applyContext(context);
 			}
 			// NOTE: Hopefully this is cleared
 			context[this.id] = true;

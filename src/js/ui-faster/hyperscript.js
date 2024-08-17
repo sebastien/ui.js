@@ -1,4 +1,4 @@
-import { Injection, Selection, component } from "./templates.js";
+import { Injection, Selection, Cell, component } from "./templates.js";
 import { Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
@@ -139,6 +139,9 @@ export const select = Object.assign(
 			: new Selection(new Injection(args)),
 	{}
 );
+
+select.cell = (value, updater) => new Cell(value, updater);
+
 export const $ = select;
 
 // EOF

@@ -1,6 +1,7 @@
 import { onError } from "./utils/logging.js";
-const FIELD_SEP = String.fromCharCode(31);
 
+// TODO: That should probably be "reactive"
+//
 // --
 // The context acts as a singleton to retrieve the current context, typically
 // used for handlers.
@@ -65,44 +66,32 @@ export class Slot {
 	// a list of tuples `[slot,value]` where slot is the original slot
 	// of the template, and `value` is either a slot or a regular value.
 	static Match(template, data, context = undefined, res = []) {
+		// `data` may be a slot, in which case we may need to resolve it.
+		const resolved_data =
+			data instanceof Slot
+				? context
+					? context[data.id]
+					: undefined
+				: data;
 		if (template instanceof Slot) {
 			if (template.input) {
-				Slot.Match(template.input, data, context, res);
+				Slot.Match(template.input, resolved_data, context, res);
 			}
 			res.push([template, data]);
 		} else if (template instanceof Map) {
 			const is_map = data instanceof Map;
-			if (data !== null && data !== undefined) {
+			if (resolved_data !== null && resolved_data !== undefined) {
 				for (const k of template.keys()) {
-					const w = is_map ? data.get(k) : data[k];
-					Slot.Match(
-						template[k],
-						w instanceof Slot
-							? context
-								? context[w.id]
-								: undefined
-							: w,
-						context,
-						res
-					);
+					const w = is_map ? resolved_data.get(k) : resolved_data[k];
+					Slot.Match(template[k], w, context, res);
 				}
 			}
 		} else if (template instanceof Object) {
-			const is_map = data instanceof Map;
-			if (data !== null && data !== undefined) {
+			const is_map = resolved_data instanceof Map;
+			if (resolved_data !== null && resolved_data !== undefined) {
 				for (const k in template) {
-					const w = is_map ? data.get(k) : data[k];
-
-					Slot.Match(
-						template[k],
-						w instanceof Slot
-							? context
-								? context[w.id]
-								: undefined
-							: w,
-						context,
-						res
-					);
+					const w = is_map ? resolved_data.get(k) : resolved_data[k];
+					Slot.Match(template[k], w, context, res);
 				}
 			}
 		}
