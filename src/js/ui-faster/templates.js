@@ -199,16 +199,15 @@ export class Argument extends Selection {
 // A selection that stores state and that can update to and from
 // an original source.
 export class Cell extends Selection {
-	constructor(source, updater) {
+	constructor(source, updater, extractor) {
 		super();
 		this.source = source;
+		// FIXME: Names are not ideal
 		this.updater = updater;
+		this.extractor = extractor;
 	}
 	applyContext(context) {
 		if (context[this.id + Slot.State] === undefined) {
-			if (this.source instanceof Slot) {
-				context[this.id] = context[this.source.id];
-			}
 			// TODO: And we should also re-register
 			const handler = (value) => {
 				// It's important that we put the context here, as
@@ -221,8 +220,19 @@ export class Cell extends Selection {
 					Context.Pop(context);
 				}
 			};
-			this.observable(context).sub(handler);
-			context[this.id + Slot.State] = handler;
+			const obs = this.observable(context);
+			obs.sub(handler);
+			context[this.id + Slot.State] = [handler];
+			if (this.source instanceof Slot) {
+				const extractor = this.extractor;
+				// NOTE: If we force here, we'll get a loop
+				const updater = (value) => {
+					obs.set(extractor ? extractor(value) : value);
+				};
+				context[this.id] = context[this.source.id];
+				this.source.observable(context).sub(updater);
+				context[this.id + Slot.State].push(updater);
+			}
 		}
 		return context;
 	}
