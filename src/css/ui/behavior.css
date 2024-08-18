@@ -101,6 +101,12 @@
 	visibility: hidden !important;
 }
 
+.unhidden {
+	visibility: visible !important;
+}
+
+
+
 .skip {
 	display: none !important;
 }

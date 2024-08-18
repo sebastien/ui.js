@@ -2,6 +2,10 @@
 	opacity: 0.0;
 }
 
+.visible {
+	opacity: unset;
+}
+
 .nolink {
 	text-decoration: none;
 }
