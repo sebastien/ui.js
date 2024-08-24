@@ -25,6 +25,11 @@ h6.t {
 	margin-bottom: 0.5em;
 }
 
+.t em {
+	font-weight: bold;
+	font-style: unset;
+}
+
 .t ul,
 .t ol {
 	padding-left: var(--pad-2);

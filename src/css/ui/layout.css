@@ -540,10 +540,12 @@
 	display: inline-flex;
 }
 
+.stretched,
 .row.stretched {
 	align-items: stretch;
 }
 
+.fitted,
 .row.fitted {
 	justify-items: stretch;
 }
@@ -668,12 +670,14 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr;
 	grid-column-gap: var(--gap);
+	align-items: start;
 }
 
 .by-2 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	grid-column-gap: var(--gap);
+	align-items: start;
 }
 
 .container {
@@ -701,6 +705,10 @@
 	.by-3 {
 		grid-template-columns: 1fr;
 	}
+}
+
+.stretched {
+	align-items: stretch;
 }
 
 /**

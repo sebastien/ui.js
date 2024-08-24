@@ -564,14 +564,15 @@ button.outline,
 
 button.label,
 .button.label {
+	padding-left: 0px;
+	padding-right: 0px;
 	background-color: transparent;
 	border-color: transparent;
 	outline-color: transparent;
 	min-width: unset;
-	--button-txt: var(--button-bg);
 	--button-txt-hover: color-mix(in srgb,
-			var(--button-txt),
-			var(--page-bg-0p) 50%);
+			var(--button-bg),
+			var(--button-txt) 25%);
 }
 
 .button.primary.label {

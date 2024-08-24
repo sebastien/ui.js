@@ -198,12 +198,31 @@ a[href].nolink:hover {
 	text-align: right;
 }
 
+.tc {
+	text-align: center;
+}
+
 .tl {
 	text-align: left;
 }
 
 .tt {
 	align-self: flex-start;
+}
+
+.fl {
+	float: left;
+}
+
+.fr {
+	float: right;
+}
+
+.fc:after {
+	content: "";
+	clear: both;
+	height: 0px;
+	display: block;
 }
 
 /* EOF */

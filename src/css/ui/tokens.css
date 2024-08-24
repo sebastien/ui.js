@@ -26,11 +26,11 @@ variations).
 	--font-code-line-height: var(--font-mono);
 	--font-code-size: calc(12 / 14 * 1em);
 
-	--font-control: "Jost", sans-serif;
+	--font-control: var(--font-text);
 	--font-control-line-height: 1.25em;
 	--font-control-size: var(--font-size-2);
 
-	--font-input: "Jost", sans-serif;
+	--font-input: var(--font-text);
 	--font-input-line-height: 1.25em;
 	--font-input-size: var(--font-size-3);
 

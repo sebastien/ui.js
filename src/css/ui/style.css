@@ -397,12 +397,20 @@ table.lined {
 	font-size: var(--font-size-3);
 }
 
-.large {
+.medium {
 	font-size: var(--font-size-4);
+}
+
+.large {
+	font-size: var(--font-size-5);
 }
 
 .larger {
 	font-size: var(--font-size-6);
+}
+
+.xlarge {
+	font-size: var(--font-size-7);
 }
 
 .largest {
