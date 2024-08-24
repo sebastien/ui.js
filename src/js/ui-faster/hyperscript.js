@@ -1,4 +1,11 @@
-import { Injection, Selection, Cell, component } from "./templates.js";
+import {
+	Injection,
+	Selection,
+	DynamicEvaluation,
+	Subscription,
+	Cell,
+	component,
+} from "./templates.js";
 import { Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
@@ -130,14 +137,17 @@ export class VDOMFactoryProxy {
 export const h = new Proxy(createElement, new VDOMFactoryProxy());
 
 // Creates a new `Selection` out of the given arguments.
-export const select = Object.assign(
-	(args) =>
-		args instanceof Function
-			? new DynamicEvaluation(args)
+export const select = Object.assign((...args) =>
+	args.length > 1
+		? new Subscription(args, true)
+		: args.length === 1
+		? args[0] instanceof Function
+			? new DynamicEvaluation(args[0])
 			: args instanceof Selection
-			? args
-			: new Selection(new Injection(args)),
-	{}
+			? new Subscription(args[0])
+			: // FIXME: Not sure why we have an injection here
+			  new Subscription(new Injection(args[0]))
+		: {}
 );
 
 select.cell = (value, updater, extractor) =>

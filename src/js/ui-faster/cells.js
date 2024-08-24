@@ -194,18 +194,17 @@ export class Slot {
 
 	// --
 	// We `force` by default
-	set(value, force = true) {
+	set(value, force = true, context = Context.Get()) {
 		// TODO: We should check if it's read-only or not
-		const ctx = Context.Get();
-		if (ctx) {
-			const obs = ctx[this.id + Slot.Observable];
+		if (context) {
+			const obs = context[this.id + Slot.Observable];
 			if (obs) {
 				// We have an observable so set in observable
 				obs && obs.set(value, force);
 			} else {
 				// There is no observable value, so we set in the local
 				// context.
-				ctx[this.id] = value;
+				context[this.id] = value;
 			}
 		}
 	}

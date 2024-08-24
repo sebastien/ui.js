@@ -4,7 +4,7 @@ import {
 	FormattingEffect,
 	TemplateEffect,
 } from "./effects.js";
-import { Context, Slot, Observable } from "./cells.js";
+import { Context, Slot } from "./cells.js";
 import { assign } from "./utils/collections.js";
 import { getSignature } from "./utils/inspect.js";
 
@@ -14,6 +14,8 @@ import { getSignature } from "./utils/inspect.js";
 // are about wrapping all of that.
 
 // TODO: Lifecycle management as well, have a `dispose()`
+// TODO: Every sub should have an unsub
+// TODO: There's still a lack of clartiy between Slot/Effects and  their lifeccyle
 
 // --
 // Derivations are cells that have the ability to derive the current context
@@ -103,7 +105,7 @@ class Branches {
 	// --
 	// Chainable function to define a branch, condition can be a function
 	// or a value. If the function is an array, then it will be interpreted
-	// as "any of the given values"
+	//as "any of the given values"
 	case(...args) {
 		if (args.length === 1) {
 			return this.else(template);
@@ -165,15 +167,8 @@ export class Selection extends Derivation {
 
 	applyContext(context) {
 		const ctx = super.applyContext(context);
-		// TODO: this may be this.observable(ctx), actually
-		// We define a subscription array for the selection.
-		if (ctx[this.id + Slot.Observable] === undefined) {
-			ctx[this.id + Slot.Observable] = new Observable(
-				undefined,
-				ctx,
-				this.id
-			);
-		}
+		// FIXME: Should we make this observable?
+		// this.observable(ctx);
 		return ctx;
 	}
 
@@ -188,6 +183,35 @@ export class Selection extends Derivation {
 	}
 }
 
+// Maybe that's an injection?
+export class Subscription extends Selection {
+	constructor(input, multiple = false) {
+		super();
+		this.input = input;
+		this.isMultipleArguments = multiple;
+	}
+	apply(func) {
+		return new Application(this, func, this.isMultipleArguments);
+	}
+
+	applyContext(context) {
+		const ctx = super.applyContext(context);
+		if (ctx[this.id + Slot.State] === undefined) {
+			const obs = this.observable(ctx);
+			// Input needs to operate in the parent context
+			const updater = () => {
+				// FIXME: Updates seem to be triggered too many times
+				obs.set(Slot.Expand(this.input, context));
+			};
+			for (const slot of Slot.Walk(this.input)) {
+				slot.observable(context).sub(updater);
+			}
+			ctx[this.id] = Slot.Expand(this.input, context);
+			ctx[this.id + Slot.State] = updater;
+		}
+		return ctx;
+	}
+}
 export class Argument extends Selection {
 	constructor(name) {
 		super(name);
@@ -260,6 +284,7 @@ export class Extraction extends Selection {
 	}
 }
 
+// FIXME: What's the use case for that?
 export class DynamicEvaluation extends Selection {
 	constructor(evaluator) {
 		super();
@@ -274,15 +299,30 @@ export class DynamicEvaluation extends Selection {
 }
 
 export class Application extends Selection {
-	constructor(input, transform) {
+	constructor(input, transform, multiple = false) {
 		super();
 		this.input = input;
 		this.transform = transform;
+		this.isMultipleArguments = multiple;
 	}
+
 	applyContext(context) {
-		// NOTE: We expect here that the input have already been resolved
-		// and that the value are in the context.
-		context[this.id] = this.transform(context[this.input.id]);
+		// If there's an input, we apply its context
+		if (context[this.id + Slot.State] === undefined) {
+			this.input.applyContext(context);
+			const handler = this.isMultipleArguments
+				? (value) => this.set(this.transform(...value), false, context)
+				: (value) => this.set(this.transform(value), false, context);
+			this.input.observable(context).sub(handler);
+			// NOTE: We expect here that the input have already been resolved
+			// and that the value are in the context.
+			const v = context[this.input.id];
+			context[this.id] = this.isMultipleArguments
+				? this.transform(...v)
+				: this.transform(v);
+			context[this.id + Slot.State] = handler;
+		}
+
 		return context;
 	}
 }
