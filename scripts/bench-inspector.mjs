@@ -16,7 +16,7 @@ const MIME_TYPES = {
 	".xml": "application/xml; charset=utf-8",
 };
 
-const FRAMEWORKS = ["preact", "solidjs", "ui-faster"];
+const FRAMEWORKS = ["preact", "solidjs", "ui"];
 
 const round = (value) => Number(value.toFixed(2));
 

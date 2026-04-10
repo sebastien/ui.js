@@ -8,14 +8,8 @@
                                      \|_________|
 
 *UI.js* is a toolkit to create interactive user interfaces in
-JavaScript. It is designed to be batteries-included (components, state
-management, styling and interaction) and targeting web browsers first
-(no compiler or server-side JavaScript required).
-
-Front-end development has become [quite
-complicated](https://news.ycombinator.com/item?id=34218003), and our
-goal is to provide a simple API to create rich UIs directly from the
-browser.
+JavaScript. The default runtime is now the faster renderer available at
+`src/js/ui`.
 
 ## In a nutshell
 
@@ -24,58 +18,38 @@ See [example](https://jsfiddle.net/sorryimfrench/kvwz48hq/5/)
 ``` html
 <!DOCTYPE html>
 <html><body>
-<div data-ui="Hello"></div>
+<div id="Hello"></div>
 
-<template id="Hello">
-  UI.js says:
-  <pre><slot out:content=".message" /></pre>
-</template>
+<script type="importmap">
+{
+  "imports": {
+    "@ui/": "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui/"
+  }
+}
+</script>
 
-<script type="module">                                               
-import ui from "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js";
-ui(document, { message: "Hello, world!" });                                    
+<script type="module">
+import { render } from "@ui/client.js";
+import { h } from "@ui/hyperscript.js";
+
+const Hello = ({ message }) => h.div("UI.js says: ", h.pre(message.text()));
+render(Hello, { message: "Hello, world!" }, document.getElementById("Hello"));
 </script>
 
 </body></html>
 ```
 
-### Directives
+### API
 
-- `PATH`
-- `|TRANSFORM`
-- `!EVENT`
-
-### Attributes
-
-In component templates:
-
-- `out:ATTR=DIRECTIVE`, eg. `out:value=.label`
-- `in:EVENT=DIRECTIVE`, eg. `in:change=.label`
-- `on:EVENT=!HANDLER`, eg. `on:click=!Remove`
-- `when=DIRECTIVE`, eg. `when=empty|not`
-
-In the document:
-
-- `data-component`
-- `data-state`
-
-### Elements
-
-- `template`
-- `slot`
+- `render(Component, data, node)`
+- `h` hyperscript helpers (`h.div`, `h.span`, ...)
+- `$` / `select` for reactive selections and cells
 
 # Features
 
-- *Granular rendering*: an update to the data only triggers an update to
-  the specific components that represent the data. This is to be put in
-  contrast top VDOM-based renderes like React, where a change in the
-  data will likely lead to re-rendering more than necessary. For
-  applications where low latency is important (interactive editors),
-  having granular updates is a must.
-
-- *Direct HTML, or XML/XSLT shorthands*: UI.js can be written using XML,
-  which provides syntatic sugar and additional features to write self
-  documenting components and stylesheets.
+- *Granular rendering*: updates target the minimal DOM surface.
+- *No build step required*: runs directly in browsers with ESM.
+- *Small reactive primitives*: selections, cells, and template effects.
 
 # References
 

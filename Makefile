@@ -29,7 +29,12 @@ run: $(RUN_ALL)
 update-css: FORCE  run/.has-cmd-bun run/.has-cmd-prettier
 	@for FILE in $(SOURCES_CSS); do
 		if [ ! -z "$$(grep @tmpl $$FILE)" ]; then
-			bun src/js/ui/ssr/cssgen.js "$$FILE" | prettier --stdin-filepath="$$FILE" --parser css > "$$FILE".tmp
+			if [ -e attic/src/js/ui/ssr/cssgen.js ]; then
+				bun attic/src/js/ui/ssr/cssgen.js "$$FILE" | prettier --stdin-filepath="$$FILE" --parser css > "$$FILE".tmp
+			else
+				echo "!!! cssgen.js not found (legacy tool moved to attic)"
+				continue
+			fi
 			if [ -e "$$FILE".tmp ]; then
 				echo "... File $$FILE updated"
 				mv "$$FILE".tmp "$$FILE"
@@ -88,7 +93,7 @@ dist/css/%: src/css/% run/.has-npm-uglifycss
 	echo "--- Compressing $< into $@"
 	$(call use-bin,uglifycss) --ugly-comments --output "$@" $<
 
-src/js/ui/version.js: FORCE
+src/js/ui-version.js: FORCE
 	@mkdir -p "$(dir $@)"
 	echo 'export const updated="$(TIMESTAMP)";' > $@
 
@@ -113,7 +118,7 @@ run/.has-cmd-%:
 		touch "$@"
 	fi
 
-release: src/js/ui/version.js
+release: src/js/ui-version.js
 	@git add "$<"
 	git commit "$<" -m "[Release] Release $(TIMESTAMP)"
 	git tag -a "release" -m "Release $(TIMESTAMP)"

@@ -1,5 +1,5 @@
-import { render } from "../../../src/js/ui-faster/client.js";
-import { h, $ } from "../../../src/js/ui-faster/hyperscript.js";
+import { render } from "../../../src/js/ui/client.js";
+import { h, $ } from "../../../src/js/ui/hyperscript.js";
 
 const { li, span, ul } = h;
 
