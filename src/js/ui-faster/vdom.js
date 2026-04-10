@@ -2,6 +2,9 @@ import { Effect, LifecycleEventHandlerEffect } from "./effects.js";
 import { Slot } from "./cells.js";
 import { onError } from "./utils/logging.js";
 
+const isRenderable = (value) =>
+	value instanceof Slot && typeof value.render === "function";
+
 export class VNode {
 	// --
 	// Returns a list of effects defined in the given node, recursively.
@@ -19,7 +22,7 @@ export class VNode {
 			} else {
 				p.push(i);
 			}
-			if (v instanceof Effect) {
+			if (v instanceof Effect || isRenderable(v)) {
 				res.push([p, v]);
 			} else if (v instanceof VNode) {
 				VNode.Effects(v, p, res);
@@ -79,8 +82,12 @@ export class VNode {
 				: node.setAttribute(name, value);
 		}
 		for (const child of this.children) {
-			if (child instanceof Effect) {
-				node.appendChild(document.createComment(`Effect:${child}`));
+			if (child instanceof Effect || isRenderable(child)) {
+				node.appendChild(
+					child.placeholderNodeType === Node.TEXT_NODE
+						? document.createTextNode("")
+						: document.createComment(`Effect:${child}`)
+				);
 			} else if (child instanceof Node) {
 				node.appendChild(child.cloneNode(true));
 			} else if (child instanceof VNode) {
@@ -114,6 +121,8 @@ export class VNode {
 						// FIXME: If we remove the placeholder, then some
 						// effects will have problems, like conditionals and
 						// mapping. The others should be fine without.
+						break;
+					case Node.TEXT_NODE:
 						break;
 					default:
 						onError(

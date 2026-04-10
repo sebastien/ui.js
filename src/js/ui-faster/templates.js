@@ -304,6 +304,7 @@ export class Application extends Selection {
 		this.input = input;
 		this.transform = transform;
 		this.isMultipleArguments = multiple;
+		this.placeholderNodeType = Node.COMMENT_NODE;
 	}
 
 	applyContext(context) {
@@ -324,6 +325,98 @@ export class Application extends Selection {
 		}
 
 		return context;
+	}
+
+	render(node, position, context, effector, id = this.id) {
+		this.input.applyContext(context);
+		let state = context[this.id + 6];
+		if (!state) {
+			state = context[this.id + 6] = {
+				mode: undefined,
+				template: undefined,
+				context: undefined,
+				anchor: undefined,
+			};
+		}
+		if (state.mode === undefined && !this.isMultipleArguments) {
+			const candidate = this.transform(this.input);
+			if (candidate && typeof candidate.render === "function") {
+				state.mode = "template";
+				state.template = candidate;
+				state.context = Object.assign(Object.create(context), {
+					[Slot.Owner]: this,
+					[Slot.Parent]: context,
+					[Slot.Name]: Object.getPrototypeOf(this).constructor.name,
+				});
+			}
+		}
+		if (state.mode === "template") {
+			this.input.observable(context);
+			if (node?.nodeType === Node.TEXT_NODE) {
+				state.anchor =
+					state.anchor && state.anchor.parentNode
+						? state.anchor
+						: document.createComment(`Application:${this.id}`);
+				if (node.parentNode && state.anchor !== node) {
+					node.parentNode.replaceChild(state.anchor, node);
+				}
+				node = state.anchor;
+			}
+			return state.template.render(
+				node,
+				position,
+				state.context ?? context,
+				effector,
+				id
+			);
+		}
+
+		context = this.applyContext(context);
+		const render_id = this.id + Slot.Render;
+		if (!context[render_id]) {
+			const rerender = () => this.render(node, position, context, effector, id);
+			context[render_id] = rerender;
+			this.observable(context).sub(rerender);
+		}
+		const output = context[this.id];
+		if (output && typeof output.render === "function") {
+			if (node?.nodeType === Node.TEXT_NODE) {
+				state.anchor =
+					state.anchor && state.anchor.parentNode
+						? state.anchor
+						: document.createComment(`Application:${this.id}`);
+				if (node.parentNode && state.anchor !== node) {
+					node.parentNode.replaceChild(state.anchor, node);
+				}
+				node = state.anchor;
+			}
+			return output.render(
+				node,
+				position,
+				state.context ?? context,
+				effector,
+				id
+			);
+		}
+		return effector.ensureContent(node, position, output);
+	}
+
+	unrender(context, effector, id = this.id) {
+		const state = context[this.id + 6];
+		if (state?.mode === "template") {
+			if (state.template?.unrender && state.context) {
+				state.template.unrender(state.context, effector, id);
+			}
+			return;
+		}
+		const render_id = this.id + Slot.Render;
+		if (context[render_id]) {
+			this.observable(context).unsub(context[render_id]);
+			context[render_id] = undefined;
+		}
+		if (state?.template?.unrender && state.context) {
+			state.template.unrender(state.context, effector, id);
+		}
 	}
 }
 

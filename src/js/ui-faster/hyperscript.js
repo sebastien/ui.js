@@ -60,7 +60,7 @@ const createAttributes = (attributes) => {
 
 const normalizeChildren = (children) =>
 	children.map((_) =>
-		_ instanceof Effect
+		_ instanceof Effect || (typeof _?.render === "function" && _ instanceof Slot)
 			? _
 			: _ instanceof Slot
 			? new FormattingEffect(_)

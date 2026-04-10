@@ -1,6 +1,40 @@
 import { Context, Slot } from "./cells.js";
 import { onError, onRuntimeError } from "./utils/logging.js";
 
+const isShallowEqual = (a, b) => {
+	if (Object.is(a, b)) {
+		return true;
+	}
+	if (!a || !b || typeof a !== "object" || typeof b !== "object") {
+		return false;
+	}
+	if (Array.isArray(a) || Array.isArray(b)) {
+		if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+			return false;
+		}
+		for (let i = 0; i < a.length; i++) {
+			if (!Object.is(a[i], b[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+	const aKeys = Object.keys(a);
+	const bKeys = Object.keys(b);
+	if (aKeys.length !== bKeys.length) {
+		return false;
+	}
+	for (const key of aKeys) {
+		if (!Object.prototype.hasOwnProperty.call(b, key)) {
+			return false;
+		}
+		if (!Object.is(a[key], b[key])) {
+			return false;
+		}
+	}
+	return true;
+};
+
 export class Effect extends Slot {
 	constructor(input) {
 		super();
@@ -86,6 +120,15 @@ export class ComponentEffect extends Effect {
 			context[this.id] = true;
 		}
 		const derived = this.input.applyContext(context);
+		const extracted = this.input.extraction
+			? Slot.Expand(this.input.extraction, context)
+			: context[Slot.Input];
+		const previous = derived[this.id + Slot.State];
+		const existing = derived[this.id + Slot.Node];
+		if (existing && previous !== undefined && isShallowEqual(previous, extracted)) {
+			return existing;
+		}
+		derived[this.id + Slot.State] = extracted;
 		// TODO: Not sure if we need to do that?
 		// derived[this.id] = undefined;
 		if (!this.component.isComponent) {
@@ -306,9 +349,10 @@ export class MappingEffect extends Effect {
 		// Note that the keys `k` will be strings, even if `items` is an Array.
 		for (const k of keys(items)) {
 			// We get any previously stored entry.
-			// An entry is `[revision, context]`
+			// An entry is `[revision, context, previousValue]`
 			const entry = mapping.get(k);
 			let ctx = (entry && entry[1]) || undefined;
+			const value = items[k];
 			// If there's no context, then we have a new key.
 			if (!ctx) {
 				// We start by creating a derived context, so that derivations
@@ -325,16 +369,22 @@ export class MappingEffect extends Effect {
 				ctx[this.id + Slot.State] = null;
 				// We set the basic input for the context as the item's value
 				// and its key.
-				ctx[this.valueSlot.id] = items[k];
+				ctx[this.valueSlot.id] = value;
 				ctx[this.keySlot.id] = k;
 				// We register the mapped value and context in the mapping.
-				mapping.set(k, [revision, ctx]);
+				mapping.set(k, [revision, ctx, value]);
 			} else {
-				// TODO: Shouldn't we detect if there's a change there?
-				ctx[this.valueSlot.id] = items[k];
+				ctx[this.valueSlot.id] = value;
 				ctx[this.keySlot.id] = k;
 				// Only the revision has changed in the entry.
 				entry[0] = revision;
+				const existing = ctx[(this.template.id ?? this.id) + Slot.Node];
+				if (existing && Object.is(entry[2], value)) {
+					entry[2] = value;
+					i++;
+					continue;
+				}
+				entry[2] = value;
 			}
 			// TODO: We should probably store the output DOM node?
 			const res = this.template.render(
@@ -370,6 +420,7 @@ export class FormattingEffect extends Effect {
 		super(input);
 		this.format = format;
 		this.placeholder = placeholder;
+		this.placeholderNodeType = Node.TEXT_NODE;
 	}
 	render(node, position, context, effector) {
 		// TODO: If input is undefined, we'll need to determine the inputs
@@ -401,6 +452,10 @@ export class FormattingEffect extends Effect {
 			}
 			context[this.id + Slot.State] = input;
 			if (!textNode) {
+				if (node?.nodeType === Node.TEXT_NODE) {
+					node.data = output;
+					return (context[this.id + Slot.Node] = node);
+				}
 				return (context[this.id + Slot.Node] = effector.ensureText(
 					node,
 					position,
