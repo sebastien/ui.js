@@ -20,6 +20,7 @@ import { isObject } from "./utils/types.js";
 import { camelToKebab } from "./utils/text.js";
 
 const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$");
+export const Fragment = "#fragment";
 
 const createAttributes = (attributes) => {
 	const attr = new Map();
@@ -109,7 +110,9 @@ export class VDOMFactoryProxy {
 			scope.tags = new Map();
 		}
 		const tags = scope.tags;
-		// TODO: Support `h.Fragment`
+		if (property === "Fragment") {
+			return Fragment;
+		}
 		if (tags.has(property)) {
 			return tags.get(property);
 		} else {

@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "description": "An old-school, dead simple UI library",
   "main": "src/js/ui.js",
+  "exports": {
+    ".": "./src/js/ui.js",
+    "./jsx-runtime": "./src/js/ui/jsx.js",
+    "./jsx-dev-runtime": "./src/js/ui/jsx.js",
+    "./*": "./src/js/*"
+  },
   "homepage": "https://github.com/sebastien/ui.js#readme",
   "repository": {
     "type": "git",
