@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>UI.js Case: Rich Text</title>
+	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+</head>
+
+<body>
+	<h1 class="h4">Case: Rich Text</h1>
+	<p class="small dim">Open devtools console to inspect benchmark output.</p>
+	<p><button id="RunBenchmark" type="button">Run benchmark</button></p>
+	<div id="BenchmarkRoot"></div>
+	<pre id="Output">Ready</pre>
+
+	<script type="module">
+		import { runRichTextBenchmark } from "./case-rich_text.js";
+
+		const root = document.getElementById("BenchmarkRoot");
+		const output = document.getElementById("Output");
+		const runButton = document.getElementById("RunBenchmark");
+		const params = new URLSearchParams(window.location.search);
+		const runs = Number.parseInt(params.get("runs") || "8", 10);
+
+		window.runCaseBenchmark = async (options = {}) => {
+			const result = await runRichTextBenchmark({ root, runs, ...options });
+			output.textContent = JSON.stringify(result, null, 2);
+			return result;
+		};
+		runButton.addEventListener("click", () => {
+			window.runCaseBenchmark();
+		});
+
+		console.log("Ready: run `window.runCaseBenchmark()`");
+		if (params.get("autorun") === "1") {
+			await window.runCaseBenchmark();
+		}
+	</script>
+</body>
+
+</html>

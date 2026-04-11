@@ -19,6 +19,9 @@ const MIME_TYPES = {
 const FRAMEWORKS = ["preact", "solidjs", "ui"];
 
 const round = (value) => Number(value.toFixed(2));
+const roundNullable = (value) =>
+	Number.isFinite(value) ? Number(value.toFixed(2)) : null;
+const bytesToMb = (value) => value / (1024 * 1024);
 
 const compareSnapshots = (baseline, candidate) => {
 	const baselineByLabel = new Map(
@@ -119,6 +122,59 @@ const average = (values) =>
 		? values.reduce((total, value) => total + value, 0) / values.length
 		: 0;
 
+const averageDefined = (values) => {
+	const numericValues = values.filter((value) => Number.isFinite(value));
+	return numericValues.length ? average(numericValues) : null;
+};
+
+const getUsedHeapBytes = async (cdpSession) => {
+	try {
+		const heapUsage = await cdpSession.send("Runtime.getHeapUsage");
+		if (Number.isFinite(heapUsage?.usedSize)) {
+			return heapUsage.usedSize;
+		}
+	} catch {
+		// Ignore and fallback to Performance metrics.
+	}
+
+	try {
+		await cdpSession.send("Performance.enable").catch(() => null);
+		const metrics = await cdpSession.send("Performance.getMetrics");
+		const heapMetric = metrics?.metrics?.find(
+			(metric) => metric.name === "JSHeapUsedSize"
+		);
+		if (Number.isFinite(heapMetric?.value)) {
+			return heapMetric.value;
+		}
+	} catch {
+		// Ignore: metrics are optional and benchmark should continue.
+	}
+
+	return null;
+};
+
+const runBenchmarkWithHeap = async (page) => {
+	const cdpSession = await page.context().newCDPSession(page).catch(() => null);
+	const heapBeforeBytes = cdpSession ? await getUsedHeapBytes(cdpSession) : null;
+	const result = await page.evaluate(() => window.runInspectorBenchmark());
+	const heapAfterBytes = cdpSession ? await getUsedHeapBytes(cdpSession) : null;
+	if (cdpSession) {
+		await cdpSession.detach().catch(() => null);
+	}
+	const heapDeltaBytes =
+		Number.isFinite(heapBeforeBytes) && Number.isFinite(heapAfterBytes)
+			? heapAfterBytes - heapBeforeBytes
+			: null;
+	return {
+		...result,
+		heap: {
+			beforeBytes: heapBeforeBytes,
+			afterBytes: heapAfterBytes,
+			deltaBytes: heapDeltaBytes,
+		},
+	};
+};
+
 const summarizeRuns = (framework, runs) => {
 	const phaseNames = runs[0]?.patches.phases.map((phase) => phase.name) || [];
 	const phases = Object.fromEntries(
@@ -142,6 +198,15 @@ const summarizeRuns = (framework, runs) => {
 		patchTotalMs: round(
 			average(runs.map((run) => run.patches.totalDuration))
 		),
+		heapBeforeMB: roundNullable(
+			bytesToMb(averageDefined(runs.map((run) => run.heap?.beforeBytes)))
+		),
+		heapAfterMB: roundNullable(
+			bytesToMb(averageDefined(runs.map((run) => run.heap?.afterBytes)))
+		),
+		heapDeltaMB: roundNullable(
+			bytesToMb(averageDefined(runs.map((run) => run.heap?.deltaBytes)))
+		),
 		nodeCount: round(average(runs.map((run) => run.initial.nodeCount))),
 		phases,
 	};
@@ -161,10 +226,22 @@ const formatSummaryTable = (summaries) => {
 		framework: summary.framework,
 		initialMs: `${summary.initialMs}`,
 		patchTotalMs: `${summary.patchTotalMs}`,
+		heapBeforeMB: `${summary.heapBeforeMB ?? "n/a"}`,
+		heapAfterMB: `${summary.heapAfterMB ?? "n/a"}`,
+		heapDeltaMB: `${summary.heapDeltaMB ?? "n/a"}`,
 		nodeCount: `${summary.nodeCount}`,
 		...Object.fromEntries(phaseNames.map((name) => [name, `${summary.phases[name] ?? 0}`])),
 	}));
-	const headers = ["framework", "initialMs", "patchTotalMs", ...phaseNames, "nodeCount"];
+	const headers = [
+		"framework",
+		"initialMs",
+		"patchTotalMs",
+		"heapBeforeMB",
+		"heapAfterMB",
+		"heapDeltaMB",
+		...phaseNames,
+		"nodeCount",
+	];
 	const widths = Object.fromEntries(
 		headers.map((header) => [
 			header,
@@ -214,7 +291,7 @@ const main = async () => {
 					{ waitUntil: "networkidle" }
 				);
 				await page.waitForFunction(() => window.runInspectorBenchmark);
-				const result = await page.evaluate(() => window.runInspectorBenchmark());
+				const result = await runBenchmarkWithHeap(page);
 				runs.push(result);
 				await page.close();
 			}
