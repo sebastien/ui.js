@@ -1,4 +1,4 @@
-// Project: LittleUI
+// Project: ui.js
 // Author:  Sebastien Pierre
 // License: MIT
 // Created: 2024-01-01
@@ -40,6 +40,12 @@ const DEFAULT_SOURCE_NAME = "iconoir";
 // Placeholder replaced with the requested icon name in source URLs.
 const ICON_NAME_TOKEN = "__ICON_NAME__";
 
+// Constant: DEFAULT_ICON_STYLE
+// Baseline style for icons when sources do not define one.
+const DEFAULT_ICON_STYLE = {
+	color: "var(--color-icon, currentColor)",
+};
+
 // ----------------------------------------------------------------------------
 // SECTION: Icon Sources
 // ----------------------------------------------------------------------------
@@ -80,15 +86,24 @@ const IconSources = {
 	},
 	evaoutline: {
 		url: `https://unpkg.com/eva-icons@1.1.3/outline/svg/${ICON_NAME_TOKEN}.svg`,
-		style: { stroke: "transparent", fill: "var(--color-icon, currentColor)" },
+		style: {
+			stroke: "transparent",
+			fill: "var(--color-icon, currentColor)",
+		},
 	},
 	evafill: {
 		url: `https://unpkg.com/eva-icons@1.1.3/fill/svg/${ICON_NAME_TOKEN}.svg`,
-		style: { stroke: "transparent", fill: "var(--color-icon, currentColor)" },
+		style: {
+			stroke: "transparent",
+			fill: "var(--color-icon, currentColor)",
+		},
 	},
 	fluent: {
 		url: `https://unpkg.com/@fluentui/svg-icons@1.1.315/icons/${ICON_NAME_TOKEN}.svg`,
 		transform: (name) => name.replaceAll("-", "_"),
+	},
+	radix: {
+		url: `https://cdn.jsdelivr.net/gh/radix-ui/icons/packages/radix-icons/icons/${ICON_NAME_TOKEN}.svg`,
 	},
 	lucide: {
 		url: `https://unpkg.com/lucide-static@0.577.0/icons/${ICON_NAME_TOKEN}.svg`,
@@ -116,10 +131,13 @@ const IconsContainer = Object.entries({
 	height: "0",
 	viewBox: "0 0 0 0",
 	style: "position:absolute; width:0; height:0; overflow:hidden;",
-}).reduce((r, [k, v]) => {
-	r.setAttribute(k, v);
-	return r;
-}, document.createElementNS(SVG_NAMESPACE, "svg"));
+}).reduce(
+	(r, [k, v]) => {
+		r.setAttribute(k, v);
+		return r;
+	},
+	document.createElementNS(SVG_NAMESPACE, "svg"),
+);
 
 /**
  * Global cache mapping icon URLs to loaded SVG symbols or promises.
@@ -204,10 +222,7 @@ function loadIcon(
 		return Promise.resolve(cached);
 	}
 
-	const symbol = document.createElementNS(
-		SVG_NAMESPACE,
-		"symbol",
-	);
+	const symbol = document.createElementNS(SVG_NAMESPACE, "symbol");
 	symbol.id = iconId;
 	container.appendChild(symbol);
 
@@ -231,7 +246,7 @@ function loadIcon(
 			}
 
 			// Apply source-specific styling
-			if (resolvedSource) {
+			if (resolvedSource?.style) {
 				Object.entries(resolvedSource.style).forEach(([k, v]) => {
 					icon?.setAttribute(k, `${v}`);
 				});
@@ -280,15 +295,23 @@ function icon(name, options = {}) {
 	} = options;
 
 	const resolvedSource = resolveSource(source);
-	const mergedStyle = Object.assign({}, resolvedSource?.style, customStyle);
+	const mergedStyle = Object.assign(
+		{},
+		DEFAULT_ICON_STYLE,
+		resolvedSource?.style,
+		customStyle,
+	);
 
 	const node = Object.entries({
 		width: size,
 		height: size,
-	}).reduce((r, [k, v]) => {
-		r.setAttribute(k, v);
-		return r;
-	}, document.createElementNS(SVG_NAMESPACE, "svg"));
+	}).reduce(
+		(r, [k, v]) => {
+			r.setAttribute(k, v);
+			return r;
+		},
+		document.createElementNS(SVG_NAMESPACE, "svg"),
+	);
 
 	const iconPromise = loadIcon(name, source, container).then((symbol) => {
 		if (!symbol) {
@@ -302,7 +325,11 @@ function icon(name, options = {}) {
 					node.setAttribute("viewBox", viewBox);
 				}
 			} else {
-				console.warn("icons", `Could not load icon "${name}", got:`, symbol);
+				console.warn(
+					"icons",
+					`Could not load icon "${name}", got:`,
+					symbol,
+				);
 			}
 		}
 		return symbol;
@@ -334,10 +361,7 @@ function icon(name, options = {}) {
 			});
 			return node;
 		default: {
-			const use = document.createElementNS(
-				SVG_NAMESPACE,
-				"use",
-			);
+			const use = document.createElementNS(SVG_NAMESPACE, "use");
 			use.classList.add(className);
 			Object.assign(node.style, mergedStyle);
 			use.setAttribute("href", `#icon-${name}-${sourceName(source)}`);
@@ -407,7 +431,9 @@ function install(name = "ui-icon", options = {}) {
 					// Parse "source:name" format
 					const colonIndex = iconAttr.indexOf(":");
 					if (colonIndex > 0) {
-						sourceName = iconAttr.substring(0, colonIndex).toLowerCase();
+						sourceName = iconAttr
+							.substring(0, colonIndex)
+							.toLowerCase();
 						iconName = iconAttr.substring(colonIndex + 1);
 					} else {
 						// Just a name, no source specified
@@ -427,7 +453,9 @@ function install(name = "ui-icon", options = {}) {
 
 			const iconSource = sourceName
 				? IconSources[sourceName] ||
-					(typeof source === "string" ? resolveSource(source) : source)
+					(typeof source === "string"
+						? resolveSource(source)
+						: source)
 				: source;
 
 			// Remove old icon if exists
@@ -468,5 +496,7 @@ export {
 	loadIcon,
 	loadIcons,
 };
+
+export default Object.assign(icon, { install });
 
 // EOF

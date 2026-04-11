@@ -1,4 +1,4 @@
-// Project: LittleUI
+// Project: ui.js
 // Author:  Sebastien Pierre
 // License: MIT
 // Created: 2024-01-01

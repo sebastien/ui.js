@@ -1,4 +1,4 @@
-// Project: LittleUI
+// Project: ui.js
 // Author:  Sebastien Pierre
 // License: MIT
 // Created: 2024-01-01
@@ -10,7 +10,7 @@
 //
 // See: <https://raw.githubusercontent.com/wilsonpage/fastdom/refs/heads/master/fastdom.js>
 
-const win = typeof globalThis !== 'undefined' && globalThis.window;
+const win = typeof globalThis !== "undefined" && globalThis.window;
 
 // Constant: raf
 // Normalized animation-frame scheduler, with a timeout fallback outside the DOM.
