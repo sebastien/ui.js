@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UI.js - Interaction (Drag + Resize)</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/98.css"
+      type="text/css"
+      media="all"
+    />
+    <script type="importmap">
+      { "imports": { "@ui/": "../src/js/ui/" } }
+    </script>
+    <style>
+      :root {
+        --desk-dark: #111114;
+        --desk-mid: #2a2d34;
+        --desk-light: #4f5562;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        font-family: "Geneva", "Chicago", sans-serif;
+        background:
+          radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.12), transparent 42%),
+          radial-gradient(circle at 90% 85%, rgba(255, 255, 255, 0.09), transparent 36%),
+          linear-gradient(135deg, var(--desk-dark), var(--desk-mid) 46%, var(--desk-light));
+      }
+
+      #app {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .desktop-hint {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 12px;
+        letter-spacing: 0.3px;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+        pointer-events: none;
+      }
+
+      .floating-window {
+        position: absolute;
+        min-width: 220px;
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+      }
+
+      .floating-window .title-bar,
+      .floating-window .title-bar-text {
+        cursor: move !important;
+      }
+
+      .floating-window .title-bar-controls button {
+        cursor: default;
+      }
+
+      .floating-window .window-body {
+        flex: 1;
+        overflow: auto;
+      }
+
+      .window-content {
+        margin: 0;
+        line-height: 1.45;
+      }
+
+      .resize-grip {
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        width: 16px;
+        height: 16px;
+        cursor: nwse-resize;
+        background:
+          repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.55) 2px,
+            rgba(0, 0, 0, 0.55) 3px
+          );
+      }
+
+      @media (max-width: 700px) {
+        .floating-window {
+          min-width: 180px;
+        }
+
+        .desktop-hint {
+          left: 10px;
+          right: 10px;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { render } from "@ui/client.js";
+      import { h, $ } from "@ui/hyperscript.js";
+      import { drag } from "@ui/interaction.js";
+
+      const { div, p, ul, li, button } = h;
+
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      const Window = ({ frame, title, onFocus, children }) => {
+        const style = frame.apply(
+          ({ x, y, width, height, z }) =>
+            `left:${x}px;top:${y}px;width:${width}px;height:${height}px;z-index:${z};`,
+        );
+
+        const focus = $.bind(() => onFocus.call(frame));
+
+        const onDragStart = $.bind((event) => {
+          event.preventDefault();
+          focus();
+          const start = { ...frame.get() };
+          const move = $.bind((_event, { dx, dy }) => {
+            const maxX = Math.max(0, globalThis.innerWidth - start.width - 6);
+            const maxY = Math.max(0, globalThis.innerHeight - start.height - 6);
+            frame.update({
+              x: clamp(start.x + dx, 0, maxX),
+              y: clamp(start.y + dy, 0, maxY),
+            });
+          });
+          drag(event, move);
+        });
+
+        const onResizeStart = $.bind((event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          focus();
+          const start = { ...frame.get() };
+          const resize = $.bind((_event, { dx, dy }) => {
+            const maxWidth = Math.max(220, globalThis.innerWidth - start.x - 4);
+            const maxHeight = Math.max(140, globalThis.innerHeight - start.y - 4);
+            frame.update({
+              width: clamp(start.width + dx, 220, maxWidth),
+              height: clamp(start.height + dy, 140, maxHeight),
+            });
+          });
+          drag(event, resize);
+        });
+
+        return div(
+          { class: "window floating-window", style, onMouseDown: focus, onClick: focus },
+          div(
+            { class: "title-bar", onMouseDown: onDragStart },
+            div({ class: "title-bar-text" }, title),
+            div(
+              { class: "title-bar-controls" },
+              button({ "aria-label": "Minimize", disabled: true }),
+              button({ "aria-label": "Maximize", onMouseDown: onResizeStart }),
+              button({ "aria-label": "Close", disabled: true }),
+            ),
+          ),
+          div({ class: "window-body" }, children),
+          div({ class: "resize-grip", onMouseDown: onResizeStart }),
+        );
+      };
+
+      const Desktop = ({ terminal, notes, topZ }) => {
+        const bringToFront = (frame) => {
+          const next = topZ.get() + 1;
+          topZ.set(next);
+          frame.update({ z: next });
+        };
+
+        return div(
+          { id: "desktop" },
+          h(
+            Window,
+            { frame: terminal, title: "Build Console", onFocus: bringToFront },
+            p(
+              { class: "window-content" },
+              "Try dragging this title bar and resizing with the corner grip.",
+            ),
+            ul(
+              li("binds move handlers with $.bind(...)"),
+              li("state updates stay in component context"),
+              li("frame values are clamped to viewport"),
+            ),
+          ),
+          h(
+            Window,
+            { frame: notes, title: "Interaction Notes", onFocus: bringToFront },
+            p(
+              { class: "window-content" },
+              "This window demonstrates independent position + size cells and z-index focus.",
+            ),
+            p(
+              { class: "window-content" },
+              "On mobile, constraints prevent windows from leaving the screen.",
+            ),
+          ),
+          div({ class: "desktop-hint" }, "Drag title bars. Resize with bottom-right grip."),
+        );
+      };
+
+      render(
+        Desktop,
+        {
+          topZ: 10,
+          terminal: { x: 42, y: 54, width: 380, height: 260, z: 2 },
+          notes: { x: 280, y: 190, width: 340, height: 220, z: 3 },
+        },
+        document.getElementById("app"),
+      );
+    </script>
+  </body>
+</html>

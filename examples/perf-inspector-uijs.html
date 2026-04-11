@@ -1,81 +1,77 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI.js - Perf Inspector (UI.js)</title>
+    <link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+    <script type="importmap">
+      { "imports": { "@ui/": "../src/js/ui/" } }
+    </script>
+  </head>
+  <body>
+    <div id="Inspector"></div>
+    <script type="module">
+      import { render } from "@ui/client.js";
+      import { h } from "@ui/hyperscript.js";
+      const { li, span, ul } = h;
 
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>UI.js - Perf Inspector (UI.js)</title>
-	<link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
-	<script type="importmap">
-		{ "imports": { "@ui/": "../src/js/ui/" } }
-	</script>
-</head>
+      const Inspector = ({ value }) => {
+      	const type = value.apply((_) =>
+      		_ === undefined || _ === null
+      			? "undefined"
+      			: _ instanceof Map
+      				? "map"
+      				: _ instanceof Array
+      					? "array"
+      					: typeof _
+      	);
 
-<body>
-	<div id="Inspector"></div>
+      	return type.match(
+      		(_) =>
+      			_.case(
+      				"object",
+      				"map",
+      				ul(
+      					{ _: "comma curlies dim-ab" },
+      					value.map((entryValue, key) =>
+      						li(
+      							{ _: "pl-2" },
+      							span(
+      								{ _: "mono dim small" },
+      								key.text((_) => `${_}:`)
+      							),
+      							" ",
+      							h(Inspector, { value: entryValue })
+      						)
+      					)
+      				)
+      			),
+      		(_) =>
+      			_.case(
+      				"array",
+      				ul(
+      					{ _: "comma brackets dim-ab" },
+      					value.map((entryValue, key) =>
+      						li(
+      							{ _: "pl-2" },
+      							span(
+      								{ _: "mono dim small" },
+      								key.text((_) => `#${_}:`)
+      							),
+      							" ",
+      							h(Inspector, { value: entryValue })
+      						)
+      					)
+      				)
+      			),
+      		(_) => _.else(span(value.text()))
+      	);
+      };
 
-	<script type="module">
-		import { render } from "@ui/client.js";
-		import { h } from "@ui/hyperscript.js";
-		const { li, span, ul } = h;
+      const logs = await fetch("perf-inspector.json").then((_) => _.json());
 
-		const Inspector = ({ value }) => {
-			const type = value.apply((_) =>
-				_ === undefined || _ === null
-					? "undefined"
-					: _ instanceof Map
-						? "map"
-						: _ instanceof Array
-							? "array"
-							: typeof _
-			);
-
-			return type.match(
-				(_) =>
-					_.case(
-						"object",
-						"map",
-						ul(
-							{ _: "comma curlies dim-ab" },
-							value.map((entryValue, key) =>
-								li(
-									{ _: "pl-2" },
-									span(
-										{ _: "mono dim small" },
-										key.text((_) => `${_}:`)
-									),
-									" ",
-									h(Inspector, { value: entryValue })
-								)
-							)
-						)
-					),
-				(_) =>
-					_.case(
-						"array",
-						ul(
-							{ _: "comma brackets dim-ab" },
-							value.map((entryValue, key) =>
-								li(
-									{ _: "pl-2" },
-									span(
-										{ _: "mono dim small" },
-										key.text((_) => `#${_}:`)
-									),
-									" ",
-									h(Inspector, { value: entryValue })
-								)
-							)
-						)
-					),
-				(_) => _.else(span(value.text()))
-			);
-		};
-
-		const logs = await fetch("inspector-speed.json").then((_) => _.json());
-
-		render(Inspector, { value: { logs } }, document.getElementById("Inspector"));
-	</script>
-</body>
-
+      render(Inspector, { value: { logs } }, document.getElementById("Inspector"));
+    </script>
+  </body>
 </html>
