@@ -85,7 +85,10 @@ export class Injection extends Derivation {
 					context[v.id + Slot.Revision];
 			} else {
 				// This is a regular value
-				derived[slot.id] = v;
+				derived[slot.id] =
+					typeof v === "function"
+						? (...args) => Context.Run(context, v, args)
+						: v;
 			}
 			slot.observable(derived);
 		}

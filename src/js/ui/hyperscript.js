@@ -40,7 +40,7 @@ const createAttributes = (attributes) => {
 				name = name.toLowerCase();
 				attr.set(
 					[ns, name],
-					typeof v === "function"
+					typeof v === "function" || v instanceof Slot
 						? EventHandlerEffect.Ensure(v, name)
 						: v
 				);

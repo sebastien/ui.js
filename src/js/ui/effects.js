@@ -233,6 +233,12 @@ export class ConditionalEffect extends Effect {
 		this.elseBranch = elseBranch;
 	}
 
+	resolveBranchEffect(index) {
+		return index < this.branches.length
+			? this.branches[index][2]
+			: this.elseBranch;
+	}
+
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
 		this.subrender(node, position, context, effector);
@@ -280,9 +286,13 @@ export class ConditionalEffect extends Effect {
 		if (i != state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
-				const ctx = state[1][state[0]];
-				if (ctx) {
-					effector.unmount(ctx[Slot.Node]);
+				const previousIndex = state[0];
+				const previousEffect = this.resolveBranchEffect(previousIndex);
+				const previousContext = state[1][previousIndex];
+				if (previousContext && previousEffect?.unrender) {
+					previousEffect.unrender(previousContext, effector, this.id);
+				} else if (previousContext?.[Slot.Node]) {
+					effector.unmount(previousContext[Slot.Node]);
 				}
 			}
 			state[0] = i;
@@ -304,7 +314,21 @@ export class ConditionalEffect extends Effect {
 				? undefined
 				: match.render(node, position, state[1][i], effector, this.id));
 	}
-	// TODO: Unrender
+
+	unrender(context, effector) {
+		const state = context[this.id + Slot.State];
+		if (state && state[0] !== undefined) {
+			const activeIndex = state[0];
+			const activeEffect = this.resolveBranchEffect(activeIndex);
+			const activeContext = state[1][activeIndex];
+			if (activeContext && activeEffect?.unrender) {
+				activeEffect.unrender(activeContext, effector, this.id);
+			} else if (activeContext?.[Slot.Node]) {
+				effector.unmount(activeContext[Slot.Node]);
+			}
+		}
+		super.unrender(context, effector);
+	}
 }
 
 function* keys(value) {
@@ -491,21 +515,20 @@ export class EventHandlerEffect extends Effect {
 	// --
 	// Ensures that the given `handler` function has a corresponding effect.
 	static Ensure(handler, name) {
-		if (!handler.effect) {
-			handler.effect =
-				name === "onmount" || name === "onunmount"
-					? new LifecycleEventHandlerEffect(handler, name)
-					: new EventHandlerEffect(handler, name);
-		}
-		return handler.effect;
+		return name === "onmount" || name === "onunmount"
+			? new LifecycleEventHandlerEffect(handler, name)
+			: new EventHandlerEffect(handler, name);
 	}
 	constructor(handler, event) {
-		super();
+		super(handler instanceof Slot ? handler : undefined);
 		this.handler = handler;
 		this.event = event;
 		this.wrapper = (event, ...rest) => {
-			// TODO: We should set the context we're in.
-			const res = handler(event);
+			const callback = this.resolveHandler(Context.Get());
+			const res =
+				typeof callback === "function"
+					? callback(event, ...rest)
+					: undefined;
 			// TODO: We should do post-processing.
 			return res;
 		};
@@ -515,30 +538,63 @@ export class EventHandlerEffect extends Effect {
 		// uijs[`H${this.id}`] = this.wrapper;
 	}
 
-	render(node, position, context, effector) {
-		if (context[this.id + Slot.State] === undefined) {
-			const state = (context[this.id + Slot.State] = {
+	resolveHandler(context) {
+		if (this.handler instanceof Slot) {
+			if (!context) {
+				return undefined;
+			}
+			return context[this.handler.id];
+		}
+		return this.handler;
+	}
+
+		render(node, position, context, effector) {
+		this.input?.applyContext(context);
+		const stateId = this.id + Slot.State;
+		const eventName = this.event.startsWith("on")
+			? this.event.substring(2)
+			: this.event;
+		const target = node?.ownerElement ?? context[this.id + Slot.Node];
+		if (target) {
+			context[this.id + Slot.Node] = target;
+		}
+		if (
+			!Object.prototype.hasOwnProperty.call(context, stateId) ||
+			context[stateId] === undefined
+		) {
+			if (!target) {
+				return node;
+			}
+			const state = (context[stateId] = {
 				context: context,
+				target,
+				eventName,
 				wrapper: (...args) => {
 					Context.Run(context, this.wrapper, args);
 				},
 			});
 			// TODO: Should include the context id in the wrapper
-			node.ownerElement.addEventListener(
-				node.nodeName.substring(2),
-				state.wrapper
-			);
-			node.ownerElement.removeAttributeNode(node);
+			target.addEventListener(eventName, state.wrapper);
+			if (node?.ownerElement) {
+				target.removeAttributeNode(node);
+			}
 		}
 		// context = this.input.applyContext(context);
 		// const input = context[this.input.id];
 		// const output = this.format ? this.format(input) : input;
 		// // TODO: If it's a style, we should merge it as an object
 		// node.value = output;
-		return node;
+		return node ?? target;
 	}
 
-	// TODO: Unrender?
+	unrender(context, effector) {
+		const state = context[this.id + Slot.State];
+		if (state?.target && state?.wrapper) {
+			state.target.removeEventListener(state.eventName, state.wrapper);
+		}
+		context[this.id + Slot.State] = undefined;
+		super.unrender(context, effector);
+	}
 
 	toString() {
 		return `globalThis.uijs?.H${this.id}(...arguments)`;
@@ -547,9 +603,23 @@ export class EventHandlerEffect extends Effect {
 
 export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 	render(node, position, context, effector) {
-		if (context[this.id + Slot.State] === undefined) {
-			node.ownerElement.removeAttributeNode(node);
-			context[this.id + Slot.State] = true;
+		this.input?.applyContext(context);
+		const stateId = this.id + Slot.State;
+		const target = node?.ownerElement ?? context[this.id + Slot.Node];
+		if (target) {
+			context[this.id + Slot.Node] = target;
+		}
+		if (
+			!Object.prototype.hasOwnProperty.call(context, stateId) ||
+			context[stateId] === undefined
+		) {
+			if (!target) {
+				return node;
+			}
+			if (node?.ownerElement) {
+				target.removeAttributeNode(node);
+			}
+			context[stateId] = true;
 		}
 		if (!context[this.id]) {
 			context[this.id] = (context[this.id] ?? 0) + 1;
@@ -557,12 +627,16 @@ export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 				Context.Run(context, this.wrapper, [node]);
 			}
 		}
-		return node;
+		return node ?? target;
 	}
 	unrender(context, effector, id) {
-		context[this.id] = Math.max(0, (context[this.id] ?? 0) - 1);
-		if (context[this.id] === 0 && this.event === "onunmount") {
-			Context.Run(context, this.wrapper, context[this.id + Slot.Node]);
+		const previous = context[this.id] ?? 0;
+		if (previous <= 0) {
+			return;
+		}
+		context[this.id] = previous - 1;
+		if (previous === 1 && this.event === "onunmount") {
+			Context.Run(context, this.wrapper, [context[this.id + Slot.Node]]);
 		}
 		super.unrender(context, effector, id);
 	}
