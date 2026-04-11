@@ -308,6 +308,23 @@ export class Cell extends Selection {
 	}
 }
 
+export class DerivedCell extends Selection {
+	constructor(shape, processor, lazy = false) {
+		super();
+		this.shape = shape;
+		this.processor = processor;
+		this.lazy = lazy ? true : false;
+	}
+
+	applyContext(context) {
+		if (context[this.id + Slot.State] === undefined) {
+			Slot.Derive(this.shape, this.processor, this.lazy, this, context);
+			context[this.id + Slot.State] = true;
+		}
+		return context;
+	}
+}
+
 // --
 // An extraction represents a selection of more than one arguments, mapped
 // into the resulting value.

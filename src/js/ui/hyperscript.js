@@ -4,6 +4,7 @@ import {
 	DynamicEvaluation,
 	Subscription,
 	Cell,
+	DerivedCell,
 	component,
 } from "./templates.js";
 import { Slot } from "./cells.js";
@@ -156,8 +157,25 @@ export const select = Object.assign((...args) =>
 		: {}
 );
 
+const isDerivedShape = (value) => {
+	if (value instanceof Array) {
+		return value.every((_) => _ instanceof Slot);
+	}
+	if (value && Object.getPrototypeOf(value) === Object.prototype) {
+		for (const k in value) {
+			if (!(value[k] instanceof Slot)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+};
+
 select.cell = (value, updater, extractor) =>
-	new Cell(value, updater, extractor);
+	typeof updater === "function" && isDerivedShape(value)
+		? new DerivedCell(value, updater, extractor)
+		: new Cell(value, updater, extractor);
 
 export const $ = select;
 
