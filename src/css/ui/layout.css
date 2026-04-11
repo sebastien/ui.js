@@ -1,6 +1,6 @@
 /**
-   * ## Box Model
-*/
+ * ## Box Model
+ */
 
 .inline {
 	display: inline-block;
@@ -27,6 +27,11 @@
 .abs,
 .pos-abs {
 	position: absolute;
+}
+
+.fix,
+.pos-fix {
+	position: fixed;
 }
 
 .pos-lr {
@@ -79,7 +84,7 @@
 	position: relative;
 }
 
-.squared>* {
+.squared > * {
 	position: absolute;
 	top: 0px;
 	bottom: 0px;
@@ -89,13 +94,13 @@
 }
 
 /**
-	* ## Layout
-	*/
+ * ## Layout
+ */
 /**
-   * `fit` ensures that the content fits the parent, expanding both
-   * its width and height. `fit-w` and `fit-`h` are variants that only
-   * do this for the width and height.
-	*/
+ * `fit` ensures that the content fits the parent, expanding both
+ * its width and height. `fit-w` and `fit-`h` are variants that only
+ * do this for the width and height.
+ */
 .expand {
 	position: absolute;
 	box-sizing: border-box;
@@ -178,8 +183,6 @@
 .fit-text {
 	max-width: var(--text-width);
 }
-
-
 
 /* @tmpl
    * range(10).map(_ => `\n  .w-${_+1}col { width: calc(var(--col-width) * ${_+1}); }`)
@@ -507,9 +510,9 @@
 /* @end */
 
 /**
-   * `fit-screen` fits (covers) the whole screen, and also sets  the position
-   * to `fixed'.
-   */
+ * `fit-screen` fits (covers) the whole screen, and also sets  the position
+ * to `fixed'.
+ */
 .fit-screen {
 	position: fixed;
 	top: 0px;
@@ -520,15 +523,10 @@
 	max-height: 100vh;
 }
 
-
-
-
 .columns {
 	display: flex;
 	align-items: flex-start;
 }
-
-
 
 .row {
 	display: flex;
@@ -550,7 +548,7 @@
 	justify-items: stretch;
 }
 
-.row>.fitted {
+.row > .fitted {
 	align-self: stretch;
 }
 
@@ -558,11 +556,11 @@
 	justify-content: space-between;
 }
 
-.row>.fill {
+.row > .fill {
 	flex: 1;
 }
 
-.row>.stretch {
+.row > .stretch {
 	align-self: stretch;
 }
 
@@ -618,8 +616,8 @@
 	justify-content: stretch;
 }
 
-.stack>.grow,
-.stack>.fill {
+.stack > .grow,
+.stack > .fill {
 	flex-grow: 1;
 }
 
@@ -638,13 +636,13 @@
 	gap: var(--gap);
 }
 
-.sep-slash>*:after {
+.sep-slash > *:after {
 	display: inline-block;
 	padding-left: var(--gap);
 	content: "/";
 }
 
-.sep-slash>*:last-child:after {
+.sep-slash > *:last-child:after {
 	display: none;
 	padding-left: 0px;
 	content: "/";
@@ -692,7 +690,6 @@
 }
 
 @container (width < 720px) {
-
 	.by-4,
 	.by-3 {
 		grid-template-columns: 1fr 1fr;
@@ -700,7 +697,6 @@
 }
 
 @container (width < 360px) {
-
 	.by-4,
 	.by-3 {
 		grid-template-columns: 1fr;
@@ -712,11 +708,10 @@
 }
 
 /**
- * The width is set to the max content 
+ * The width is set to the max content
  */
 .fit-content {
 	width: max-content;
 }
-
 
 /* EOF */

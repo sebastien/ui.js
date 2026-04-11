@@ -7,7 +7,7 @@ import {
 	DerivedCell,
 	component,
 } from "./templates.js";
-import { Slot } from "./cells.js";
+import { Context, Slot } from "./cells.js";
 import { VNode } from "./vdom.js";
 import {
 	Effect,
@@ -184,10 +184,35 @@ const isDerivedShape = (value) => {
 	return false;
 };
 
+const BOUND_CONTEXT = Symbol.for("ui.boundContext");
+
+const invokeInContext = (functor, context, thisArg, args) =>
+	context
+		? Context.Run(context, () => functor.apply(thisArg, args))
+		: functor.apply(thisArg, args);
+
 select.cell = (value, updater, extractor) =>
 	typeof updater === "function" && isDerivedShape(value)
 		? new DerivedCell(value, updater, extractor)
 		: new Cell(value, updater, extractor);
+
+select.bind = (functor, context = Context.Get()) => {
+	if (typeof functor !== "function") {
+		return functor;
+	}
+	const wrapper = function (...args) {
+		return invokeInContext(functor, context, this, args);
+	};
+	wrapper[BOUND_CONTEXT] = context;
+	return wrapper;
+};
+
+select.run = (functor, context = Context.Get(), ...args) => {
+	if (typeof functor !== "function") {
+		return undefined;
+	}
+	return invokeInContext(functor, context, undefined, args);
+};
 
 export const $ = select;
 
