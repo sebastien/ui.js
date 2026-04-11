@@ -14,6 +14,7 @@ import {
 	FormattingEffect,
 	ComponentEffect,
 	DynamicComponentEffect,
+	RefEffect,
 	EventHandlerEffect,
 } from "./effects.js";
 import { isObject } from "./utils/types.js";
@@ -36,7 +37,9 @@ const createAttributes = (attributes) => {
 			}
 			const v = attributes[k];
 			const m = RE_ATTRIBUTE.exec(k);
-			if (m && m.groups.event) {
+			if (name === "ref") {
+				attr.set([ns, camelToKebab(name)], new RefEffect(v));
+			} else if (m && m.groups.event) {
 				name = name.toLowerCase();
 				attr.set(
 					[ns, name],

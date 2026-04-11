@@ -120,16 +120,12 @@ export class VNode {
 			if (n > 0) {
 				const resolved = new Array(n);
 				for (let i = 0; i < n; i++) {
-					const [path, effect] = effects[i];
-					const child = (resolved[i] = VNode.ResolvePath(node, path));
-					effect.render(child, position, context, effector);
+					resolved[i] = VNode.ResolvePath(node, effects[i][0]);
+				}
+				for (let i = 0; i < n; i++) {
+					effects[i][1].render(resolved[i], position, context, effector);
 				}
 				node._uiPaths = resolved;
-			} else {
-				for (let i = 0; i < n; i++) {
-					const [path, effect] = effects[i];
-					effect.render(VNode.ResolvePath(node, path), position, context, effector);
-				}
 			}
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);

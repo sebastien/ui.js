@@ -659,6 +659,66 @@ export class AttributeEffect extends Effect {
 	}
 }
 
+export class RefEffect extends Effect {
+	constructor(ref) {
+		super(undefined);
+		this.ref = ref;
+	}
+
+	resolveRef(context) {
+		let ref = this.ref;
+		if (ref instanceof Slot) {
+			const resolved = context ? context[ref.id] : undefined;
+			if (resolved !== undefined) {
+				ref = resolved;
+			}
+		}
+		return ref;
+	}
+
+	assign(ref, context, value) {
+		if (ref instanceof Slot) {
+			ref.set(value, true, context);
+		} else if (typeof ref === "function") {
+			Context.Run(context, ref, [value]);
+		}
+	}
+
+	render(node, position, context, effector) {
+		const stateId = this.id + Slot.State;
+		const target = node?.ownerElement ?? context[this.id + Slot.Node];
+		if (!target) {
+			return node;
+		}
+		context[this.id + Slot.Node] = target;
+		const state = context[stateId];
+		if (state?.target !== target) {
+			if (state?.ref) {
+				this.assign(state.ref, state.context ?? context, null);
+			}
+			const ref = this.resolveRef(context);
+			context[stateId] = { target, ref, context };
+			this.assign(ref, context, target);
+			if (node?.ownerElement) {
+				target.removeAttributeNode(node);
+			}
+		}
+		return node ?? target;
+	}
+
+	unrender(context, effector) {
+		const state = context[this.id + Slot.State];
+		if (state?.ref) {
+			this.assign(state.ref, state.context ?? context, null);
+		} else {
+			this.assign(this.resolveRef(context), context, null);
+		}
+		context[this.id + Slot.State] = undefined;
+		context[this.id + Slot.Node] = undefined;
+		super.unrender(context, effector);
+	}
+}
+
 export class EventHandlerEffect extends Effect {
 	// --
 	// Ensures that the given `handler` function has a corresponding effect.
