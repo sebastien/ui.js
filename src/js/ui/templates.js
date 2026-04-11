@@ -8,6 +8,8 @@ import { Context, Slot } from "./cells.js";
 import { assign } from "./utils/collections.js";
 import { getSignature } from "./utils/inspect.js";
 
+const BOUND_CONTEXT = Symbol.for("ui.boundContext");
+
 // TODO: Shouldn't that be an Input?
 // TODO: Not of these don't belong in templates, they are really about
 // managing and processing input (derivations, selections), while templates
@@ -120,7 +122,10 @@ export class Injection extends Derivation {
 				// will create one on demand.
 				derived[slot.id] =
 					typeof v === "function"
-						? (...args) => Context.Run(context, v, args)
+						? Object.assign(
+								(...args) => Context.Run(context, v, args),
+								{ [BOUND_CONTEXT]: context }
+						  )
 						: v;
 			}
 		}

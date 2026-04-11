@@ -76,6 +76,8 @@ export class Slot {
 	static Pending = [];
 	static PendingByContext = new WeakMap();
 	static FlushQueued = false;
+	static BatchDepthByContext = new WeakMap();
+	static BatchedNotificationsByContext = new WeakMap();
 
 	// These are the offsets for slot data within each context entry.
 	// Slot IDs use a stride of 6 starting at index 4.
@@ -177,7 +179,10 @@ export class Slot {
 			for (let i = 0; i < template.length; i++) {
 				Slot.Each(template[i], callback);
 			}
-		} else if (template && Object.getPrototypeOf(template) === Object.prototype) {
+		} else if (
+			template &&
+			Object.getPrototypeOf(template) === Object.prototype
+		) {
 			for (const k in template) {
 				Slot.Each(template[k], callback);
 			}
@@ -211,7 +216,9 @@ export class Slot {
 	// --
 	// Subscribes a handler to the given slot id in context.
 	static Sub(context, id, handler) {
-		const subs = context[id + Slot.Observable] || (context[id + Slot.Observable] = []);
+		const subs =
+			context[id + Slot.Observable] ||
+			(context[id + Slot.Observable] = []);
 		subs.push(handler);
 		return true;
 	}
@@ -243,13 +250,85 @@ export class Slot {
 		}
 	}
 
+	static IsBatching(context) {
+		return (Slot.BatchDepthByContext.get(context) || 0) > 0;
+	}
+
+	static Batch(context, callback) {
+		if (!context || typeof callback !== "function") {
+			return callback ? callback() : undefined;
+		}
+		const depth = Slot.BatchDepthByContext.get(context) || 0;
+		Slot.BatchDepthByContext.set(context, depth + 1);
+		try {
+			return callback();
+		} finally {
+			const next = (Slot.BatchDepthByContext.get(context) || 1) - 1;
+			if (next <= 0) {
+				Slot.BatchDepthByContext.delete(context);
+				Slot.FlushBatchedNotifications(context);
+			} else {
+				Slot.BatchDepthByContext.set(context, next);
+			}
+		}
+	}
+
+	static QueueBatchedNotification(context, id) {
+		let batch = Slot.BatchedNotificationsByContext.get(context);
+		if (!batch) {
+			batch = { ids: [], set: new Set() };
+			Slot.BatchedNotificationsByContext.set(context, batch);
+		}
+		if (!batch.set.has(id)) {
+			batch.set.add(id);
+			batch.ids.push(id);
+		}
+	}
+
+	static FlushBatchedNotifications(context) {
+		const batch = Slot.BatchedNotificationsByContext.get(context);
+		if (!batch || !batch.ids.length) {
+			return;
+		}
+		Slot.BatchedNotificationsByContext.delete(context);
+		const handlers = [];
+		const seen = new Set();
+		const values = new Map();
+		for (let i = 0; i < batch.ids.length; i++) {
+			const id = batch.ids[i];
+			const subs = context[id + Slot.Observable];
+			if (!subs || !subs.length) {
+				continue;
+			}
+			const value = context[id];
+			for (let j = 0; j < subs.length; j++) {
+				const handler = subs[j];
+				values.set(handler, value);
+				if (!seen.has(handler)) {
+					seen.add(handler);
+					handlers.push(handler);
+				}
+			}
+		}
+		for (let i = 0; i < handlers.length; i++) {
+			if (handlers[i](values.get(handlers[i])) === false) {
+				break;
+			}
+		}
+	}
+
 	// --
 	// Sets a value for the given slot id in context and notifies subscribers.
 	static Notify(context, id, value, force) {
 		if (force || value !== context[id]) {
 			context[id] = value;
-			context[id + Slot.Revision] = (context[id + Slot.Revision] || 0) + 1;
+			context[id + Slot.Revision] =
+				(context[id + Slot.Revision] || 0) + 1;
 			Slot.MarkDependentsDirty(context, id);
+			if (Slot.IsBatching(context)) {
+				Slot.QueueBatchedNotification(context, id);
+				return;
+			}
 			const subs = context[id + Slot.Observable];
 			if (subs) {
 				for (let i = 0; i < subs.length; i++) {
@@ -261,14 +340,25 @@ export class Slot {
 		}
 	}
 
-	static Derive(shape, processor, lazy = false, slot = undefined, context = Context.Get()) {
+	static Derive(
+		shape,
+		processor,
+		lazy = false,
+		slot = undefined,
+		context = Context.Get(),
+	) {
 		if (!context) {
-			onError("cells.Slot.Derive", "No context specified, cannot create derived cell");
+			onError(
+				"cells.Slot.Derive",
+				"No context specified, cannot create derived cell",
+			);
 			return undefined;
 		}
 		const parsed = Slot.ParseShape(shape);
 		if (!parsed) {
-			throw new Error("Derived cell shape should be an object or array of Slot");
+			throw new Error(
+				"Derived cell shape should be an object or array of Slot",
+			);
 		}
 		const target = slot || new Slot();
 		if (typeof processor !== "function") {
@@ -277,8 +367,13 @@ export class Slot {
 
 		for (let i = 0; i < parsed.dependencies.length; i++) {
 			const dep = parsed.dependencies[i];
-			if (dep.id === target.id || Slot.HasPath(context, target.id, dep.id)) {
-				throw new Error(`Cyclic dependency detected for Slot(${target.id})`);
+			if (
+				dep.id === target.id ||
+				Slot.HasPath(context, target.id, dep.id)
+			) {
+				throw new Error(
+					`Cyclic dependency detected for Slot(${target.id})`,
+				);
 			}
 		}
 
@@ -360,7 +455,9 @@ export class Slot {
 	}
 
 	static Derivation(context, id) {
-		return context && context[DERIVATION_KEY] ? context[DERIVATION_KEY].get(id) : undefined;
+		return context && context[DERIVATION_KEY]
+			? context[DERIVATION_KEY].get(id)
+			: undefined;
 	}
 
 	static CalculateRank(context, dependencies) {
@@ -386,7 +483,10 @@ export class Slot {
 			return false;
 		}
 		for (const next of deps) {
-			if (next === targetId || Slot.HasPath(context, next, targetId, seen)) {
+			if (
+				next === targetId ||
+				Slot.HasPath(context, next, targetId, seen)
+			) {
 				return true;
 			}
 		}
@@ -522,9 +622,21 @@ export class Slot {
 					if (!m || m.cycle !== cycle) {
 						return;
 					}
-					return Slot.RunDerivedProcessor(context, id, cycle, resolved, forcedSync);
+					return Slot.RunDerivedProcessor(
+						context,
+						id,
+						cycle,
+						resolved,
+						forcedSync,
+					);
 				})
-				.catch((error) => onError("cells.Slot.EvaluateDerived", "Promise input failed", error));
+				.catch((error) =>
+					onError(
+						"cells.Slot.EvaluateDerived",
+						"Promise input failed",
+						error,
+					),
+				);
 			return;
 		}
 
@@ -553,7 +665,13 @@ export class Slot {
 					}
 					Slot.Notify(context, id, value, true);
 				})
-				.catch((error) => onError("cells.Slot.Derive", "Derived async processor failed", error));
+				.catch((error) =>
+					onError(
+						"cells.Slot.Derive",
+						"Derived async processor failed",
+						error,
+					),
+				);
 			return;
 		}
 		Slot.Notify(context, id, result, true);
@@ -593,7 +711,7 @@ export class Slot {
 		}
 		onError(
 			"cells.Slot.observable",
-			"No context specified, cannot retrieve observable"
+			"No context specified, cannot retrieve observable",
 		);
 	}
 
@@ -608,12 +726,38 @@ export class Slot {
 		return ctx ? ctx[this.id] : undefined;
 	}
 
+	call(...args) {
+		const fn = this.get();
+		switch (typeof fn) {
+			case "function":
+				return fn(...args);
+				break;
+		}
+	}
+
 	// --
 	// We `force` by default
 	set(value, force = true, context = Context.Get()) {
 		if (context) {
 			Slot.Notify(context, this.id, value, force);
 		}
+	}
+
+	update(dict, context = Context.Get()) {
+		const patch = dict instanceof Slot ? dict.get() : dict;
+		const current = this.get();
+		const next = isPlainObject(current) ? current : {};
+		if (patch && typeof patch === "object") {
+			Object.assign(next, patch);
+		}
+		this.set(next, true, context);
+		return next;
+	}
+
+	touch(context = Context.Get()) {
+		const value = this.get();
+		this.set(value, true, context);
+		return value;
 	}
 
 	// ========================================================================
@@ -654,6 +798,16 @@ export class Slot {
 		return w;
 	}
 
+	removeAt(item) {
+		const i = item instanceof Slot ? item.get() : item;
+		const w = this.list();
+		if (i !== -1) {
+			w.splice(i, 1);
+			this.set(w, true);
+		}
+		return w;
+	}
+
 	insert(index, item) {
 		const v = item instanceof Slot ? item.get() : item;
 		const w = this.list();
@@ -673,8 +827,8 @@ export class Slot {
 					? false
 					: true
 				: v === value
-				? null
-				: value;
+					? null
+					: value;
 		this.set(w);
 		return w;
 	}
@@ -703,8 +857,8 @@ export class Slot {
 		return v === undefined || v === null
 			? {}
 			: Object.getPrototypeOf(v) === Object.prototype
-			? v
-			: { [key]: v };
+				? v
+				: { [key]: v };
 	}
 	map(key = "_") {
 		const v = this.get();
@@ -775,6 +929,23 @@ export class Observable {
 
 	set(value, force = undefined) {
 		Slot.Notify(this.context, this.id, value, force);
+	}
+
+	update(dict) {
+		const patch = dict instanceof Slot ? dict.get() : dict;
+		const current = this.get();
+		const next = isPlainObject(current) ? current : {};
+		if (patch && typeof patch === "object") {
+			Object.assign(next, patch);
+		}
+		this.set(next, true);
+		return next;
+	}
+
+	touch() {
+		const value = this.get();
+		this.set(value, true);
+		return value;
 	}
 
 	pub(value) {

@@ -1,6 +1,9 @@
 import { Context, Slot } from "./cells.js";
 import { onError, onRuntimeError } from "./utils/logging.js";
 
+const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
+const BOUND_CONTEXT = Symbol.for("ui.boundContext");
+
 const isShallowEqual = (a, b) => {
 	if (Object.is(a, b)) {
 		return true;
@@ -732,11 +735,19 @@ export class EventHandlerEffect extends Effect {
 		this.handler = handler;
 		this.event = event;
 		this.wrapper = (event, ...rest) => {
-			const callback = this.resolveHandler(Context.Get());
+			const context = Context.Get();
+			const callback = this.resolveHandler(context);
 			const res =
 				typeof callback === "function"
 					? callback(event, ...rest)
 					: undefined;
+			if (res && Object.getPrototypeOf(res) === Object.prototype) {
+				const updateContext =
+					typeof callback === "function" && callback[BOUND_CONTEXT]
+						? callback[BOUND_CONTEXT]
+						: context;
+				this.applyReturnedUpdates(updateContext, res);
+			}
 			// TODO: We should do post-processing.
 			return res;
 		};
@@ -756,7 +767,47 @@ export class EventHandlerEffect extends Effect {
 		return this.handler;
 	}
 
-		render(node, position, context, effector) {
+	collectNamedSlots(context) {
+		const owner = context?.[Slot.Owner];
+		if (!owner || !owner.args) {
+			return null;
+		}
+		if (!owner[RETURNED_UPDATE_SLOTS]) {
+			const slots = Object.create(null);
+			Slot.Each(owner.args, (slot) => {
+				if (slot?.name) {
+					slots[slot.name] = slot;
+				}
+			});
+			owner[RETURNED_UPDATE_SLOTS] = slots;
+		}
+		return owner[RETURNED_UPDATE_SLOTS];
+	}
+
+	applyReturnedUpdates(context, updates) {
+		if (!context) {
+			return;
+		}
+		const keys = Object.keys(updates);
+		if (!keys.length) {
+			return;
+		}
+		const slots = this.collectNamedSlots(context);
+		if (!slots) {
+			return;
+		}
+		Slot.Batch(context, () => {
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i];
+				const slot = slots[key];
+				if (slot) {
+					Slot.Notify(context, slot.id, updates[key], true);
+				}
+			}
+		});
+	}
+
+	render(node, position, context, effector) {
 		this.input?.applyContext(context);
 		const stateId = this.id + Slot.State;
 		const eventName = this.event.startsWith("on")

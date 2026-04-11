@@ -280,4 +280,44 @@ describe("Derived Cells Architecture", () => {
 			expect(executions).toBe(2);
 		});
 	});
+
+	test("10. Slot.update merges plain objects in place", () => {
+		Context.Run(context, () => {
+			const item = new Slot();
+			item.set({ label: "Old", editing: false });
+			const original = item.get();
+
+			const updated = item.update({ label: "New", done: true });
+
+			expect(updated).toBe(original);
+			expect(item.get()).toEqual({ label: "New", editing: false, done: true });
+		});
+	});
+
+	test("11. Slot.touch notifies even when value is unchanged", () => {
+		Context.Run(context, () => {
+			const value = new Slot();
+			value.set(42);
+			let notifications = 0;
+			Slot.Sub(context, value.id, () => {
+				notifications++;
+			});
+
+			value.touch();
+			value.touch();
+
+			expect(notifications).toBe(2);
+		});
+	});
+
+	test("12. Slot.update initializes non-object values with patch", () => {
+		Context.Run(context, () => {
+			const value = new Slot();
+			value.set("text");
+
+			value.update({ edited: true });
+
+			expect(value.get()).toEqual({ edited: true });
+		});
+	});
 });
