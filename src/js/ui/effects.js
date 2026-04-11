@@ -1,5 +1,6 @@
 import { Context, Slot } from "./cells.js";
 import { onError, onRuntimeError } from "./utils/logging.js";
+import { applyAttributeValue } from "./utils/dom.js";
 
 const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
@@ -830,8 +831,13 @@ export class AttributeEffect extends Effect {
 		this.subrender(node, position, context, effector);
 		const input = context[this.input.id];
 		const output = this.format ? this.format(input) : input;
-		// TODO: If it's a style, we should merge it as an object
-		node.value = output;
+		context[this.id + Slot.State] = applyAttributeValue(
+			node,
+			node.namespaceURI,
+			node.name,
+			output,
+			context[this.id + Slot.State],
+		);
 		return node;
 	}
 }

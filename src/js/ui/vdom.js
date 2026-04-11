@@ -1,10 +1,11 @@
 import { Effect } from "./effects.js";
 import { Slot } from "./cells.js";
+import { applyAttributeValue } from "./utils/dom.js";
 
 const isRenderable = (value) =>
 	value instanceof Slot && typeof value.render === "function";
 
-	export class VNode {
+export class VNode {
 	// Effect target resolution notes:
 	// - We intentionally avoid resolving effect targets incrementally while rendering.
 	//   Doing so makes target lookup sensitive to DOM mutations caused by earlier
@@ -45,11 +46,12 @@ const isRenderable = (value) =>
 		let r = node;
 		for (let i = 0; i < path.length; i++) {
 			const v = path[i];
-			r = v instanceof Array
-				? v[0]
-					? r.getAttributeNodeNS(v[0], v[1])
-					: r.getAttributeNode(v[1])
-				: r.childNodes[v];
+			r =
+				v instanceof Array
+					? v[0]
+						? r.getAttributeNodeNS(v[0], v[1])
+						: r.getAttributeNode(v[1])
+					: r.childNodes[v];
 		}
 		return r;
 	}
@@ -107,7 +109,7 @@ const isRenderable = (value) =>
 			if (root) {
 				const anchor =
 					target.nodeType === Node.ATTRIBUTE_NODE
-						? target.ownerElement ?? context?.[effects[i][1].id + Slot.Node]
+						? (target.ownerElement ?? context?.[effects[i][1].id + Slot.Node])
 						: target;
 				if (!anchor) {
 					return false;
@@ -139,7 +141,7 @@ const isRenderable = (value) =>
 						child,
 						parentNode,
 						start + offset,
-						res
+						res,
 					);
 					if (consumed === null) {
 						return null;
@@ -194,7 +196,7 @@ const isRenderable = (value) =>
 						child,
 						domNode,
 						offset,
-						res
+						res,
 					);
 					if (consumed === null) {
 						return null;
@@ -250,20 +252,18 @@ const isRenderable = (value) =>
 			this.name === "#fragment"
 				? document.createDocumentFragment()
 				: this.ns
-				? document.createElementNS(this.ns, this.name)
-				: document.createElement(this.name);
+					? document.createElementNS(this.ns, this.name)
+					: document.createElement(this.name);
 		// NOTE: Maybe if it's a fragment we should add one for the marker
 		for (const [[ns, name], value] of this.attributes.entries()) {
-			ns
-				? node.setAttributeNS(ns, name, value)
-				: node.setAttribute(name, value);
+			applyAttributeValue(node, ns, name, value);
 		}
 		for (const child of this.children) {
 			if (child instanceof Effect || isRenderable(child)) {
 				node.appendChild(
 					child.placeholderNodeType === Node.TEXT_NODE
 						? document.createTextNode("")
-						: document.createComment("")
+						: document.createComment(""),
 				);
 			} else if (child instanceof Node) {
 				node.appendChild(child.cloneNode(true));
