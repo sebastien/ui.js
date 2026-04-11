@@ -403,13 +403,192 @@ function* keys(value) {
 	}
 }
 export class MappingEffect extends Effect {
-	constructor(input, factory, valueSlot, keySlot) {
+	constructor(input, factory, valueSlot, keySlot, keyBy = undefined) {
 		super(input);
 		// TODO: template is going to be a function that should take `(value,key)`
 		// where Value and Key will be slots as part of this mapping
 		this.valueSlot = valueSlot;
 		this.keySlot = keySlot;
+		this.keyBy = keyBy;
 		this.template = factory(valueSlot, keySlot);
+	}
+
+	resolveKey(value, index) {
+		if (typeof this.keyBy === "function") {
+			return this.keyBy(value, index);
+		}
+		if (
+			value &&
+			typeof value === "object" &&
+			Object.prototype.hasOwnProperty.call(value, "id")
+		) {
+			return value.id;
+		}
+		return undefined;
+	}
+
+	normalizeKey(key) {
+		if (key === undefined || key === null) {
+			return null;
+		}
+		const t = typeof key;
+		if (t !== "string" && t !== "number") {
+			return null;
+		}
+		return `u:${t}:${key}`;
+	}
+
+	_clearArrayState(state, effector, templateId) {
+		if (!state) {
+			return;
+		}
+		if (state instanceof Array) {
+			for (let i = 0; i < state.length; i += 2) {
+				if (state[i]) {
+					this.template.unrender(state[i], effector, templateId);
+				}
+			}
+			state.length = 0;
+			return;
+		}
+		if (state instanceof Map) {
+			for (const [, ctx] of state.entries()) {
+				this.template.unrender(ctx, effector, templateId);
+			}
+			state.clear();
+			return;
+		}
+		if (state.mapping instanceof Map) {
+			for (const [, ctx] of state.mapping.entries()) {
+				this.template.unrender(ctx, effector, templateId);
+			}
+			state.mapping.clear();
+			if (state.order instanceof Array) {
+				state.order.length = 0;
+			}
+		}
+	}
+
+	_renderArrayIndexed(items, node, itemPos, context, effector, templateId) {
+		let entries = context[this.id + Slot.State];
+		if (!entries || entries instanceof Map || entries.mapping) {
+			this._clearArrayState(entries, effector, templateId);
+			entries = context[this.id + Slot.State] = [];
+		}
+		const prevCount = entries.length >> 1;
+		const n = items.length;
+
+		for (let k = 0; k < n; k++) {
+			const base = k << 1;
+			const value = items[k];
+			let ctx = entries[base];
+
+			if (!ctx) {
+				ctx = Object.create(context);
+				ctx[Slot.Parent] = context;
+				ctx[Slot.Owner] = this;
+				ctx[Slot.Name] = "MappingEffect";
+				ctx[this.id + Slot.State] = null;
+				ctx[this.valueSlot.id] = value;
+				ctx[this.keySlot.id] = k;
+				entries[base] = ctx;
+				entries[base + 1] = value;
+			} else {
+				const existing = ctx[templateId + Slot.Node];
+				if (existing && Object.is(entries[base + 1], value)) {
+					continue;
+				}
+				this.valueSlot.set(value, true, ctx);
+				this.keySlot.set(k, true, ctx);
+				entries[base + 1] = value;
+			}
+			itemPos[1] = k;
+			this.template.render(node, itemPos, ctx, effector, templateId);
+		}
+
+		if (prevCount > n) {
+			for (let k = n; k < prevCount; k++) {
+				const base = k << 1;
+				if (entries[base]) {
+					this.template.unrender(entries[base], effector, templateId);
+				}
+			}
+			entries.length = n << 1;
+		}
+	}
+
+	_renderArrayKeyed(items, node, itemPos, context, effector, templateId) {
+		let state = context[this.id + Slot.State];
+		if (!state || !state.mapping || !state.order) {
+			this._clearArrayState(state, effector, templateId);
+			state = context[this.id + Slot.State] = {
+				mapping: new Map(),
+				order: [],
+			};
+		}
+		const mapping = state.mapping;
+		const previousOrder = state.order;
+		const nextOrder = [];
+		const seen = new Set();
+		const warnedDuplicates = new Set();
+
+		for (let i = 0; i < items.length; i++) {
+			const value = items[i];
+			let token = this.normalizeKey(this.resolveKey(value, i));
+			if (!token) {
+				token = `i:${i}`;
+			}
+			if (seen.has(token)) {
+				if (!warnedDuplicates.has(token)) {
+					warnedDuplicates.add(token);
+					console.warn("[uijs] Duplicate map key in MappingEffect", {
+						key: token,
+						index: i,
+					});
+				}
+				token = `i:${i}`;
+			}
+			seen.add(token);
+			nextOrder.push(token);
+
+			let ctx = mapping.get(token);
+			if (!ctx) {
+				ctx = Object.create(context);
+				ctx[Slot.Parent] = context;
+				ctx[Slot.Owner] = this;
+				ctx[Slot.Name] = "MappingEffect";
+				ctx[this.id + Slot.State] = null;
+				ctx[this.valueSlot.id] = value;
+				ctx[this.keySlot.id] = i;
+				mapping.set(token, ctx);
+			} else {
+				const existing = ctx[templateId + Slot.Node];
+				if (!(existing && Object.is(ctx[this.valueSlot.id], value))) {
+					this.valueSlot.set(value, true, ctx);
+					ctx[this.valueSlot.id] = value;
+				}
+				if (!Object.is(ctx[this.keySlot.id], i)) {
+					this.keySlot.set(i, true, ctx);
+					ctx[this.keySlot.id] = i;
+				}
+			}
+
+			itemPos[1] = i;
+			this.template.render(node, itemPos, ctx, effector, templateId);
+		}
+
+		for (let i = 0; i < previousOrder.length; i++) {
+			const token = previousOrder[i];
+			if (!seen.has(token)) {
+				const ctx = mapping.get(token);
+				if (ctx) {
+					this.template.unrender(ctx, effector, templateId);
+					mapping.delete(token);
+				}
+			}
+		}
+
+		state.order = nextOrder;
 	}
 
 	render(node, position, context, effector) {
@@ -423,58 +602,14 @@ export class MappingEffect extends Effect {
 		const itemPos = [position, 0];
 
 		if (items instanceof Array) {
-			// Fast path for array inputs: use a flat array [ctx, val, ctx, val, ...]
-			// instead of Map to avoid hash table and per-entry sub-array overhead.
-			// Since array keys are sequential 0..n-1, we use direct indexing
-			// and track bounds implicitly via entries.length.
-			let entries = context[this.id + Slot.State];
-			if (!entries || entries instanceof Map) {
-				entries = context[this.id + Slot.State] = [];
-			}
-			const prevCount = entries.length >> 1;
-			const n = items.length;
-
-			for (let k = 0; k < n; k++) {
-				const base = k << 1;
-				const value = items[k];
-				let ctx = entries[base];
-
-				if (!ctx) {
-					// New item: create derived context
-					ctx = Object.create(context);
-					ctx[Slot.Parent] = context;
-					ctx[Slot.Owner] = this;
-					ctx[Slot.Name] = "MappingEffect";
-					// Nullify to allow recursion of this effect
-					ctx[this.id + Slot.State] = null;
-					// Direct assignment on first render since no observables exist yet.
-					ctx[this.valueSlot.id] = value;
-					ctx[this.keySlot.id] = k;
-					entries[base] = ctx;
-					entries[base + 1] = value;
-				} else {
-					const existing = ctx[templateId + Slot.Node];
-					// Short-circuit: skip re-render if value unchanged
-					if (existing && Object.is(entries[base + 1], value)) {
-						continue;
-					}
-					this.valueSlot.set(value, true, ctx);
-					this.keySlot.set(k, true, ctx);
-					entries[base + 1] = value;
-				}
-				itemPos[1] = k;
-				this.template.render(node, itemPos, ctx, effector, templateId);
-			}
-
-			// Remove items beyond new length
-			if (prevCount > n) {
-				for (let k = n; k < prevCount; k++) {
-					const base = k << 1;
-					if (entries[base]) {
-						this.template.unrender(entries[base], effector, templateId);
-					}
-				}
-				entries.length = n << 1;
+			const firstAutoKey = items.length > 0 ? this.resolveKey(items[0], 0) : undefined;
+			const shouldUseKeyed =
+				typeof this.keyBy === "function" ||
+				(firstAutoKey !== undefined && firstAutoKey !== null);
+			if (shouldUseKeyed) {
+				this._renderArrayKeyed(items, node, itemPos, context, effector, templateId);
+			} else {
+				this._renderArrayIndexed(items, node, itemPos, context, effector, templateId);
 			}
 		} else {
 			// Object/Map inputs: use Map with revision-based cleanup.
@@ -574,6 +709,12 @@ export class MappingEffect extends Effect {
 					this.template.unrender(ctx, effector, templateId);
 				}
 				state.clear();
+			} else if (state.mapping instanceof Map) {
+				for (const [, ctx] of state.mapping.entries()) {
+					this.template.unrender(ctx, effector, templateId);
+				}
+				state.mapping.clear();
+				state.order.length = 0;
 			} else {
 				// Flat array: [ctx0, val0, ctx1, val1, ...]
 				for (let i = 0; i < state.length; i += 2) {

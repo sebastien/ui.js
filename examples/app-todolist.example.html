@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI.js - ToDo List (UI.js)</title>
+    <link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+    <script type="importmap">
+      { "imports": { "@ui/": "../src/js/ui/" } }
+    </script>
+  </head>
+  <body>
+    <div id="Todo"></div>
+    <script type="module">
+      import { render } from "@ui/client.js";
+      import { h } from "@ui/hyperscript.js";
+      const { a, li, div, span, ul, input, button, h1 } = h;
+
+      const TodoItem = ({ item,items, isEdited, value, onRemove }) => {
+      	return li(
+      		item
+      			.apply((value) => value.editing),
+      			isEdited.match(
+      				(_) =>
+      					_.case(
+      						true,
+      						div(
+      							input({
+      								type: "text",
+      											value: item.apply(_ => _.label),
+      								onInput: (event) => value.set(event.target.value),
+      							}),
+      										button({ onClick: (event) => {
+      											item.update({label: value.get()})
+      											items.touch()
+                            isEdited.set(false)
+      								}}, "Save"),
+      							a({ onClick: () => ({isEdited:false})}, "Cancel")
+      						)
+      					),
+      				(_) =>
+      					_.else(
+      						div(
+      							span(item.apply((value) => value.label)),
+      							button({ onClick: () => ({isEdited:true}) }, "Edit"),
+      							button({ onClick: () =>  onRemove.call(item.get())}, "Remove")
+      						)
+      					)
+      			)
+      	);
+      };
+
+      const TodoList = ({ items }) => {
+
+      	const onAdd = () => {
+          const id = items.get().reduce((r,v)=>Math.max(r, v.id + 1), 0);
+      		items.append({ id, label:`Todo ${id}`, isEdited: false });
+      	};
+      	const onRemove = (item) => {
+            const i = items.get().indexOf(item)
+            items.removeAt(i)
+      	}
+      	return div(
+      		h1("Todo list example"),
+	      		ul(items.map((item) => h(TodoItem, { item, items, onRemove }), (value) => value.id)),
+      		button({ onClick: onAdd }, "Add")
+      	);
+      };
+
+      render(
+      	TodoList,
+      	{
+      		items: [{ id: 0, label: "Buy wine", draft: "Buy wine", editing: false }],
+      		nextId: 1,
+      	},
+      	document.getElementById("Todo")
+      );
+    </script>
+  </body>
+</html>

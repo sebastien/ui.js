@@ -196,11 +196,17 @@ export class Selection extends Derivation {
 		return new ConditionalEffect(this, b.branches, b.elseBranch);
 	}
 
-	map(func) {
+	map(func, keyBy = undefined) {
 		// TODO: Check that component is what we expect (ie. probably not
 		// a component).
 		// TODO: Why do we have two selections as argument?
-		return new MappingEffect(this, func, new Selection(), new Selection());
+		return new MappingEffect(
+			this,
+			func,
+			new Selection(),
+			new Selection(),
+			keyBy
+		);
 	}
 
 	// ========================================================================
