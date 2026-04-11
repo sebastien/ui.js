@@ -104,31 +104,76 @@ export class ComponentEffect extends Effect {
 	constructor(input, component) {
 		super(input);
 		this.component = component;
+		// Pre-compute the extraction slot list for fast comparison
+		this._extractionSlots = null;
 	}
 	render(node, position, context, effector) {
 		// TODO: At rendering, we need to determine if the function has been
 		// converted to a component, ie. has a `template` and `applicator`.
 		if (!context[this.id]) {
 			// We make sure the extracted values are made observable in the context
-			for (const slot of Slot.Walk(this.input.extraction)) {
+			Slot.Each(this.input.extraction, (slot) => {
 				// We make sure the slot is observable, and that
 				// the context is applied.
 				slot?.observable(context);
 				slot?.applyContext(context);
+			});
+			// Pre-compute flat list of extraction slot ids for fast re-render comparison
+			if (this.input.extraction && !this._extractionSlots) {
+				const slots = [];
+				Slot.Each(this.input.extraction, (slot) => {
+					if (slot) slots.push(slot.id);
+				});
+				this._extractionSlots = slots;
 			}
 			// NOTE: Hopefully this is cleared
 			context[this.id] = true;
 		}
 		const derived = this.input.applyContext(context);
-		const extracted = this.input.extraction
-			? Slot.Expand(this.input.extraction, context)
-			: context[Slot.Input];
-		const previous = derived[this.id + Slot.State];
 		const existing = derived[this.id + Slot.Node];
-		if (existing && previous !== undefined && isShallowEqual(previous, extracted)) {
-			return existing;
+		// Fast path: compare extraction slot values directly from context
+		// without allocating a new expanded object
+		const prevValues = derived[this.id + Slot.State];
+		if (existing && prevValues !== undefined) {
+			const eslots = this._extractionSlots;
+			if (eslots) {
+				let changed = false;
+				for (let i = 0; i < eslots.length; i++) {
+					if (!Object.is(context[eslots[i]], prevValues[i])) {
+						changed = true;
+						break;
+					}
+				}
+				if (!changed) {
+					return existing;
+				}
+				// Update cached values
+				for (let i = 0; i < eslots.length; i++) {
+					prevValues[i] = context[eslots[i]];
+				}
+			} else {
+				// No extraction slots, use input comparison
+				const extracted = context[Slot.Input];
+				if (isShallowEqual(prevValues, extracted)) {
+					return existing;
+				}
+				derived[this.id + Slot.State] = extracted;
+			}
+		} else {
+			// First render: cache the extraction values as a flat array
+			const eslots = this._extractionSlots;
+			if (eslots) {
+				const values = new Array(eslots.length);
+				for (let i = 0; i < eslots.length; i++) {
+					values[i] = context[eslots[i]];
+				}
+				derived[this.id + Slot.State] = values;
+			} else {
+				derived[this.id + Slot.State] = this.input.extraction
+					? Slot.Expand(this.input.extraction, context)
+					: context[Slot.Input];
+			}
 		}
-		derived[this.id + Slot.State] = extracted;
 		// TODO: Not sure if we need to do that?
 		// derived[this.id] = undefined;
 		if (!this.component.isComponent) {
@@ -393,21 +438,22 @@ export class MappingEffect extends Effect {
 				ctx[this.id + Slot.State] = null;
 				// We set the basic input for the context as the item's value
 				// and its key.
-				ctx[this.valueSlot.id] = value;
-				ctx[this.keySlot.id] = k;
+				this.valueSlot.set(value, true, ctx);
+				this.keySlot.set(k, true, ctx);
 				// We register the mapped value and context in the mapping.
 				mapping.set(k, [revision, ctx, value]);
 			} else {
-				ctx[this.valueSlot.id] = value;
-				ctx[this.keySlot.id] = k;
 				// Only the revision has changed in the entry.
 				entry[0] = revision;
 				const existing = ctx[(this.template.id ?? this.id) + Slot.Node];
+				// Short-circuit: skip slot assignment and re-render if value
+				// hasn't changed and we already have a rendered node.
 				if (existing && Object.is(entry[2], value)) {
-					entry[2] = value;
 					i++;
 					continue;
 				}
+				this.valueSlot.set(value, true, ctx);
+				this.keySlot.set(k, true, ctx);
 				entry[2] = value;
 			}
 			// TODO: We should probably store the output DOM node?

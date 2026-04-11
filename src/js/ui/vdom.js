@@ -32,13 +32,16 @@ export class VNode {
 	}
 
 	static ResolvePath(node, path) {
-		return path.reduce((r, v) => {
-			return v instanceof Array
+		let r = node;
+		for (let i = 0; i < path.length; i++) {
+			const v = path[i];
+			r = v instanceof Array
 				? v[0]
 					? r.getAttributeNodeNS(v[0], v[1])
 					: r.getAttributeNode(v[1])
 				: r.childNodes[v];
-		}, node);
+		}
+		return r;
 	}
 
 	constructor(ns, name, attributes, children) {
@@ -86,7 +89,7 @@ export class VNode {
 				node.appendChild(
 					child.placeholderNodeType === Node.TEXT_NODE
 						? document.createTextNode("")
-						: document.createComment(`Effect:${child}`)
+						: document.createComment("")
 				);
 			} else if (child instanceof Node) {
 				node.appendChild(child.cloneNode(true));
@@ -108,37 +111,39 @@ export class VNode {
 		// as they go. Otherwise only the effects will be renderer, and the
 		// node will be attached to the parent.
 		const existing = context[id + Slot.Node];
+		const effects = this.effects;
+		const n = effects.length;
 		if (!existing) {
 			const node = this.clone();
-			for (const [path, effect] of this.effects) {
-				// Path is like `[int|[str|undefined,str]]`
-				const child = VNode.ResolvePath(node, path);
+			// Cache resolved effect nodes for subsequent re-renders
+			const resolved = n > 0 ? new Array(n) : null;
+			for (let i = 0; i < n; i++) {
+				const [path, effect] = effects[i];
+				const child = (resolved[i] = VNode.ResolvePath(node, path));
 				effect.render(child, position, context, effector);
-				switch (child.nodeType) {
-					case Node.ATTRIBUTE_NODE:
-						break;
-					case Node.COMMENT_NODE:
-						// FIXME: If we remove the placeholder, then some
-						// effects will have problems, like conditionals and
-						// mapping. The others should be fine without.
-						break;
-					case Node.TEXT_NODE:
-						break;
-					default:
-						onError(
-							"vdom",
-							"Effect bound to unsupported node type",
-							{ NodeType: child.nodeType }
-						);
-						break;
-				}
+			}
+			if (resolved) {
+				context[id + 7] = resolved;
 			}
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);
 		} else {
-			for (const [path, effect] of this.effects) {
-				const child = VNode.ResolvePath(existing, path);
-				effect.render(child, position, context, effector);
+			// On re-render, use cached node references to skip path resolution
+			const resolved = context[id + 7];
+			if (resolved) {
+				for (let i = 0; i < n; i++) {
+					effects[i][1].render(resolved[i], position, context, effector);
+				}
+			} else {
+				for (let i = 0; i < n; i++) {
+					const [path, effect] = effects[i];
+					effect.render(
+						VNode.ResolvePath(existing, path),
+						position,
+						context,
+						effector
+					);
+				}
 			}
 			if (!existing.parentNode) {
 				effector.appendChild(parent, existing, position);

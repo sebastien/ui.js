@@ -17,8 +17,47 @@ export class DOMEffector {
 
 	// TODO: Implement position support
 	ensureText(parent, position, text) {
-		const child = document.createTextNode(`${text}`);
-		return this.appendChild(parent, child);
+		const value = `${text}`;
+		if (!parent) {
+			return document.createTextNode(value);
+		}
+		if (parent.nodeType === Node.TEXT_NODE) {
+			parent.data = value;
+			return parent;
+		}
+		if (parent.nodeType === Node.COMMENT_NODE) {
+			const previous = parent.previousSibling;
+			if (previous?.nodeType === Node.TEXT_NODE) {
+				previous.data = value;
+				return previous;
+			}
+			const child = document.createTextNode(value);
+			parent.parentNode?.insertBefore(child, parent);
+			return child;
+		}
+		if (
+			parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+		) {
+			const child = document.createTextNode(value);
+			return this.appendChild(parent, child, position);
+		}
+		const index = Array.isArray(position)
+			? (position.at(-1) ?? 0)
+			: typeof position === "number"
+			? position
+			: 0;
+		const existing = parent.childNodes[index];
+		if (existing?.nodeType === Node.TEXT_NODE) {
+			existing.data = value;
+			return existing;
+		}
+		const child = document.createTextNode(value);
+		if (existing) {
+			parent.insertBefore(child, existing);
+		} else {
+			parent.appendChild(child);
+		}
+		return child;
 	}
 
 	ensureAttribute(node, ns, name, value) {

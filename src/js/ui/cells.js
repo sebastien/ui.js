@@ -126,6 +126,27 @@ export class Slot {
 	}
 
 	// --
+	// Like Walk, but uses a callback instead of a generator for better
+	// performance in hot paths.
+	static Each(template, callback) {
+		if (template instanceof Slot) {
+			callback(template);
+		} else if (template instanceof Map) {
+			for (const v of template.values()) {
+				Slot.Each(v, callback);
+			}
+		} else if (template instanceof Array) {
+			for (let i = 0; i < template.length; i++) {
+				Slot.Each(template[i], callback);
+			}
+		} else if (template && Object.getPrototypeOf(template) === Object.prototype) {
+			for (const k in template) {
+				Slot.Each(template[k], callback);
+			}
+		}
+	}
+
+	// --
 	// Walks the template, and replaces any Slot with its value from
 	// the given context.
 	static Expand(template, context) {

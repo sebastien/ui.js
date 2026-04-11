@@ -48,15 +48,9 @@ export class Injection extends Derivation {
 		this.derived = derived;
 	}
 
-	// FIXME: This should be made incremental, this will be re-applied on
-	// every render.
 	applyContext(context) {
 		// First we extract an initial data from the extraction pattern,
 		// if any, otherwise we default from the input slot.
-		// const data = this.extraction
-		// 	? Slot.Expand(this.extraction, context)
-		// 	: context[Slot.Input];
-		//
 		const data = this.extraction ? this.extraction : context[Slot.Input];
 		// NOTE: This won't work if we have for instance the same component
 		// rendered multiple time in the same context. In this case, it will
@@ -64,14 +58,41 @@ export class Injection extends Derivation {
 		// injection, then it's all good, as it will have a unique id.
 		const derived = (context[this.id] =
 			context[this.id] ?? (this.derived ? Object.create(context) : {}));
+
+		// Check if we have a cached match result from a previous render
+		const stateKey = this.id + Slot.State;
+		const cached = context[stateKey];
+		if (cached) {
+			// Re-render path: reuse the cached match tuples, just update values.
+			// The structure (which slots map to which data slots) doesn't change,
+			// only the resolved values in the context may have changed.
+			for (let i = 0; i < cached.length; i++) {
+				const slot = cached[i][0];
+				const v = cached[i][1];
+				if (v instanceof Slot) {
+					derived[slot.id] = context[v.id];
+					derived[slot.id + Slot.Observable] =
+						context[v.id + Slot.Observable];
+					derived[slot.id + Slot.Revision] =
+						context[v.id + Slot.Revision];
+				}
+				// Non-slot values don't change between renders, no update needed
+			}
+			return derived;
+		}
+
+		// First render path: compute the match and cache it
 		// We set the derived context.
 		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
-		derived[Slot.Name] = Object.getPrototypeOf(this).constructor.name;
+		derived[Slot.Name] = "Injection";
 		// TODO: This is where we would copy cells/slots that are passed
 		// with `out` or `inout`.
 		//… where the args values are extracted and mapped to their cell ids;
-		for (const [slot, v] of Slot.Match(this.args, data, context)) {
+		const matches = Slot.Match(this.args, data, context);
+		for (let i = 0; i < matches.length; i++) {
+			const slot = matches[i][0];
+			const v = matches[i][1];
 			if (v instanceof Slot) {
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
@@ -92,6 +113,8 @@ export class Injection extends Derivation {
 			}
 			slot.observable(derived);
 		}
+		// Cache the match results for subsequent re-renders
+		context[stateKey] = matches;
 		return derived;
 	}
 }
@@ -206,9 +229,9 @@ export class Subscription extends Selection {
 				// FIXME: Updates seem to be triggered too many times
 				obs.set(Slot.Expand(this.input, context));
 			};
-			for (const slot of Slot.Walk(this.input)) {
+			Slot.Each(this.input, (slot) => {
 				slot.observable(context).sub(updater);
-			}
+			});
 			ctx[this.id] = Slot.Expand(this.input, context);
 			ctx[this.id + Slot.State] = updater;
 		}
