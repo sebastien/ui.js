@@ -128,13 +128,15 @@ describe("core cleanup and unmounting", () => {
 			);
 
 		const { effect, effector, ctx, derivedContext } = mountWithHandle(App, {});
-			const observable = branch.observable(derivedContext);
-			const before = observable.subs?.length ?? 0;
+			// Subscribers are stored inline at context[id + Slot.Observable]
+			const subsKey = branch.id + 1; // Slot.Observable = 1
+			branch.observable(derivedContext);
+			const before = derivedContext[subsKey]?.length ?? 0;
 			expect(before).toBeGreaterThan(0);
 
 			effect.unrender(ctx, effector);
 
-			const after = observable.subs?.length ?? 0;
+			const after = derivedContext[subsKey]?.length ?? 0;
 			expect(after).toBe(before - 1);
 		});
 });

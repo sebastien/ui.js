@@ -1,11 +1,21 @@
-import { Effect, LifecycleEventHandlerEffect } from "./effects.js";
+import { Effect } from "./effects.js";
 import { Slot } from "./cells.js";
-import { onError } from "./utils/logging.js";
 
 const isRenderable = (value) =>
 	value instanceof Slot && typeof value.render === "function";
 
-export class VNode {
+	export class VNode {
+	// Effect target resolution notes:
+	// - We intentionally avoid resolving effect targets incrementally while rendering.
+	//   Doing so makes target lookup sensitive to DOM mutations caused by earlier
+	//   effects in the same pass.
+	// - Instead we collect all targets first, then render all effects. This keeps
+	//   sentinel-based placeholders (text/comment nodes) stable even when fragments
+	//   expand/contract or conditionals alternate.
+	// - Cached targets are reused on re-render, but validated against the current
+	//   DOM subtree. If user code moved managed nodes, we degrade safely and restore
+	//   canonical structure on the next render.
+
 	// --
 	// Returns a list of effects defined in the given node, recursively.
 	static Effects(node, path = [], res = []) {
@@ -42,6 +52,170 @@ export class VNode {
 				: r.childNodes[v];
 		}
 		return r;
+	}
+
+	static EmittedNodeCount(child) {
+		if (child instanceof Effect || isRenderable(child)) {
+			return 1;
+		}
+		if (child instanceof VNode) {
+			if (child.name !== "#fragment") {
+				return 1;
+			}
+			let count = 0;
+			for (let i = 0; i < child.children.length; i++) {
+				count += VNode.EmittedNodeCount(child.children[i]);
+			}
+			return count;
+		}
+		if (child instanceof Node) {
+			return 1;
+		}
+		return child !== null && child !== undefined ? 1 : 0;
+	}
+
+	static IsValidEffectTarget(target) {
+		if (!target || target.nodeType === undefined) {
+			return false;
+		}
+		return true;
+	}
+
+	static IsInSubtree(root, node) {
+		if (!root || !node) {
+			return false;
+		}
+		if (root === node) {
+			return true;
+		}
+		return typeof root.contains === "function" ? root.contains(node) : true;
+	}
+
+	static AreEffectTargetsValid(resolved, effects, root = null, context = null) {
+		if (!(resolved instanceof Array) || resolved.length !== effects.length) {
+			return false;
+		}
+		for (let i = 0; i < resolved.length; i++) {
+			const entry = resolved[i];
+			if (!entry || entry[1] !== effects[i][1]) {
+				return false;
+			}
+			const target = entry[0];
+			if (!VNode.IsValidEffectTarget(target)) {
+				return false;
+			}
+			if (root) {
+				const anchor =
+					target.nodeType === Node.ATTRIBUTE_NODE
+						? target.ownerElement ?? context?.[effects[i][1].id + Slot.Node]
+						: target;
+				if (!anchor) {
+					return false;
+				}
+				if (!VNode.IsInSubtree(root, anchor)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	static CollectFragmentEffectTargets(fragment, parentNode, start, res) {
+		// Fragments do not own a DOM node, so target resolution must flatten them
+		// directly against their parent childNodes range.
+		let offset = 0;
+		for (let i = 0; i < fragment.children.length; i++) {
+			const child = fragment.children[i];
+			if (child instanceof Effect || isRenderable(child)) {
+				const target = parentNode.childNodes[start + offset];
+				if (!target) {
+					return null;
+				}
+				res.push([target, child]);
+				offset += 1;
+			} else if (child instanceof VNode) {
+				if (child.name === "#fragment") {
+					const consumed = VNode.CollectFragmentEffectTargets(
+						child,
+						parentNode,
+						start + offset,
+						res
+					);
+					if (consumed === null) {
+						return null;
+					}
+					offset += consumed;
+				} else {
+					const target = parentNode.childNodes[start + offset];
+					if (!target) {
+						return null;
+					}
+					if (!VNode.CollectEffectTargets(child, target, res)) {
+						return null;
+					}
+					offset += 1;
+				}
+			} else {
+				offset += VNode.EmittedNodeCount(child);
+			}
+		}
+		return offset;
+	}
+
+	static CollectEffectTargets(vnode, domNode, res = []) {
+		// Collects [targetNodeOrAttribute, effect] in deterministic VNode order.
+		// This order must match `this.effects` for cache validation and rerender.
+		for (const [[ns, name], value] of vnode.attributes.entries()) {
+			if (!(value instanceof Effect)) {
+				continue;
+			}
+			const target = ns
+				? domNode.getAttributeNodeNS?.(ns, name)
+				: domNode.getAttributeNode?.(name);
+			if (!target) {
+				return null;
+			}
+			res.push([target, value]);
+		}
+
+		let offset = 0;
+		for (let i = 0; i < vnode.children.length; i++) {
+			const child = vnode.children[i];
+			if (child instanceof Effect || isRenderable(child)) {
+				const target = domNode.childNodes[offset];
+				if (!target) {
+					return null;
+				}
+				res.push([target, child]);
+				offset += 1;
+			} else if (child instanceof VNode) {
+				if (child.name === "#fragment") {
+					const consumed = VNode.CollectFragmentEffectTargets(
+						child,
+						domNode,
+						offset,
+						res
+					);
+					if (consumed === null) {
+						return null;
+					}
+					offset += consumed;
+				} else {
+					const target = domNode.childNodes[offset];
+					if (!target) {
+						return null;
+					}
+					if (!VNode.CollectEffectTargets(child, target, res)) {
+						return null;
+					}
+					offset += 1;
+				}
+			} else {
+				offset += VNode.EmittedNodeCount(child);
+			}
+		}
+
+		return res;
 	}
 
 	constructor(ns, name, attributes, children) {
@@ -113,40 +287,63 @@ export class VNode {
 		const existing = context[id + Slot.Node];
 		const effects = this.effects;
 		const n = effects.length;
+		const renderEffects = (resolved) => {
+			// Second phase: run effects only after all targets are resolved.
+			for (let i = 0; i < n; i++) {
+				resolved[i][1].render(resolved[i][0], position, context, effector);
+			}
+		};
+		const resolveEffects = (node) => {
+			// First phase: target discovery (no effect execution).
+			const resolved = VNode.CollectEffectTargets(this, node, []);
+			return VNode.AreEffectTargetsValid(resolved, effects, node, context)
+				? resolved
+				: null;
+		};
 		if (!existing) {
 			const node = this.clone();
-			// Cache resolved effect nodes on the DOM node itself to avoid
-			// using an extra context slot (saves memory with smaller stride).
 			if (n > 0) {
-				const resolved = new Array(n);
-				for (let i = 0; i < n; i++) {
-					resolved[i] = VNode.ResolvePath(node, effects[i][0]);
+				const resolved = resolveEffects(node);
+				if (!resolved) {
+					context[id + Slot.Node] = node;
+					return effector.appendChild(parent, node, position);
 				}
-				for (let i = 0; i < n; i++) {
-					effects[i][1].render(resolved[i], position, context, effector);
-				}
-				node._uiPaths = resolved;
+				renderEffects(resolved);
+				node._uiEffects = resolved;
 			}
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);
 		} else {
-			// On re-render, use cached node references to skip path resolution
-			const resolved = existing._uiPaths;
-			if (resolved) {
-				for (let i = 0; i < n; i++) {
-					effects[i][1].render(resolved[i], position, context, effector);
+			let resolved = existing._uiEffects;
+			if (!VNode.AreEffectTargetsValid(resolved, effects, existing, context)) {
+				// Cached targets are stale (eg: external DOM edits). Try re-resolve on
+				// the current node first, then replace with a fresh clone if needed.
+				resolved = resolveEffects(existing);
+				if (!resolved) {
+					const replacement = this.clone();
+					const replacementResolved = resolveEffects(replacement);
+					if (!replacementResolved) {
+						if (!existing.parentNode) {
+							effector.appendChild(parent, existing, position);
+						}
+						return existing;
+					}
+					for (let i = 0; i < n; i++) {
+						effects[i][1].unrender(context, effector);
+					}
+					renderEffects(replacementResolved);
+					replacement._uiEffects = replacementResolved;
+					context[id + Slot.Node] = replacement;
+					if (existing.parentNode) {
+						existing.parentNode.replaceChild(replacement, existing);
+					} else {
+						effector.appendChild(parent, replacement, position);
+					}
+					return replacement;
 				}
-			} else {
-				for (let i = 0; i < n; i++) {
-					const [path, effect] = effects[i];
-					effect.render(
-						VNode.ResolvePath(existing, path),
-						position,
-						context,
-						effector
-					);
-				}
+				existing._uiEffects = resolved;
 			}
+			renderEffects(resolved);
 			if (!existing.parentNode) {
 				effector.appendChild(parent, existing, position);
 			}

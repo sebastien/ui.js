@@ -47,4 +47,36 @@ describe("unit core effects terminal", () => {
 		effect.unrender(ctx, effector);
 		expect(unmounted).toBe(1);
 	});
+
+	test("RefEffect assigns and clears Slot refs", () => {
+		const ref = $.cell(null);
+		const App = () => h.input({ ref, type: "text" });
+		const { effect, effector, ctx, parent, derivedContext } = mountWithHandle(App, {});
+		const input = findFirstByNodeName(parent, "input");
+		const getRefValue = () =>
+			Object.prototype.hasOwnProperty.call(derivedContext, ref.id)
+				? derivedContext[ref.id]
+				: ctx[ref.id];
+
+		expect(getRefValue()).toBe(input);
+
+		effect.unrender(ctx, effector);
+		expect(getRefValue()).toBeNull();
+	});
+
+	test("RefEffect supports callback refs", () => {
+		const refs = [];
+		const onRef = (node) => refs.push(node);
+		const App = () => h.input({ ref: onRef, type: "text" });
+		const { effect, effector, ctx, parent } = mountWithHandle(App, {});
+		const input = findFirstByNodeName(parent, "input");
+
+		expect(refs).toEqual([input]);
+
+		effect.render(parent, 0, ctx, effector);
+		expect(refs).toEqual([input]);
+
+		effect.unrender(ctx, effector);
+		expect(refs).toEqual([input, null]);
+	});
 });
