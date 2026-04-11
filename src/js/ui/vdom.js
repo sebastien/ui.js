@@ -115,21 +115,27 @@ export class VNode {
 		const n = effects.length;
 		if (!existing) {
 			const node = this.clone();
-			// Cache resolved effect nodes for subsequent re-renders
-			const resolved = n > 0 ? new Array(n) : null;
-			for (let i = 0; i < n; i++) {
-				const [path, effect] = effects[i];
-				const child = (resolved[i] = VNode.ResolvePath(node, path));
-				effect.render(child, position, context, effector);
-			}
-			if (resolved) {
-				context[id + 7] = resolved;
+			// Cache resolved effect nodes on the DOM node itself to avoid
+			// using an extra context slot (saves memory with smaller stride).
+			if (n > 0) {
+				const resolved = new Array(n);
+				for (let i = 0; i < n; i++) {
+					const [path, effect] = effects[i];
+					const child = (resolved[i] = VNode.ResolvePath(node, path));
+					effect.render(child, position, context, effector);
+				}
+				node._uiPaths = resolved;
+			} else {
+				for (let i = 0; i < n; i++) {
+					const [path, effect] = effects[i];
+					effect.render(VNode.ResolvePath(node, path), position, context, effector);
+				}
 			}
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);
 		} else {
 			// On re-render, use cached node references to skip path resolution
-			const resolved = context[id + 7];
+			const resolved = existing._uiPaths;
 			if (resolved) {
 				for (let i = 0; i < n; i++) {
 					effects[i][1].render(resolved[i], position, context, effector);

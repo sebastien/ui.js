@@ -51,7 +51,9 @@ export class Effect extends Slot {
 				return this.render(node, position, context, effector);
 			};
 			context[render_id] = rerender;
-			this.input?.observable(context).sub(rerender);
+			if (this.input) {
+				Slot.Sub(context, this.input.id, rerender);
+			}
 		}
 	}
 
@@ -61,7 +63,9 @@ export class Effect extends Slot {
 	unsubrender(context) {
 		const render_id = this.id + Slot.Render;
 		if (context[render_id]) {
-			this.input?.observable(context).unsub(context[render_id]);
+			if (this.input) {
+				Slot.Unsub(context, this.input.id, context[render_id]);
+			}
 			// Important: we clear the render_id so that next render
 			// `subrender` is called.
 			context[render_id] = undefined;
@@ -111,14 +115,9 @@ export class ComponentEffect extends Effect {
 		// TODO: At rendering, we need to determine if the function has been
 		// converted to a component, ie. has a `template` and `applicator`.
 		if (!context[this.id]) {
-			// We make sure the extracted values are made observable in the context
-			Slot.Each(this.input.extraction, (slot) => {
-				// We make sure the slot is observable, and that
-				// the context is applied.
-				slot?.observable(context);
-				slot?.applyContext(context);
-			});
-			// Pre-compute flat list of extraction slot ids for fast re-render comparison
+			// Pre-compute flat list of extraction slot ids for fast re-render
+			// comparison. Observables for extraction slots are created lazily
+			// by Injection.applyContext when it copies them.
 			if (this.input.extraction && !this._extractionSlots) {
 				const slots = [];
 				Slot.Each(this.input.extraction, (slot) => {
@@ -213,35 +212,54 @@ export class DynamicComponentEffect extends Effect {
 		this.factory = factory;
 	}
 	render(node, position, context, effector) {
-		// TODO: At rendering, we need to determine if the function has been
-		// converted to a component, ie. has a `template` and `applicator`.
-		// const derived = this.input.applyContext(context);
-		const { attributes, children, derivation } = this;
 		context = this.derivation.applyContext(context);
 		const value = context[this.derivation.id];
-		if (value !== context[this.id]) {
-			if (context[this.id] !== undefined) {
-				console.warn("TODO: Clear out the previous component");
+		let state = context[this.id + Slot.State];
+
+		if (!state || !Object.is(state.value, value) || !state.component || !state.derived) {
+			if (state?.component?.template?.unrender && state.derived) {
+				state.component.template.unrender(state.derived, effector, this.id);
 			}
 			const component = this.factory(value);
 			// TODO: Input is really expected to be an Injection
 			this.input.args = component.input;
+			// Injection caches slot matching in the parent context. Reset it when
+			// switching component shape so stale mappings are not reused.
+			context[this.input.id + Slot.State] = undefined;
+			// Clear node cache so the newly selected template renders from
+			// a fresh anchor/node layout. Path cache is on the DOM node itself.
+			const oldNode = context[this.id + Slot.Node];
+			if (oldNode) { oldNode._uiPaths = undefined; }
+			context[this.id + Slot.Node] = null;
 			const derived = this.input.applyContext(context);
-			context[this.id] = value;
-			return component.template.render(
-				node,
-				position,
+			state = context[this.id + Slot.State] = {
+				value,
+				component,
 				derived,
-				effector,
-				this.id
-			);
-		} else {
-			// No change
+			};
+			context[this.id] = value;
 		}
+
+		const derived = this.input.applyContext(context);
+		state.derived = derived;
+
+		return state.component.template.render(
+			node,
+			position,
+			derived,
+			effector,
+			this.id
+		);
 	}
 	unrender(context, effector) {
-		const derived = super.unrender(context, effector);
-		derived[this.id]?.template.unrender(derived, effector, this.id);
+		context = this.derivation.applyContext(context);
+		const state = context[this.id + Slot.State];
+		if (state?.component?.template?.unrender && state.derived) {
+			state.component.template.unrender(state.derived, effector, this.id);
+		}
+		context[this.id + Slot.State] = undefined;
+		context[this.id] = undefined;
+		super.unrender(context, effector);
 	}
 }
 export class ApplicationEffect extends Effect {
@@ -265,7 +283,7 @@ export class ApplicationEffect extends Effect {
 		return this.template.render(node, position, ctx, effector, this.id);
 	}
 	unrender(context, effector) {
-		const derived = super.unrender(derived, effector);
+		const derived = super.unrender(context, effector);
 		this.template.unrender(derived, effector, this.id);
 	}
 }
@@ -288,12 +306,14 @@ export class ConditionalEffect extends Effect {
 		context = this.input.applyContext(context);
 		this.subrender(node, position, context, effector);
 		const value = context[this.input.id];
-		// State is [previousBranchIndex, [...<context for each branch>]]
+		// State is [previousBranchIndex, branchNode, branchInitialized0, branchInitialized1, ...]
+		// We store branch node directly in state[1] instead of in a child context,
+		// avoiding Object.create() for each branch.
 		let state = context[this.id + Slot.State];
 		if (!state) {
 			context[this.id + Slot.State] = state = [
 				undefined,
-				new Array(this.branches.length + 1),
+				undefined,
 			];
 		}
 		let i = 0;
@@ -331,45 +351,37 @@ export class ConditionalEffect extends Effect {
 		if (i != state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
-				const previousIndex = state[0];
-				const previousEffect = this.resolveBranchEffect(previousIndex);
-				const previousContext = state[1][previousIndex];
-				if (previousContext && previousEffect?.unrender) {
-					previousEffect.unrender(previousContext, effector, this.id);
-				} else if (previousContext?.[Slot.Node]) {
-					effector.unmount(previousContext[Slot.Node]);
+				const previousEffect = this.resolveBranchEffect(state[0]);
+				if (previousEffect?.unrender) {
+					previousEffect.unrender(context, effector, this.id);
+				} else if (state[1]) {
+					effector.unmount(state[1]);
 				}
 			}
 			state[0] = i;
-			if (!state[1][i]) {
-				// We derive a new state and we make sure that we clear
-				// the slots for this cell in the context, so that we'll
-				// set new values.
-				const ctx = Object.create(context);
-				Context.Clear(ctx, this.id);
-				ctx[Slot.Owner] = this;
-				ctx[Slot.Name] = "ConditionalEffect";
-				ctx[Slot.Parent] = context;
-				ctx[this.id] = state[1][i] = ctx;
-			}
+			// Clear the node cache so the new branch gets a
+			// fresh render instead of reusing the old branch's node.
+			// Path cache is stored on the DOM node itself.
+			const oldNode = context[this.id + Slot.Node];
+			if (oldNode) { oldNode._uiPaths = undefined; }
+			context[this.id + Slot.Node] = null;
 		}
-		// We store the created/updated node
-		return (state[1][i][Slot.Node] =
+		// Render the branch directly into the parent context.
+		// Branch effects have globally unique IDs, so no collision.
+		return (state[1] =
 			match === undefined
 				? undefined
-				: match.render(node, position, state[1][i], effector, this.id));
+				: match.render(node, position, context, effector, this.id));
 	}
 
 	unrender(context, effector) {
 		const state = context[this.id + Slot.State];
 		if (state && state[0] !== undefined) {
-			const activeIndex = state[0];
-			const activeEffect = this.resolveBranchEffect(activeIndex);
-			const activeContext = state[1][activeIndex];
-			if (activeContext && activeEffect?.unrender) {
-				activeEffect.unrender(activeContext, effector, this.id);
-			} else if (activeContext?.[Slot.Node]) {
-				effector.unmount(activeContext[Slot.Node]);
+			const activeEffect = this.resolveBranchEffect(state[0]);
+			if (activeEffect?.unrender) {
+				activeEffect.unrender(context, effector, this.id);
+			} else if (state[1]) {
+				effector.unmount(state[1]);
 			}
 		}
 		super.unrender(context, effector);
@@ -402,56 +414,111 @@ export class MappingEffect extends Effect {
 		this.subrender(node, position, context, effector);
 		// We retrieve the mapped items, which are bound to this cell id.
 		const items = context[this.input.id];
-		// We retrieve the corresponding mapping state, typically `undefined`
-		// on the first run.
-		let mapping = context[this.id + Slot.State];
-		// We retrieve the revision number, which we set to `1` at first.
-		const revision = (context[this.id + Slot.Revision] =
-			(context[this.id + Slot.Revision] || 0) + 1);
-		// If there's no mapping defined, we create a new `Map`, which will
-		// be used to hold the state.
-		if (!mapping) {
-			context[this.id + Slot.State] = mapping = new Map();
-		}
 		// Cache template id for inner loop
 		const templateId = this.template.id ?? this.id;
-		// Now we iterate over the keys for each item.
-		let i = 0;
-		// Iterate directly without the generator wrapper
+		// Reusable position array to avoid allocating [position, i] per item
+		const itemPos = [position, 0];
+
 		if (items instanceof Array) {
-			for (let k = 0; k < items.length; k++) {
-				i = this._renderItem(k, items[k], node, position, i, context, effector, mapping, revision, templateId);
+			// Fast path for array inputs: use a flat array [ctx, val, ctx, val, ...]
+			// instead of Map to avoid hash table and per-entry sub-array overhead.
+			// Since array keys are sequential 0..n-1, we use direct indexing
+			// and track bounds implicitly via entries.length.
+			let entries = context[this.id + Slot.State];
+			if (!entries || entries instanceof Map) {
+				entries = context[this.id + Slot.State] = [];
 			}
-		} else if (items) {
-			for (const k in items) {
-				i = this._renderItem(k, items[k], node, position, i, context, effector, mapping, revision, templateId);
+			const prevCount = entries.length >> 1;
+			const n = items.length;
+
+			for (let k = 0; k < n; k++) {
+				const base = k << 1;
+				const value = items[k];
+				let ctx = entries[base];
+
+				if (!ctx) {
+					// New item: create derived context
+					ctx = Object.create(context);
+					ctx[Slot.Parent] = context;
+					ctx[Slot.Owner] = this;
+					ctx[Slot.Name] = "MappingEffect";
+					// Nullify to allow recursion of this effect
+					ctx[this.id + Slot.State] = null;
+					// Direct assignment on first render since no observables exist yet.
+					ctx[this.valueSlot.id] = value;
+					ctx[this.keySlot.id] = k;
+					entries[base] = ctx;
+					entries[base + 1] = value;
+				} else {
+					const existing = ctx[templateId + Slot.Node];
+					// Short-circuit: skip re-render if value unchanged
+					if (existing && Object.is(entries[base + 1], value)) {
+						continue;
+					}
+					this.valueSlot.set(value, true, ctx);
+					this.keySlot.set(k, true, ctx);
+					entries[base + 1] = value;
+				}
+				itemPos[1] = k;
+				this.template.render(node, itemPos, ctx, effector, templateId);
 			}
-		}
-		// Remove mapping items that haven't been updated
-		if (mapping.size > i) {
-			const to_remove = [];
-			for (const [k, entry] of mapping.entries()) {
-				if (entry[0] !== revision) {
-					to_remove.push(k);
+
+			// Remove items beyond new length
+			if (prevCount > n) {
+				for (let k = n; k < prevCount; k++) {
+					const base = k << 1;
+					if (entries[base]) {
+						this.template.unrender(entries[base], effector, templateId);
+					}
+				}
+				entries.length = n << 1;
+			}
+		} else {
+			// Object/Map inputs: use Map with revision-based cleanup.
+			// We retrieve the corresponding mapping state, typically `undefined`
+			// on the first run.
+			let mapping = context[this.id + Slot.State];
+			// We retrieve the revision number, which we set to `1` at first.
+			const revision = (context[this.id + Slot.Revision] =
+				(context[this.id + Slot.Revision] || 0) + 1);
+			// If there's no mapping defined, we create a new `Map`, which will
+			// be used to hold the state.
+			if (!mapping || !(mapping instanceof Map)) {
+				context[this.id + Slot.State] = mapping = new Map();
+			}
+			// Now we iterate over the keys for each item.
+			let i = 0;
+			if (items) {
+				for (const k in items) {
+					i = this._renderItem(k, items[k], node, itemPos, i, context, effector, mapping, revision, templateId);
 				}
 			}
-			for (let j = 0; j < to_remove.length; j++) {
-				const k = to_remove[j];
-				this.template.unrender(
-					mapping.get(k)[1],
-					effector,
-					templateId
-				);
-				mapping.delete(k);
+			// Remove mapping items that haven't been updated
+			if (mapping.size > i) {
+				const to_remove = [];
+				for (const [k, ctx] of mapping.entries()) {
+					if (ctx[this.id + Slot.Revision] !== revision) {
+						to_remove.push(k);
+					}
+				}
+				for (let j = 0; j < to_remove.length; j++) {
+					const k = to_remove[j];
+					this.template.unrender(
+						mapping.get(k),
+						effector,
+						templateId
+					);
+					mapping.delete(k);
+				}
 			}
 		}
 	}
 
-	_renderItem(k, value, node, position, i, context, effector, mapping, revision, templateId) {
-		// We get any previously stored entry.
-		// An entry is `[revision, context, previousValue]`
-		const entry = mapping.get(k);
-		let ctx = (entry && entry[1]) || undefined;
+	_renderItem(k, value, node, itemPos, i, context, effector, mapping, revision, templateId) {
+		// Map stores ctx directly (no sub-array). Revision is tracked at
+		// ctx[this.id + Slot.Revision] and previous value is read from
+		// ctx[this.valueSlot.id].
+		let ctx = mapping.get(k);
 		// If there's no context, then we have a new key.
 		if (!ctx) {
 			// We start by creating a derived context, so that derivations
@@ -463,34 +530,59 @@ export class MappingEffect extends Effect {
 			// We make sure that we can recurse this effect by nullifying
 			// the current node reference.
 			ctx[this.id + Slot.State] = null;
+			// Track the revision for stale entry detection.
+			ctx[this.id + Slot.Revision] = revision;
 			// Direct assignment on first render since no observables exist yet.
 			ctx[this.valueSlot.id] = value;
 			ctx[this.keySlot.id] = k;
-			// We register the mapped value and context in the mapping.
-			mapping.set(k, [revision, ctx, value]);
+			// We register the context in the mapping.
+			mapping.set(k, ctx);
 		} else {
-			// Only the revision has changed in the entry.
-			entry[0] = revision;
+			// Update the revision so this entry is not cleaned up as stale.
+			ctx[this.id + Slot.Revision] = revision;
 			const existing = ctx[templateId + Slot.Node];
 			// Short-circuit: skip slot assignment and re-render if value
 			// hasn't changed and we already have a rendered node.
-			if (existing && Object.is(entry[2], value)) {
+			if (existing && Object.is(ctx[this.valueSlot.id], value)) {
 				return i + 1;
 			}
 			this.valueSlot.set(value, true, ctx);
 			this.keySlot.set(k, true, ctx);
-			entry[2] = value;
 		}
+		// Reuse the position array, just update the index
+		itemPos[1] = i;
 		this.template.render(
 			node,
-			[position, i],
+			itemPos,
 			ctx,
 			effector,
 			templateId
 		);
 		return i + 1;
 	}
-	// NOTE: We don't do anything for unrender
+	unrender(context, effector) {
+		context = this.input.applyContext(context);
+		const state = context[this.id + Slot.State];
+		const templateId = this.template.id ?? this.id;
+		if (state) {
+			if (state instanceof Map) {
+				// Map stores ctx directly (no sub-array wrapper)
+				for (const [k, ctx] of state.entries()) {
+					this.template.unrender(ctx, effector, templateId);
+				}
+				state.clear();
+			} else {
+				// Flat array: [ctx0, val0, ctx1, val1, ...]
+				for (let i = 0; i < state.length; i += 2) {
+					if (state[i]) {
+						this.template.unrender(state[i], effector, templateId);
+					}
+				}
+				state.length = 0;
+			}
+		}
+		this.unsubrender(context);
+	}
 }
 
 export class FormattingEffect extends Effect {

@@ -23,8 +23,8 @@ export class Context {
 		}
 	}
 	// --
-	// Clear the given `context` so that the given `id` and 9 next slots
-	// are nullified.
+	// Clear the given `context` so that the given `id` and 5 next slots
+	// are nullified. This matches the stride of 6 slots per Slot instance.
 	static Clear(ctx, id) {
 		ctx[id] = null;
 		ctx[id + 1] = null;
@@ -32,17 +32,15 @@ export class Context {
 		ctx[id + 3] = null;
 		ctx[id + 4] = null;
 		ctx[id + 5] = null;
-		ctx[id + 6] = null;
-		ctx[id + 7] = null;
-		ctx[id + 8] = null;
-		ctx[id + 9] = null;
 	}
 	static Run(context, functor, args) {
 		// TODO: should really be contextual if multiple threads.
 		Context.Push(context);
-		const res = args ? functor(...args) : functor();
-		Context.Pop(context);
-		return res;
+		try {
+			return args ? functor(...args) : functor();
+		} finally {
+			Context.Pop(context);
+		}
 	}
 }
 
@@ -50,13 +48,19 @@ export class Context {
 export class Slot {
 	static Id = 0;
 
-	// These are the offsets in for the identifiers. Ids are incremented
-	// by a step of 10 and start at 10.
-	static Input = "input"; // Special context value for passing values
-	static Owner = "owner"; // Offset for the parent context
-	static Parent = "parent"; // Offset for the parent context
-	static Name = "name"; // Offset for the parent context
+	// These are the offsets for slot data within each context entry.
+	// Slot IDs use a stride of 6 starting at index 4.
 
+	// Metadata keys at indices 0-3 (shared across all contexts).
+	// By using small integers instead of strings, these values share the
+	// V8 elements backing store with slot data, avoiding separate named
+	// property overhead (~1.8 MB savings in large apps).
+	static Input = 0; // Special context value for passing values
+	static Owner = 1; // Offset for the owning slot/effect
+	static Parent = 2; // Offset for the parent context
+	static Name = 3; // Offset for a debug name
+
+	// Per-slot offsets 0-5 (added to each slot's base id):
 	static Observable = 1; // Offset of the observable value
 	// FIXME: Not sure if revision is useful, especially as slots
 	// can be replicated across contexts.
@@ -67,8 +71,9 @@ export class Slot {
 
 	// --
 	// Matches the given `template` against the given `data`, returning
-	// a list of tuples `[slot,value]` where slot is the original slot
-	// of the template, and `value` is either a slot or a regular value.
+	// a flat array of alternating [slot, value, slot, value, ...] pairs
+	// where slot is the original slot of the template, and value is
+	// either a slot or a regular value.
 	static Match(template, data, context = undefined, res = []) {
 		// `data` may be a slot, in which case we may need to resolve it.
 		const resolved_data =
@@ -81,7 +86,7 @@ export class Slot {
 			if (template.input) {
 				Slot.Match(template.input, resolved_data, context, res);
 			}
-			res.push([template, data]);
+			res.push(template, data);
 		} else if (template instanceof Map) {
 			const is_map = data instanceof Map;
 			if (resolved_data !== null && resolved_data !== undefined) {
@@ -174,11 +179,63 @@ export class Slot {
 		}
 	}
 
+	// --
+	// Subscribes a handler to the given slot id in context.
+	static Sub(context, id, handler) {
+		const subs = context[id + Slot.Observable] || (context[id + Slot.Observable] = []);
+		subs.push(handler);
+		return true;
+	}
+
+	// --
+	// Unsubscribes a handler from the given slot id in context.
+	static Unsub(context, id, handler) {
+		const subs = context[id + Slot.Observable];
+		if (subs) {
+			const i = subs.indexOf(handler);
+			if (i >= 0) {
+				subs.splice(i, 1);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// --
+	// Publishes a value to all subscribers of the given slot id in context.
+	static Pub(context, id, value) {
+		const subs = context[id + Slot.Observable];
+		if (subs) {
+			for (let i = 0; i < subs.length; i++) {
+				if (subs[i](value) === false) {
+					break;
+				}
+			}
+		}
+	}
+
+	// --
+	// Sets a value for the given slot id in context and notifies subscribers.
+	static Notify(context, id, value, force) {
+		if (force || value !== context[id]) {
+			context[id] = value;
+			context[id + Slot.Revision] = (context[id + Slot.Revision] || 0) + 1;
+			const subs = context[id + Slot.Observable];
+			if (subs) {
+				for (let i = 0; i < subs.length; i++) {
+					if (subs[i](value) === false) {
+						break;
+					}
+				}
+			}
+		}
+	}
+
 	constructor() {
-		// There's a bit of a trick with the way we manage ids. The first
-		// 10 are reserved, and then we leave 9 identifiers that can be
-		// used by each cell to store additional data in the context.
-		this.id = (1 + Slot.Id++) * 10;
+		// Slot IDs start at 4 (after metadata indices 0-3) and use a stride
+		// of 6. Each slot reserves 6 entries in the context for:
+		// +0 value, +1 observable, +2 revision, +3 node, +4 state, +5 render.
+		this.id = 4 + Slot.Id++ * 6;
 	}
 
 	// --
@@ -190,10 +247,17 @@ export class Slot {
 		this.set(value);
 	}
 
+	// --
+	// Ensures the subscriber array for this slot is initialized in the context.
+	// For hot paths, prefer using Slot.Sub/Unsub/Notify/Pub static methods
+	// directly to avoid intermediate object allocation.
 	observable(context = Context.Get()) {
 		if (context) {
-			const i = this.id + Slot.Observable;
-			return context[i] || (context[i] = new Observable(context[this.id], context, this.id));
+			// Ensure subscriber array is initialized in the context.
+			if (!context[this.id + Slot.Observable]) {
+				context[this.id + Slot.Observable] = [];
+			}
+			return context;
 		}
 		onError(
 			"cells.Slot.observable",
@@ -203,30 +267,14 @@ export class Slot {
 
 	get() {
 		const ctx = Context.Get();
-		// TODO: I think there's an opportunity here to define how data
-		// propagation work -- local reads, or remote reads, local writes
-		// or remote writes.
-		// --
-		// We get in the observable if there is one. This means that if there
-		// is an observable, the local context will be ignored.
-		const obs = ctx[this.id + Slot.Observable];
-		return obs ? obs.get() : ctx ? ctx[this.id] : undefined;
+		return ctx ? ctx[this.id] : undefined;
 	}
 
 	// --
 	// We `force` by default
 	set(value, force = true, context = Context.Get()) {
-		// TODO: We should check if it's read-only or not
 		if (context) {
-			const obs = context[this.id + Slot.Observable];
-			if (obs) {
-				// We have an observable so set in observable
-				obs && obs.set(value, force);
-			} else {
-				// There is no observable value, so we set in the local
-				// context.
-				context[this.id] = value;
-			}
+			Slot.Notify(context, this.id, value, force);
 		}
 	}
 
@@ -346,20 +394,27 @@ export class Slot {
 }
 
 // --
-// An observable value that can be subscribed to and updated. Obsevables
-// are used to wrap and share values that can change and operate within
-// a given context.
+// An observable value that can be subscribed to and updated. This is now
+// a thin wrapper around inline context storage for backward compatibility.
+// Hot paths should use Slot.Sub/Unsub/Notify/Pub static methods directly.
 export class Observable {
 	//--
 	//Observables wrap a value, and map it to a specific id within a context.
 	constructor(value, context, id) {
 		this.id = id;
-		this.subs = undefined;
 		this.context = context;
-		// Start at revision 0 if we have a value, -1 if not.
-		// This avoids calling set() during construction which
-		// redundantly writes the value back to context and calls pub().
-		this.revision = value !== undefined ? 0 : -1;
+		// Initialize the value in context
+		if (value !== undefined) {
+			context[id] = value;
+		}
+		// Ensure subscriber array exists
+		if (!context[id + Slot.Observable]) {
+			context[id + Slot.Observable] = [];
+		}
+	}
+
+	get subs() {
+		return this.context[this.id + Slot.Observable];
 	}
 
 	// --
@@ -372,49 +427,28 @@ export class Observable {
 		this.set(value);
 	}
 
+	get revision() {
+		return this.context[this.id + Slot.Revision] || 0;
+	}
+
 	get() {
 		return this.value;
 	}
 
 	set(value, force = undefined) {
-		if (force || this.revision === -1 || value !== this.value) {
-			// If the value changes, we updated the context, local value,
-			// revision number and
-			this.context[this.id] = value;
-			this.revision++;
-			this.pub(value);
-		}
+		Slot.Notify(this.context, this.id, value, force);
 	}
 
 	pub(value) {
-		const subs = this.subs;
-		if (subs) {
-			for (let i = 0; i < subs.length; i++) {
-				if (subs[i](value, this) === false) {
-					break;
-				}
-			}
-		}
+		Slot.Pub(this.context, this.id, value);
 	}
 
 	sub(handler) {
-		const subs = (this.subs = this.subs ?? []);
-		subs.push(handler);
-		return true;
+		return Slot.Sub(this.context, this.id, handler);
 	}
 
 	unsub(handler) {
-		if (this.subs) {
-			const i = this.subs.indexOf(handler);
-			if (i >= 0) {
-				this.subs.splice(i, 1);
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
+		return Slot.Unsub(this.context, this.id, handler);
 	}
 }
 

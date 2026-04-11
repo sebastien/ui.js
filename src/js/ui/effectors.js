@@ -25,6 +25,10 @@ export class DOMEffector {
 			parent.data = value;
 			return parent;
 		}
+		if (parent.nodeType === Node.ATTRIBUTE_NODE) {
+			parent.value = value;
+			return parent;
+		}
 		if (parent.nodeType === Node.COMMENT_NODE) {
 			const previous = parent.previousSibling;
 			if (previous?.nodeType === Node.TEXT_NODE) {
@@ -77,11 +81,11 @@ export class DOMEffector {
 	}
 
 	ensurePosition(parent, position = 0) {
-		if (parent.childNodes.length >= position - 1) {
-			return parent;
+		if (parent.childNodes.length > position) {
+			return parent.childNodes[position];
 		}
-		while (parent.childNodes.length < position - 1) {
-			parent.appendChild(document.createComment("#"));
+		while (parent.childNodes.length <= position) {
+			parent.appendChild(document.createComment(""));
 		}
 		return parent.childNodes[position];
 	}
@@ -138,9 +142,10 @@ export class DOMEffector {
 			// } else if (parent.childNodes.length > position) {
 			// 	parent.insertBefore(child, parent.childNodes[position]);
 		} else {
-			const node = this.ensurePosition(parent, position);
-			if (node) {
-				parent.replaceChild(child, node);
+			if (parent.childNodes[position] === child) {
+				// Already in position, nothing to do
+			} else if (parent.childNodes.length > position) {
+				parent.insertBefore(child, parent.childNodes[position]);
 			} else {
 				parent.appendChild(child);
 			}

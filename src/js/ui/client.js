@@ -56,9 +56,10 @@ const render = (
 	ctx[Slot.Name] = "client";
 	// The input slot is the default slot for the original input (by value).
 	ctx[Slot.Input] = data;
-	// We create the parent node
-	const node = (ctx[Slot.Node] =
-		ctx[Slot.Node] ||
+	// We create the parent node, stored at the effect's own node slot
+	// to avoid colliding with numeric metadata keys (0-3).
+	const node = (ctx[effect.id + Slot.Node] =
+		ctx[effect.id + Slot.Node] ||
 		// The effector will detect if the parent is a DocumentFragment, and if
 		// the `ui*` fields have been set, this will be used instead.
 		Object.assign(document.createDocumentFragment(), {
@@ -74,7 +75,13 @@ const render = (
 		// NOTE: The fragment will be emptied from its contents.
 		parent.appendChild(node);
 	}
-	return res;
+	return {
+		node: res,
+		dispose() {
+			effect.unrender(ctx, effector);
+			parent.replaceChildren();
+		},
+	};
 };
 
 export { globals, render };

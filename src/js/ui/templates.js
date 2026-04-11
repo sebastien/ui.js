@@ -58,19 +58,24 @@ export class Injection extends Derivation {
 		// rendered multiple time in the same context. In this case, it will
 		// keep the same context. However, if there's just one instance of the
 		// injection, then it's all good, as it will have a unique id.
+		// NOTE: We use arrays instead of plain objects for derived contexts
+		// because V8 stores sparse integer-keyed properties on objects in
+		// dictionary mode (~80 bytes/entry), while arrays use holey elements
+		// mode (~8 bytes/entry) as long as the gap is below kMaxGap (1024).
 		const derived = (context[this.id] =
-			context[this.id] ?? (this.derived ? Object.create(context) : {}));
+			context[this.id] ?? (this.derived ? Object.create(context) : []));
 
-		// Check if we have a cached match result from a previous render
+		// Check if we have a cached match result from a previous render.
+		// The match array is flat: [slot0, value0, slot1, value1, ...].
 		const stateKey = this.id + Slot.State;
 		const cached = context[stateKey];
 		if (cached) {
-			// Re-render path: reuse the cached match tuples, just update values.
+			// Re-render path: reuse the cached match pairs, just update values.
 			// The structure (which slots map to which data slots) doesn't change,
 			// only the resolved values in the context may have changed.
-			for (let i = 0; i < cached.length; i++) {
-				const slot = cached[i][0];
-				const v = cached[i][1];
+			for (let i = 0; i < cached.length; i += 2) {
+				const slot = cached[i];
+				const v = cached[i + 1];
 				if (v instanceof Slot) {
 					derived[slot.id] = context[v.id];
 					derived[slot.id + Slot.Observable] =
@@ -88,32 +93,36 @@ export class Injection extends Derivation {
 		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
 		derived[Slot.Name] = "Injection";
-		// Use pre-computed match if available, otherwise compute from context input
+		// Use pre-computed match if available, otherwise compute from context input.
+		// Returns a flat array: [slot0, value0, slot1, value1, ...]
 		const matches = this._preMatch
 			? this._preMatch
 			: Slot.Match(this.args, context[Slot.Input], context);
-		for (let i = 0; i < matches.length; i++) {
-			const slot = matches[i][0];
-			const v = matches[i][1];
+		for (let i = 0; i < matches.length; i += 2) {
+			const slot = matches[i];
+			const v = matches[i + 1];
 			if (v instanceof Slot) {
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
 				derived[slot.id] = context[v.id];
-				// NOTE: This will effectively fuse the cell, if it's updated
-				// locally, it will update upwards and vice-versa.
-				derived[slot.id + Slot.Observable] =
-					context[v.id + Slot.Observable];
-				// FIXME: Not sure about revision, that should be in observable?
+				// Share the parent's subscriber array so that subscriptions
+				// in the derived context propagate to the parent.
+				// Ensure the parent subscriber array exists.
+				if (!context[v.id + Slot.Observable]) {
+					context[v.id + Slot.Observable] = [];
+				}
+				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
 				derived[slot.id + Slot.Revision] =
 					context[v.id + Slot.Revision];
 			} else {
-				// This is a regular value
+				// This is a regular value — no Observable needed eagerly.
+				// If something subscribes later, slot.observable(derived)
+				// will create one on demand.
 				derived[slot.id] =
 					typeof v === "function"
 						? (...args) => Context.Run(context, v, args)
 						: v;
 			}
-			slot.observable(derived);
 		}
 		// Cache the match results for subsequent re-renders
 		context[stateKey] = matches;
@@ -201,13 +210,21 @@ export class Selection extends Derivation {
 	}
 
 	sub(handler, context = Context.Get()) {
-		const obs = context && context[this.id + Slot.Observable];
-		return obs ? obs.sub(handler) : null;
+		if (context) {
+			const subs = context[this.id + Slot.Observable];
+			if (subs) {
+				subs.push(handler);
+				return true;
+			}
+		}
+		return null;
 	}
 
 	unsub(handler, context = Context.Get()) {
-		const obs = context && context[this.id + Slot.Observable];
-		return obs ? obs.unsub(handler) : null;
+		if (context) {
+			return Slot.Unsub(context, this.id, handler);
+		}
+		return null;
 	}
 }
 
@@ -225,14 +242,14 @@ export class Subscription extends Selection {
 	applyContext(context) {
 		const ctx = super.applyContext(context);
 		if (ctx[this.id + Slot.State] === undefined) {
-			const obs = this.observable(ctx);
+			this.observable(ctx);
 			// Input needs to operate in the parent context
 			const updater = () => {
 				// FIXME: Updates seem to be triggered too many times
-				obs.set(Slot.Expand(this.input, context));
+				Slot.Notify(ctx, this.id, Slot.Expand(this.input, context), true);
 			};
 			Slot.Each(this.input, (slot) => {
-				slot.observable(context).sub(updater);
+				Slot.Sub(context, slot.id, updater);
 			});
 			ctx[this.id] = Slot.Expand(this.input, context);
 			ctx[this.id + Slot.State] = updater;
@@ -272,17 +289,18 @@ export class Cell extends Selection {
 					Context.Pop(context);
 				}
 			};
-			const obs = this.observable(context);
-			obs.sub(handler);
+			this.observable(context);
+			Slot.Sub(context, this.id, handler);
 			context[this.id + Slot.State] = [handler];
 			if (this.source instanceof Slot) {
 				const extractor = this.extractor;
+				const selfId = this.id;
 				// NOTE: If we force here, we'll get a loop
 				const updater = (value) => {
-					obs.set(extractor ? extractor(value) : value);
+					Slot.Notify(context, selfId, extractor ? extractor(value) : value, true);
 				};
 				context[this.id] = context[this.source.id];
-				this.source.observable(context).sub(updater);
+				Slot.Sub(context, this.source.id, updater);
 				context[this.id + Slot.State].push(updater);
 			}
 		}
@@ -342,7 +360,7 @@ export class Application extends Selection {
 			const handler = this.isMultipleArguments
 				? (value) => this.set(this.transform(...value), false, context)
 				: (value) => this.set(this.transform(value), false, context);
-			this.input.observable(context).sub(handler);
+			Slot.Sub(context, this.input.id, handler);
 			// NOTE: We expect here that the input have already been resolved
 			// and that the value are in the context.
 			const v = context[this.input.id];
@@ -357,32 +375,37 @@ export class Application extends Selection {
 
 	render(node, position, context, effector, id = this.id) {
 		this.input.applyContext(context);
-		let state = context[this.id + 6];
+		// Render state is stored at Slot.Render (+5) as [rerender, renderState]
+		// where renderState tracks template detection and anchor nodes.
+		let rs = context[this.id + Slot.Render];
+		let state = rs ? rs[1] : undefined;
 		if (state === undefined) {
 			// Check if this is a template mode (transform returns a renderable)
 			if (!this.isMultipleArguments) {
 				const candidate = this.transform(this.input);
 				if (candidate && typeof candidate.render === "function") {
-					state = context[this.id + 6] = {
+					// No child context needed — template effects have globally
+					// unique IDs, so they won't collide with parent context keys.
+					state = {
 						mode: "template",
 						template: candidate,
-						context: Object.assign(Object.create(context), {
-							[Slot.Owner]: this,
-							[Slot.Parent]: context,
-							[Slot.Name]: "Application",
-						}),
+						context: undefined,
 						anchor: undefined,
 					};
 				} else {
 					// Mark as non-template to skip this check on re-render
-					state = context[this.id + 6] = false;
+					state = false;
 				}
 			} else {
-				state = context[this.id + 6] = false;
+				state = false;
+			}
+			if (rs) {
+				rs[1] = state;
+			} else {
+				rs = context[this.id + Slot.Render] = [null, state];
 			}
 		}
 		if (state && state.mode === "template") {
-			this.input.observable(context);
 			if (node?.nodeType === Node.TEXT_NODE) {
 				state.anchor =
 					state.anchor && state.anchor.parentNode
@@ -403,17 +426,23 @@ export class Application extends Selection {
 		}
 
 		context = this.applyContext(context);
-		const render_id = this.id + Slot.Render;
-		if (!context[render_id]) {
+		// Refresh rs reference — applyContext may have switched context
+		rs = context[this.id + Slot.Render];
+		if (!rs) {
 			const rerender = () => this.render(node, position, context, effector, id);
-			context[render_id] = rerender;
-			this.observable(context).sub(rerender);
+			rs = context[this.id + Slot.Render] = [rerender, state];
+			Slot.Sub(context, this.id, rerender);
+		} else if (!rs[0]) {
+			const rerender = () => this.render(node, position, context, effector, id);
+			rs[0] = rerender;
+			Slot.Sub(context, this.id, rerender);
 		}
 		const output = context[this.id];
 		if (output && typeof output.render === "function") {
 			// Upgrade state to an object if needed for anchor tracking
 			if (!state) {
-				state = context[this.id + 6] = { anchor: undefined, context: undefined };
+				state = { anchor: undefined, context: undefined };
+				rs[1] = state;
 			}
 			if (node?.nodeType === Node.TEXT_NODE) {
 				state.anchor =
@@ -437,20 +466,20 @@ export class Application extends Selection {
 	}
 
 	unrender(context, effector, id = this.id) {
-		const state = context[this.id + 6];
+		const rs = context[this.id + Slot.Render];
+		const state = rs ? rs[1] : undefined;
 		if (state?.mode === "template") {
-			if (state.template?.unrender && state.context) {
-				state.template.unrender(state.context, effector, id);
+			if (state.template?.unrender) {
+				state.template.unrender(state.context ?? context, effector, id);
 			}
 			return;
 		}
-		const render_id = this.id + Slot.Render;
-		if (context[render_id]) {
-			this.observable(context).unsub(context[render_id]);
-			context[render_id] = undefined;
+		if (rs && rs[0]) {
+			Slot.Unsub(context, this.id, rs[0]);
+			context[this.id + Slot.Render] = undefined;
 		}
-		if (state?.template?.unrender && state.context) {
-			state.template.unrender(state.context, effector, id);
+		if (state?.template?.unrender) {
+			state.template.unrender(state.context ?? context, effector, id);
 		}
 	}
 }
