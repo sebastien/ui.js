@@ -56,14 +56,14 @@ export const createApp = async (root, initialValue) => {
 
 	value.observable(context);
 	value.set(initialValue, true, context);
-	render(Inspector, { value }, root, undefined, context);
+	const { dispose } = render(Inspector, { value }, root, undefined, context);
 
 	return {
 		update(nextValue) {
 			value.set(nextValue, true, context);
 		},
 		dispose() {
-			root.replaceChildren();
+			dispose();
 		},
 	};
 };

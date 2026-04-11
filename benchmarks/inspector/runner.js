@@ -71,7 +71,10 @@ export const createBenchmarkRunner = ({ framework, root, createApp }) => ({
 			});
 		}
 
-		app.dispose?.();
+		// Store app reference for external heap measurement before dispose
+		if (typeof globalThis !== "undefined") {
+			globalThis._benchmarkApp = app;
+		}
 
 		return {
 			framework,

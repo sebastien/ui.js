@@ -44,6 +44,33 @@ render(Hello, { message: "Hello, world!" }, document.getElementById("Hello"));
 - `render(Component, data, node)`
 - `h` hyperscript helpers (`h.div`, `h.span`, ...)
 - `$` / `select` for reactive selections and cells
+- `webcomponent(name, Component, initial?)` to register custom elements
+
+### Web Components
+
+You can expose any `ui.js` component as a native custom element:
+
+```html
+<div id="app"></div>
+
+<script type="module">
+import { h, webcomponent } from "./src/js/ui.js";
+
+const Counter = ({ count }) =>
+	h.div(
+		h.button({ onclick: () => count.set((count.value || 0) - 1) }, "-"),
+		h.span(count.text()),
+		h.button({ onclick: () => count.set((count.value || 0) + 1) }, "+")
+	);
+
+webcomponent("my-counter", Counter, { count: 0 });
+
+document.getElementById("app").innerHTML = "<my-counter count=\"5\"></my-counter>";
+</script>
+```
+
+Attribute updates are reactive, so changing `count` on `<my-counter>`
+updates the wrapped component state.
 
 # Features
 

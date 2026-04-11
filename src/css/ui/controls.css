@@ -15,9 +15,11 @@ label {
 }
 
 .action:hover {
-	background-color: color-mix(in srgb,
-			var(--color-current),
-			var(--page-bg-0p) 95%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 95%
+	);
 }
 
 .selectable {
@@ -27,16 +29,20 @@ label {
 
 .hoverable:hover,
 .selectable:hover {
-	background-color: color-mix(in srgb,
-			var(--color-current),
-			var(--page-bg-0p) 95%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 95%
+	);
 }
 
 .selectable.selected,
 .selectable[data-selected="true"] {
-	background-color: color-mix(in srgb,
-			var(--color-current),
-			var(--page-bg-0p) 90%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 90%
+	);
 }
 
 .editable[data-placeholder]:before {
@@ -154,7 +160,7 @@ label {
 	--item-depth: 5;
 }
 
-.item>.fill {
+.item > .fill {
 	flex-grow: 1;
 }
 
@@ -176,7 +182,7 @@ select,
 	font-size: var(--font-control-size);
 	line-height: var(--font-control-line-height);
 	width: min-content;
-	padding: var(--pad-2);
+	padding: var(--pad-1);
 	border-radius: 4px;
 	gap: var(--gap-1);
 }
@@ -210,7 +216,8 @@ textarea:hover,
 .input:hover,
 .textarea:hover,
 .input.hover,
-.textarea.hover {}
+.textarea.hover {
+}
 
 input:focus,
 textarea:focus,
@@ -229,7 +236,7 @@ textarea:active,
 
 /**
  * ### Input Sizes
-*/
+ */
 
 textarea.smaller,
 .textarea.smaller,
@@ -309,7 +316,7 @@ input[type="color"] {
 
 /**
  * # Input Style
-*/
+ */
 
 input.rounded,
 .input.rounded {
@@ -328,7 +335,7 @@ input.roundest,
 
 /**
  * # Buttons
-*/
+ */
 
 button,
 .button {
@@ -337,13 +344,17 @@ button,
 	--button-bg: var(--color-grey-8);
 	--button-bg-active: var(--color-grey-5);
 
-	--button-bd-active: color-mix(in srgb,
-			var(--color-bg-active),
-			var(--page-bg-0p) 50%);
+	--button-bd-active: color-mix(
+		in srgb,
+		var(--color-bg-active),
+		var(--page-bg-0p) 50%
+	);
 	--button-bd: color-mix(in srgb, var(--button-bg), var(--color-low) 10%);
-	--button-bd-hover: color-mix(in srgb,
-			var(--button-bg-hover),
-			var(--color-low) 10%);
+	--button-bd-hover: color-mix(
+		in srgb,
+		var(--button-bg-hover),
+		var(--color-low) 10%
+	);
 
 	--button-ol-hover: var(--color-grey-7);
 	--button-ol: transparent;
@@ -365,7 +376,7 @@ button,
 	font-size: var(--font-size-3);
 	white-space: nowrap;
 	gap: var(--gap-2);
-	padding: var(--pad-2) var(--pad-3);
+	padding: var(--pad-1) var(--pad-2);
 	transition-property: background-color, border-color, color;
 	transition-duration: 0.15s;
 	outline: 0px solid var(--button-ol);
@@ -409,7 +420,7 @@ button.selected,
 
 /**
  * ### Button Shapes
-*/
+ */
 button.rectangle,
 .button.rectangle {
 	border-radius: 0px;
@@ -453,7 +464,7 @@ button.roundest,
 
 /**
  * ### Button Sizes
-*/
+ */
 button.smaller,
 .button.smaller {
 	font-size: var(--font-size-1);
@@ -480,7 +491,7 @@ button.larger,
 
 /**
  * ### Button Colors
-*/
+ */
 .button.transparent,
 button.transparent {
 	--button-bg: transparent;
@@ -545,7 +556,7 @@ button.danger {
 
 /**
  * ### Button Variants
-*/
+ */
 
 button.default,
 .button.default {
@@ -570,9 +581,11 @@ button.label,
 	border-color: transparent;
 	outline-color: transparent;
 	min-width: unset;
-	--button-txt-hover: color-mix(in srgb,
-			var(--button-bg),
-			var(--button-txt) 25%);
+	--button-txt-hover: color-mix(
+		in srgb,
+		var(--button-bg),
+		var(--button-txt) 25%
+	);
 }
 
 .button.primary.label {
@@ -605,7 +618,7 @@ button.selector.left,
 
 /**
  * FIXME
-*/
+ */
 
 button.noborder,
 .button.noborder {
@@ -638,7 +651,8 @@ button.label:focus,
 }
 
 button.label:focus,
-.button.label:focus {}
+.button.label:focus {
+}
 
 button.label:active,
 .button.label:active {
@@ -651,13 +665,13 @@ button.label:active,
 	flex-direction: column;
 }
 
-.select>button,
-.select>.button,
-.select>.option,
-.select>button:hover,
-.select>button:focus,
-.select>.button:hover,
-.select>.button:focus {
+.select > button,
+.select > .button,
+.select > .option,
+.select > button:hover,
+.select > button:focus,
+.select > .button:hover,
+.select > .button:focus {
 	text-shadow: unset;
 	box-shadow: unset;
 	left: unset;
@@ -665,36 +679,40 @@ button.label:active,
 	padding: var(--pad-1) var(--pad-2);
 }
 
-.select.as-underline>button,
-.select.as-underline>.button,
-.select.as-underline>.option,
-.select.as-underline>button:hover,
-.select.as-underline>button:focus,
-.select.as-underline>.button:hover,
-.select.as-underline>.button:focus {
+.select.as-underline > button,
+.select.as-underline > .button,
+.select.as-underline > .option,
+.select.as-underline > button:hover,
+.select.as-underline > button:focus,
+.select.as-underline > .button:hover,
+.select.as-underline > .button:focus {
 	border: 0px solid transparent;
 	border-bottom: 1px solid transparent;
 }
 
-.select.as-underline>.option:hover,
-.select.as-underline>.button:hover,
-.select.as-underline>button:hover {
+.select.as-underline > .option:hover,
+.select.as-underline > .button:hover,
+.select.as-underline > button:hover {
 	background-color: transparent;
 	color: var(--color-primary);
-	border-color: color-mix(in srgb,
-			var(--color-primary),
-			rgba(var(--color-high-transparent), 0) 50%);
+	border-color: color-mix(
+		in srgb,
+		var(--color-primary),
+		rgba(var(--color-high-transparent), 0) 50%
+	);
 }
 
-.select.as-underline>.option.selected,
-.select.as-underline>.button.selected,
-.select.as-underline>button.selected,
-.select.as-underline>button:active {
+.select.as-underline > .option.selected,
+.select.as-underline > .button.selected,
+.select.as-underline > button.selected,
+.select.as-underline > button:active {
 	background-color: transparent;
 	color: var(--color-primary);
-	border-color: color-mix(in srgb,
-			var(--color-primary),
-			rgba(var(--color-high-transparent), 0) 75%);
+	border-color: color-mix(
+		in srgb,
+		var(--color-primary),
+		rgba(var(--color-high-transparent), 0) 75%
+	);
 }
 
 .field {
@@ -703,7 +721,7 @@ button.label:active,
 	align-items: center;
 }
 
-.field>.fill {
+.field > .fill {
 	flex-grow: 1;
 }
 
@@ -721,7 +739,7 @@ button.label:active,
 	border: 1px solid var(--control-bd);
 }
 
-.panel>header {
+.panel > header {
 	font-weight: bold;
 }
 
@@ -768,16 +786,16 @@ menu.popup {
 	scrollbar-width: thin;
 }
 
-.menu>hr,
-menu>hr {
+.menu > hr,
+menu > hr {
 	border: 0px solid transparent;
 	background: transparent;
 	margin: 0px;
 	border-top: 1px solid var(--color-bd);
 }
 
-.menu>hr:after,
-menu>hr:after {
+.menu > hr:after,
+menu > hr:after {
 	content: attr(data-label);
 	display: block;
 	opacity: 0.75;
@@ -787,8 +805,8 @@ menu>hr:after {
 	padding: 12px 8px 8px;
 }
 
-.menu>li,
-menu>li {
+.menu > li,
+menu > li {
 	display: flex;
 	align-items: center;
 	padding: 6px 8px;
@@ -797,30 +815,34 @@ menu>li {
 	cursor: pointer;
 }
 
-.menu>li:hover,
-menu>li:hover {
-	background-color: color-mix(in srgb,
-			var(--color-current),
-			var(--page-bg-0p) 95%);
+.menu > li:hover,
+menu > li:hover {
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 95%
+	);
 }
 
-.menu>li.selected,
-menu>li.selected {
-	background-color: color-mix(in srgb,
-			var(--color-current),
-			var(--page-bg-0p) 90%);
+.menu > li.selected,
+menu > li.selected {
+	background-color: color-mix(
+		in srgb,
+		var(--color-current),
+		var(--page-bg-0p) 90%
+	);
 }
 
-.menu>li>.label,
-menu>li>.label {
+.menu > li > .label,
+menu > li > .label {
 	display: block;
 	flex-grow: 1;
 	font-size: var(--font-size-1_5);
 	color: var(--color-text);
 }
 
-.menu>li>.label>.detail,
-menu>li>.label>.detail {
+.menu > li > .label > .detail,
+menu > li > .label > .detail {
 	display: block;
 	font-weight: 400;
 	font-size: var(--font-size-1);

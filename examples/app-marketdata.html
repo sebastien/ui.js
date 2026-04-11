@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI.js ― Market Data</title>
+    <link rel="stylesheet" href="../src/css/ui.css" type="text/css" media="all" />
+    <script type="importmap">
+      { "imports": { "@ui/": "../src/js/ui/" } }
+    </script>
+  </head>
+  <body>
+    <div id="main"></div>
+    <script type="module">
+      import { render } from "@ui/client.js";
+      import { h } from "@ui/hyperscript.js";
+      const { h4, p, a, li, div, span, ul, input, button, h1 } = h;
+      const MarketData = ({feeds})=> {
+      return div({_:"card col-2 pad-4 bd stack gap-2"},
+      	h4("NZX Gainers & Decliners"),
+        ul({_:"list-h mt-4 gap-4"},
+          feeds.map((feed, i) =>
+            li({_:"bold label selectable", onClick:()=>console.log("Click")},
+            feed.label)
+        )),
+        p({_:"dimmed mb-2"}, "Last change on 30 October 2023 ― 5:00 pm.Data is 20 mins delayed."),
+        p({_:"small"},"Data sourced from API deployed at ", a({href:"https://api.nzx.dev/ticker/1.0"},"api.nzx.dev/ticker/1.0"))
+      )};
+      render(
+      	MarketData,
+      	{
+      	},
+      	document.getElementById("main")
+      );
+    </script>
+  </body>
+</html>

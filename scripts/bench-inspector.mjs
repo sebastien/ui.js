@@ -153,22 +153,41 @@ const getUsedHeapBytes = async (cdpSession) => {
 	return null;
 };
 
+const collectGarbage = async (cdpSession) => {
+	try {
+		await cdpSession.send("HeapProfiler.collectGarbage");
+	} catch {
+		// Ignore: GC trigger is best-effort.
+	}
+};
+
 const runBenchmarkWithHeap = async (page) => {
 	const cdpSession = await page.context().newCDPSession(page).catch(() => null);
+	if (cdpSession) {
+		await collectGarbage(cdpSession);
+	}
 	const heapBeforeBytes = cdpSession ? await getUsedHeapBytes(cdpSession) : null;
 	const result = await page.evaluate(() => window.runInspectorBenchmark());
+	// Measure peak heap while the rendered tree is still alive
+	const heapPeakBytes = cdpSession ? await getUsedHeapBytes(cdpSession) : null;
+	// Dispose and force GC to measure retained (leaked) memory
+	await page.evaluate(() => globalThis._benchmarkApp?.dispose?.());
+	if (cdpSession) {
+		await collectGarbage(cdpSession);
+	}
 	const heapAfterBytes = cdpSession ? await getUsedHeapBytes(cdpSession) : null;
 	if (cdpSession) {
 		await cdpSession.detach().catch(() => null);
 	}
 	const heapDeltaBytes =
-		Number.isFinite(heapBeforeBytes) && Number.isFinite(heapAfterBytes)
-			? heapAfterBytes - heapBeforeBytes
+		Number.isFinite(heapBeforeBytes) && Number.isFinite(heapPeakBytes)
+			? heapPeakBytes - heapBeforeBytes
 			: null;
 	return {
 		...result,
 		heap: {
 			beforeBytes: heapBeforeBytes,
+			peakBytes: heapPeakBytes,
 			afterBytes: heapAfterBytes,
 			deltaBytes: heapDeltaBytes,
 		},
@@ -201,6 +220,9 @@ const summarizeRuns = (framework, runs) => {
 		heapBeforeMB: roundNullable(
 			bytesToMb(averageDefined(runs.map((run) => run.heap?.beforeBytes)))
 		),
+		heapPeakMB: roundNullable(
+			bytesToMb(averageDefined(runs.map((run) => run.heap?.peakBytes)))
+		),
 		heapAfterMB: roundNullable(
 			bytesToMb(averageDefined(runs.map((run) => run.heap?.afterBytes)))
 		),
@@ -227,6 +249,7 @@ const formatSummaryTable = (summaries) => {
 		initialMs: `${summary.initialMs}`,
 		patchTotalMs: `${summary.patchTotalMs}`,
 		heapBeforeMB: `${summary.heapBeforeMB ?? "n/a"}`,
+		heapPeakMB: `${summary.heapPeakMB ?? "n/a"}`,
 		heapAfterMB: `${summary.heapAfterMB ?? "n/a"}`,
 		heapDeltaMB: `${summary.heapDeltaMB ?? "n/a"}`,
 		nodeCount: `${summary.nodeCount}`,
@@ -237,6 +260,7 @@ const formatSummaryTable = (summaries) => {
 		"initialMs",
 		"patchTotalMs",
 		"heapBeforeMB",
+		"heapPeakMB",
 		"heapAfterMB",
 		"heapDeltaMB",
 		...phaseNames,
