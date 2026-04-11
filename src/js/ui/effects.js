@@ -182,7 +182,7 @@ export class ComponentEffect extends Effect {
 			onError(
 				"effects.ComponentEffect",
 				"Given component function has not been initialised.",
-				{ component: this.component }
+				{ component: this.component },
 			);
 		}
 		return this.component.template.render(
@@ -190,7 +190,7 @@ export class ComponentEffect extends Effect {
 			position,
 			derived,
 			effector,
-			this.id
+			this.id,
 		);
 	}
 	unrender(context, effector) {
@@ -219,7 +219,12 @@ export class DynamicComponentEffect extends Effect {
 		const value = context[this.derivation.id];
 		let state = context[this.id + Slot.State];
 
-		if (!state || !Object.is(state.value, value) || !state.component || !state.derived) {
+		if (
+			!state ||
+			!Object.is(state.value, value) ||
+			!state.component ||
+			!state.derived
+		) {
 			if (state?.component?.template?.unrender && state.derived) {
 				state.component.template.unrender(state.derived, effector, this.id);
 			}
@@ -232,7 +237,9 @@ export class DynamicComponentEffect extends Effect {
 			// Clear node cache so the newly selected template renders from
 			// a fresh anchor/node layout. Path cache is on the DOM node itself.
 			const oldNode = context[this.id + Slot.Node];
-			if (oldNode) { oldNode._uiPaths = undefined; }
+			if (oldNode) {
+				oldNode._uiPaths = undefined;
+			}
 			context[this.id + Slot.Node] = null;
 			const derived = this.input.applyContext(context);
 			state = context[this.id + Slot.State] = {
@@ -251,7 +258,7 @@ export class DynamicComponentEffect extends Effect {
 			position,
 			derived,
 			effector,
-			this.id
+			this.id,
 		);
 	}
 	unrender(context, effector) {
@@ -314,10 +321,7 @@ export class ConditionalEffect extends Effect {
 		// avoiding Object.create() for each branch.
 		let state = context[this.id + Slot.State];
 		if (!state) {
-			context[this.id + Slot.State] = state = [
-				undefined,
-				undefined,
-			];
+			context[this.id + Slot.State] = state = [undefined, undefined];
 		}
 		let i = 0;
 		let match = undefined;
@@ -326,11 +330,13 @@ export class ConditionalEffect extends Effect {
 			const branch = branches[j];
 			const type = branch[0];
 			const condition = branch[1];
-			if (type === 3) { // Function
+			if (type === 3) {
+				// Function
 				if (condition(value)) {
 					match = branch[2];
 				}
-			} else if (type === 2) { // Array of values
+			} else if (type === 2) {
+				// Array of values
 				for (const v of condition) {
 					if (v == value) {
 						match = branch[2];
@@ -366,7 +372,9 @@ export class ConditionalEffect extends Effect {
 			// fresh render instead of reusing the old branch's node.
 			// Path cache is stored on the DOM node itself.
 			const oldNode = context[this.id + Slot.Node];
-			if (oldNode) { oldNode._uiPaths = undefined; }
+			if (oldNode) {
+				oldNode._uiPaths = undefined;
+			}
 			context[this.id + Slot.Node] = null;
 		}
 		// Render the branch directly into the parent context.
@@ -602,14 +610,29 @@ export class MappingEffect extends Effect {
 		const itemPos = [position, 0];
 
 		if (items instanceof Array) {
-			const firstAutoKey = items.length > 0 ? this.resolveKey(items[0], 0) : undefined;
+			const firstAutoKey =
+				items.length > 0 ? this.resolveKey(items[0], 0) : undefined;
 			const shouldUseKeyed =
 				typeof this.keyBy === "function" ||
 				(firstAutoKey !== undefined && firstAutoKey !== null);
 			if (shouldUseKeyed) {
-				this._renderArrayKeyed(items, node, itemPos, context, effector, templateId);
+				this._renderArrayKeyed(
+					items,
+					node,
+					itemPos,
+					context,
+					effector,
+					templateId,
+				);
 			} else {
-				this._renderArrayIndexed(items, node, itemPos, context, effector, templateId);
+				this._renderArrayIndexed(
+					items,
+					node,
+					itemPos,
+					context,
+					effector,
+					templateId,
+				);
 			}
 		} else {
 			// Object/Map inputs: use Map with revision-based cleanup.
@@ -628,7 +651,18 @@ export class MappingEffect extends Effect {
 			let i = 0;
 			if (items) {
 				for (const k in items) {
-					i = this._renderItem(k, items[k], node, itemPos, i, context, effector, mapping, revision, templateId);
+					i = this._renderItem(
+						k,
+						items[k],
+						node,
+						itemPos,
+						i,
+						context,
+						effector,
+						mapping,
+						revision,
+						templateId,
+					);
 				}
 			}
 			// Remove mapping items that haven't been updated
@@ -641,18 +675,25 @@ export class MappingEffect extends Effect {
 				}
 				for (let j = 0; j < to_remove.length; j++) {
 					const k = to_remove[j];
-					this.template.unrender(
-						mapping.get(k),
-						effector,
-						templateId
-					);
+					this.template.unrender(mapping.get(k), effector, templateId);
 					mapping.delete(k);
 				}
 			}
 		}
 	}
 
-	_renderItem(k, value, node, itemPos, i, context, effector, mapping, revision, templateId) {
+	_renderItem(
+		k,
+		value,
+		node,
+		itemPos,
+		i,
+		context,
+		effector,
+		mapping,
+		revision,
+		templateId,
+	) {
 		// Map stores ctx directly (no sub-array). Revision is tracked at
 		// ctx[this.id + Slot.Revision] and previous value is read from
 		// ctx[this.valueSlot.id].
@@ -689,13 +730,7 @@ export class MappingEffect extends Effect {
 		}
 		// Reuse the position array, just update the index
 		itemPos[1] = i;
-		this.template.render(
-			node,
-			itemPos,
-			ctx,
-			effector,
-			templateId
-		);
+		this.template.render(node, itemPos, ctx, effector, templateId);
 		return i + 1;
 	}
 	unrender(context, effector) {
@@ -758,7 +793,7 @@ export class FormattingEffect extends Effect {
 				return (context[this.id + Slot.Node] = effector.ensureText(
 					node,
 					position,
-					output
+					output,
 				));
 			} else {
 				textNode.data = output;
@@ -774,9 +809,7 @@ export class FormattingEffect extends Effect {
 			return `${input}`;
 		}
 		try {
-			return this.format.args
-				? this.format(...input)
-				: this.format(input);
+			return this.format.args ? this.format(...input) : this.format(input);
 		} catch (error) {
 			onRuntimeError(error, this.format.toString(), {
 				node: node,
@@ -879,9 +912,7 @@ export class EventHandlerEffect extends Effect {
 			const context = Context.Get();
 			const callback = this.resolveHandler(context);
 			const res =
-				typeof callback === "function"
-					? callback(event, ...rest)
-					: undefined;
+				typeof callback === "function" ? callback(event, ...rest) : undefined;
 			if (res && Object.getPrototypeOf(res) === Object.prototype) {
 				const updateContext =
 					typeof callback === "function" && callback[BOUND_CONTEXT]
@@ -1042,4 +1073,26 @@ export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 	}
 }
 
+export class ContextBoundEffect extends Effect {
+	constructor(renderable, boundContext) {
+		super(undefined);
+		this.renderable = renderable;
+		this.boundContext = boundContext;
+	}
+	render(node, position, context, effector) {
+		return this.renderable.render(
+			node,
+			position,
+			this.boundContext,
+			effector,
+			this.id,
+		);
+	}
+	unrender(context, effector) {
+		if (this.renderable.unrender) {
+			this.renderable.unrender(this.boundContext, effector, this.id);
+		}
+		super.unrender(context, effector);
+	}
+}
 // EOF

@@ -46,7 +46,7 @@ const createAttributes = (attributes) => {
 					[ns, name],
 					typeof v === "function" || v instanceof Slot
 						? EventHandlerEffect.Ensure(v, name)
-						: v
+						: v,
 				);
 			} else {
 				attr.set(
@@ -54,8 +54,8 @@ const createAttributes = (attributes) => {
 					v instanceof Effect
 						? v
 						: v instanceof Slot
-						? new AttributeEffect(v)
-						: v
+							? new AttributeEffect(v)
+							: v,
 				);
 			}
 		}
@@ -63,41 +63,59 @@ const createAttributes = (attributes) => {
 	return attr;
 };
 
+const flattenChildren = (arr) =>
+	arr.reduce(
+		(acc, val) =>
+			Array.isArray(val) ? acc.concat(flattenChildren(val)) : acc.concat(val),
+		[],
+	);
+
 const normalizeChildren = (children) =>
-	children.map((_) =>
-		_ instanceof Effect || (typeof _?.render === "function" && _ instanceof Slot)
+	flattenChildren(children).map((_) =>
+		_ instanceof Effect ||
+		(typeof _?.render === "function" && _ instanceof Slot)
 			? _
-			: _ instanceof Slot
-			? new FormattingEffect(_)
-			: _
+			: _ instanceof Selection && _.name === "children"
+				? _.apply((value) => value)
+				: _ instanceof Slot
+					? new FormattingEffect(_)
+					: _,
 	);
 
 // The JSX/React-like interface to create VDOM nodes from JavaScript. This is
 // used by the `h` hyperscript function below.
 const createElement = (element, attributes, ...children) => {
+	const normalizedChildren = normalizeChildren(children);
+	const componentChildren =
+		normalizedChildren.length === 0
+			? null
+			: normalizedChildren.length === 1
+				? normalizedChildren[0]
+				: new VNode(undefined, Fragment, new Map(), normalizedChildren);
+
 	if (element instanceof Slot) {
 		return new DynamicComponentEffect(
 			new Injection(undefined, false, {
 				...attributes,
-				children: normalizeChildren(children),
+				children: componentChildren,
 			}),
 			element,
-			component // We pass in the component factory function
+			component, // We pass in the component factory function
 		);
 	} else if (typeof element === "function") {
 		const c = component(element);
 		return new ComponentEffect(
 			new Injection(c.input, false, {
 				...attributes,
-				children: normalizeChildren(children),
+				children: componentChildren,
 			}),
-			c
+			c,
 		);
 	} else {
 		return new VNode(
 			...(element instanceof Array ? element : [undefined, element]),
 			createAttributes(attributes),
-			normalizeChildren(children)
+			normalizedChildren,
 		);
 	}
 };
@@ -121,20 +139,14 @@ export class VDOMFactoryProxy {
 			return tags.get(property);
 		} else {
 			const res = (attributes, ...args) =>
-				attributes !== null &&
-				attributes !== undefined &&
-				isObject(attributes)
-					? createElement(
-							[this.namespace, property],
-							attributes,
-							...args
-					  )
+				attributes !== null && attributes !== undefined && isObject(attributes)
+					? createElement([this.namespace, property], attributes, ...args)
 					: createElement(
 							[this.namespace, property],
 							null,
 							attributes,
-							...args
-					  );
+							...args,
+						);
 			tags.set(property, res);
 			return res;
 		}
@@ -148,13 +160,13 @@ export const select = Object.assign((...args) =>
 	args.length > 1
 		? new Subscription(args, true)
 		: args.length === 1
-		? args[0] instanceof Function
-			? new DynamicEvaluation(args[0])
-			: args instanceof Selection
-			? new Subscription(args[0])
-			: // FIXME: Not sure why we have an injection here
-			  new Subscription(new Injection(args[0]))
-		: {}
+			? args[0] instanceof Function
+				? new DynamicEvaluation(args[0])
+				: args instanceof Selection
+					? new Subscription(args[0])
+					: // FIXME: Not sure why we have an injection here
+						new Subscription(new Injection(args[0]))
+			: {},
 );
 
 const isDerivedShape = (value) => {

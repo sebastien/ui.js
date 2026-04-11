@@ -3,6 +3,7 @@ import {
 	MappingEffect,
 	FormattingEffect,
 	TemplateEffect,
+	ContextBoundEffect,
 } from "./effects.js";
 import { Context, Slot } from "./cells.js";
 import { assign } from "./utils/collections.js";
@@ -78,12 +79,14 @@ export class Injection extends Derivation {
 			for (let i = 0; i < cached.length; i += 2) {
 				const slot = cached[i];
 				const v = cached[i + 1];
-				if (v instanceof Slot) {
+				const isRenderableChildren =
+					slot?.name === "children" && v && typeof v.render === "function";
+				if (v instanceof Slot && !isRenderableChildren) {
 					derived[slot.id] = context[v.id];
-					derived[slot.id + Slot.Observable] =
-						context[v.id + Slot.Observable];
-					derived[slot.id + Slot.Revision] =
-						context[v.id + Slot.Revision];
+					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
+					derived[slot.id + Slot.Revision] = context[v.id + Slot.Revision];
+				} else if (isRenderableChildren) {
+					derived[slot.id] = new ContextBoundEffect(v, context);
 				}
 				// Non-slot values don't change between renders, no update needed
 			}
@@ -103,7 +106,9 @@ export class Injection extends Derivation {
 		for (let i = 0; i < matches.length; i += 2) {
 			const slot = matches[i];
 			const v = matches[i + 1];
-			if (v instanceof Slot) {
+			const isRenderableChildren =
+				slot?.name === "children" && v && typeof v.render === "function";
+			if (v instanceof Slot && !isRenderableChildren) {
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
 				derived[slot.id] = context[v.id];
@@ -114,19 +119,19 @@ export class Injection extends Derivation {
 					context[v.id + Slot.Observable] = [];
 				}
 				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
-				derived[slot.id + Slot.Revision] =
-					context[v.id + Slot.Revision];
+				derived[slot.id + Slot.Revision] = context[v.id + Slot.Revision];
 			} else {
 				// This is a regular value — no Observable needed eagerly.
 				// If something subscribes later, slot.observable(derived)
 				// will create one on demand.
 				derived[slot.id] =
 					typeof v === "function"
-						? Object.assign(
-								(...args) => Context.Run(context, v, args),
-								{ [BOUND_CONTEXT]: context }
-						  )
-						: v;
+						? Object.assign((...args) => Context.Run(context, v, args), {
+								[BOUND_CONTEXT]: context,
+							})
+						: slot?.name === "children" && v && typeof v.render === "function"
+							? new ContextBoundEffect(v, context)
+							: v;
 			}
 		}
 		// Cache the match results for subsequent re-renders
@@ -181,8 +186,8 @@ export class Selection extends Derivation {
 			typeof formatter === "function"
 				? formatter
 				: formatter === null || formatter === undefined
-				? formatter
-				: `${formatter}`
+					? formatter
+					: `${formatter}`,
 		);
 	}
 
@@ -205,7 +210,7 @@ export class Selection extends Derivation {
 			func,
 			new Selection(),
 			new Selection(),
-			keyBy
+			keyBy,
 		);
 	}
 
@@ -308,7 +313,12 @@ export class Cell extends Selection {
 				const selfId = this.id;
 				// NOTE: If we force here, we'll get a loop
 				const updater = (value) => {
-					Slot.Notify(context, selfId, extractor ? extractor(value) : value, true);
+					Slot.Notify(
+						context,
+						selfId,
+						extractor ? extractor(value) : value,
+						true,
+					);
 				};
 				context[this.id] = context[this.source.id];
 				Slot.Sub(context, this.source.id, updater);
@@ -348,11 +358,7 @@ export class Extraction extends Selection {
 	applyContext(context) {
 		const scope = (context[this.id] = context[this.id] || []);
 		for (const arg of this.args) {
-			assign(
-				scope,
-				arg.path,
-				arg.id === undefined ? null : context[arg.id]
-			);
+			assign(scope, arg.path, arg.id === undefined ? null : context[arg.id]);
 		}
 		return context;
 	}
@@ -449,7 +455,7 @@ export class Application extends Selection {
 				position,
 				state.context ?? context,
 				effector,
-				id
+				id,
 			);
 		}
 
@@ -487,7 +493,7 @@ export class Application extends Selection {
 				position,
 				state.context ?? context,
 				effector,
-				id
+				id,
 			);
 		}
 		return effector.ensureContent(node, position, output);
@@ -530,8 +536,8 @@ export const application =
 			args.length > 0
 				? Object.assign({}, args[0], {
 						children: args.slice(1),
-				  })
-				: null
+					})
+				: null,
 		);
 
 export const component = (component) => {
