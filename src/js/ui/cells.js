@@ -26,12 +26,16 @@ export class Context {
 	// Clear the given `context` so that the given `id` and 9 next slots
 	// are nullified.
 	static Clear(ctx, id) {
-		for (let i = 0; i < 10; i++) {
-			const sid = id + i;
-			if (!ctx.hasOwnProperty(i)) {
-				ctx[sid] = null;
-			}
-		}
+		ctx[id] = null;
+		ctx[id + 1] = null;
+		ctx[id + 2] = null;
+		ctx[id + 3] = null;
+		ctx[id + 4] = null;
+		ctx[id + 5] = null;
+		ctx[id + 6] = null;
+		ctx[id + 7] = null;
+		ctx[id + 8] = null;
+		ctx[id + 9] = null;
 	}
 	static Run(context, functor, args) {
 		// TODO: should really be contextual if multiple threads.
@@ -187,18 +191,14 @@ export class Slot {
 	}
 
 	observable(context = Context.Get()) {
-		if (!context) {
-			onError(
-				"cells.Slot.observable",
-				"No context specified, cannot retrieve observable"
-			);
-		} else {
+		if (context) {
 			const i = this.id + Slot.Observable;
-			if (!context[i]) {
-				context[i] = new Observable(context[this.id], context, this.id);
-			}
-			return context[i];
+			return context[i] || (context[i] = new Observable(context[this.id], context, this.id));
 		}
+		onError(
+			"cells.Slot.observable",
+			"No context specified, cannot retrieve observable"
+		);
 	}
 
 	get() {
@@ -356,10 +356,10 @@ export class Observable {
 		this.id = id;
 		this.subs = undefined;
 		this.context = context;
-		this.revision = -1;
-		if (value !== undefined) {
-			this.set(value);
-		}
+		// Start at revision 0 if we have a value, -1 if not.
+		// This avoids calling set() during construction which
+		// redundantly writes the value back to context and calls pub().
+		this.revision = value !== undefined ? 0 : -1;
 	}
 
 	// --
@@ -387,19 +387,13 @@ export class Observable {
 	}
 
 	pub(value) {
-		if (this.subs) {
-			let count = 0;
-			for (const handler of this.subs) {
-				count += 1;
-				// TODO: Should manage update cycles
-				// TODO: Should catch exceptions
-				if (handler(value, this) === false) {
+		const subs = this.subs;
+		if (subs) {
+			for (let i = 0; i < subs.length; i++) {
+				if (subs[i](value, this) === false) {
 					break;
 				}
 			}
-			return count;
-		} else {
-			null;
 		}
 	}
 

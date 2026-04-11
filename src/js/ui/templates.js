@@ -46,12 +46,14 @@ export class Injection extends Derivation {
 		// When `derived` is true, the new context will inherit from the parent
 		// context, otherwise it will be blank.
 		this.derived = derived;
+		// Pre-compute the match structure when extraction is known at construction time.
+		// This avoids running Slot.Match on every first render for each context.
+		this._preMatch = extraction ? Slot.Match(args, extraction) : null;
 	}
 
 	applyContext(context) {
 		// First we extract an initial data from the extraction pattern,
 		// if any, otherwise we default from the input slot.
-		const data = this.extraction ? this.extraction : context[Slot.Input];
 		// NOTE: This won't work if we have for instance the same component
 		// rendered multiple time in the same context. In this case, it will
 		// keep the same context. However, if there's just one instance of the
@@ -81,15 +83,15 @@ export class Injection extends Derivation {
 			return derived;
 		}
 
-		// First render path: compute the match and cache it
+		// First render path: use pre-computed match or compute dynamically
 		// We set the derived context.
 		derived[Slot.Owner] = this;
 		derived[Slot.Parent] = context;
 		derived[Slot.Name] = "Injection";
-		// TODO: This is where we would copy cells/slots that are passed
-		// with `out` or `inout`.
-		//… where the args values are extracted and mapped to their cell ids;
-		const matches = Slot.Match(this.args, data, context);
+		// Use pre-computed match if available, otherwise compute from context input
+		const matches = this._preMatch
+			? this._preMatch
+			: Slot.Match(this.args, context[Slot.Input], context);
 		for (let i = 0; i < matches.length; i++) {
 			const slot = matches[i][0];
 			const v = matches[i][1];
@@ -356,33 +358,36 @@ export class Application extends Selection {
 	render(node, position, context, effector, id = this.id) {
 		this.input.applyContext(context);
 		let state = context[this.id + 6];
-		if (!state) {
-			state = context[this.id + 6] = {
-				mode: undefined,
-				template: undefined,
-				context: undefined,
-				anchor: undefined,
-			};
-		}
-		if (state.mode === undefined && !this.isMultipleArguments) {
-			const candidate = this.transform(this.input);
-			if (candidate && typeof candidate.render === "function") {
-				state.mode = "template";
-				state.template = candidate;
-				state.context = Object.assign(Object.create(context), {
-					[Slot.Owner]: this,
-					[Slot.Parent]: context,
-					[Slot.Name]: Object.getPrototypeOf(this).constructor.name,
-				});
+		if (state === undefined) {
+			// Check if this is a template mode (transform returns a renderable)
+			if (!this.isMultipleArguments) {
+				const candidate = this.transform(this.input);
+				if (candidate && typeof candidate.render === "function") {
+					state = context[this.id + 6] = {
+						mode: "template",
+						template: candidate,
+						context: Object.assign(Object.create(context), {
+							[Slot.Owner]: this,
+							[Slot.Parent]: context,
+							[Slot.Name]: "Application",
+						}),
+						anchor: undefined,
+					};
+				} else {
+					// Mark as non-template to skip this check on re-render
+					state = context[this.id + 6] = false;
+				}
+			} else {
+				state = context[this.id + 6] = false;
 			}
 		}
-		if (state.mode === "template") {
+		if (state && state.mode === "template") {
 			this.input.observable(context);
 			if (node?.nodeType === Node.TEXT_NODE) {
 				state.anchor =
 					state.anchor && state.anchor.parentNode
 						? state.anchor
-						: document.createComment(`Application:${this.id}`);
+						: document.createComment("");
 				if (node.parentNode && state.anchor !== node) {
 					node.parentNode.replaceChild(state.anchor, node);
 				}
@@ -406,11 +411,15 @@ export class Application extends Selection {
 		}
 		const output = context[this.id];
 		if (output && typeof output.render === "function") {
+			// Upgrade state to an object if needed for anchor tracking
+			if (!state) {
+				state = context[this.id + 6] = { anchor: undefined, context: undefined };
+			}
 			if (node?.nodeType === Node.TEXT_NODE) {
 				state.anchor =
 					state.anchor && state.anchor.parentNode
 						? state.anchor
-						: document.createComment(`Application:${this.id}`);
+						: document.createComment("");
 				if (node.parentNode && state.anchor !== node) {
 					node.parentNode.replaceChild(state.anchor, node);
 				}
