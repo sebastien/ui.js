@@ -113,8 +113,9 @@ const createElement = (element, attributes, ...children) => {
 			c,
 		);
 	} else {
+		const tagName = element === "" ? Fragment : element;
 		return new VNode(
-			...(Array.isArray(element) ? element : [undefined, element]),
+			...(Array.isArray(tagName) ? tagName : [undefined, tagName]),
 			createAttributes(attributes),
 			normalizedChildren,
 		);
@@ -328,6 +329,13 @@ select.raf = (callback) => {
 	} else {
 		return setTimeout(() => callback(0), 16);
 	}
+};
+
+select.swallow = (event) => {
+	if (event && typeof event.stopPropagation === "function") {
+		event.stopPropagation();
+	}
+	return false;
 };
 
 export const $ = select;
