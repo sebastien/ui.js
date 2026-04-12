@@ -1,15 +1,15 @@
-     ___  ___  ___            ___  ________      
-    |\  \|\  \|\  \          |\  \|\   ____\     
-    \ \  \\\  \ \  \         \ \  \ \  \___|_    
-     \ \  \\\  \ \  \      __ \ \  \ \_____  \   
-      \ \  \\\  \ \  \ ___|\  \\_\  \|____|\  \  
-       \ \_______\ \__\\__\ \________\____\_\  \ 
+     ___  ___  ___            ___  ________
+    |\  \|\  \|\  \          |\  \|\   ____\
+    \ \  \\\  \ \  \         \ \  \ \  \___|_
+     \ \  \\\  \ \  \      __ \ \  \ \_____  \
+      \ \  \\\  \ \  \ ___|\  \\_\  \|____|\  \
+       \ \_______\ \__\\__\ \________\____\_\  \
         \|_______|\|__\|__|\|________|\_________\
                                      \|_________|
 
 *UI.js* is a toolkit to create interactive user interfaces in
-JavaScript. The default runtime is now the faster renderer available at
-`src/js/ui`.
+JavaScript. UIjs is lightweight and fast, supports fine-grained granularity,
+components and comes fully equipped to do rich UIs.
 
 ## In a nutshell
 
@@ -23,14 +23,13 @@ See [example](https://jsfiddle.net/sorryimfrench/kvwz48hq/5/)
 <script type="importmap">
 {
   "imports": {
-    "@ui/": "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui/"
+    "@ui": "https://cdn.jsdelivr.net/gh/sebastien/ui.js/src/js/ui.js"
   }
 }
 </script>
 
 <script type="module">
-import { render } from "@ui/client.js";
-import { h } from "@ui/hyperscript.js";
+import { render, h } from "@ui";
 
 const Hello = ({ message }) => h.div("UI.js says: ", h.pre(message.text()));
 render(Hello, { message: "Hello, world!" }, document.getElementById("Hello"));
@@ -41,10 +40,13 @@ render(Hello, { message: "Hello, world!" }, document.getElementById("Hello"));
 
 ### API
 
-- `render(Component, data, node)`
-- `h` hyperscript helpers (`h.div`, `h.span`, ...)
-- `$` / `select` for reactive selections and cells
-- `webcomponent(name, Component, initial?)` to register custom elements
+- `render(Component, data, node)`: Mounts a component to a DOM node.
+- `ui(Component, data, node)`: Alias for `render`.
+- `h`: Hyperscript helpers (`h.div`, `h.span`, ...) for constructing UI elements.
+- `$`: Creates reactive state cells.
+- `select`: Creates reactive DOM selections.
+- `webcomponent(name, Component, initial?)`: Registers a custom element exposing a UI.js component.
+- `globals`: Object exposing the global context.
 
 ### Web Components
 
@@ -82,7 +84,7 @@ updates the wrapped component state.
 
 - [DIY UI](https://observablehq.com/@sebastien/diy-ui),
   [styling](https://observablehq.com/@sebastien/diy-ui) and [design
-  tokens](https://observablehq.com/@sebastien/tokens) all served  
+  tokens](https://observablehq.com/@sebastien/tokens) all served
   as the baseline for *UI.js*.
 
 - [Alpine.js](https://alpinejs.dev) a close relative in terms of
