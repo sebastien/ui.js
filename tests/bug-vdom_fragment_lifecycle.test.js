@@ -1,96 +1,80 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import * as domish from "../deps/domish/src/ts/domish/domish.ts";
-import { render } from "../src/js/ui/client.js";
-import { h } from "../src/js/ui/hyperscript.js";
-import { Cell } from "../src/js/ui/templates.js";
-
-const mountRoot = () => {
-	const root = document.createElement("div");
-	document.body.appendChild(root);
-	return root;
-};
+import { h, $, Fragment } from "../src/js/ui/hyperscript.js";
+import {
+	installDom,
+	mountWithHandle,
+	findAllByNodeName,
+} from "./test-utils.ts";
 
 describe("vdom fragment lifecycle", () => {
 	beforeEach(() => {
-		domish.install();
+		installDom();
 	});
 
 	test("re-mounting a fragment restores its children", () => {
-		const { div, span, b, button } = h;
-
-		const showFragment = new Cell(true);
+		const showFragment = $.cell(true);
 
 		const App = () =>
-			div(
-				showFragment.match((_) =>
-					_.case(true, h(undefined, span("Item 1"), b("Item 2"))).else(
-						span("Fallback"),
-					),
-				),
-				button(
-					{ onClick: () => showFragment.set(!showFragment.get()) },
-					"Toggle",
+			h.div(
+				showFragment.match(
+					(_) =>
+						_.case(true, h(Fragment, null, h.span("Item 1"), h.b("Item 2"))),
+					(_) => _.else(h.span("Fallback")),
 				),
 			);
 
-		const root = mountRoot();
-		render(App, {}, root);
+		const { parent, derivedContext } = mountWithHandle(App, {});
+		showFragment.set(true, true, derivedContext);
 
-		const toggle = () => {
-			root.querySelector("button").click();
-		};
-
-		// Initial state (true)
-		expect(root.innerHTML).toContain("<span>Item 1</span><b>Item 2</b>");
+		// Initial state (true): fragment children present
+		expect(parent.textContent).toContain("Item 1");
+		expect(parent.textContent).toContain("Item 2");
+		expect(findAllByNodeName(parent, "span").length).toBe(1);
+		expect(findAllByNodeName(parent, "b").length).toBe(1);
 
 		// Toggle to false
-		toggle();
-		expect(root.innerHTML).toContain("<span>Fallback</span>");
-		expect(root.innerHTML).not.toContain("<span>Item 1</span>");
+		showFragment.set(false, true, derivedContext);
+		expect(parent.textContent).toContain("Fallback");
+		expect(parent.textContent).not.toContain("Item 1");
+		expect(parent.textContent).not.toContain("Item 2");
 
 		// Toggle back to true (re-mounting the fragment)
-		toggle();
-		expect(root.innerHTML).toContain("<span>Item 1</span><b>Item 2</b>");
-		expect(root.innerHTML).not.toContain("<span>Fallback</span>");
+		showFragment.set(true, true, derivedContext);
+		expect(parent.textContent).toContain("Item 1");
+		expect(parent.textContent).toContain("Item 2");
+		expect(parent.textContent).not.toContain("Fallback");
 	});
 
 	test("replacing an existing node with a fragment tracks fragment children correctly", () => {
-		const { div, span, b, button } = h;
+		const showFragment = $.cell(false);
 
-		const showFragment = new Cell(false);
-
-		// Notice initial state is false, so it mounts a single span.
-		// Then toggling to true replaces the span with a fragment.
+		// Initial state is false, so it mounts a single span.
+		// Toggling to true replaces the span with a fragment.
 		const App = () =>
-			div(
-				showFragment.match((_) =>
-					_.case(true, h(undefined, span("A"), b("B"))).else(span("Fallback")),
-				),
-				button(
-					{ onClick: () => showFragment.set(!showFragment.get()) },
-					"Toggle",
+			h.div(
+				showFragment.match(
+					(_) => _.case(true, h(Fragment, null, h.span("A"), h.b("B"))),
+					(_) => _.else(h.span("Fallback")),
 				),
 			);
 
-		const root = mountRoot();
-		render(App, {}, root);
-
-		const toggle = () => {
-			root.querySelector("button").click();
-		};
+		const { parent, derivedContext } = mountWithHandle(App, {});
+		showFragment.set(false, true, derivedContext);
 
 		// Initial state (false)
-		expect(root.innerHTML).toContain("<span>Fallback</span>");
+		expect(parent.textContent).toContain("Fallback");
 
 		// Toggle to true (replace span with fragment)
-		toggle();
-		expect(root.innerHTML).toContain("<span>A</span><b>B</b>");
+		showFragment.set(true, true, derivedContext);
+		expect(parent.textContent).toContain("A");
+		expect(parent.textContent).toContain("B");
+		expect(parent.textContent).not.toContain("Fallback");
 
 		// Toggle back to false (unmount the fragment)
 		// If tracking was wrong, "A" and "B" won't be unmounted properly.
-		toggle();
-		expect(root.innerHTML).toContain("<span>Fallback</span>");
-		expect(root.innerHTML).not.toContain("<span>A</span>");
-		expect(root.innerHTML).not.toContain("<b>B</b>");
+		showFragment.set(false, true, derivedContext);
+		expect(parent.textContent).toContain("Fallback");
+		expect(parent.textContent).not.toContain("A");
+		expect(parent.textContent).not.toContain("B");
 	});
 });

@@ -323,6 +323,10 @@ export class Cell extends Selection {
 				context[this.id] = context[this.source.id];
 				Slot.Sub(context, this.source.id, updater);
 				context[this.id + Slot.State].push(updater);
+			} else {
+				context[this.id] = this.extractor
+					? this.extractor(this.source)
+					: this.source;
 			}
 		}
 		return context;

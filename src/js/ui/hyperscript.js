@@ -200,10 +200,24 @@ const normalizeEventName = (eventName) => {
 	return normalized.startsWith("on") ? normalized.substring(2) : normalized;
 };
 
-select.cell = (value, updater, extractor) =>
-	typeof updater === "function" && isDerivedShape(value)
-		? new DerivedCell(value, updater, extractor)
-		: new Cell(value, updater, extractor);
+select.cell = (value, updater, extractor, inputExtractor) => {
+	if (typeof updater === "function") {
+		if (isDerivedShape(value)) {
+			return new DerivedCell(value, updater, extractor);
+		}
+		if (value instanceof Slot) {
+			if (extractor === undefined || typeof extractor === "boolean") {
+				const lazy = extractor === true;
+				const derive = inputExtractor
+					? ({ source }) => updater(inputExtractor(source))
+					: ({ source }) => updater(source);
+				return new DerivedCell({ source: value }, derive, lazy);
+			}
+			return new Cell(value, updater, extractor);
+		}
+	}
+	return new Cell(value, updater, extractor);
+};
 
 select.bind = (functor, context = Context.Get()) => {
 	if (typeof functor !== "function") {
