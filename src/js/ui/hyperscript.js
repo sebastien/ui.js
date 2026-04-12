@@ -4,6 +4,7 @@ import {
 	DynamicEvaluation,
 	Subscription,
 	Cell,
+	Signal,
 	DerivedCell,
 	component,
 } from "./templates.js";
@@ -217,6 +218,10 @@ select.cell = (value, updater, extractor, inputExtractor) => {
 		}
 	}
 	return new Cell(value, updater, extractor);
+};
+
+select.signal = (value, context = []) => {
+	return new Signal(value, context);
 };
 
 select.bind = (functor, context = Context.Get()) => {

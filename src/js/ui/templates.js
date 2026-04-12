@@ -379,6 +379,50 @@ export class Cell extends Selection {
 	}
 }
 
+export class Signal extends Cell {
+	constructor(source, context = []) {
+		super(source);
+		this.context = context || [];
+		this.applyContext(this.context);
+	}
+
+	applyContext(context = this.context) {
+		return super.applyContext(context);
+	}
+
+	observable(context = this.context) {
+		return super.observable(context);
+	}
+
+	get(context = this.context) {
+		return context ? Context.Run(context, () => super.get()) : super.get();
+	}
+
+	set(value, force = true, context = this.context) {
+		return super.set(value, force, context);
+	}
+
+	update(dict, context = this.context) {
+		return context
+			? Context.Run(context, () => super.update(dict, context))
+			: super.update(dict, context);
+	}
+
+	touch(context = this.context) {
+		return context
+			? Context.Run(context, () => super.touch(context))
+			: super.touch(context);
+	}
+
+	sub(handler, context = this.context) {
+		return super.sub(handler, context);
+	}
+
+	unsub(handler, context = this.context) {
+		return super.unsub(handler, context);
+	}
+}
+
 export class DerivedCell extends Selection {
 	constructor(shape, processor, lazy = false) {
 		super();
