@@ -191,6 +191,14 @@ const invokeInContext = (functor, context, thisArg, args) =>
 		? Context.Run(context, () => functor.apply(thisArg, args))
 		: functor.apply(thisArg, args);
 
+const normalizeEventName = (eventName) => {
+	if (typeof eventName !== "string") {
+		return "";
+	}
+	const normalized = eventName.toLowerCase();
+	return normalized.startsWith("on") ? normalized.substring(2) : normalized;
+};
+
 select.cell = (value, updater, extractor) =>
 	typeof updater === "function" && isDerivedShape(value)
 		? new DerivedCell(value, updater, extractor)
@@ -212,6 +220,40 @@ select.run = (functor, context = Context.Get(), ...args) => {
 		return undefined;
 	}
 	return invokeInContext(functor, context, undefined, args);
+};
+
+select.send = (eventName, value, node) => {
+	const resolvedEventName = normalizeEventName(eventName);
+	const context = Context.Get();
+	const owner = context?.[Slot.Owner];
+	const inferred = owner ? context[owner.id + Slot.Node] : undefined;
+	const target = node?.ownerElement ?? node ?? inferred;
+	if (
+		!resolvedEventName ||
+		!target ||
+		typeof target.dispatchEvent !== "function"
+	) {
+		return false;
+	}
+	const EventCtor =
+		target?.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+	const CustomEventCtor =
+		target?.ownerDocument?.defaultView?.CustomEvent ?? globalThis.CustomEvent;
+	const useBaseEvent =
+		typeof EventCtor === "function" &&
+		EventCtor.prototype &&
+		typeof EventCtor.prototype._setPath === "function";
+	const event = useBaseEvent
+		? new EventCtor(resolvedEventName, { bubbles: true, composed: true })
+		: new CustomEventCtor(resolvedEventName, {
+				detail: value,
+				bubbles: true,
+				composed: true,
+			});
+	if (useBaseEvent) {
+		event.detail = value;
+	}
+	return target.dispatchEvent(event);
 };
 
 select.get = (selection) =>

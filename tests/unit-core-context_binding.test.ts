@@ -82,4 +82,55 @@ describe("core context binding", () => {
 		const result = $.run((a, b) => a + b, undefined, 2, 5);
 		expect(result).toBe(7);
 	});
+
+	test("$.send dispatches CustomEvent on explicit node", () => {
+		const node = document.createElement("div");
+		const received = [];
+		node.addEventListener("ui:changed", (event) => {
+			received.push(event);
+		});
+
+		const sent = $.send("ui:changed", { next: 3 }, node);
+		expect(sent).toBe(true);
+		expect(received.length).toBe(1);
+		expect(received[0].detail).toEqual({ next: 3 });
+		expect(received[0].bubbles).toBe(true);
+		expect(received[0].composed).toBe(true);
+	});
+
+	test("$.send infers node from current context", () => {
+		const node = document.createElement("button");
+		const owner = { id: 4 };
+		const context = [];
+		context[Slot.Owner] = owner;
+		context[owner.id + Slot.Node] = node;
+
+		let detail;
+		node.addEventListener("ui:submit", (event) => {
+			detail = event.detail;
+		});
+
+		const sent = Context.Run(context, () => $.send("ui:submit", "ok"));
+		expect(sent).toBe(true);
+		expect(detail).toBe("ok");
+	});
+
+	test("$.send normalizes event names to match onXxx handlers", () => {
+		const node = document.createElement("button");
+		const calls = [];
+		node.addEventListener("uichanged", (event) => calls.push(event));
+
+		expect($.send("UiChanged", 1, node)).toBe(true);
+		expect($.send("onUiChanged", 2, node)).toBe(true);
+		expect(calls.length).toBe(2);
+		expect(calls[0].type).toBe("uichanged");
+		expect(calls[0].detail).toBe(1);
+		expect(calls[1].type).toBe("uichanged");
+		expect(calls[1].detail).toBe(2);
+	});
+
+	test("$.send returns false without valid target", () => {
+		expect($.send("ui:none", 1)).toBe(false);
+		expect($.send("", 1, document.createElement("div"))).toBe(false);
+	});
 });
