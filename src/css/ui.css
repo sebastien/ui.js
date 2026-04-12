@@ -30,12 +30,11 @@
  * are defined as `UPPERCASE` for readability.
  */
 @layer debug {
-
 	/* -- 
    * Removes the element.
   */
 	.REMOVED {
-		display: none !important;
+		display: none;
 	}
 }
 

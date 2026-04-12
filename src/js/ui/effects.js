@@ -1,6 +1,6 @@
 import { Context, Slot } from "./cells.js";
-import { onError, onRuntimeError } from "./utils/logging.js";
 import { applyAttributeValue } from "./utils/dom.js";
+import { onError, onRuntimeError } from "./utils/logging.js";
 
 const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
@@ -30,7 +30,7 @@ const isShallowEqual = (a, b) => {
 		return false;
 	}
 	for (const key of aKeys) {
-		if (!Object.prototype.hasOwnProperty.call(b, key)) {
+		if (!Object.hasOwn(b, key)) {
 			return false;
 		}
 		if (!Object.is(a[key], b[key])) {
@@ -81,7 +81,7 @@ export class Effect extends Slot {
 		effector.ensureContent(node, position, context[this.id]);
 	}
 
-	unrender(context, effector) {
+	unrender(context, _effector) {
 		const c = this.input ? this.input.applyContext(context) : context;
 		this.unsubrender(c);
 		return c;
@@ -338,7 +338,7 @@ export class ConditionalEffect extends Effect {
 			context[this.id + Slot.State] = state = [undefined, undefined];
 		}
 		let i = 0;
-		let match = undefined;
+		let match;
 		const branches = this.branches;
 		for (let j = 0; j < branches.length; j++) {
 			const branch = branches[j];
@@ -352,13 +352,13 @@ export class ConditionalEffect extends Effect {
 			} else if (type === 2) {
 				// Array of values
 				for (const v of condition) {
-					if (v == value) {
+					if (v === value) {
 						match = branch[2];
 						break;
 					}
 				}
 			} else {
-				if (condition == value) {
+				if (condition === value) {
 					match = branch[2];
 				}
 			}
@@ -373,7 +373,7 @@ export class ConditionalEffect extends Effect {
 		}
 		let mountNode = node;
 		let mountPosition = position;
-		if (i != state[0]) {
+		if (i !== state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
 				const previousNode = state[1];
@@ -444,8 +444,8 @@ export class ConditionalEffect extends Effect {
 	}
 }
 
-function* keys(value) {
-	if (value instanceof Array) {
+function* _keys(value) {
+	if (Array.isArray(value)) {
 		for (let i = 0; i < value.length; i++) {
 			yield i;
 		}
@@ -470,11 +470,7 @@ export class MappingEffect extends Effect {
 		if (typeof this.keyBy === "function") {
 			return this.keyBy(value, index);
 		}
-		if (
-			value &&
-			typeof value === "object" &&
-			Object.prototype.hasOwnProperty.call(value, "id")
-		) {
+		if (value && typeof value === "object" && Object.hasOwn(value, "id")) {
 			return value.id;
 		}
 		return undefined;
@@ -495,7 +491,7 @@ export class MappingEffect extends Effect {
 		if (!state) {
 			return;
 		}
-		if (state instanceof Array) {
+		if (Array.isArray(state)) {
 			for (let i = 0; i < state.length; i += 2) {
 				if (state[i]) {
 					this.template.unrender(state[i], effector, templateId);
@@ -516,7 +512,7 @@ export class MappingEffect extends Effect {
 				this.template.unrender(ctx, effector, templateId);
 			}
 			state.mapping.clear();
-			if (state.order instanceof Array) {
+			if (Array.isArray(state.order)) {
 				state.order.length = 0;
 			}
 		}
@@ -572,7 +568,7 @@ export class MappingEffect extends Effect {
 
 	_renderArrayKeyed(items, node, itemPos, context, effector, templateId) {
 		let state = context[this.id + Slot.State];
-		if (!state || !state.mapping || !state.order) {
+		if (!state?.mapping || !state.order) {
 			this._clearArrayState(state, effector, templateId);
 			state = context[this.id + Slot.State] = {
 				mapping: new Map(),
@@ -654,7 +650,7 @@ export class MappingEffect extends Effect {
 		// Reusable position array to avoid allocating [position, i] per item
 		const itemPos = [position, 0];
 
-		if (items instanceof Array) {
+		if (Array.isArray(items)) {
 			const firstAutoKey =
 				items.length > 0 ? this.resolveKey(items[0], 0) : undefined;
 			const shouldUseKeyed =
@@ -785,7 +781,7 @@ export class MappingEffect extends Effect {
 		if (state) {
 			if (state instanceof Map) {
 				// Map stores ctx directly (no sub-array wrapper)
-				for (const [k, ctx] of state.entries()) {
+				for (const [_k, ctx] of state.entries()) {
 					this.template.unrender(ctx, effector, templateId);
 				}
 				state.clear();
@@ -926,7 +922,7 @@ export class RefEffect extends Effect {
 		}
 	}
 
-	render(node, position, context, effector) {
+	render(node, _position, context, _effector) {
 		const stateId = this.id + Slot.State;
 		const target = node?.ownerElement ?? context[this.id + Slot.Node];
 		if (!target) {
@@ -976,7 +972,7 @@ export class EventHandlerEffect extends Effect {
 		this.wrapper = (event, ...rest) => {
 			const context = Context.Get();
 			const callback = this.resolveHandler(context);
-			let previousTarget = undefined;
+			let previousTarget;
 			if (context) {
 				previousTarget = context[CURRENT_EVENT_TARGET];
 				context[CURRENT_EVENT_TARGET] =
@@ -1019,7 +1015,7 @@ export class EventHandlerEffect extends Effect {
 
 	collectNamedSlots(context) {
 		const owner = context?.[Slot.Owner];
-		if (!owner || !owner.args) {
+		if (!owner?.args) {
 			return null;
 		}
 		if (!owner[RETURNED_UPDATE_SLOTS]) {
@@ -1057,7 +1053,7 @@ export class EventHandlerEffect extends Effect {
 		});
 	}
 
-	render(node, position, context, effector) {
+	render(node, _position, context, _effector) {
 		this.input?.applyContext(context);
 		const stateId = this.id + Slot.State;
 		const eventName = this.event.startsWith("on")
@@ -1068,10 +1064,7 @@ export class EventHandlerEffect extends Effect {
 			context[this.id + Slot.Node] = target;
 		}
 		let state = context[stateId];
-		if (
-			!Object.prototype.hasOwnProperty.call(context, stateId) ||
-			state === undefined
-		) {
+		if (!Object.hasOwn(context, stateId) || state === undefined) {
 			if (!target) {
 				return node;
 			}
@@ -1123,17 +1116,14 @@ export class EventHandlerEffect extends Effect {
 }
 
 export class LifecycleEventHandlerEffect extends EventHandlerEffect {
-	render(node, position, context, effector) {
+	render(node, _position, context, _effector) {
 		this.input?.applyContext(context);
 		const stateId = this.id + Slot.State;
 		const target = node?.ownerElement ?? context[this.id + Slot.Node];
 		if (target) {
 			context[this.id + Slot.Node] = target;
 		}
-		if (
-			!Object.prototype.hasOwnProperty.call(context, stateId) ||
-			context[stateId] === undefined
-		) {
+		if (!Object.hasOwn(context, stateId) || context[stateId] === undefined) {
 			if (!target) {
 				return node;
 			}
@@ -1145,7 +1135,7 @@ export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 		if (!context[this.id]) {
 			context[this.id] = (context[this.id] ?? 0) + 1;
 			if (this.event === "onmount") {
-				Context.Run(context, this.wrapper, [node]);
+				Context.Run(context, this.wrapper, [target]);
 			}
 		}
 		return node ?? target;
@@ -1169,7 +1159,7 @@ export class ContextBoundEffect extends Effect {
 		this.renderable = renderable;
 		this.boundContext = boundContext;
 	}
-	render(node, position, context, effector) {
+	render(node, position, _context, effector) {
 		return this.renderable.render(
 			node,
 			position,

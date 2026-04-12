@@ -1,10 +1,11 @@
 // NOTE: We should be able to take the nodes directly from the DOM and not
 // use a VNode.
-import { VNode } from "./vdom.js";
-import { Argument, Extraction, application } from "./templates.js";
+
 import { FormattingEffect } from "./effects.js";
-import { onSyntaxError } from "./utils/logging.js";
+import { Argument, application, Extraction } from "./templates.js";
 import { getSignature } from "./utils/inspect.js";
+import { onSyntaxError } from "./utils/logging.js";
+import { VNode } from "./vdom.js";
 
 // --
 // Parses a DOM tree annotated with special attributes and generates components
@@ -20,7 +21,7 @@ class MarkupProcessor {
 			const v = this.onTemplateNode(child, scope, children);
 			if (v === null) {
 				// pass
-			} else if (v instanceof Array) {
+			} else if (Array.isArray(v)) {
 				children = children.concat(v);
 			} else {
 				children.push(v);
@@ -110,7 +111,7 @@ class MarkupProcessor {
 	// --
 	// Processes the attributes of the given node, registering the corresponding
 	// effects in the attributes map.
-	onTemplateAttributes(node, scope = {}, attributes = new Map()) {
+	onTemplateAttributes(node, _scope = {}, attributes = new Map()) {
 		// NOTE: Any evaluator will be marked as having dynamic inputs, as
 		// opposed to HyperScript that uses explicit inputs through selections.
 		for (const a of node.attributes) {
@@ -143,7 +144,7 @@ class MarkupProcessor {
 							i === -1
 								? [undefined, name]
 								: [name.substring(0, i), name.substring(i + 1)],
-							a.value
+							a.value,
 						);
 					}
 			}
@@ -163,7 +164,7 @@ class MarkupProcessor {
 			const processor = this.getFunction(
 				node.getAttribute("x:text"),
 				scope,
-				node
+				node,
 			);
 			effects.push(
 				new FormattingEffect(
@@ -173,8 +174,8 @@ class MarkupProcessor {
 					// will be extracted.
 					new Extraction(processor.args),
 					processor,
-					content
-				)
+					content,
+				),
 			);
 		}
 		return effects;
@@ -209,7 +210,7 @@ class MarkupProcessor {
 			const v = this.onTemplateNode(child, scope);
 			if (v === null) {
 				// pass
-			} else if (v instanceof Array) {
+			} else if (Array.isArray(v)) {
 				children = children.concat(v);
 			} else if (v.name === "#fragment") {
 				children = children.concat(v.children);
@@ -229,7 +230,7 @@ class MarkupProcessor {
 				undefined,
 				node.nodeName,
 				this.onTemplateAttributes(node, scope),
-				effects.length ? effects : children
+				effects.length ? effects : children,
 			);
 		}
 	}
@@ -237,14 +238,14 @@ class MarkupProcessor {
 	// FIXME: Scope is actually a mapping of arguments (slots)
 	getFunction(text, scope, node) {
 		const { declaration, args } = getSignature(text);
-		let inputs = [];
+		const inputs = [];
 		for (const a of args) {
 			a.id = scope[a.name]?.id;
 			inputs.push(`${a.id}:${a.name}`);
 		}
 		const evaluator = new Function(
 			`{${inputs.join(",")}}`,
-			`return (${text});`
+			`return (${text});`,
 		);
 		// TODO: We way want to separate a function that just has the body from
 		// one that has arguments.
@@ -266,7 +267,7 @@ export const parameters = (node) => {
 	const res = {};
 	for (const a of node.attributes) {
 		const name = a.name;
-		let argname = undefined;
+		let argname;
 		if (name.startsWith("in:")) {
 			argname = name.substring(3);
 		} else if (name.startsWith("out:")) {
@@ -298,7 +299,7 @@ export const template = (name) => {
 	return application(
 		template,
 		input,
-		typeof name === "string" ? name : node.getAttribute("name")
+		typeof name === "string" ? name : node.getAttribute("name"),
 	);
 };
 

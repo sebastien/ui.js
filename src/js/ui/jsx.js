@@ -1,7 +1,7 @@
-import { h, Fragment } from "./hyperscript.js";
+import { Fragment, h } from "./hyperscript.js";
 
 const childrenToArgs = (children) =>
-	children instanceof Array ? children : [children];
+	Array.isArray(children) ? children : [children];
 
 const splitProps = (props) => {
 	if (!props) {

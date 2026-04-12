@@ -52,11 +52,11 @@ h6.t {
 	margin-bottom: 0.75em;
 }
 
-.t ul>li {
+.t ul > li {
 	list-style-type: disc;
 }
 
-.t ol>li {
+.t ol > li {
 	list-style-type: numeric;
 }
 
@@ -64,43 +64,49 @@ h6.t {
 	padding-left: 0.25em;
 }
 
-.t li>p:first-child {
+.t li > p:first-child {
 	margin-top: 0em;
 }
 
-.t li>p:last-child {
+.t li > p:last-child {
 	margin-bottom: 0em;
 }
 
 .t mark {
-	background-color: color-mix(in srgb,
-			var(--color-yellow-7),
-			var(--page-bg-0p) 65%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-yellow-7),
+		var(--page-bg-0p) 65%
+	);
 }
 
 .t mark.red {
-	background-color: color-mix(in srgb,
-			var(--color-red),
-			var(--page-bg-0p) 85%);
+	background-color: color-mix(in srgb, var(--color-red), var(--page-bg-0p) 85%);
 }
 
 .t mark.green {
-	background-color: color-mix(in srgb,
-			var(--color-green),
-			var(--page-bg-0p) 65%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-green),
+		var(--page-bg-0p) 65%
+	);
 }
 
 .t mark.blue {
-	background-color: color-mix(in srgb,
-			var(--color-blue),
-			var(--page-bg-0p) 65%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-blue),
+		var(--page-bg-0p) 65%
+	);
 }
 
 .t .key {
 	padding: 1px 5px;
 	border-radius: 4px;
 	border: 1px solid color-mix(in srgb, var(--color-text), var(--page-bg-0p) 85%);
-	background-color: color-mix(in srgb,
-			var(--color-text),
-			var(--page-bg-0p) 95%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 95%
+	);
 }

@@ -1,11 +1,11 @@
+import { Context, Slot } from "./cells.js";
 import {
 	ConditionalEffect,
-	MappingEffect,
-	FormattingEffect,
-	TemplateEffect,
 	ContextBoundEffect,
+	FormattingEffect,
+	MappingEffect,
+	TemplateEffect,
 } from "./effects.js";
-import { Context, Slot } from "./cells.js";
 import { assign } from "./utils/collections.js";
 import { getSignature } from "./utils/inspect.js";
 
@@ -73,7 +73,7 @@ export class Injection extends Derivation {
 			if (value instanceof Slot) {
 				return context[value.id];
 			}
-			if (value instanceof Array) {
+			if (Array.isArray(value)) {
 				return value.map((_) => expandShape(_));
 			}
 			if (value && Object.getPrototypeOf(value) === Object.prototype) {
@@ -201,7 +201,7 @@ class Branches {
 	//as "any of the given values"
 	case(...args) {
 		if (args.length === 1) {
-			return this.else(template);
+			return this.else(args[0]);
 		}
 		const condition =
 			args.length === 2 ? args[0] : args.slice(0, args.length - 1);
@@ -346,7 +346,7 @@ export class Cell extends Selection {
 				Context.Push(context);
 				try {
 					context[this.id] = value;
-					this.updater && this.updater(value);
+					this.updater?.(value);
 				} finally {
 					Context.Pop(context);
 				}
@@ -369,7 +369,7 @@ export class Cell extends Selection {
 				context[this.id] = context[this.source.id];
 				Slot.Sub(context, this.source.id, updater);
 				context[this.id + Slot.State].push(updater);
-			} else {
+			} else if (!Object.hasOwn(context, this.id)) {
 				context[this.id] = this.extractor
 					? this.extractor(this.source)
 					: this.source;
@@ -428,7 +428,7 @@ export class DerivedCell extends Selection {
 		super();
 		this.shape = shape;
 		this.processor = processor;
-		this.lazy = lazy ? true : false;
+		this.lazy = !!lazy;
 	}
 
 	applyContext(context) {
@@ -487,7 +487,7 @@ export class Application extends Selection {
 		this.input = input;
 		this.transform = transform;
 		this.isMultipleArguments = multiple;
-		this.placeholderNodeType = Node.COMMENT_NODE;
+		this.placeholderNodeType = globalThis.Node?.COMMENT_NODE ?? 8;
 	}
 
 	applyContext(context) {
@@ -544,10 +544,9 @@ export class Application extends Selection {
 		}
 		if (state && state.mode === "template") {
 			if (node?.nodeType === Node.TEXT_NODE) {
-				state.anchor =
-					state.anchor && state.anchor.parentNode
-						? state.anchor
-						: document.createComment("");
+				state.anchor = state.anchor?.parentNode
+					? state.anchor
+					: document.createComment("");
 				if (node.parentNode && state.anchor !== node) {
 					node.parentNode.replaceChild(state.anchor, node);
 				}
@@ -582,10 +581,9 @@ export class Application extends Selection {
 				rs[1] = state;
 			}
 			if (node?.nodeType === Node.TEXT_NODE) {
-				state.anchor =
-					state.anchor && state.anchor.parentNode
-						? state.anchor
-						: document.createComment("");
+				state.anchor = state.anchor?.parentNode
+					? state.anchor
+					: document.createComment("");
 				if (node.parentNode && state.anchor !== node) {
 					node.parentNode.replaceChild(state.anchor, node);
 				}
@@ -611,7 +609,7 @@ export class Application extends Selection {
 			}
 			return;
 		}
-		if (rs && rs[0]) {
+		if (rs?.[0]) {
 			Slot.Unsub(context, this.id, rs[0]);
 			context[this.id + Slot.Render] = undefined;
 		}

@@ -616,7 +616,7 @@ button.selector,
 	border-right: 0px;
 	border-bottom-width: 2px;
 	border-bottom-style: solid;
-	background-color: transparent !important;
+	background-color: transparent;
 	outline-color: transparent;
 	outline-color: var(--button-bd);
 	border-radius: 0px;

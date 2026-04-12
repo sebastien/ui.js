@@ -147,6 +147,24 @@ describe("unit core effects terminal", () => {
 		expect(unmounted).toBe(1);
 	});
 
+	test("LifecycleEventHandlerEffect onMount receives the DOM element, not attribute node", () => {
+		let receivedNode = null;
+		const App = ({ onMount }) => h.div({ onMount }, "Item");
+
+		const { parent } = mountWithHandle(App, {
+			onMount: (node) => {
+				receivedNode = node;
+			},
+		});
+
+		// The received node should be the actual div element, not an attribute node
+		expect(receivedNode).not.toBeNull();
+		expect(receivedNode.nodeType).toBe(Node.ELEMENT_NODE);
+		expect(receivedNode.nodeName.toLowerCase()).toBe("div");
+		expect(receivedNode.parentNode).toBe(parent);
+		expect(receivedNode.textContent).toBe("Item");
+	});
+
 	test("RefEffect assigns and clears Slot refs", () => {
 		const ref = $.cell(null);
 		const App = () => h.input({ ref, type: "text" });

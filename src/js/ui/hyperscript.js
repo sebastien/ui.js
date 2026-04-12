@@ -1,28 +1,28 @@
-import {
-	Injection,
-	Selection,
-	DynamicEvaluation,
-	Subscription,
-	Cell,
-	Signal,
-	DerivedCell,
-	component,
-} from "./templates.js";
 import { Context, Slot } from "./cells.js";
-import { VNode } from "./vdom.js";
 import {
-	Effect,
 	AttributeEffect,
-	FormattingEffect,
 	ComponentEffect,
 	DynamicComponentEffect,
-	RefEffect,
+	Effect,
 	EventHandlerEffect,
+	FormattingEffect,
+	RefEffect,
 } from "./effects.js";
-import { isObject } from "./utils/types.js";
+import {
+	Cell,
+	component,
+	DerivedCell,
+	DynamicEvaluation,
+	Injection,
+	Selection,
+	Signal,
+	Subscription,
+} from "./templates.js";
 import { camelToKebab } from "./utils/text.js";
+import { isObject } from "./utils/types.js";
+import { VNode } from "./vdom.js";
 
-const RE_ATTRIBUTE = new RegExp("^on(?<event>[A-Z][a-z]+)+$");
+const RE_ATTRIBUTE = /^on(?<event>[A-Z][a-z]+)+$/;
 export const Fragment = "#fragment";
 
 const createAttributes = (attributes) => {
@@ -41,7 +41,7 @@ const createAttributes = (attributes) => {
 			const m = RE_ATTRIBUTE.exec(k);
 			if (name === "ref") {
 				attr.set([ns, camelToKebab(name)], new RefEffect(v));
-			} else if (m && m.groups.event) {
+			} else if (m?.groups.event) {
 				name = name.toLowerCase();
 				attr.set(
 					[ns, name],
@@ -114,7 +114,7 @@ const createElement = (element, attributes, ...children) => {
 		);
 	} else {
 		return new VNode(
-			...(element instanceof Array ? element : [undefined, element]),
+			...(Array.isArray(element) ? element : [undefined, element]),
 			createAttributes(attributes),
 			normalizedChildren,
 		);
@@ -171,7 +171,7 @@ export const select = Object.assign((...args) =>
 );
 
 const isDerivedShape = (value) => {
-	if (value instanceof Array) {
+	if (Array.isArray(value)) {
 		return value.every((_) => _ instanceof Slot);
 	}
 	if (value && Object.getPrototypeOf(value) === Object.prototype) {
@@ -246,7 +246,7 @@ select.send = (eventName, value, node) => {
 	const resolvedEventName = normalizeEventName(eventName);
 	const context = Context.Get();
 	const explicit = node?.ownerElement ?? node;
-	let inferred = undefined;
+	let inferred;
 	if (!explicit && context) {
 		let current = context;
 		while (current && !inferred) {
@@ -315,6 +315,22 @@ select.get = (selection) =>
 		},
 	);
 
+const win = typeof window !== "undefined" ? window : undefined;
+select.raf = (callback) => {
+	if (win) {
+		const raf =
+			win.requestAnimationFrame ||
+			win.webkitRequestAnimationFrame ||
+			win.mozRequestAnimationFrame ||
+			win.msRequestAnimationFrame ||
+			((callback) => setTimeout(() => callback(0), 16));
+		return raf.call(win, callback);
+	} else {
+		return setTimeout(() => callback(0), 16);
+	}
+};
+
 export const $ = select;
+export default $;
 
 // EOF

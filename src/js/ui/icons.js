@@ -325,11 +325,7 @@ function icon(name, options = {}) {
 					node.setAttribute("viewBox", viewBox);
 				}
 			} else {
-				console.warn(
-					"icons",
-					`Could not load icon "${name}", got:`,
-					symbol,
-				);
+				console.warn("icons", `Could not load icon "${name}", got:`, symbol);
 			}
 		}
 		return symbol;
@@ -413,7 +409,7 @@ function install(name = "ui-icon", options = {}) {
 			this.render();
 		}
 
-		attributeChangedCallback(name, oldValue, newValue) {
+		attributeChangedCallback(_name, _oldValue, newValue) {
 			if (newValue !== null) {
 				this.render();
 			}
@@ -431,9 +427,7 @@ function install(name = "ui-icon", options = {}) {
 					// Parse "source:name" format
 					const colonIndex = iconAttr.indexOf(":");
 					if (colonIndex > 0) {
-						sourceName = iconAttr
-							.substring(0, colonIndex)
-							.toLowerCase();
+						sourceName = iconAttr.substring(0, colonIndex).toLowerCase();
 						iconName = iconAttr.substring(colonIndex + 1);
 					} else {
 						// Just a name, no source specified
@@ -453,9 +447,7 @@ function install(name = "ui-icon", options = {}) {
 
 			const iconSource = sourceName
 				? IconSources[sourceName] ||
-					(typeof source === "string"
-						? resolveSource(source)
-						: source)
+					(typeof source === "string" ? resolveSource(source) : source)
 				: source;
 
 			// Remove old icon if exists

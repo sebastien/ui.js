@@ -1,10 +1,10 @@
 export const RawObjectPrototype = Object.getPrototypeOf({});
 
 export const isObject = (value) =>
-	value && Object.getPrototypeOf(value) === RawObjectPrototype ? true : false;
+	!!(value && Object.getPrototypeOf(value) === RawObjectPrototype);
 // ===
 export function* iterkeys(v) {
-	if (v instanceof Array || isObject(v)) {
+	if (Array.isArray(v) || isObject(v)) {
 		for (const i in v) {
 			yield i;
 		}
@@ -33,7 +33,7 @@ export const assign = (scope, path, value) => {
 export const reduce = (v, f, r) => {
 	if (v === undefined) {
 		return v;
-	} else if (v instanceof Array) {
+	} else if (Array.isArray(v)) {
 		return v.reduce(f, r);
 	} else if (v instanceof Map) {
 		for (const [k, w] of v.entries()) {
@@ -53,8 +53,7 @@ export const reduce = (v, f, r) => {
 };
 
 export const grouped = (collection, extractor, processor = undefined) => {
-	const ext =
-		typeof extractor === "string" ? (_) => _ && _[extractor] : extractor;
+	const ext = typeof extractor === "string" ? (_) => _?.[extractor] : extractor;
 	return reduce(
 		collection,
 		(r, v, k) => {

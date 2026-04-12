@@ -1,4 +1,4 @@
-const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+const hasOwn = (value, key) => Object.hasOwn(value, key);
 
 const camelToKebab = (value) =>
 	value.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);

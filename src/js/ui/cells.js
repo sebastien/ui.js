@@ -108,11 +108,7 @@ export class Slot {
 	static Match(template, data, context = undefined, res = []) {
 		// `data` may be a slot, in which case we may need to resolve it.
 		const resolved_data =
-			data instanceof Slot
-				? context
-					? context[data.id]
-					: undefined
-				: data;
+			data instanceof Slot ? (context ? context[data.id] : undefined) : data;
 		if (template instanceof Slot) {
 			if (template.input) {
 				Slot.Match(template.input, resolved_data, context, res);
@@ -150,7 +146,7 @@ export class Slot {
 					yield _;
 				}
 			}
-		} else if (template instanceof Array) {
+		} else if (Array.isArray(template)) {
 			for (let i = 0; i < template.length; i++) {
 				for (const _ of Slot.Walk(template[i])) {
 					yield _;
@@ -175,7 +171,7 @@ export class Slot {
 			for (const v of template.values()) {
 				Slot.Each(v, callback);
 			}
-		} else if (template instanceof Array) {
+		} else if (Array.isArray(template)) {
 			for (let i = 0; i < template.length; i++) {
 				Slot.Each(template[i], callback);
 			}
@@ -200,7 +196,7 @@ export class Slot {
 			for (const [k, v] of template.entries()) {
 				res.set(k, Slot.Expand(v, context));
 			}
-		} else if (template instanceof Array) {
+		} else if (Array.isArray(template)) {
 			return template.map((_) => Slot.Expand(_, context));
 		} else if (Object.getPrototypeOf(template) === Object.prototype) {
 			const res = {};
@@ -217,8 +213,7 @@ export class Slot {
 	// Subscribes a handler to the given slot id in context.
 	static Sub(context, id, handler) {
 		const subs =
-			context[id + Slot.Observable] ||
-			(context[id + Slot.Observable] = []);
+			context[id + Slot.Observable] || (context[id + Slot.Observable] = []);
 		subs.push(handler);
 		return true;
 	}
@@ -287,7 +282,7 @@ export class Slot {
 
 	static FlushBatchedNotifications(context) {
 		const batch = Slot.BatchedNotificationsByContext.get(context);
-		if (!batch || !batch.ids.length) {
+		if (!batch?.ids.length) {
 			return;
 		}
 		Slot.BatchedNotificationsByContext.delete(context);
@@ -297,7 +292,7 @@ export class Slot {
 		for (let i = 0; i < batch.ids.length; i++) {
 			const id = batch.ids[i];
 			const subs = context[id + Slot.Observable];
-			if (!subs || !subs.length) {
+			if (!subs?.length) {
 				continue;
 			}
 			const value = context[id];
@@ -322,8 +317,7 @@ export class Slot {
 	static Notify(context, id, value, force) {
 		if (force || value !== context[id]) {
 			context[id] = value;
-			context[id + Slot.Revision] =
-				(context[id + Slot.Revision] || 0) + 1;
+			context[id + Slot.Revision] = (context[id + Slot.Revision] || 0) + 1;
 			Slot.MarkDependentsDirty(context, id);
 			if (Slot.IsBatching(context)) {
 				Slot.QueueBatchedNotification(context, id);
@@ -367,13 +361,8 @@ export class Slot {
 
 		for (let i = 0; i < parsed.dependencies.length; i++) {
 			const dep = parsed.dependencies[i];
-			if (
-				dep.id === target.id ||
-				Slot.HasPath(context, target.id, dep.id)
-			) {
-				throw new Error(
-					`Cyclic dependency detected for Slot(${target.id})`,
-				);
+			if (dep.id === target.id || Slot.HasPath(context, target.id, dep.id)) {
+				throw new Error(`Cyclic dependency detected for Slot(${target.id})`);
 			}
 		}
 
@@ -385,11 +374,11 @@ export class Slot {
 			dependencies: parsed.dependencies,
 			shapeType: parsed.shapeType,
 			keys: parsed.keys,
-			lazy: lazy ? true : false,
+			lazy: !!lazy,
 			rank: 0,
 			cycle: 0,
-			dirty: lazy ? true : false,
-			stale: lazy ? true : false,
+			dirty: !!lazy,
+			stale: !!lazy,
 		};
 
 		meta.rank = Slot.CalculateRank(context, meta.dependencies);
@@ -412,7 +401,7 @@ export class Slot {
 	}
 
 	static ParseShape(shape) {
-		if (shape instanceof Array) {
+		if (Array.isArray(shape)) {
 			const deps = [];
 			for (let i = 0; i < shape.length; i++) {
 				if (!(shape[i] instanceof Slot)) {
@@ -455,7 +444,7 @@ export class Slot {
 	}
 
 	static Derivation(context, id) {
-		return context && context[DERIVATION_KEY]
+		return context?.[DERIVATION_KEY]
 			? context[DERIVATION_KEY].get(id)
 			: undefined;
 	}
@@ -483,10 +472,7 @@ export class Slot {
 			return false;
 		}
 		for (const next of deps) {
-			if (
-				next === targetId ||
-				Slot.HasPath(context, next, targetId, seen)
-			) {
+			if (next === targetId || Slot.HasPath(context, next, targetId, seen)) {
 				return true;
 			}
 		}
@@ -559,7 +545,7 @@ export class Slot {
 		for (let i = 0; i < queue.length; i++) {
 			const [ctx, id] = queue[i];
 			const ids = Slot.PendingByContext.get(ctx);
-			ids && ids.delete(id);
+			ids?.delete(id);
 		}
 		const cycle = ++Slot.Cycle;
 		queue.sort((a, b) => {
@@ -570,7 +556,7 @@ export class Slot {
 		for (let i = 0; i < queue.length; i++) {
 			const [context, id] = queue[i];
 			const meta = Slot.Derivation(context, id);
-			if (!meta || !meta.dirty || meta.lazy) {
+			if (!meta?.dirty || meta.lazy) {
 				continue;
 			}
 			Slot.EvaluateDerived(context, id, cycle, false);
@@ -631,11 +617,7 @@ export class Slot {
 					);
 				})
 				.catch((error) =>
-					onError(
-						"cells.Slot.EvaluateDerived",
-						"Promise input failed",
-						error,
-					),
+					onError("cells.Slot.EvaluateDerived", "Promise input failed", error),
 				);
 			return;
 		}
@@ -666,18 +648,14 @@ export class Slot {
 					Slot.Notify(context, id, value, true);
 				})
 				.catch((error) =>
-					onError(
-						"cells.Slot.Derive",
-						"Derived async processor failed",
-						error,
-					),
+					onError("cells.Slot.Derive", "Derived async processor failed", error),
 				);
 			return;
 		}
 		Slot.Notify(context, id, result, true);
 		if (forcedSync) {
 			const ids = Slot.PendingByContext.get(context);
-			ids && ids.delete(id);
+			ids?.delete(id);
 		}
 	}
 
@@ -731,7 +709,6 @@ export class Slot {
 		switch (typeof fn) {
 			case "function":
 				return fn(...args);
-				break;
 		}
 	}
 
@@ -765,10 +742,10 @@ export class Slot {
 	// ========================================================================
 
 	at(index, value = undefined) {
-		const i = typeof index === "string" ? parseInt(index) : index;
+		const i = typeof index === "string" ? parseInt(index, 10) : index;
 		if (value === undefined) {
 			return this.list().at(i);
-		} else if (isNaN(i)) {
+		} else if (Number.isNaN(i)) {
 			return this.get();
 		} else {
 			const v = this.list();
@@ -821,14 +798,7 @@ export class Slot {
 
 	toggle(value = undefined) {
 		const v = this.get();
-		const w =
-			value === undefined
-				? v
-					? false
-					: true
-				: v === value
-					? null
-					: value;
+		const w = value === undefined ? !v : v === value ? null : value;
 		this.set(w);
 		return w;
 	}
@@ -849,7 +819,7 @@ export class Slot {
 	// NOTE: This does not mutate
 	list() {
 		const v = this.get();
-		return v instanceof Array ? v : [v];
+		return Array.isArray(v) ? v : [v];
 	}
 
 	dict(key = "_") {

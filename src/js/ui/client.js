@@ -1,7 +1,7 @@
+import { Slot } from "./cells.js";
 import { DOMEffector } from "./effectors.js";
 import { parameters } from "./markup.js";
 import { component } from "./templates.js";
-import { Slot } from "./cells.js";
 
 const globals = {
 	context: {},
@@ -23,7 +23,7 @@ const render = (
 	parent,
 	position = undefined,
 	context = globals.context,
-	effector = globals.effector
+	effector = globals.effector,
 ) => {
 	// If the parent is not specified, then we try to get it from the
 	// component name.
@@ -36,7 +36,7 @@ const render = (
 	// First step, we extract the parameters from the parent node, and we
 	// assign merge in the given input data.
 	const input = parameters(parent);
-	if (data instanceof Array) {
+	if (Array.isArray(data)) {
 		Object.assign(input, data[0]);
 		if (data.length > 1) {
 			input.children = data.slice(1);

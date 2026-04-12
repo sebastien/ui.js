@@ -71,7 +71,7 @@ export class DOMEffector {
 	}
 
 	// TODO: Implement position support
-	ensureNode(parent, position, ns, name) {
+	ensureNode(parent, _position, ns, name) {
 		const node = ns
 			? document.createElementNS(ns, name)
 			: document.createElement(name);

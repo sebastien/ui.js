@@ -6,7 +6,8 @@
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	grid-gap: 10px;
-	/overflow-x: auto;
+	/
+	overflow-x: auto;
 }
 
 .Columns article {

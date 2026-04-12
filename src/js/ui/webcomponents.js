@@ -13,7 +13,9 @@ const toKebabCase = (value) =>
 		.toLowerCase();
 
 const toCamelCase = (value) =>
-	value.toLowerCase().replace(/-([a-z0-9])/g, (_, letter) => letter.toUpperCase());
+	value
+		.toLowerCase()
+		.replace(/-([a-z0-9])/g, (_, letter) => letter.toUpperCase());
 
 const parseAttributeValue = (value) => {
 	if (value === null) {

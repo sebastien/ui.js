@@ -52,15 +52,15 @@
 	position: relative;
 }
 
-.show-menu>.menu,
-.show-menu>menu {
+.show-menu > .menu,
+.show-menu > menu {
 	position: absolute;
 	top: 100%;
 	left: 0px;
 }
 
-.show-menu>.menu,
-.show-menu>menu,
+.show-menu > .menu,
+.show-menu > menu,
 .with-hover .show-hover {
 	visibility: hidden;
 	pointer-events: none;
@@ -71,16 +71,13 @@
 }
 
 .with-hover:hover .show-hover,
-.show-menu:hover>.menu,
-.show-menu:hover>menu,
+.show-menu:hover > .menu,
+.show-menu:hover > menu,
 .with-hover .show-hover:hover {
 	visibility: visible;
 	pointer-events: auto;
 	opacity: 1;
 }
-
-
-
 
 .hover:hover .hovered {
 	background-color: var(--control-bg-hover);
@@ -98,17 +95,15 @@
 }
 
 .hidden {
-	visibility: hidden !important;
+	visibility: hidden;
 }
 
 .unhidden {
-	visibility: visible !important;
+	visibility: visible;
 }
 
-
-
 .skip {
-	display: none !important;
+	display: none;
 }
 
 /* EOF */

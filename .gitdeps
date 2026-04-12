@@ -1,2 +1,4 @@
+# REPO URL BRANCH COMMIT?
 deps/domish git@github.com:sebastien/domish.git main 5987159f3bbabdc4684fa103206d25e97da2c9b0
-deps/sdk git@github.com:littletoolkit/littlesdk.git main
+deps/sdk git@github.com:littletoolkit/littlesdk.git main 10d1146330a0806103f6a6ca3b9619380c576500
+# EOF

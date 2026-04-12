@@ -1,5 +1,5 @@
-import { Effect } from "./effects.js";
 import { Slot } from "./cells.js";
+import { Effect } from "./effects.js";
 import { applyAttributeValue } from "./utils/dom.js";
 
 const isRenderable = (value) =>
@@ -46,12 +46,11 @@ export class VNode {
 		let r = node;
 		for (let i = 0; i < path.length; i++) {
 			const v = path[i];
-			r =
-				v instanceof Array
-					? v[0]
-						? r.getAttributeNodeNS(v[0], v[1])
-						: r.getAttributeNode(v[1])
-					: r.childNodes[v];
+			r = Array.isArray(v)
+				? v[0]
+					? r.getAttributeNodeNS(v[0], v[1])
+					: r.getAttributeNode(v[1])
+				: r.childNodes[v];
 		}
 		return r;
 	}
@@ -94,7 +93,7 @@ export class VNode {
 	}
 
 	static AreEffectTargetsValid(resolved, effects, root = null, context = null) {
-		if (!(resolved instanceof Array) || resolved.length !== effects.length) {
+		if (!Array.isArray(resolved) || resolved.length !== effects.length) {
 			return false;
 		}
 		for (let i = 0; i < resolved.length; i++) {
@@ -107,6 +106,9 @@ export class VNode {
 				return false;
 			}
 			if (root) {
+				if (root.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
+					continue;
+				}
 				const anchor =
 					target.nodeType === Node.ATTRIBUTE_NODE
 						? (target.ownerElement ?? context?.[effects[i][1].id + Slot.Node])
@@ -221,7 +223,7 @@ export class VNode {
 	}
 
 	static CleanupResolvedEffects(resolved, context, effector) {
-		if (!(resolved instanceof Array)) {
+		if (!Array.isArray(resolved)) {
 			return;
 		}
 		for (let i = 0; i < resolved.length; i++) {
@@ -299,7 +301,7 @@ export class VNode {
 		const existing = context[id + Slot.Node];
 		const effects = this.effects;
 		const n = effects.length;
-		const isFragment = this.name === "#fragment";
+		const _isFragment = this.name === "#fragment";
 		const renderEffects = (resolved) => {
 			// Second phase: run effects only after all targets are resolved.
 			for (let i = 0; i < n; i++) {
@@ -307,6 +309,9 @@ export class VNode {
 			}
 		};
 		const resolveEffects = (node) => {
+			if (n === 0) {
+				return [];
+			}
 			// First phase: target discovery (no effect execution).
 			const resolved = VNode.CollectEffectTargets(this, node, []);
 			return VNode.AreEffectTargetsValid(resolved, effects, node, context)
@@ -320,6 +325,7 @@ export class VNode {
 				if (!resolved) {
 					if (node.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
 						node._uiFragmentChildren = Array.from(node.childNodes);
+						node._uiFragmentMounted = true;
 					}
 					context[id + Slot.Node] = node;
 					return effector.appendChild(parent, node, position);
@@ -329,6 +335,7 @@ export class VNode {
 			}
 			if (node.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
 				node._uiFragmentChildren = Array.from(node.childNodes);
+				node._uiFragmentMounted = true;
 			}
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);
@@ -339,6 +346,11 @@ export class VNode {
 				// Cached targets are stale (eg: external DOM edits). Try re-resolve on
 				// the current node first, then replace with a fresh clone if needed.
 				resolved = resolveEffects(existing);
+				const hasNewResolution =
+					Array.isArray(resolved) && resolved !== previousResolved;
+				if (hasNewResolution) {
+					VNode.CleanupResolvedEffects(previousResolved, context, effector);
+				}
 				if (!resolved) {
 					const replacement = this.clone();
 					const replacementResolved = resolveEffects(replacement);
@@ -356,7 +368,9 @@ export class VNode {
 						}
 						return existing;
 					}
-					VNode.CleanupResolvedEffects(previousResolved, context, effector);
+					if (!hasNewResolution) {
+						VNode.CleanupResolvedEffects(previousResolved, context, effector);
+					}
 					renderEffects(replacementResolved);
 					replacement._uiEffects = replacementResolved;
 					context[id + Slot.Node] = replacement;
@@ -372,20 +386,23 @@ export class VNode {
 					}
 					return replacement;
 				}
-				VNode.CleanupResolvedEffects(previousResolved, context, effector);
 				existing._uiEffects = resolved;
 			}
 			renderEffects(resolved);
 			if (!existing.parentNode) {
-				if (
-					existing.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */ &&
-					existing._uiFragmentChildren
-				) {
-					for (const child of existing._uiFragmentChildren) {
-						if (!child.parentNode) existing.appendChild(child);
+				if (existing.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
+					if (!existing._uiFragmentMounted) {
+						if (existing._uiFragmentChildren) {
+							for (const child of existing._uiFragmentChildren) {
+								existing.appendChild(child);
+							}
+						}
+						effector.appendChild(parent, existing, position);
+						existing._uiFragmentMounted = true;
 					}
+				} else {
+					effector.appendChild(parent, existing, position);
 				}
-				effector.appendChild(parent, existing, position);
 			}
 			return existing;
 		}
@@ -405,6 +422,7 @@ export class VNode {
 						child.parentNode.removeChild(child);
 					}
 				}
+				existing._uiFragmentMounted = false;
 			}
 		}
 		for (const [_, effect] of this.effects) {

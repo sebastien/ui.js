@@ -147,17 +147,22 @@ a[href],
 .link {
 	text-decoration: none;
 	color: var(--color-text);
-	border-bottom: 1px solid color-mix(in srgb, var(--color-primary), var(--page-bg-0p) 60%);
-	background-color: color-mix(in srgb,
-			var(--color-text),
-			var(--page-bg-0p) 100%);
+	border-bottom: 1px solid
+		color-mix(in srgb, var(--color-primary), var(--page-bg-0p) 60%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-text),
+		var(--page-bg-0p) 100%
+	);
 }
 
 a[href]:hover,
 .link:hover {
-	background-color: color-mix(in srgb,
-			var(--color-accent),
-			var(--page-bg-0p) 90%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-accent),
+		var(--page-bg-0p) 90%
+	);
 }
 
 a[href].nolink,
@@ -191,8 +196,8 @@ a[href].nolink:hover {
 }
 
 /**
-	* ## Text
-	*/
+ * ## Text
+ */
 
 .tr {
 	text-align: right;

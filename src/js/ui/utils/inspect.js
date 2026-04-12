@@ -20,8 +20,8 @@ export const getSignature = (func) => {
 	let position = 0;
 	let token = 0;
 	let rest = false;
-	let name = undefined;
-	let key = undefined;
+	let name;
+	let key;
 	// This is essentially a parser of a subset of JavaScript values.
 	while (o < n) {
 		const c = declaration.charAt(o);
@@ -39,10 +39,7 @@ export const getSignature = (func) => {
 				token !== undefined &&
 					args.push({
 						name,
-						path: [
-							...path,
-							position == undefined ? key || name : position,
-						],
+						path: [...path, position === undefined ? key || name : position],
 						rest,
 					});
 				token = undefined;
@@ -62,17 +59,12 @@ export const getSignature = (func) => {
 				token !== undefined &&
 					args.push({
 						name,
-						path: [
-							...path,
-							position == undefined ? key || name : position,
-						],
+						path: [...path, position === undefined ? key || name : position],
 						rest,
 					});
 				token = undefined;
 				position =
-					c === "," && position !== undefined
-						? position + 1
-						: position;
+					c === "," && position !== undefined ? position + 1 : position;
 				break;
 			default:
 				token = token === undefined ? o : token;
@@ -84,7 +76,7 @@ export const getSignature = (func) => {
 	token !== undefined &&
 		args.push({
 			name,
-			path: [...path, position == undefined ? key || name : position],
+			path: [...path, position === undefined ? key || name : position],
 			rest,
 		});
 	// TODO: We should also return the body
