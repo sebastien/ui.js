@@ -39,17 +39,15 @@ export class DOMEffector {
 			parent.parentNode?.insertBefore(child, parent);
 			return child;
 		}
-		if (
-			parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE
-		) {
+		if (parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
 			const child = document.createTextNode(value);
 			return this.appendChild(parent, child, position);
 		}
 		const index = Array.isArray(position)
 			? (position.at(-1) ?? 0)
 			: typeof position === "number"
-			? position
-			: 0;
+				? position
+				: 0;
 		const existing = parent.childNodes[index];
 		if (existing?.nodeType === Node.TEXT_NODE) {
 			existing.data = value;
@@ -108,15 +106,20 @@ export class DOMEffector {
 		// as a parent. This is typically for a root component, and as the document fragment
 		// is emptied after the first pass (for performance), we need on
 		// subsequent passes to append the child where the fragment was mounted.
+		const index = Array.isArray(position)
+			? (position.at(-1) ?? 0)
+			: typeof position === "number"
+				? position
+				: 0;
+
 		if (parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
 			if (parent.uiParentElement !== undefined) {
 				return this.appendChild(
 					parent.uiParentElement,
 					child,
-					parent.uiParentPosition + position
+					parent.uiParentPosition + index,
 				);
 			} else {
-				// TODO: Position
 				if (child.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
 					for (const c of child.childNodes) {
 						parent.appendChild(c);
@@ -133,19 +136,13 @@ export class DOMEffector {
 				});
 				return child;
 			} else {
-				// FIXME: What about position?
 				parent.parentNode.insertBefore(child, parent);
 			}
-			// FIXME: THat doesn't work
-			// } else if (parent.childNodes[position] !== child) {
-			// 	// Nothing to do, the node is here
-			// } else if (parent.childNodes.length > position) {
-			// 	parent.insertBefore(child, parent.childNodes[position]);
 		} else {
-			if (parent.childNodes[position] === child) {
+			if (parent.childNodes[index] === child) {
 				// Already in position, nothing to do
-			} else if (parent.childNodes.length > position) {
-				parent.insertBefore(child, parent.childNodes[position]);
+			} else if (parent.childNodes.length > index) {
+				parent.insertBefore(child, parent.childNodes[index]);
 			} else {
 				parent.appendChild(child);
 			}
@@ -154,10 +151,12 @@ export class DOMEffector {
 	}
 
 	unmount(node) {
-		if (parent.nodeType === Node.ATTRIBUTE_NODE) {
-			node.ownerElement.removeAttributeNode(node);
-		} else {
-			node.parentNode.removeChild(node);
+		if (node) {
+			if (node.nodeType === Node.ATTRIBUTE_NODE && node.ownerElement) {
+				node.ownerElement.removeAttributeNode(node);
+			} else if (node.parentNode) {
+				node.parentNode.removeChild(node);
+			}
 		}
 		return node;
 	}

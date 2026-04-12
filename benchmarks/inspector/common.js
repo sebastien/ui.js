@@ -1,4 +1,4 @@
-const DATA_URL = "../../examples/inspector-speed.json";
+const DATA_URL = "../../examples/perf-inspector.json";
 
 const isObject = (value) =>
 	value !== null && typeof value === "object" && !Array.isArray(value);
@@ -137,9 +137,7 @@ const makeSyntheticLog = (seed) => ({
 	type: seed % 2 ? "warning" : "log",
 	message: `Synthetic benchmark log ${seed}`,
 	data:
-		seed % 3 === 0
-			? [seed, { nested: true }, null]
-			: { changed: true, seed },
+		seed % 3 === 0 ? [seed, { nested: true }, null] : { changed: true, seed },
 	context: {
 		origin: `Benchmark.synthetic.${seed}`,
 		trace: 900000 + seed,
@@ -188,13 +186,13 @@ export const createPatchPhases = (base) => {
 
 	const primitiveTargets = firstByDistinctDepth(
 		primitives.sort((a, b) => a.path.length - b.path.length),
-		3
+		3,
 	);
 	const arrayTargets = firstByDistinctDepth(
 		arrays
 			.filter((entry) => entry.path.length > 0)
 			.sort((a, b) => a.path.length - b.path.length),
-		2
+		2,
 	);
 	const nestedArrayTarget =
 		arrays.find((entry) => entry.path.length > 2) || arrayTargets[0];
@@ -207,18 +205,18 @@ export const createPatchPhases = (base) => {
 				entry.path.length > 2 &&
 				entry.path.at(-1) !== "context" &&
 				!pathsOverlap(entry.path, arrayTargets[0]?.path || []) &&
-				!pathsOverlap(entry.path, nestedArrayTarget?.path || [])
+				!pathsOverlap(entry.path, nestedArrayTarget?.path || []),
 		) || entryObjectTarget;
 	const nestedObjectTarget =
 		objects.find(
 			(entry) =>
 				entry.path.at(-1) === "context" &&
-				!pathsOverlap(entry.path, objectRetypeTarget?.path || [])
+				!pathsOverlap(entry.path, objectRetypeTarget?.path || []),
 		) ||
 		objects.find(
 			(entry) =>
 				entry.path.length > 2 &&
-				!pathsOverlap(entry.path, objectRetypeTarget?.path || [])
+				!pathsOverlap(entry.path, objectRetypeTarget?.path || []),
 		) ||
 		entryObjectTarget;
 
@@ -233,7 +231,7 @@ export const createPatchPhases = (base) => {
 					setAt(
 						next,
 						target.path,
-						mutatePrimitive(getAt(next, target.path), index)
+						mutatePrimitive(getAt(next, target.path), index),
 					);
 				},
 			})),
@@ -283,7 +281,11 @@ export const createPatchPhases = (base) => {
 				name: `retype ${describePath(objectRetypeTarget.path)} object -> string`,
 				apply(next) {
 					const previous = getAt(next, objectRetypeTarget.path);
-					if (previous && typeof previous === "object" && !Array.isArray(previous)) {
+					if (
+						previous &&
+						typeof previous === "object" &&
+						!Array.isArray(previous)
+					) {
 						setAt(next, objectRetypeTarget.path, "[entry replaced by string]");
 					}
 				},

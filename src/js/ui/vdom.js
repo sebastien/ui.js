@@ -287,6 +287,7 @@ export class VNode {
 		const existing = context[id + Slot.Node];
 		const effects = this.effects;
 		const n = effects.length;
+		const isFragment = this.name === "#fragment";
 		const renderEffects = (resolved) => {
 			// Second phase: run effects only after all targets are resolved.
 			for (let i = 0; i < n; i++) {
@@ -305,11 +306,17 @@ export class VNode {
 			if (n > 0) {
 				const resolved = resolveEffects(node);
 				if (!resolved) {
+					if (node.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
+						node._uiFragmentChildren = Array.from(node.childNodes);
+					}
 					context[id + Slot.Node] = node;
 					return effector.appendChild(parent, node, position);
 				}
 				renderEffects(resolved);
 				node._uiEffects = resolved;
+			}
+			if (node.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
+				node._uiFragmentChildren = Array.from(node.childNodes);
 			}
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);
@@ -324,6 +331,14 @@ export class VNode {
 					const replacementResolved = resolveEffects(replacement);
 					if (!replacementResolved) {
 						if (!existing.parentNode) {
+							if (
+								existing.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */ &&
+								existing._uiFragmentChildren
+							) {
+								for (const child of existing._uiFragmentChildren) {
+									if (!child.parentNode) existing.appendChild(child);
+								}
+							}
 							effector.appendChild(parent, existing, position);
 						}
 						return existing;
@@ -334,6 +349,11 @@ export class VNode {
 					renderEffects(replacementResolved);
 					replacement._uiEffects = replacementResolved;
 					context[id + Slot.Node] = replacement;
+					if (replacement.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
+						replacement._uiFragmentChildren = Array.from(
+							replacement.childNodes,
+						);
+					}
 					if (existing.parentNode) {
 						existing.parentNode.replaceChild(replacement, existing);
 					} else {
@@ -345,6 +365,14 @@ export class VNode {
 			}
 			renderEffects(resolved);
 			if (!existing.parentNode) {
+				if (
+					existing.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */ &&
+					existing._uiFragmentChildren
+				) {
+					for (const child of existing._uiFragmentChildren) {
+						if (!child.parentNode) existing.appendChild(child);
+					}
+				}
 				effector.appendChild(parent, existing, position);
 			}
 			return existing;
@@ -353,8 +381,19 @@ export class VNode {
 
 	unrender(context, effector, id) {
 		const existing = context[id + Slot.Node];
-		if (existing && existing.parentNode) {
-			existing.parentNode.removeChild(existing);
+		if (existing) {
+			if (existing.parentNode) {
+				existing.parentNode.removeChild(existing);
+			} else if (existing._uiFragmentChildren) {
+				// DocumentFragment nodes never have a parentNode after their
+				// children are transferred to the DOM. Remove the tracked
+				// children instead.
+				for (const child of existing._uiFragmentChildren) {
+					if (child.parentNode) {
+						child.parentNode.removeChild(child);
+					}
+				}
+			}
 		}
 		for (const [_, effect] of this.effects) {
 			effect.unrender(context, effector);

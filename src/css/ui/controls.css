@@ -234,6 +234,21 @@ textarea:active,
 	border-color: var(--color-primary);
 }
 
+input.bare,
+.input.bare,
+textarea.bare,
+.textarea.bare {
+	&,
+	&:hover,
+	&:focus,
+	&:active {
+		border-color: transparent;
+		background-color: transparent;
+		box-shadow: unset;
+		padding: unset;
+	}
+}
+
 /**
  * ### Input Sizes
  */

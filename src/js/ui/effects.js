@@ -134,10 +134,15 @@ export class ComponentEffect extends Effect {
 		}
 		const derived = this.input.applyContext(context);
 		const existing = derived[this.id + Slot.Node];
+		const isMounted = existing
+			? existing.nodeType === Node.ATTRIBUTE_NODE
+				? !!existing.ownerElement
+				: !!existing.parentNode
+			: false;
 		// Fast path: compare extraction slot values directly from context
 		// without allocating a new expanded object
 		const prevValues = derived[this.id + Slot.State];
-		if (existing && prevValues !== undefined) {
+		if (isMounted && prevValues !== undefined) {
 			const eslots = this._extractionSlots;
 			if (eslots) {
 				let changed = false;
@@ -236,10 +241,10 @@ export class DynamicComponentEffect extends Effect {
 			// switching component shape so stale mappings are not reused.
 			context[this.input.id + Slot.State] = undefined;
 			// Clear node cache so the newly selected template renders from
-			// a fresh anchor/node layout. Path cache is on the DOM node itself.
+			// a fresh anchor/node layout. Effect cache is on the DOM node itself.
 			const oldNode = context[this.id + Slot.Node];
 			if (oldNode) {
-				oldNode._uiPaths = undefined;
+				oldNode._uiEffects = undefined;
 			}
 			context[this.id + Slot.Node] = null;
 			const derived = this.input.applyContext(context);
@@ -358,9 +363,26 @@ export class ConditionalEffect extends Effect {
 		if (match === undefined) {
 			match = this.elseBranch;
 		}
+		let mountNode = node;
+		let mountPosition = position;
 		if (i != state[0]) {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
+				const previousNode = state[1];
+				if (previousNode?.parentNode) {
+					const parent = previousNode.parentNode;
+					let index = 0;
+					while (
+						index < parent.childNodes.length &&
+						parent.childNodes[index] !== previousNode
+					) {
+						index += 1;
+					}
+					if (index < parent.childNodes.length) {
+						mountNode = parent;
+						mountPosition = index;
+					}
+				}
 				const previousEffect = this.resolveBranchEffect(state[0]);
 				if (previousEffect?.unrender) {
 					previousEffect.unrender(context, effector, this.id);
@@ -371,10 +393,10 @@ export class ConditionalEffect extends Effect {
 			state[0] = i;
 			// Clear the node cache so the new branch gets a
 			// fresh render instead of reusing the old branch's node.
-			// Path cache is stored on the DOM node itself.
+			// Effect cache is stored on the DOM node itself.
 			const oldNode = context[this.id + Slot.Node];
 			if (oldNode) {
-				oldNode._uiPaths = undefined;
+				oldNode._uiEffects = undefined;
 			}
 			context[this.id + Slot.Node] = null;
 		}
@@ -385,14 +407,14 @@ export class ConditionalEffect extends Effect {
 		}
 		if (typeof match.render === "function") {
 			return (state[1] = match.render(
-				node,
-				position,
+				mountNode,
+				mountPosition,
 				context,
 				effector,
 				this.id,
 			));
 		}
-		return (state[1] = effector.ensureContent(node, position, match));
+		return (state[1] = effector.ensureContent(mountNode, mountPosition, match));
 	}
 
 	unrender(context, effector) {
@@ -405,6 +427,11 @@ export class ConditionalEffect extends Effect {
 				effector.unmount(state[1]);
 			}
 		}
+		// Clear stale state and node cache so that when re-rendered
+		// (e.g. after an outer conditional round-trip) the conditional
+		// starts fresh instead of reusing detached DOM references.
+		context[this.id + Slot.State] = undefined;
+		context[this.id + Slot.Node] = undefined;
 		super.unrender(context, effector);
 	}
 }
@@ -827,6 +854,15 @@ export class FormattingEffect extends Effect {
 			});
 			return undefined;
 		}
+	}
+
+	unrender(context, effector) {
+		const c = super.unrender(context, effector);
+		// Clear cached text node and previous value so re-rendering
+		// after a conditional round-trip creates a fresh text node
+		// instead of returning a detached one.
+		c[this.id + Slot.Node] = undefined;
+		c[this.id + Slot.State] = undefined;
 	}
 }
 
