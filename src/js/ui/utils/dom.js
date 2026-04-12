@@ -118,6 +118,13 @@ export const applyAttributeValue = (
 		return state;
 	}
 
+	if (name === "value") {
+		const tagName = element.nodeName?.toLowerCase?.();
+		if (tagName === "input" || tagName === "textarea") {
+			element.value = `${value}`;
+		}
+	}
+
 	if (name === "class") {
 		if (Array.isArray(value)) {
 			const tokens = toClassTokens(value);

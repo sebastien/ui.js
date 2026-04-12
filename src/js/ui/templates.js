@@ -82,6 +82,9 @@ export class Injection extends Derivation {
 				const isRenderableChildren =
 					slot?.name === "children" && v && typeof v.render === "function";
 				if (v instanceof Slot && !isRenderableChildren) {
+					if (typeof v.applyContext === "function") {
+						v.applyContext(context);
+					}
 					derived[slot.id] = context[v.id];
 					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
 					derived[slot.id + Slot.Revision] = context[v.id + Slot.Revision];
@@ -109,6 +112,9 @@ export class Injection extends Derivation {
 			const isRenderableChildren =
 				slot?.name === "children" && v && typeof v.render === "function";
 			if (v instanceof Slot && !isRenderableChildren) {
+				if (typeof v.applyContext === "function") {
+					v.applyContext(context);
+				}
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
 				derived[slot.id] = context[v.id];
@@ -343,6 +349,15 @@ export class DerivedCell extends Selection {
 
 	applyContext(context) {
 		if (context[this.id + Slot.State] === undefined) {
+			Slot.Each(this.shape, (dependency) => {
+				if (
+					dependency &&
+					typeof dependency.applyContext === "function" &&
+					dependency !== this
+				) {
+					dependency.applyContext(context);
+				}
+			});
 			Slot.Derive(this.shape, this.processor, this.lazy, this, context);
 			context[this.id + Slot.State] = true;
 		}
@@ -412,7 +427,7 @@ export class Application extends Selection {
 	}
 
 	render(node, position, context, effector, id = this.id) {
-		this.input.applyContext(context);
+		this.applyContext(context);
 		// Render state is stored at Slot.Render (+5) as [rerender, renderState]
 		// where renderState tracks template detection and anchor nodes.
 		let rs = context[this.id + Slot.Render];
@@ -420,7 +435,7 @@ export class Application extends Selection {
 		if (state === undefined) {
 			// Check if this is a template mode (transform returns a renderable)
 			if (!this.isMultipleArguments) {
-				const candidate = this.transform(this.input);
+				const candidate = context[this.id];
 				if (candidate && typeof candidate.render === "function") {
 					// No child context needed — template effects have globally
 					// unique IDs, so they won't collide with parent context keys.

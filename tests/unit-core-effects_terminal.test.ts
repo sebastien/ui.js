@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { h, $ } from "../src/js/ui/hyperscript.js";
-import { installDom, mountWithHandle, findFirstByNodeName } from "./test-utils.ts";
+import {
+	installDom,
+	mountWithHandle,
+	findFirstByNodeName,
+} from "./test-utils.ts";
 
 describe("unit core effects terminal", () => {
 	beforeEach(() => {
@@ -20,6 +24,37 @@ describe("unit core effects terminal", () => {
 		expect(div?.getAttribute("title")).toBe("hello");
 	});
 
+	test("AttributeEffect updates input and textarea value properties from slot", () => {
+		const App = ({ value }) =>
+			h.div(
+				h.input({ type: "text", value: value.apply((entry) => entry) }),
+				h.textarea({ value: value.apply((entry) => entry) }),
+				h.button({ onClick: () => value.set("server") }, "Commit"),
+				h.span(value),
+			);
+		const { parent } = mountWithHandle(App, { value: "draft" });
+
+		const input = findFirstByNodeName(parent, "input");
+		const textarea = findFirstByNodeName(parent, "textarea");
+		const button = findFirstByNodeName(parent, "button");
+
+		expect(input?.value).toBe("draft");
+		expect(textarea?.value).toBe("draft");
+
+		if (input) {
+			input.value = "local-input";
+		}
+		if (textarea) {
+			textarea.value = "local-textarea";
+		}
+
+		button?.click();
+		expect(parent.textContent).toContain("server");
+
+		expect(input?.value).toBe("server");
+		expect(textarea?.value).toBe("server");
+	});
+
 	test("EventHandlerEffect handles click", () => {
 		let calls = 0;
 		const App = ({ onAction }) => h.button({ onClick: onAction }, "Run");
@@ -36,12 +71,15 @@ describe("unit core effects terminal", () => {
 			h.div(
 				h.button(
 					{ onClick: () => ({ isEdited: true, value: "updated", ignored: 1 }) },
-					"Save"
+					"Save",
 				),
 				isEdited.apply((_) => (_ ? "edited" : "view")),
-				h.span(value)
+				h.span(value),
 			);
-		const { parent } = mountWithHandle(App, { isEdited: false, value: "draft" });
+		const { parent } = mountWithHandle(App, {
+			isEdited: false,
+			value: "draft",
+		});
 		const button = findFirstByNodeName(parent, "button");
 
 		expect(parent.textContent).toContain("view");
@@ -60,7 +98,7 @@ describe("unit core effects terminal", () => {
 					status: "child",
 					onAction: () => ({ parentStatus: "updated", status: "changed" }),
 				}),
-				h.span(parentStatus)
+				h.span(parentStatus),
 			);
 		const { parent } = mountWithHandle(Parent, { parentStatus: "parent" });
 		const button = findFirstByNodeName(parent, "button");
@@ -81,7 +119,7 @@ describe("unit core effects terminal", () => {
 				$(a, b).apply((va, vb) => {
 					computes += 1;
 					return `${va}-${vb}`;
-				})
+				}),
 			);
 		const { parent } = mountWithHandle(App, { a: 0, b: 0 });
 		const button = findFirstByNodeName(parent, "button");
@@ -112,7 +150,10 @@ describe("unit core effects terminal", () => {
 	test("RefEffect assigns and clears Slot refs", () => {
 		const ref = $.cell(null);
 		const App = () => h.input({ ref, type: "text" });
-		const { effect, effector, ctx, parent, derivedContext } = mountWithHandle(App, {});
+		const { effect, effector, ctx, parent, derivedContext } = mountWithHandle(
+			App,
+			{},
+		);
 		const input = findFirstByNodeName(parent, "input");
 		const getRefValue = () =>
 			Object.prototype.hasOwnProperty.call(derivedContext, ref.id)

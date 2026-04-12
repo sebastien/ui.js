@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { $ } from "../src/js/ui/hyperscript.js";
+import { h, $ } from "../src/js/ui/hyperscript.js";
 import { Context, Slot } from "../src/js/ui/cells.js";
+import { installDom, mountWithHandle } from "./test-utils.ts";
 
 describe("unit core cell overloads", () => {
 	test("initializes plain cells with their source value", () => {
@@ -28,6 +29,22 @@ describe("unit core cell overloads", () => {
 		source.set("beta", true, ctx);
 		Context.Run(ctx, () => {
 			expect(mapped.get()).toBe("BETA");
+		});
+	});
+
+	test("supports shorthand when source is a Cell selection", () => {
+		const ctx = {};
+		const source = $.cell("# Hello\n\nBody\n");
+		const mapped = $.cell(source, (value) => value.length);
+		mapped.applyContext(ctx);
+
+		Context.Run(ctx, () => {
+			expect(mapped.get()).toBeGreaterThan(0);
+		});
+
+		source.set("# Hi\n\nBody\n", true, ctx);
+		Context.Run(ctx, () => {
+			expect(mapped.get()).toBe("# Hi\n\nBody\n".length);
 		});
 	});
 
@@ -94,5 +111,17 @@ describe("unit core cell overloads", () => {
 
 		source.set(5, true, ctx);
 		expect(seen.at(-1)).toBe(10);
+	});
+
+	test("resolves derived cell props before component access", () => {
+		installDom();
+		const source = $.cell({ children: [1, 2] });
+		const root = $.cell(source, (value) => value);
+
+		const Child = ({ node }) => h.div(node.apply((_) => _.children.length));
+		const App = () => h(Child, { node: root });
+		const { parent } = mountWithHandle(App, {});
+
+		expect(parent.textContent).toContain("2");
 	});
 });
