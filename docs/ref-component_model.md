@@ -100,6 +100,17 @@ count.set(0, true, context);
 
 Then use it in templates with effects such as `count.text()`, `count.apply((v) => ...)`, `count.map((item) => ...)`, or `count.match(...)`.
 
+For first-level object fields, you can also use `$.get(...)` as a shorthand for `apply`:
+
+```js
+const node = $.cell({ name: "UI.js", content: "Reactive" });
+const { name, content } = $.get(node);
+
+// Equivalent to:
+// const name = node.apply((value) => value?.name);
+// const content = node.apply((value) => value?.content);
+```
+
 ### Plain JS state in closures
 
 You can also store state in closure variables:

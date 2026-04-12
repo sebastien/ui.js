@@ -214,6 +214,18 @@ select.run = (functor, context = Context.Get(), ...args) => {
 	return invokeInContext(functor, context, undefined, args);
 };
 
+select.get = (selection) =>
+	new Proxy(
+		{},
+		{
+			get(_scope, property) {
+				return selection.apply((value) =>
+					value === null || value === undefined ? undefined : value[property],
+				);
+			},
+		},
+	);
+
 export const $ = select;
 
 // EOF

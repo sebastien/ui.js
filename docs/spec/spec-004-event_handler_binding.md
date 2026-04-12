@@ -1,14 +1,15 @@
-# Event Handler Context Binding (`$.bind` / `$.run`)
+# Core `$` Helpers (`$.bind` / `$.run` / `$.get`)
 
 ## 1. Overview
 
 Event callbacks often execute outside the original component context (for example, `window` listeners created by drag helpers).
 When that happens, `Context.Get()` is undefined or wrong, and `slot.set(...)` updates do not target the intended instance context.
 
-This spec introduces two context helpers on `$`:
+This spec introduces context helpers and selection shorthand helpers on `$`:
 
 - `$.bind(fn, ctx?)`: returns a function permanently bound to a context.
 - `$.run(fn, ctx?, ...args)`: executes a function immediately in a context.
+- `$.get(selection)`: returns a first-level proxy that maps property reads to `selection.apply(...)`.
 
 These APIs provide ergonomic and explicit context binding for deferred or external callbacks.
 
@@ -59,12 +60,34 @@ Behavior:
 
 ---
 
+### 2.3 `$.get(selection)`
+
+Returns a first-level proxy over a selection so property reads are translated into `apply` projections.
+
+```js
+const node = $.cell({ name: "Ada", content: "Hello" });
+const { name, content } = $.get(node);
+
+// Equivalent to:
+// const name = node.apply((value) => value?.name);
+// const content = node.apply((value) => value?.content);
+```
+
+Behavior:
+
+- Each property access returns a selection derived from `selection.apply(...)`.
+- Access is null-safe (`value == null` yields `undefined` for that property).
+- Scope is intentionally first-level only; deep chaining behavior is not part of this API.
+
+---
+
 ## 3. Semantics and Guarantees
 
 - **Stack safety:** context stack is balanced even when callback throws.
 - **No behavioral change for existing code:** additive API only.
 - **Low overhead path:** if no context is provided, helper is near-zero abstraction.
 - **Arg support:** both helpers support variadic arguments.
+- **Selection shorthand:** `$.get` is additive sugar and does not change selection semantics.
 
 ---
 
@@ -106,6 +129,7 @@ Proposed location: `src/js/ui/hyperscript.js` on `select`/`$` object.
 
 - `select.bind = (fn, ctx = Context.Get()) => wrappedFn`
 - `select.run = (fn, ctx = Context.Get(), ...args) => result`
+- `select.get = (selection) => proxy`
 
 Internally:
 
@@ -127,11 +151,14 @@ Add or extend tests to validate:
 5. Wrapper preserves `this` binding semantics.
 6. Context stack remains balanced after throw.
 7. Missing context path still executes function (fallback direct call).
+8. `$.get(selection).prop` equals `selection.apply((value) => value?.prop)`.
+9. Destructuring from `$.get(selection)` returns derived selections per key.
 
-Potential test file:
+Potential test files:
 
 - `tests/unit-core-callback_passing.test.ts` (extend)
 - or new `tests/unit-core-context_binding.test.ts`
+- `tests/unit-core-get_proxy.test.ts`
 
 ---
 

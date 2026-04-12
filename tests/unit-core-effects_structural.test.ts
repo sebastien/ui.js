@@ -18,9 +18,16 @@ describe("unit core effects structural", () => {
 			h.div(
 				mode.match(
 					(_) => _.case("on", h.span("ON")),
-					(_) => _.else(h.span("OFF"))
-				)
+					(_) => _.else(h.span("OFF")),
+				),
 			);
+		const { parent } = mountWithHandle(App, { mode: "on" });
+		expect(parent.textContent).toContain("ON");
+	});
+
+	test("ConditionalEffect supports primitive branch values", () => {
+		const App = ({ mode }) =>
+			h.div(mode.match((_) => _.case("on", "ON").else("OFF")));
 		const { parent } = mountWithHandle(App, { mode: "on" });
 		expect(parent.textContent).toContain("ON");
 	});

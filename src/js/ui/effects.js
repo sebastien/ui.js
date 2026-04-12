@@ -380,10 +380,19 @@ export class ConditionalEffect extends Effect {
 		}
 		// Render the branch directly into the parent context.
 		// Branch effects have globally unique IDs, so no collision.
-		return (state[1] =
-			match === undefined
-				? undefined
-				: match.render(node, position, context, effector, this.id));
+		if (match === undefined) {
+			return (state[1] = undefined);
+		}
+		if (typeof match.render === "function") {
+			return (state[1] = match.render(
+				node,
+				position,
+				context,
+				effector,
+				this.id,
+			));
+		}
+		return (state[1] = effector.ensureContent(node, position, match));
 	}
 
 	unrender(context, effector) {
