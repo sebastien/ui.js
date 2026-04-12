@@ -55,6 +55,39 @@ export class Injection extends Derivation {
 	}
 
 	applyContext(context) {
+		const readSlotValue = (slot) => {
+			const meta = Slot.Derivation(context, slot.id);
+			if (meta && (meta.dirty || meta.stale)) {
+				Slot.FlushDerived(context, slot.id);
+			}
+			return context[slot.id];
+		};
+		const assignInjectedSlotValue = (target, id, value) => {
+			if (!Object.is(target[id], value)) {
+				target[id] = value;
+				target[id + Slot.Revision] = (target[id + Slot.Revision] || 0) + 1;
+				Slot.MarkDependentsDirty(target, id);
+			}
+		};
+		const expandShape = (value) => {
+			if (value instanceof Slot) {
+				return context[value.id];
+			}
+			if (value instanceof Array) {
+				return value.map((_) => expandShape(_));
+			}
+			if (value && Object.getPrototypeOf(value) === Object.prototype) {
+				const res = {};
+				for (const k in value) {
+					res[k] = expandShape(value[k]);
+				}
+				return res;
+			}
+			return value;
+		};
+		const inputData = this.extraction
+			? expandShape(this.extraction)
+			: context[Slot.Input];
 		// First we extract an initial data from the extraction pattern,
 		// if any, otherwise we default from the input slot.
 		// NOTE: This won't work if we have for instance the same component
@@ -73,25 +106,33 @@ export class Injection extends Derivation {
 		const stateKey = this.id + Slot.State;
 		const cached = context[stateKey];
 		if (cached) {
+			const rematched = Slot.Match(this.args, inputData, context, []);
+			const matches = rematched.length ? rematched : cached;
+			context[stateKey] = matches;
 			// Re-render path: reuse the cached match pairs, just update values.
 			// The structure (which slots map to which data slots) doesn't change,
 			// only the resolved values in the context may have changed.
-			for (let i = 0; i < cached.length; i += 2) {
-				const slot = cached[i];
-				const v = cached[i + 1];
+			for (let i = 0; i < matches.length; i += 2) {
+				const slot = matches[i];
+				const v = matches[i + 1];
 				const isRenderableChildren =
 					slot?.name === "children" && v && typeof v.render === "function";
 				if (v instanceof Slot && !isRenderableChildren) {
 					if (typeof v.applyContext === "function") {
 						v.applyContext(context);
 					}
-					derived[slot.id] = context[v.id];
+					assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
 					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
-					derived[slot.id + Slot.Revision] = context[v.id + Slot.Revision];
 				} else if (isRenderableChildren) {
 					derived[slot.id] = new ContextBoundEffect(v, context);
+				} else {
+					derived[slot.id] =
+						typeof v === "function"
+							? Object.assign((...args) => Context.Run(context, v, args), {
+									[BOUND_CONTEXT]: context,
+								})
+							: v;
 				}
-				// Non-slot values don't change between renders, no update needed
 			}
 			return derived;
 		}
@@ -105,7 +146,7 @@ export class Injection extends Derivation {
 		// Returns a flat array: [slot0, value0, slot1, value1, ...]
 		const matches = this._preMatch
 			? this._preMatch
-			: Slot.Match(this.args, context[Slot.Input], context);
+			: Slot.Match(this.args, inputData, context);
 		for (let i = 0; i < matches.length; i += 2) {
 			const slot = matches[i];
 			const v = matches[i + 1];
@@ -117,7 +158,7 @@ export class Injection extends Derivation {
 				}
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
-				derived[slot.id] = context[v.id];
+				assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
 				// Share the parent's subscriber array so that subscriptions
 				// in the derived context propagate to the parent.
 				// Ensure the parent subscriber array exists.
@@ -125,7 +166,6 @@ export class Injection extends Derivation {
 					context[v.id + Slot.Observable] = [];
 				}
 				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
-				derived[slot.id + Slot.Revision] = context[v.id + Slot.Revision];
 			} else {
 				// This is a regular value — no Observable needed eagerly.
 				// If something subscribes later, slot.observable(derived)

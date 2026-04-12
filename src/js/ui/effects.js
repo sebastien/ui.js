@@ -203,6 +203,13 @@ export class ComponentEffect extends Effect {
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
 		this.component.template.unrender(derived, effector, this.id);
+		context[this.id + Slot.State] = undefined;
+		context[this.id + Slot.Node] = undefined;
+		context[this.id] = undefined;
+		if (this.input) {
+			context[this.input.id] = undefined;
+			context[this.input.id + Slot.State] = undefined;
+		}
 	}
 }
 
@@ -813,6 +820,12 @@ export class FormattingEffect extends Effect {
 		// TODO: If input is undefined, we'll need to determine the inputs
 		// dynamically.
 		context = this.input ? this.input.applyContext(context) : context;
+		if (this.input) {
+			const meta = Slot.Derivation(context, this.input.id);
+			if (meta && (meta.dirty || meta.stale)) {
+				Slot.FlushDerived(context, this.input.id);
+			}
+		}
 		// TODO: We need to know when we need to unrender/clear
 		this.subrender(node, position, context, effector);
 		const input = context[this.input?.id];
@@ -1054,22 +1067,34 @@ export class EventHandlerEffect extends Effect {
 		if (target) {
 			context[this.id + Slot.Node] = target;
 		}
+		let state = context[stateId];
 		if (
 			!Object.prototype.hasOwnProperty.call(context, stateId) ||
-			context[stateId] === undefined
+			state === undefined
 		) {
 			if (!target) {
 				return node;
 			}
-			const state = (context[stateId] = {
+			state = context[stateId] = {
 				context: context,
 				target,
 				eventName,
 				wrapper: (...args) => {
 					Context.Run(context, this.wrapper, args);
 				},
-			});
+			};
 			// TODO: Should include the context id in the wrapper
+			target.addEventListener(eventName, state.wrapper);
+			if (node?.ownerElement) {
+				target.removeAttributeNode(node);
+			}
+		} else if (target && state.target !== target) {
+			if (state.target && state.wrapper) {
+				state.target.removeEventListener(state.eventName, state.wrapper);
+			}
+			state.target = target;
+			state.context = context;
+			state.eventName = eventName;
 			target.addEventListener(eventName, state.wrapper);
 			if (node?.ownerElement) {
 				target.removeAttributeNode(node);

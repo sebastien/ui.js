@@ -220,6 +220,18 @@ export class VNode {
 		return res;
 	}
 
+	static CleanupResolvedEffects(resolved, context, effector) {
+		if (!(resolved instanceof Array)) {
+			return;
+		}
+		for (let i = 0; i < resolved.length; i++) {
+			const effect = resolved[i]?.[1];
+			if (effect?.unrender) {
+				effect.unrender(context, effector);
+			}
+		}
+	}
+
 	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
@@ -321,7 +333,8 @@ export class VNode {
 			context[id + Slot.Node] = node;
 			return effector.appendChild(parent, node, position);
 		} else {
-			let resolved = existing._uiEffects;
+			const previousResolved = existing._uiEffects;
+			let resolved = previousResolved;
 			if (!VNode.AreEffectTargetsValid(resolved, effects, existing, context)) {
 				// Cached targets are stale (eg: external DOM edits). Try re-resolve on
 				// the current node first, then replace with a fresh clone if needed.
@@ -343,9 +356,7 @@ export class VNode {
 						}
 						return existing;
 					}
-					for (let i = 0; i < n; i++) {
-						effects[i][1].unrender(context, effector);
-					}
+					VNode.CleanupResolvedEffects(previousResolved, context, effector);
 					renderEffects(replacementResolved);
 					replacement._uiEffects = replacementResolved;
 					context[id + Slot.Node] = replacement;
@@ -361,6 +372,7 @@ export class VNode {
 					}
 					return replacement;
 				}
+				VNode.CleanupResolvedEffects(previousResolved, context, effector);
 				existing._uiEffects = resolved;
 			}
 			renderEffects(resolved);
