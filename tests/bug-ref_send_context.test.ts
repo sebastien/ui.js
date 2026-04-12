@@ -14,13 +14,14 @@ describe("ref and send context lifecycle", () => {
 	test("keeps local ref available inside click handler", () => {
 		const seenRefs = [];
 		const patches = [];
+		const sendResults = [];
 
 		const WikiEditor = () => {
 			const textarea = $.cell(null);
 			const onSave = () => {
 				const node = textarea.get();
 				seenRefs.push(node);
-				$.send("Patch", { content: node?.value ?? null });
+				sendResults.push($.send("Patch", { content: node?.value ?? null }));
 			};
 			return h.div(
 				h.textarea({ ref: textarea }),
@@ -43,12 +44,14 @@ describe("ref and send context lifecycle", () => {
 		expect(seenRefs.length).toBe(1);
 		expect(seenRefs[0]).toBeDefined();
 		expect(seenRefs[0]?.nodeName?.toLowerCase()).toBe("textarea");
+		expect(sendResults).toEqual([true]);
 		expect(patches).toEqual([{ content: "Updated body" }]);
 	});
 
 	test("keeps local ref and Patch event working through conditional swap", () => {
 		const seenRefs = [];
 		const patches = [];
+		const sendResults = [];
 		const edited = $.cell(false);
 
 		const WikiEditor = () => {
@@ -56,7 +59,7 @@ describe("ref and send context lifecycle", () => {
 			const onSave = () => {
 				const node = textarea.get();
 				seenRefs.push(node);
-				$.send("Patch", { content: node?.value ?? null });
+				sendResults.push($.send("Patch", { content: node?.value ?? null }));
 				edited.set(false);
 			};
 			return h.div(
@@ -95,6 +98,7 @@ describe("ref and send context lifecycle", () => {
 		expect(seenRefs.length).toBe(1);
 		expect(seenRefs[0]).toBeDefined();
 		expect(seenRefs[0]?.nodeName?.toLowerCase()).toBe("textarea");
+		expect(sendResults).toEqual([true]);
 		expect(patches).toEqual([{ content: "Conditional body" }]);
 	});
 });

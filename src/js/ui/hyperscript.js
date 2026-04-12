@@ -185,6 +185,7 @@ const isDerivedShape = (value) => {
 };
 
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
+const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
 
 const invokeInContext = (functor, context, thisArg, args) =>
 	context
@@ -225,9 +226,36 @@ select.run = (functor, context = Context.Get(), ...args) => {
 select.send = (eventName, value, node) => {
 	const resolvedEventName = normalizeEventName(eventName);
 	const context = Context.Get();
-	const owner = context?.[Slot.Owner];
-	const inferred = owner ? context[owner.id + Slot.Node] : undefined;
-	const target = node?.ownerElement ?? node ?? inferred;
+	const explicit = node?.ownerElement ?? node;
+	let inferred = undefined;
+	if (!explicit && context) {
+		let current = context;
+		while (current && !inferred) {
+			const currentEventTarget = current[CURRENT_EVENT_TARGET];
+			if (
+				currentEventTarget &&
+				typeof currentEventTarget.dispatchEvent === "function"
+			) {
+				inferred = currentEventTarget;
+				break;
+			}
+			current = current[Slot.Parent];
+		}
+	}
+	if (!explicit && !inferred && context) {
+		let current = context;
+		while (current && !inferred) {
+			const owner = current[Slot.Owner];
+			const candidate = owner ? current[owner.id + Slot.Node] : undefined;
+			const resolved = candidate?.ownerElement ?? candidate;
+			if (resolved && typeof resolved.dispatchEvent === "function") {
+				inferred = resolved;
+				break;
+			}
+			current = current[Slot.Parent];
+		}
+	}
+	const target = explicit ?? inferred;
 	if (
 		!resolvedEventName ||
 		!target ||

@@ -4,6 +4,7 @@ import { applyAttributeValue } from "./utils/dom.js";
 
 const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
+const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
 
 const isShallowEqual = (a, b) => {
 	if (Object.is(a, b)) {
@@ -962,8 +963,21 @@ export class EventHandlerEffect extends Effect {
 		this.wrapper = (event, ...rest) => {
 			const context = Context.Get();
 			const callback = this.resolveHandler(context);
-			const res =
-				typeof callback === "function" ? callback(event, ...rest) : undefined;
+			let previousTarget = undefined;
+			if (context) {
+				previousTarget = context[CURRENT_EVENT_TARGET];
+				context[CURRENT_EVENT_TARGET] =
+					event?.currentTarget ?? event?.target ?? previousTarget;
+			}
+			let res;
+			try {
+				res =
+					typeof callback === "function" ? callback(event, ...rest) : undefined;
+			} finally {
+				if (context) {
+					context[CURRENT_EVENT_TARGET] = previousTarget;
+				}
+			}
 			if (res && Object.getPrototypeOf(res) === Object.prototype) {
 				const updateContext =
 					typeof callback === "function" && callback[BOUND_CONTEXT]
