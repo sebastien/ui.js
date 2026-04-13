@@ -2,6 +2,8 @@
 // A simple effector for the DOM, inserts nodes and attributes at given position relative
 // to a parent, supporting document fragments.
 export class DOMEffector {
+	static PlaceholderTextOwner = Symbol("ui.placeholderTextOwner");
+
 	ensureContent(parent, position, content) {
 		const t = typeof content;
 		if (content === null || content === undefined) {
@@ -31,11 +33,15 @@ export class DOMEffector {
 		}
 		if (parent.nodeType === Node.COMMENT_NODE) {
 			const previous = parent.previousSibling;
-			if (previous?.nodeType === Node.TEXT_NODE) {
+			if (
+				previous?.nodeType === Node.TEXT_NODE &&
+				previous[DOMEffector.PlaceholderTextOwner] === parent
+			) {
 				previous.data = value;
 				return previous;
 			}
 			const child = document.createTextNode(value);
+			child[DOMEffector.PlaceholderTextOwner] = parent;
 			parent.parentNode?.insertBefore(child, parent);
 			return child;
 		}

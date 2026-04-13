@@ -377,12 +377,38 @@ export class ConditionalEffect extends Effect {
 			// We need to unmount the previous state
 			if (state[0] !== undefined) {
 				const previousNode = state[1];
-				if (previousNode?.parentNode) {
-					const parent = previousNode.parentNode;
+				const resolveMountTarget = (branchNode) => {
+					if (!branchNode) {
+						return null;
+					}
+					if (branchNode.parentNode) {
+						return {
+							parent: branchNode.parentNode,
+							anchor: branchNode,
+						};
+					}
+					if (
+						branchNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
+						Array.isArray(branchNode._uiFragmentChildren)
+					) {
+						for (const child of branchNode._uiFragmentChildren) {
+							if (child?.parentNode) {
+								return {
+									parent: child.parentNode,
+									anchor: child,
+								};
+							}
+						}
+					}
+					return null;
+				};
+				const mountTarget = resolveMountTarget(previousNode);
+				if (mountTarget) {
+					const { parent, anchor } = mountTarget;
 					let index = 0;
 					while (
 						index < parent.childNodes.length &&
-						parent.childNodes[index] !== previousNode
+						parent.childNodes[index] !== anchor
 					) {
 						index += 1;
 					}
