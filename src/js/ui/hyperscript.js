@@ -19,13 +19,12 @@ import {
 	Subscription,
 } from "./templates.js";
 import { camelToKebab } from "./utils/text.js";
-import { isObject } from "./utils/types.js";
+import { isObject, isPromiseLike } from "./utils/types.js";
 import { VNode } from "./vdom.js";
 
 const RE_ATTRIBUTE = /^on(?<event>[A-Z][a-z]+)+$/;
 export const Fragment = "#fragment";
 const TEMPLATE_KEY = Symbol.for("ui.templateKey");
-
 const createAttributes = (attributes) => {
 	const attr = new Map();
 	if (attributes) {
@@ -57,7 +56,11 @@ const createAttributes = (attributes) => {
 						? v
 						: v instanceof Slot
 							? new AttributeEffect(v)
-							: v,
+							: // Raw promises are normalized to an effect so they
+								// can resolve asynchronously with latest-only semantics.
+								isPromiseLike(v)
+								? new AttributeEffect(new Signal(v))
+								: v,
 				);
 			}
 		}
@@ -81,7 +84,11 @@ const normalizeChildren = (children) =>
 				? _.apply((value) => value)
 				: _ instanceof Slot
 					? new FormattingEffect(_)
-					: _,
+					: // Raw promise children are also normalized to an effect,
+						// preserving old text while pending and using latest-only apply.
+						isPromiseLike(_)
+						? new FormattingEffect(new Signal(_))
+						: _,
 	);
 
 // The JSX/React-like interface to create VDOM nodes from JavaScript. This is

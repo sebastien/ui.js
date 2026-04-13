@@ -7,6 +7,10 @@ import {
 } from "./test-utils.ts";
 
 describe("unit core effects terminal", () => {
+	const yieldMicrotask = () =>
+		new Promise((resolve) => queueMicrotask(resolve));
+	const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 	beforeEach(() => {
 		installDom();
 	});
@@ -17,11 +21,163 @@ describe("unit core effects terminal", () => {
 		expect(parent.textContent).toContain("hello");
 	});
 
+	test("FormattingEffect resolves promise values from input slot", async () => {
+		const App = ({ message }) =>
+			h.div(
+				h.button(
+					{ onClick: () => message.set(Promise.resolve("resolved")) },
+					"Go",
+				),
+				message,
+			);
+		const { parent } = mountWithHandle(App, { message: "ready" });
+		const button = findFirstByNodeName(parent, "button");
+
+		expect(parent.textContent).toContain("ready");
+		button?.click();
+		expect(parent.textContent).toContain("ready");
+
+		await yieldMicrotask();
+		expect(parent.textContent).toContain("resolved");
+	});
+
+	test("FormattingEffect keeps latest promise resolution only", async () => {
+		const App = ({ message }) =>
+			h.div(
+				h.button(
+					{
+						onClick: () => {
+							message.set(
+								new Promise((resolve) => {
+									setTimeout(() => resolve("slow"), 20);
+								}),
+							);
+							message.set(
+								new Promise((resolve) => {
+									setTimeout(() => resolve("fast"), 5);
+								}),
+							);
+						},
+					},
+					"Race",
+				),
+				message,
+			);
+		const { parent } = mountWithHandle(App, { message: "seed" });
+		const button = findFirstByNodeName(parent, "button");
+
+		button?.click();
+
+		await delay(30);
+		expect(parent.textContent).toContain("fast");
+		expect(parent.textContent).not.toContain("slow");
+	});
+
 	test("AttributeEffect updates dynamic title from slot", () => {
 		const App = ({ title }) => h.div({ title }, "X");
 		const { parent } = mountWithHandle(App, { title: "hello" });
 		const div = parent.childNodes[0];
 		expect(div?.getAttribute("title")).toBe("hello");
+	});
+
+	test("AttributeEffect resolves promise values from input slot", async () => {
+		const App = ({ title }) =>
+			h.div(
+				h.button({ onClick: () => title.set(Promise.resolve("done")) }, "Go"),
+				h.span({ title }, "X"),
+			);
+		const { parent } = mountWithHandle(App, { title: "loading" });
+		const button = findFirstByNodeName(parent, "button");
+		const span = findFirstByNodeName(parent, "span");
+
+		expect(span?.getAttribute("title")).toBe("loading");
+		button?.click();
+		expect(span?.getAttribute("title")).toBe("loading");
+
+		await yieldMicrotask();
+		expect(span?.getAttribute("title")).toBe("done");
+	});
+
+	test("AttributeEffect keeps latest promise resolution only", async () => {
+		const App = ({ title }) =>
+			h.div(
+				h.button(
+					{
+						onClick: () => {
+							title.set(
+								new Promise((resolve) => {
+									setTimeout(() => resolve("slow"), 20);
+								}),
+							);
+							title.set(
+								new Promise((resolve) => {
+									setTimeout(() => resolve("fast"), 5);
+								}),
+							);
+						},
+					},
+					"Race",
+				),
+				h.span({ title }, "X"),
+			);
+		const { parent } = mountWithHandle(App, { title: "initial" });
+		const button = findFirstByNodeName(parent, "button");
+		const span = findFirstByNodeName(parent, "span");
+
+		button?.click();
+
+		await delay(30);
+		expect(span?.getAttribute("title")).toBe("fast");
+	});
+
+	test("Promise updates are ignored after unrender", async () => {
+		let resolveValue;
+		const App = ({ value }) =>
+			h.div(
+				h.button(
+					{
+						onClick: () =>
+							value.set(
+								new Promise((resolve) => {
+									resolveValue = resolve;
+								}),
+							),
+					},
+					"Go",
+				),
+				value,
+			);
+		const { parent, effect, effector, ctx } = mountWithHandle(App, {
+			value: "seed",
+		});
+		const button = findFirstByNodeName(parent, "button");
+
+		button?.click();
+		effect.unrender(ctx, effector);
+
+		resolveValue("late");
+		await yieldMicrotask();
+
+		expect(parent.textContent).toBe("");
+	});
+
+	test("Raw promise children resolve in templates", async () => {
+		const App = () => h.div(Promise.resolve("hello"));
+		const { parent } = mountWithHandle(App, {});
+
+		expect(parent.textContent).toBe("");
+		await yieldMicrotask();
+		expect(parent.textContent).toContain("hello");
+	});
+
+	test("Raw promise attributes resolve in templates", async () => {
+		const App = () => h.div({ title: Promise.resolve("ready") }, "X");
+		const { parent } = mountWithHandle(App, {});
+		const div = parent.childNodes[0];
+
+		expect(div?.getAttribute("title")).toBe("");
+		await yieldMicrotask();
+		expect(div?.getAttribute("title")).toBe("ready");
 	});
 
 	test("AttributeEffect updates input and textarea value properties from slot", () => {

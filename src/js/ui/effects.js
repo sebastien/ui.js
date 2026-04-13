@@ -1,6 +1,7 @@
 import { Context, Slot } from "./cells.js";
 import { applyAttributeValue } from "./utils/dom.js";
 import { onError, onRuntimeError } from "./utils/logging.js";
+import { isPromiseLike } from "./utils/types.js";
 
 const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
@@ -894,13 +895,58 @@ export class FormattingEffect extends Effect {
 		// TODO: We need to know when we need to unrender/clear
 		this.subrender(node, position, context, effector);
 		const input = context[this.input?.id];
-		const previous = context[this.id + Slot.State];
+		let state = context[this.id + Slot.State];
+		if (!state || typeof state !== "object" || !Object.hasOwn(state, "token")) {
+			state = context[this.id + Slot.State] = {
+				input: undefined,
+				token: 0,
+			};
+		}
 		const textNode = context[this.id + Slot.Node];
 		// We make sure to guard a re-render, and only proceed if there'sure
 		// a data change.
-		if (input !== previous || textNode === undefined) {
+		if (!Object.is(input, state.input) || textNode === undefined) {
+			state.input = input;
+			// Promise semantics:
+			// - keep currently rendered text while pending,
+			// - only apply the latest pending promise result.
+			const token = ++state.token;
+			if (isPromiseLike(input)) {
+				if (!textNode && node?.nodeType === Node.TEXT_NODE) {
+					context[this.id + Slot.Node] = node;
+				}
+				Promise.resolve(input)
+					.then((resolved) => {
+						const current = context[this.id + Slot.State];
+						if (
+							!current ||
+							current.token !== token ||
+							!Object.is(current.input, input)
+						) {
+							return;
+						}
+						const output = this._format(resolved, node);
+						const target = context[this.id + Slot.Node];
+						if (!target) {
+							context[this.id + Slot.Node] = effector.ensureText(
+								node,
+								position,
+								output,
+							);
+							return;
+						}
+						target.data = output;
+					})
+					.catch((error) =>
+						onRuntimeError(error, this.format?.toString(), {
+							node,
+							input,
+						}),
+					);
+				return textNode ?? node;
+			}
+
 			const output = this._format(input, node);
-			context[this.id + Slot.State] = input;
 			if (!textNode) {
 				if (node?.nodeType === Node.TEXT_NODE) {
 					node.data = output;
@@ -954,15 +1000,80 @@ export class AttributeEffect extends Effect {
 		context = this.input.applyContext(context);
 		this.subrender(node, position, context, effector);
 		const input = context[this.input.id];
-		const output = this.format ? this.format(input) : input;
-		context[this.id + Slot.State] = applyAttributeValue(
-			node,
-			node.namespaceURI,
-			node.name,
-			output,
-			context[this.id + Slot.State],
-		);
+		let state = context[this.id + Slot.State];
+		if (!state || typeof state !== "object" || !Object.hasOwn(state, "token")) {
+			state = context[this.id + Slot.State] = {
+				input: undefined,
+				token: 0,
+				attributeState: undefined,
+			};
+		}
+		state.input = input;
+		// Same async contract as FormattingEffect:
+		// keep previous attribute value while pending and apply latest-only.
+		const token = ++state.token;
+		const resolveOutput = (candidate) => {
+			if (isPromiseLike(candidate)) {
+				Promise.resolve(candidate)
+					.then((resolved) => {
+						const current = context[this.id + Slot.State];
+						if (!current || current.token !== token) {
+							return;
+						}
+						current.attributeState = applyAttributeValue(
+							node,
+							node.namespaceURI,
+							node.name,
+							resolved,
+							current.attributeState,
+						);
+					})
+					.catch((error) =>
+						onRuntimeError(error, this.format?.toString(), {
+							node,
+							input: candidate,
+						}),
+					);
+				return;
+			}
+			state.attributeState = applyAttributeValue(
+				node,
+				node.namespaceURI,
+				node.name,
+				candidate,
+				state.attributeState,
+			);
+		};
+		if (isPromiseLike(input)) {
+			Promise.resolve(input)
+				.then((resolvedInput) => {
+					const current = context[this.id + Slot.State];
+					if (
+						!current ||
+						current.token !== token ||
+						!Object.is(current.input, input)
+					) {
+						return;
+					}
+					resolveOutput(
+						this.format ? this.format(resolvedInput) : resolvedInput,
+					);
+				})
+				.catch((error) =>
+					onRuntimeError(error, this.format?.toString(), {
+						node,
+						input,
+					}),
+				);
+			return node;
+		}
+		resolveOutput(this.format ? this.format(input) : input);
 		return node;
+	}
+
+	unrender(context, effector) {
+		context[this.id + Slot.State] = undefined;
+		super.unrender(context, effector);
 	}
 }
 

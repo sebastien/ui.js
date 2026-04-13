@@ -91,6 +91,8 @@ function drag(event, move, end) {
 		pointerEvents: event.target.style.pointerEvents,
 		userSelect: event.target.style.userSelect,
 		context,
+		isFirst: true,
+		isLast: false,
 		step: 0,
 		dx: 0,
 		dy: 0,

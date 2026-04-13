@@ -138,19 +138,40 @@ At runtime, UI.js injects parent inputs into a child derived context. If a prop 
 
 ### Children
 
-Children are passed as `children` in input shape. In hyperscript/JSX this is automatic:
+Children are passed as the `children` property in the component's arguments. When using JSX or hyperscript, nested elements are automatically collected and passed as this prop. 
 
-```js
-h(Panel, { title: "Info" }, h.span("content"))
-```
-
-Equivalent idea in JSX:
+You can render these children simply by placing `{children}` where you want them to appear in your component's template.
 
 ```jsx
-<Panel title="Info"><span>content</span></Panel>
+// 1. Define a component that accepts `children`
+const Window = ({ title, children }) => (
+  <div class="window">
+    <header>{title}</header>
+    <section class="window-content">
+      {children}
+    </section>
+  </div>
+);
+
+// 2. Use the component and pass children into it
+const App = () => (
+  <Window title="Settings">
+    <p>General</p>
+    <button>Save</button>
+  </Window>
+);
 ```
 
-In UI.js, this is still slot/input injection mechanics, not a separate reconciliation model.
+When using hyperscript (`h`), the behavior is identical. Children passed as subsequent arguments to `h` are automatically bundled into the `children` prop:
+
+```js
+h(Window, { title: "Settings" },
+  h.p("General"),
+  h.button("Save")
+)
+```
+
+In UI.js, children behave like any other slot/input injection. The runtime automatically normalizes children (e.g., wrapping multiple children in a `Fragment` when needed) so you can render them directly without manual array mapping.
 
 ## Lifecycle Events
 

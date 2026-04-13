@@ -270,7 +270,13 @@ export class VNode {
 					: document.createElement(this.name);
 		// NOTE: Maybe if it's a fragment we should add one for the marker
 		for (const [[ns, name], value] of this.attributes.entries()) {
-			applyAttributeValue(node, ns, name, value);
+			if (value instanceof Effect) {
+				// Attribute effects (including promise-normalized ones) own updates.
+				// Initialize with an empty static value to avoid exposing internals.
+				applyAttributeValue(node, ns, name, "");
+			} else {
+				applyAttributeValue(node, ns, name, value);
+			}
 		}
 		for (const child of this.children) {
 			if (child instanceof Effect || isRenderable(child)) {
