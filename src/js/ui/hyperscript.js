@@ -24,6 +24,7 @@ import { VNode } from "./vdom.js";
 
 const RE_ATTRIBUTE = /^on(?<event>[A-Z][a-z]+)+$/;
 export const Fragment = "#fragment";
+const TEMPLATE_KEY = Symbol.for("ui.templateKey");
 
 const createAttributes = (attributes) => {
 	const attr = new Map();
@@ -86,6 +87,14 @@ const normalizeChildren = (children) =>
 // The JSX/React-like interface to create VDOM nodes from JavaScript. This is
 // used by the `h` hyperscript function below.
 const createElement = (element, attributes, ...children) => {
+	const templateKey = attributes?.key;
+	const resolvedAttributes =
+		attributes && Object.hasOwn(attributes, "key")
+			? (() => {
+					const { key: _key, ...rest } = attributes;
+					return rest;
+				})()
+			: attributes;
 	const normalizedChildren = normalizeChildren(children);
 	const componentChildren =
 		normalizedChildren.length === 0
@@ -93,31 +102,43 @@ const createElement = (element, attributes, ...children) => {
 			: normalizedChildren.length === 1
 				? normalizedChildren[0]
 				: new VNode(undefined, Fragment, new Map(), normalizedChildren);
+	const withTemplateKey = (value) => {
+		if (templateKey !== undefined && value && typeof value === "object") {
+			value[TEMPLATE_KEY] = templateKey;
+		}
+		return value;
+	};
 
 	if (element instanceof Slot) {
-		return new DynamicComponentEffect(
-			new Injection(undefined, false, {
-				...attributes,
-				children: componentChildren,
-			}),
-			element,
-			component, // We pass in the component factory function
+		return withTemplateKey(
+			new DynamicComponentEffect(
+				new Injection(undefined, false, {
+					...resolvedAttributes,
+					children: componentChildren,
+				}),
+				element,
+				component, // We pass in the component factory function
+			),
 		);
 	} else if (typeof element === "function") {
 		const c = component(element);
-		return new ComponentEffect(
-			new Injection(c.input, false, {
-				...attributes,
-				children: componentChildren,
-			}),
-			c,
+		return withTemplateKey(
+			new ComponentEffect(
+				new Injection(c.input, false, {
+					...resolvedAttributes,
+					children: componentChildren,
+				}),
+				c,
+			),
 		);
 	} else {
 		const tagName = element === "" ? Fragment : element;
-		return new VNode(
-			...(Array.isArray(tagName) ? tagName : [undefined, tagName]),
-			createAttributes(attributes),
-			normalizedChildren,
+		return withTemplateKey(
+			new VNode(
+				...(Array.isArray(tagName) ? tagName : [undefined, tagName]),
+				createAttributes(resolvedAttributes),
+				normalizedChildren,
+			),
 		);
 	}
 };

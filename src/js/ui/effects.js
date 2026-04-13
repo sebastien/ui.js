@@ -5,6 +5,7 @@ import { onError, onRuntimeError } from "./utils/logging.js";
 const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
 const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
+const TEMPLATE_KEY = Symbol.for("ui.templateKey");
 
 const isShallowEqual = (a, b) => {
 	if (Object.is(a, b)) {
@@ -490,11 +491,52 @@ export class MappingEffect extends Effect {
 		this.keySlot = keySlot;
 		this.keyBy = keyBy;
 		this.template = factory(valueSlot, keySlot);
+		this.templateKey = this.template?.[TEMPLATE_KEY];
 	}
 
-	resolveKey(value, index) {
+	resolveTemplateKey(value, index, context) {
+		const keyTemplate = this.templateKey;
+		if (keyTemplate === undefined || keyTemplate === null) {
+			return undefined;
+		}
+		if (keyTemplate === this.valueSlot) {
+			return value;
+		}
+		if (keyTemplate === this.keySlot) {
+			return index;
+		}
+		if (
+			keyTemplate &&
+			typeof keyTemplate.transform === "function" &&
+			keyTemplate.input
+		) {
+			const inputValue =
+				keyTemplate.input === this.valueSlot
+					? value
+					: keyTemplate.input === this.keySlot
+						? index
+						: context?.[keyTemplate.input.id];
+			try {
+				return keyTemplate.isMultipleArguments
+					? keyTemplate.transform(...inputValue)
+					: keyTemplate.transform(inputValue);
+			} catch (_error) {
+				return undefined;
+			}
+		}
+		if (keyTemplate instanceof Slot) {
+			return context?.[keyTemplate.id];
+		}
+		return keyTemplate;
+	}
+
+	resolveKey(value, index, context) {
 		if (typeof this.keyBy === "function") {
 			return this.keyBy(value, index);
+		}
+		const templateKey = this.resolveTemplateKey(value, index, context);
+		if (templateKey !== undefined && templateKey !== null) {
+			return templateKey;
 		}
 		if (value && typeof value === "object" && Object.hasOwn(value, "id")) {
 			return value.id;
@@ -609,7 +651,7 @@ export class MappingEffect extends Effect {
 
 		for (let i = 0; i < items.length; i++) {
 			const value = items[i];
-			let token = this.normalizeKey(this.resolveKey(value, i));
+			let token = this.normalizeKey(this.resolveKey(value, i, context));
 			if (!token) {
 				token = `i:${i}`;
 			}
@@ -678,9 +720,10 @@ export class MappingEffect extends Effect {
 
 		if (Array.isArray(items)) {
 			const firstAutoKey =
-				items.length > 0 ? this.resolveKey(items[0], 0) : undefined;
+				items.length > 0 ? this.resolveKey(items[0], 0, context) : undefined;
 			const shouldUseKeyed =
 				typeof this.keyBy === "function" ||
+				this.templateKey !== undefined ||
 				(firstAutoKey !== undefined && firstAutoKey !== null);
 			if (shouldUseKeyed) {
 				this._renderArrayKeyed(
