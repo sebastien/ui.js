@@ -7,7 +7,9 @@ const RETURNED_UPDATE_SLOTS = Symbol("ui.effects.event.returnedUpdateSlots");
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
 const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
 const TEMPLATE_KEY = Symbol.for("ui.templateKey");
+const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
 
+// TODO: Should be moved to utils/collections
 const isShallowEqual = (a, b) => {
 	if (Object.is(a, b)) {
 		return true;
@@ -42,6 +44,7 @@ const isShallowEqual = (a, b) => {
 	return true;
 };
 
+// TODO: Should have documentation explaining the concept.
 export class Effect extends Slot {
 	constructor(input) {
 		super();
@@ -104,6 +107,23 @@ export class TemplateEffect extends Effect {
 	}
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
+		const cleanups = derived[EFFECT_CLEANUPS];
+		if (Array.isArray(cleanups)) {
+			// `$.effect(...)` registrations are scoped to this derived component
+			// context. On unmount we must both unsubscribe and run any pending
+			// disposer to avoid leaking listeners or side effects.
+			for (let i = 0; i < cleanups.length; i++) {
+				const entry = cleanups[i];
+				if (!entry) {
+					continue;
+				}
+				if (entry.selectionId !== undefined && entry.listener) {
+					Slot.Unsub(derived, entry.selectionId, entry.listener);
+				}
+				entry.dispose?.();
+			}
+			derived[EFFECT_CLEANUPS] = undefined;
+		}
 		this.template.unrender(derived, effector, this.id);
 	}
 }

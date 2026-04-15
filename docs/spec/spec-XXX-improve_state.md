@@ -55,8 +55,11 @@ Introduce a formalized two-way binding directive or standard hook (e.g., `bind:v
 ### Problem
 While components support `onMount` and `onUnmount`, there is no formalized primitive to declare an isolated side-effect that reacts to specific `Slot` changes (e.g., React's `useEffect(fn, [deps])` or Vue's `watch`). Managing manual `.sub()` and `.unsub()` subscriptions inside component lifecycles is error-prone and leads to memory leaks.
 
-### Proposed Solution
-Introduce a `Watcher` or `Effect` primitive that can be attached to a component's lifecycle:
-- Automatically binds a side-effect function to tracked dependencies.
-- Re-runs the side-effect when dependencies change.
-- Automatically unsubscribes and cleans up when the host component unmounts.
+### Status
+Implemented via `$.effect(...)` / `$.watch(...)` watcher semantics.
+
+See `spec-006-effect_watchers.md` for:
+- multi-dependency watcher API,
+- lifecycle-scoped cleanup,
+- async latest-wins (`switch`) behavior,
+- explicit context-safe async update guidance.

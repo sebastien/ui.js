@@ -29,4 +29,5 @@
 ## Important
 - DO NOT use version control, let the user manage commits
 - DO NOT start a web server, ask the user to run one for you
+- DO NOT remove FIXME, TODO, NOTE, SEE comments unless FIXME and TODO are resolved.
 - This is a high-performance library, ensure there's no regression (`bun run bench:inspector`) and minimise memory footprint.

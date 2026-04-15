@@ -216,6 +216,7 @@ const isDerivedShape = (value) => {
 
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
 const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
+const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
 
 const invokeInContext = (functor, context, thisArg, args) =>
 	context
@@ -248,6 +249,137 @@ select.cell = (value, updater, extractor, inputExtractor) => {
 	}
 	return new Cell(value, updater, extractor);
 };
+
+select.effect = (selection, handler, options = undefined) => {
+	if (!selection || typeof handler !== "function") {
+		return;
+	}
+	const normalized =
+		typeof options === "boolean" ? { immediate: options } : options || {};
+	const context = normalized.context || Context.Get();
+	if (!context) {
+		return;
+	}
+	const immediate = normalized.immediate === true;
+	const mode = normalized.mode || "switch";
+	Slot.Each(selection, (slot) => {
+		if (slot && typeof slot.applyContext === "function") {
+			slot.applyContext(context);
+		}
+	});
+	if (typeof selection.applyContext === "function") {
+		selection.applyContext(context);
+	}
+	const ids = [];
+	const seenIds = new Set();
+	Slot.Each(selection, (slot) => {
+		if (!slot || slot.id === undefined || seenIds.has(slot.id)) {
+			return;
+		}
+		seenIds.add(slot.id);
+		ids.push(slot.id);
+	});
+	if (!ids.length) {
+		return;
+	}
+	let previous;
+	let hasPrevious = false;
+	let cleanup;
+	let runId = 0;
+	let controller;
+	let stopped = false;
+	const disposeCurrent = () => {
+		if (typeof cleanup === "function") {
+			const previousCleanup = cleanup;
+			cleanup = undefined;
+			previousCleanup();
+		}
+		if (controller) {
+			controller.abort();
+			controller = undefined;
+		}
+	};
+	const stop = () => {
+		if (stopped) {
+			return;
+		}
+		stopped = true;
+		for (let i = 0; i < ids.length; i++) {
+			Slot.Unsub(context, ids[i], listener);
+		}
+		disposeCurrent();
+	};
+	const listener = () => {
+		if (stopped) {
+			return;
+		}
+		const next = Slot.Expand(selection, context);
+		const prev = hasPrevious ? previous : undefined;
+		hasPrevious = true;
+		previous = next;
+		disposeCurrent();
+		const currentRunId = ++runId;
+		controller =
+			mode === "switch" && typeof AbortController === "function"
+				? new AbortController()
+				: undefined;
+		const signal = controller?.signal;
+		const runCleanups = [];
+		cleanup = () => {
+			for (let i = runCleanups.length - 1; i >= 0; i--) {
+				runCleanups[i]();
+			}
+		};
+		const onCleanup = (functor) => {
+			if (
+				typeof functor === "function" &&
+				!stopped &&
+				currentRunId === runId &&
+				!signal?.aborted
+			) {
+				runCleanups.push(functor);
+			}
+		};
+		const api = {
+			signal,
+			run: (functor, ...args) =>
+				typeof functor === "function"
+					? invokeInContext(functor, context, undefined, args)
+					: undefined,
+			bind: (functor) => select.bind(functor, context),
+			onCleanup,
+			stop,
+		};
+		const result = invokeInContext(handler, context, undefined, [
+			next,
+			prev,
+			api,
+		]);
+		if (result && typeof result.then === "function") {
+			result.then((resolved) => {
+				if (stopped || currentRunId !== runId || signal?.aborted) {
+					return;
+				}
+				onCleanup(resolved);
+			});
+		} else {
+			onCleanup(result);
+		}
+	};
+	for (let i = 0; i < ids.length; i++) {
+		Slot.Sub(context, ids[i], listener);
+	}
+	const cleanups = context[EFFECT_CLEANUPS] || (context[EFFECT_CLEANUPS] = []);
+	cleanups.push({
+		dispose: stop,
+	});
+	if (immediate) {
+		listener();
+	}
+	return stop;
+};
+
+select.watch = select.effect;
 
 select.signal = (value, context = []) => {
 	return new Signal(value, context);
