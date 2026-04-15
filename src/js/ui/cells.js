@@ -196,9 +196,14 @@ export class Slot {
 			for (const [k, v] of template.entries()) {
 				res.set(k, Slot.Expand(v, context));
 			}
+			return res;
 		} else if (Array.isArray(template)) {
 			return template.map((_) => Slot.Expand(_, context));
-		} else if (Object.getPrototypeOf(template) === Object.prototype) {
+		} else if (
+			template !== null &&
+			template !== undefined &&
+			Object.getPrototypeOf(template) === Object.prototype
+		) {
 			const res = {};
 			for (const k in template) {
 				res[k] = Slot.Expand(template[k], context);
