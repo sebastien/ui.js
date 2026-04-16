@@ -166,10 +166,20 @@ export class Injection extends Derivation {
 					context[v.id + Slot.Observable] = [];
 				}
 				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
+				// Propagate value changes from the parent slot to the
+				// derived slot so that subscribers reading from `derived`
+				// always see the latest value.
+				Slot.Sub(context, v.id, (value) => {
+					derived[slot.id] = value;
+				});
 			} else {
-				// This is a regular value — no Observable needed eagerly.
-				// If something subscribes later, slot.observable(derived)
-				// will create one on demand.
+				// Eagerly create an Observable array so that child contexts
+				// (created via Object.create) can share it through the
+				// prototype chain. Without this, each child would create its
+				// own isolated array and cross-row notifications would fail.
+				if (!derived[slot.id + Slot.Observable]) {
+					derived[slot.id + Slot.Observable] = [];
+				}
 				derived[slot.id] =
 					typeof v === "function"
 						? Object.assign((...args) => Context.Run(context, v, args), {

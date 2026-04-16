@@ -176,6 +176,9 @@ export class ComponentEffect extends Effect {
 					}
 				}
 				if (!changed) {
+					// Extraction values haven't changed, but the node
+					// may need repositioning (e.g., keyed list reorder).
+					effector.appendChild(node, existing, position);
 					return existing;
 				}
 				// Update cached values
@@ -186,6 +189,7 @@ export class ComponentEffect extends Effect {
 				// No extraction slots, use input comparison
 				const extracted = context[Slot.Input];
 				if (isShallowEqual(prevValues, extracted)) {
+					effector.appendChild(node, existing, position);
 					return existing;
 				}
 				derived[this.id + Slot.State] = extracted;
@@ -214,13 +218,14 @@ export class ComponentEffect extends Effect {
 				{ component: this.component },
 			);
 		}
-		return this.component.template.render(
+		const result = this.component.template.render(
 			node,
 			position,
 			derived,
 			effector,
 			this.id,
 		);
+		return result;
 	}
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
@@ -700,7 +705,12 @@ export class MappingEffect extends Effect {
 				ctx[this.keySlot.id] = i;
 				mapping.set(token, ctx);
 			} else {
-				const existing = ctx[templateId + Slot.Node];
+				const existing =
+					ctx[templateId + Slot.Node] ||
+					// ComponentEffect stores the node on its Injection's
+					// derived context, not directly on the mapping child.
+					(this.template.input &&
+						ctx[this.template.input.id]?.[templateId + Slot.Node]);
 				if (!(existing && Object.is(ctx[this.valueSlot.id], value))) {
 					this.valueSlot.set(value, true, ctx);
 					ctx[this.valueSlot.id] = value;

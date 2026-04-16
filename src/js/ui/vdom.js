@@ -409,6 +409,10 @@ export class VNode {
 				} else {
 					effector.appendChild(parent, existing, position);
 				}
+			} else {
+				// Node is already in the DOM — ensure it is at the correct
+				// position (handles keyed list reordering such as swap).
+				effector.appendChild(parent, existing, position);
 			}
 			return existing;
 		}
