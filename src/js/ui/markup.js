@@ -285,6 +285,8 @@ export const parameters = (node) => {
 
 // --
 // The equivalent of `hyperscript.template()`.
+export { MarkupProcessor };
+
 export const template = (name) => {
 	// We get the node for the template
 	const proc = DEFAULT_PROCESSOR;

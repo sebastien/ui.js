@@ -83,3 +83,60 @@ describe("Slot.Expand", () => {
 		expect(Slot.Expand(undefined, ctx)).toBe(undefined);
 	});
 });
+
+// Bug #1: Slot.Walk has the same null-safety gap as Slot.Expand had
+// before the fix. Object.getPrototypeOf(null) throws TypeError.
+describe("Slot.Walk", () => {
+	test("walks a single Slot", () => {
+		const slot = new Slot();
+		const result = [...Slot.Walk(slot)];
+		expect(result).toEqual([slot]);
+	});
+
+	test("walks a plain object of Slots", () => {
+		const a = new Slot();
+		const b = new Slot();
+		const result = [...Slot.Walk({ a, b })];
+		expect(result).toContain(a);
+		expect(result).toContain(b);
+		expect(result).toHaveLength(2);
+	});
+
+	test("walks an array of Slots", () => {
+		const a = new Slot();
+		const b = new Slot();
+		const result = [...Slot.Walk([a, b])];
+		expect(result).toContain(a);
+		expect(result).toContain(b);
+		expect(result).toHaveLength(2);
+	});
+
+	test("walks a Map of Slots", () => {
+		const a = new Slot();
+		const b = new Slot();
+		const template = new Map([
+			["x", a],
+			["y", b],
+		]);
+		const result = [...Slot.Walk(template)];
+		expect(result).toContain(a);
+		expect(result).toContain(b);
+		expect(result).toHaveLength(2);
+	});
+
+	test("handles null without throwing", () => {
+		const result = [...Slot.Walk(null)];
+		expect(result).toEqual([]);
+	});
+
+	test("handles undefined without throwing", () => {
+		const result = [...Slot.Walk(undefined)];
+		expect(result).toEqual([]);
+	});
+
+	test("handles primitive values without throwing", () => {
+		expect([...Slot.Walk("hello")]).toEqual([]);
+		expect([...Slot.Walk(42)]).toEqual([]);
+		expect([...Slot.Walk(true)]).toEqual([]);
+	});
+});
