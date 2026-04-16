@@ -10,6 +10,7 @@ import { assign } from "./utils/collections.js";
 import { getSignature } from "./utils/inspect.js";
 
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
+const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
 
 // TODO: Shouldn't that be an Input?
 // TODO: Not of these don't belong in templates, they are really about
@@ -69,6 +70,42 @@ export class Injection extends Derivation {
 				Slot.MarkDependentsDirty(target, id);
 			}
 		};
+		const setInjectionAlias = (
+			derived,
+			targetSlot,
+			sourceSlot,
+			sourceContext,
+		) => {
+			let ownerContext = sourceContext;
+			while (
+				ownerContext &&
+				!Object.hasOwn(ownerContext, sourceSlot.id) &&
+				ownerContext[Slot.Parent]
+			) {
+				ownerContext = ownerContext[Slot.Parent];
+			}
+			const aliases =
+				derived[INJECTION_ALIASES] || (derived[INJECTION_ALIASES] = new Map());
+			aliases.set(targetSlot.id, {
+				sourceId: sourceSlot.id,
+				sourceContext: ownerContext,
+			});
+		};
+		const bindFunctionToContext = (fn) => {
+			const bound = fn?.[BOUND_CONTEXT] ? fn[BOUND_CONTEXT] : context;
+			return Object.assign(
+				function (...args) {
+					const finalArgs =
+						args.length === 0 && this !== undefined && this !== globalThis
+							? [this]
+							: args;
+					return Context.Run(bound, fn, finalArgs);
+				},
+				{
+					[BOUND_CONTEXT]: bound,
+				},
+			);
+		};
 		const expandShape = (value) => {
 			if (value instanceof Slot) {
 				return context[value.id];
@@ -122,16 +159,16 @@ export class Injection extends Derivation {
 						v.applyContext(context);
 					}
 					assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
+					setInjectionAlias(derived, slot, v, context);
+					if (!context[v.id + Slot.Observable]) {
+						context[v.id + Slot.Observable] = [];
+					}
 					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
 				} else if (isRenderableChildren) {
 					derived[slot.id] = new ContextBoundEffect(v, context);
 				} else {
 					derived[slot.id] =
-						typeof v === "function"
-							? Object.assign((...args) => Context.Run(context, v, args), {
-									[BOUND_CONTEXT]: context,
-								})
-							: v;
+						typeof v === "function" ? bindFunctionToContext(v) : v;
 				}
 			}
 			return derived;
@@ -159,6 +196,7 @@ export class Injection extends Derivation {
 				// If the target value is a slot, then we make sure that if it's
 				// removed, we update it.
 				assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
+				setInjectionAlias(derived, slot, v, context);
 				// Share the parent's subscriber array so that subscriptions
 				// in the derived context propagate to the parent.
 				// Ensure the parent subscriber array exists.
@@ -166,25 +204,13 @@ export class Injection extends Derivation {
 					context[v.id + Slot.Observable] = [];
 				}
 				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
-				// Propagate value changes from the parent slot to the
-				// derived slot so that subscribers reading from `derived`
-				// always see the latest value.
-				Slot.Sub(context, v.id, (value) => {
-					derived[slot.id] = value;
-				});
 			} else {
-				// Eagerly create an Observable array so that child contexts
-				// (created via Object.create) can share it through the
-				// prototype chain. Without this, each child would create its
-				// own isolated array and cross-row notifications would fail.
-				if (!derived[slot.id + Slot.Observable]) {
-					derived[slot.id + Slot.Observable] = [];
-				}
+				// This is a regular value — no Observable needed eagerly.
+				// If something subscribes later, slot.observable(derived)
+				// will create one on demand.
 				derived[slot.id] =
 					typeof v === "function"
-						? Object.assign((...args) => Context.Run(context, v, args), {
-								[BOUND_CONTEXT]: context,
-							})
+						? bindFunctionToContext(v)
 						: slot?.name === "children" && v && typeof v.render === "function"
 							? new ContextBoundEffect(v, context)
 							: v;
@@ -328,18 +354,6 @@ export class Subscription extends Selection {
 		}
 		return ctx;
 	}
-
-	unrender(context) {
-		const ctx = this.applyContext(context);
-		const updater = ctx[this.id + Slot.State];
-		if (updater) {
-			Slot.Each(this.input, (slot) => {
-				Slot.Unsub(context, slot.id, updater);
-			});
-		}
-		ctx[this.id + Slot.State] = undefined;
-		ctx[this.id + Slot.Render] = undefined;
-	}
 }
 export class Argument extends Selection {
 	constructor(name) {
@@ -398,21 +412,6 @@ export class Cell extends Selection {
 			}
 		}
 		return context;
-	}
-
-	unrender(context) {
-		const state = context[this.id + Slot.State];
-		if (state) {
-			const [handler, updater] = state;
-			if (handler) {
-				Slot.Unsub(context, this.id, handler);
-			}
-			if (updater && this.source instanceof Slot) {
-				Slot.Unsub(context, this.source.id, updater);
-			}
-		}
-		context[this.id + Slot.State] = undefined;
-		context[this.id + Slot.Render] = undefined;
 	}
 }
 
@@ -512,6 +511,7 @@ export class DynamicEvaluation extends Selection {
 	}
 	applyContext(context) {
 		const value = Context.Run(context, this.evaluator);
+		this.value = value;
 		context[this.id] = value;
 		return context;
 	}

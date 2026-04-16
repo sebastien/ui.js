@@ -15,6 +15,7 @@ import {
 	RESULTS_HISTORY_DIR,
 	DATA_RESULTS_DIR,
 	DATA_RESULTS_PREFIX,
+	DATA_FRAMEWORKS_RESULTS_PREFIX,
 } from "./config.mjs";
 import {
 	buildComparisonReport,
@@ -343,6 +344,15 @@ const main = async () => {
 	await writeJsonFile(dataResultPath, output);
 	console.log(
 		`Saved data snapshot to ${path.relative(repoRoot, dataResultPath)}`,
+	);
+
+	const frameworksDataPath = path.join(
+		dataResultsDirPath,
+		`${DATA_FRAMEWORKS_RESULTS_PREFIX}-${dataStamp}.json`,
+	);
+	await writeJsonFile(frameworksDataPath, entries);
+	console.log(
+		`Saved frameworks data to ${path.relative(repoRoot, frameworksDataPath)}`,
 	);
 
 	if (options.save) {

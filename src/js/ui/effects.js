@@ -176,9 +176,6 @@ export class ComponentEffect extends Effect {
 					}
 				}
 				if (!changed) {
-					// Extraction values haven't changed, but the node
-					// may need repositioning (e.g., keyed list reorder).
-					effector.appendChild(node, existing, position);
 					return existing;
 				}
 				// Update cached values
@@ -189,7 +186,6 @@ export class ComponentEffect extends Effect {
 				// No extraction slots, use input comparison
 				const extracted = context[Slot.Input];
 				if (isShallowEqual(prevValues, extracted)) {
-					effector.appendChild(node, existing, position);
 					return existing;
 				}
 				derived[this.id + Slot.State] = extracted;
@@ -218,14 +214,13 @@ export class ComponentEffect extends Effect {
 				{ component: this.component },
 			);
 		}
-		const result = this.component.template.render(
+		return this.component.template.render(
 			node,
 			position,
 			derived,
 			effector,
 			this.id,
 		);
-		return result;
 	}
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
@@ -508,41 +503,6 @@ function* _keys(value) {
 		}
 	}
 }
-
-// Function: _lis
-// Returns indices of the longest increasing subsequence of `arr`.
-// Used by keyed list reordering to minimize DOM moves.
-function _lis(arr) {
-	const n = arr.length;
-	if (n === 0) return [];
-	// tails[i] = index in arr of smallest tail element for IS of length i+1
-	const tails = [0];
-	const prev = new Array(n).fill(-1);
-	for (let i = 1; i < n; i++) {
-		if (arr[i] > arr[tails[tails.length - 1]]) {
-			prev[i] = tails[tails.length - 1];
-			tails.push(i);
-		} else {
-			let lo = 0,
-				hi = tails.length - 1;
-			while (lo < hi) {
-				const mid = (lo + hi) >> 1;
-				if (arr[tails[mid]] < arr[i]) lo = mid + 1;
-				else hi = mid;
-			}
-			tails[lo] = i;
-			prev[i] = lo > 0 ? tails[lo - 1] : -1;
-		}
-	}
-	const result = new Array(tails.length);
-	let k = tails[tails.length - 1];
-	for (let i = result.length - 1; i >= 0; i--) {
-		result[i] = k;
-		k = prev[k];
-	}
-	return result;
-}
-
 export class MappingEffect extends Effect {
 	constructor(input, factory, valueSlot, keySlot, keyBy = undefined) {
 		super(input);
@@ -660,6 +620,7 @@ export class MappingEffect extends Effect {
 			const base = k << 1;
 			const value = items[k];
 			let ctx = entries[base];
+			let shouldRender = false;
 
 			if (!ctx) {
 				ctx = Object.create(context);
@@ -671,17 +632,28 @@ export class MappingEffect extends Effect {
 				ctx[this.keySlot.id] = k;
 				entries[base] = ctx;
 				entries[base + 1] = value;
+				shouldRender = true;
 			} else {
-				const existing = ctx[templateId + Slot.Node];
-				if (existing && Object.is(entries[base + 1], value)) {
-					continue;
+				const existing =
+					ctx[templateId + Slot.Node] ?? ctx[this.id + Slot.Node];
+				const valueChanged = !(existing && Object.is(entries[base + 1], value));
+				if (valueChanged) {
+					this.valueSlot.set(value, true, ctx);
+					this.keySlot.set(k, true, ctx);
+					entries[base + 1] = value;
 				}
-				this.valueSlot.set(value, true, ctx);
-				this.keySlot.set(k, true, ctx);
-				entries[base + 1] = value;
+				shouldRender = !existing;
 			}
-			itemPos[1] = k;
-			this.template.render(node, itemPos, ctx, effector, templateId);
+			if (shouldRender) {
+				itemPos[1] = k;
+				ctx[templateId + Slot.Node] = this.template.render(
+					node,
+					itemPos,
+					ctx,
+					effector,
+					templateId,
+				);
+			}
 		}
 
 		if (prevCount > n) {
@@ -730,6 +702,7 @@ export class MappingEffect extends Effect {
 			nextOrder.push(token);
 
 			let ctx = mapping.get(token);
+			let shouldRender = false;
 			if (!ctx) {
 				ctx = Object.create(context);
 				ctx[Slot.Parent] = context;
@@ -739,133 +712,50 @@ export class MappingEffect extends Effect {
 				ctx[this.valueSlot.id] = value;
 				ctx[this.keySlot.id] = i;
 				mapping.set(token, ctx);
+				shouldRender = true;
 			} else {
 				const existing =
-					ctx[templateId + Slot.Node] ||
-					// ComponentEffect stores the node on its Injection's
-					// derived context, not directly on the mapping child.
-					(this.template.input &&
-						ctx[this.template.input.id]?.[templateId + Slot.Node]);
-				if (!(existing && Object.is(ctx[this.valueSlot.id], value))) {
+					ctx[templateId + Slot.Node] ?? ctx[this.id + Slot.Node];
+				const valueChanged = !(
+					existing && Object.is(ctx[this.valueSlot.id], value)
+				);
+				if (valueChanged) {
 					this.valueSlot.set(value, true, ctx);
 					ctx[this.valueSlot.id] = value;
-					// The subscription cascade from set() synchronously
-					// propagates the update through all nested effects.
-					// Skip the redundant template.render() below to avoid
-					// re-triggering inner MappingEffects after their DOM
-					// has already been restructured.
-					itemPos[1] = i;
-					if (!Object.is(ctx[this.keySlot.id], i)) {
-						this.keySlot.set(i, true, ctx);
-						ctx[this.keySlot.id] = i;
-					}
-					continue;
 				}
-				// Value unchanged — update key and skip template render.
-				if (!Object.is(ctx[this.keySlot.id], i)) {
+				const indexChanged = !Object.is(ctx[this.keySlot.id], i);
+				if (indexChanged) {
 					this.keySlot.set(i, true, ctx);
 					ctx[this.keySlot.id] = i;
 				}
-				continue;
+				shouldRender = !existing || (!valueChanged && !indexChanged);
 			}
 
-			itemPos[1] = i;
-			this.template.render(node, itemPos, ctx, effector, templateId);
+			if (shouldRender) {
+				itemPos[1] = i;
+				ctx[templateId + Slot.Node] = this.template.render(
+					node,
+					itemPos,
+					ctx,
+					effector,
+					templateId,
+				);
+			}
 		}
 
-		// Reorder DOM nodes to match new order if existing items
-		// changed positions. Skip if items were only added/removed
-		// (append, remove) without reordering existing items.
-		if (previousOrder.length > 0 && nextOrder.length > 0) {
-			// Check if retained items maintain their relative order.
-			// Walk both lists in parallel: for each token in nextOrder
-			// that also existed in previousOrder, verify it appears
-			// in the same relative sequence.
-			const prevSet = new Set(previousOrder);
-			let reorderNeeded = false;
-			let prevIdx = 0;
+		if (node?.childNodes) {
 			for (let i = 0; i < nextOrder.length; i++) {
-				const token = nextOrder[i];
-				if (!prevSet.has(token)) continue; // new item
-				// Advance prevIdx to find this token
-				while (
-					prevIdx < previousOrder.length &&
-					previousOrder[prevIdx] !== token
-				) {
-					prevIdx++;
+				const ctx = mapping.get(nextOrder[i]);
+				const itemNode = ctx?.[templateId + Slot.Node];
+				if (!itemNode) {
+					continue;
 				}
-				if (prevIdx >= previousOrder.length) {
-					reorderNeeded = true;
-					break;
-				}
-				prevIdx++;
-			}
-			if (reorderNeeded) {
-				// Reorder DOM nodes using a minimal-move strategy.
-				// Build a map from old token → old index for retained items.
-				const oldIndex = new Map();
-				for (let i = 0; i < previousOrder.length; i++) {
-					oldIndex.set(previousOrder[i], i);
-				}
-				// Compute the longest increasing subsequence (LIS) of old
-				// indices in the new order. Nodes in the LIS stay in place;
-				// only the rest need to be moved.
-				const retained = []; // {token, oldIdx, newIdx}
-				for (let i = 0; i < nextOrder.length; i++) {
-					const oi = oldIndex.get(nextOrder[i]);
-					if (oi !== undefined) {
-						retained.push({ token: nextOrder[i], oldIdx: oi, newIdx: i });
-					}
-				}
-				// Find LIS by old index
-				const lis = _lis(retained.map((r) => r.oldIdx));
-				const lisSet = new Set(lis.map((i) => retained[i].token));
-
-				// Resolve DOM node for a token
-				const getNode = (token) => {
-					const ctx = mapping.get(token);
-					if (!ctx) return null;
-					return (
-						ctx[templateId + Slot.Node] ||
-						(this.template.input &&
-							ctx[this.template.input.id]?.[templateId + Slot.Node]) ||
-						null
-					);
-				};
-
-				if (node.nodeType === 8 /* COMMENT_NODE */) {
-					const parent = node.parentNode;
-					// Move only nodes NOT in the LIS. Insert them at their
-					// correct position relative to their next sibling in the
-					// new order.
-					for (let i = nextOrder.length - 1; i >= 0; i--) {
-						const token = nextOrder[i];
-						if (lisSet.has(token)) continue;
-						const dn = getNode(token);
-						if (!dn) continue;
-						// Find the next sibling: first node after this in
-						// nextOrder that has a DOM node.
-						let ref = node; // default: before anchor
-						for (let j = i + 1; j < nextOrder.length; j++) {
-							const sib = getNode(nextOrder[j]);
-							if (sib) {
-								ref = sib;
-								break;
-							}
-						}
-						parent.insertBefore(dn, ref);
-					}
-				} else {
-					const parent = node.parentNode || node;
-					for (let i = 0; i < nextOrder.length; i++) {
-						const ctx = mapping.get(nextOrder[i]);
-						if (ctx) {
-							const dn =
-								ctx[templateId + Slot.Node] ||
-								(this.template.input &&
-									ctx[this.template.input.id]?.[templateId + Slot.Node]);
-							if (dn) parent.appendChild(dn);
-						}
+				const at = node.childNodes[i];
+				if (at !== itemNode) {
+					if (at) {
+						node.insertBefore(itemNode, at);
+					} else {
+						node.appendChild(itemNode);
 					}
 				}
 			}
@@ -985,6 +875,7 @@ export class MappingEffect extends Effect {
 		// ctx[this.id + Slot.Revision] and previous value is read from
 		// ctx[this.valueSlot.id].
 		let ctx = mapping.get(k);
+		let shouldRender = false;
 		// If there's no context, then we have a new key.
 		if (!ctx) {
 			// We start by creating a derived context, so that derivations
@@ -1003,26 +894,36 @@ export class MappingEffect extends Effect {
 			ctx[this.keySlot.id] = k;
 			// We register the context in the mapping.
 			mapping.set(k, ctx);
+			shouldRender = true;
 		} else {
 			// Update the revision so this entry is not cleaned up as stale.
 			ctx[this.id + Slot.Revision] = revision;
-			const existing = ctx[templateId + Slot.Node];
-			// Short-circuit: skip slot assignment and re-render if value
-			// hasn't changed and we already have a rendered node.
-			if (existing && Object.is(ctx[this.valueSlot.id], value)) {
-				return i + 1;
+			const existing = ctx[templateId + Slot.Node] ?? ctx[this.id + Slot.Node];
+			const valueChanged = !(
+				existing && Object.is(ctx[this.valueSlot.id], value)
+			);
+			if (valueChanged) {
+				this.valueSlot.set(value, true, ctx);
+				this.keySlot.set(k, true, ctx);
 			}
-			this.valueSlot.set(value, true, ctx);
-			this.keySlot.set(k, true, ctx);
+			shouldRender = !existing || !valueChanged;
 		}
-		// Reuse the position array, just update the index
-		itemPos[1] = i;
-		this.template.render(node, itemPos, ctx, effector, templateId);
+		if (shouldRender) {
+			// Reuse the position array, just update the index
+			itemPos[1] = i;
+			ctx[templateId + Slot.Node] = this.template.render(
+				node,
+				itemPos,
+				ctx,
+				effector,
+				templateId,
+			);
+		}
 		return i + 1;
 	}
 	unrender(context, effector) {
-		context = this.input.applyContext(context);
-		const state = context[this.id + Slot.State];
+		const derived = super.unrender(context, effector);
+		const state = derived[this.id + Slot.State];
 		const templateId = this.template.id ?? this.id;
 		if (state) {
 			if (state instanceof Map) {
@@ -1047,9 +948,9 @@ export class MappingEffect extends Effect {
 				state.length = 0;
 			}
 		}
-		context[this.id + Slot.State] = undefined;
-		context[this.id + Slot.Node] = undefined;
-		super.unrender(context, effector);
+		derived[this.id + Slot.State] = undefined;
+		derived[this.id + Slot.Node] = undefined;
+		derived[this.id + Slot.Render] = undefined;
 	}
 }
 
@@ -1161,6 +1062,10 @@ export class FormattingEffect extends Effect {
 
 	unrender(context, effector) {
 		const c = super.unrender(context, effector);
+		const textNode = c[this.id + Slot.Node];
+		if (textNode?.parentNode) {
+			textNode.parentNode.removeChild(textNode);
+		}
 		// Clear cached text node and previous value so re-rendering
 		// after a conditional round-trip creates a fresh text node
 		// instead of returning a detached one.

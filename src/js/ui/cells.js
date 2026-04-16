@@ -2,6 +2,7 @@ import { onError } from "./utils/logging.js";
 
 const DERIVATION_KEY = Symbol("ui.cells.derivations");
 const DEPENDENTS_KEY = Symbol("ui.cells.dependents");
+const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
 
 const isPlainObject = (value) =>
 	value && Object.getPrototypeOf(value) === Object.prototype;
@@ -725,6 +726,15 @@ export class Slot {
 	// We `force` by default
 	set(value, force = true, context = Context.Get()) {
 		if (context) {
+			let aliasContext = context;
+			while (aliasContext) {
+				const alias = aliasContext[INJECTION_ALIASES]?.get?.(this.id);
+				if (alias?.sourceContext) {
+					Slot.Notify(alias.sourceContext, alias.sourceId, value, force);
+					return;
+				}
+				aliasContext = aliasContext[Slot.Parent];
+			}
 			Slot.Notify(context, this.id, value, force);
 		}
 	}
@@ -758,14 +768,11 @@ export class Slot {
 			return this.get();
 		} else {
 			const v = this.list();
-			const target = i < 0 ? v.length + i : i;
-			if (target < 0) {
-				return v;
-			}
-			while (v.length < target) {
+			const j = i < 0 ? Math.max(0, v.length + i) : i;
+			while (v.length < j) {
 				v.push(undefined);
 			}
-			v[target] = value;
+			v[j] = value;
 			this.set(v, true);
 			return v;
 		}
@@ -778,9 +785,28 @@ export class Slot {
 	}
 
 	remove(item) {
-		const v = item instanceof Slot ? item.get() : item;
+		let v = item;
+		if (item instanceof Slot) {
+			let ctx = Context.Get();
+			while (ctx) {
+				if (Object.hasOwn(ctx, item.id)) {
+					v = ctx[item.id];
+					break;
+				}
+				ctx = ctx[Slot.Parent];
+			}
+			if (v === item) {
+				v = item.get();
+			}
+		}
 		const w = this.list();
-		const i = w.indexOf(v);
+		let i = w.indexOf(v);
+		if (i === -1 && v && typeof v === "object" && Object.hasOwn(v, "id")) {
+			i = w.findIndex(
+				(_) =>
+					_ && typeof _ === "object" && Object.hasOwn(_, "id") && _.id === v.id,
+			);
+		}
 		if (i !== -1) {
 			w.splice(i, 1);
 			this.set(w, true);

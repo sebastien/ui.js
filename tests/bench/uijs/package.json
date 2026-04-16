@@ -1,0 +1,30 @@
+{
+	"name": "js-framework-benchmark-uijs",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "dist/main.js",
+	"js-framework-benchmark": {
+		"frameworkVersion": "local",
+		"frameworkHomeURL": "https://github.com/sebastien/ui.js",
+		"language": "JavaScript"
+	},
+	"scripts": {
+		"dev": "rollup -c -w",
+		"build-prod": "rollup -c --environment production"
+	},
+	"author": "Sébastien Pierre",
+	"license": "BSD",
+	"homepage": "https://github.com/sebastien/ui.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sebastien/ui.js.git"
+	},
+	"dependencies": {
+		"ui": "file:../../../../.."
+	},
+	"devDependencies": {
+		"@rollup/plugin-node-resolve": "^15.3.0",
+		"@rollup/plugin-terser": "^0.4.4",
+		"rollup": "^4.24.3"
+	}
+}

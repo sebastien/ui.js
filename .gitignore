@@ -1,2 +1,3 @@
 run
 tests/bench/js-framework-benchmark/results/
+tests/data/*.json

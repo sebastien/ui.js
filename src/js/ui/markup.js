@@ -10,7 +10,7 @@ import { VNode } from "./vdom.js";
 // --
 // Parses a DOM tree annotated with special attributes and generates components
 // and templates from it.
-class MarkupProcessor {
+export class MarkupProcessor {
 	// --
 	// Main processor for a `<template>` node.
 	onTemplate(node) {
@@ -285,8 +285,6 @@ export const parameters = (node) => {
 
 // --
 // The equivalent of `hyperscript.template()`.
-export { MarkupProcessor };
-
 export const template = (name) => {
 	// We get the node for the template
 	const proc = DEFAULT_PROCESSOR;

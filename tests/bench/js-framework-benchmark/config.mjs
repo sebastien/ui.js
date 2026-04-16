@@ -53,3 +53,4 @@ export const RESULTS_FILE = `${RESULTS_DIR}/latest.json`;
 export const RESULTS_HISTORY_DIR = `${RESULTS_DIR}/history`;
 export const DATA_RESULTS_DIR = "tests/data";
 export const DATA_RESULTS_PREFIX = "benchmark";
+export const DATA_FRAMEWORKS_RESULTS_PREFIX = "benchmark-frameworks";
