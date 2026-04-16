@@ -28,7 +28,7 @@
 
 		const params = new URLSearchParams(window.location.search);
 		const framework = params.get("framework") || "ui";
-		const supported = new Set(["preact", "solidjs", "ui"]);
+		const supported = new Set(["preact", "solidjs", "ui", "uic"]);
 		if (!supported.has(framework)) {
 			throw new Error(`Unsupported framework "${framework}"`);
 		}

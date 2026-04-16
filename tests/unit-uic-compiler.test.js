@@ -4,7 +4,7 @@ import { compile } from "../src/js/uic/index.js";
 import { component } from "../src/js/ui/templates.js";
 import { DOMEffector } from "../src/js/ui/effectors.js";
 import { Slot } from "../src/js/ui/cells.js";
-import { compiled } from "../src/js/ui/compiler.js";
+import { compiled } from "../src/js/uic/runtime.js";
 
 const mountWithHandle = (Component, data) => {
 	const c = component(Component);
@@ -39,7 +39,7 @@ export const App = ({ label }) => <div class="box"><span>{label}</span></div>;
 `;
 		const { code } = compile(source);
 		expect(code.includes("compiled(")).toBe(true);
-		expect(code.includes('import { compiled } from "ui/compiler"')).toBe(true);
+		expect(code.includes('import {compiled} from "ui/uic/runtime"')).toBe(true);
 		expect(code.includes("uic:t")).toBe(true);
 	});
 
@@ -48,24 +48,17 @@ export const App = ({ label }) => <div class="box"><span>{label}</span></div>;
 export const App = (props) => <div {...props}>ok</div>;
 `;
 		const { code } = compile(source);
-		expect(
-			code.includes('import { h } from "ui"') ||
-				code.includes('import { h } from "../src/js/ui/hyperscript.js"') ||
-				code.includes('import { h } from "./ui/hyperscript.js"') ||
-				code.includes('import { h } from "./ui.js"'),
-		).toBe(true);
+		expect(code.includes('import {h} from "ui"')).toBe(true);
 		expect(code.includes('h("div"')).toBe(true);
 	});
 
 	test("runtime compiled renderable updates text and attrs", () => {
-		const template = compiled(
-			'<div data-uic-node="uic:n0"><span><!--uic:t0--></span></div>',
-			[
+		const template = () =>
+			compiled('<div data-uic-node="uic:n0"><span><!--uic:t0--></span></div>', [
 				{ kind: "attr", name: "title", node: "uic:n0", get: () => "hello" },
 				{ kind: "text", marker: "uic:t0", get: () => "world" },
-			],
-		);
-		const App = () => template;
+			]);
+		const App = () => template();
 		const { parent } = mountWithHandle(App, {});
 		expect(parent.textContent).toContain("world");
 		const div = parent.firstChild;

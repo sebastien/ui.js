@@ -5,6 +5,8 @@
 	"main": "src/js/ui.js",
 	"exports": {
 		".": "./src/js/ui.js",
+		"./uic": "./src/js/uic/index.js",
+		"./uic/runtime": "./src/js/uic/runtime.js",
 		"./jsx-runtime": "./src/js/ui/jsx.js",
 		"./jsx-dev-runtime": "./src/js/ui/jsx.js",
 		"./*": "./src/js/*"
@@ -29,10 +31,15 @@
 		"bench": "node tests/bench/js-framework-benchmark/run.mjs",
 		"bench:diff": "node tests/bench/js-framework-benchmark/diff.mjs",
 		"bench:inspector": "node scripts/bench-inspector.mjs",
-		"bench:cases": "node scripts/bench-cases.mjs"
+		"bench:cases": "node scripts/bench-cases.mjs",
+		"uic": "node src/js/uic/cli.js"
 	},
 	"devDependencies": {
+		"acorn": "^8.14.1",
+		"acorn-jsx": "^5.3.2",
+		"astring": "^1.9.0",
 		"eslint": "^8.31.0",
+		"estree-walker": "^3.0.3",
 		"playwright": "^1.52.0"
 	},
 	"dependencies": {
