@@ -704,6 +704,17 @@ export class MappingEffect extends Effect {
 				if (!(existing && Object.is(ctx[this.valueSlot.id], value))) {
 					this.valueSlot.set(value, true, ctx);
 					ctx[this.valueSlot.id] = value;
+					// The subscription cascade from set() synchronously
+					// propagates the update through all nested effects.
+					// Skip the redundant template.render() below to avoid
+					// re-triggering inner MappingEffects after their DOM
+					// has already been restructured.
+					itemPos[1] = i;
+					if (!Object.is(ctx[this.keySlot.id], i)) {
+						this.keySlot.set(i, true, ctx);
+						ctx[this.keySlot.id] = i;
+					}
+					continue;
 				}
 				if (!Object.is(ctx[this.keySlot.id], i)) {
 					this.keySlot.set(i, true, ctx);
