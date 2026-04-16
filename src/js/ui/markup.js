@@ -220,7 +220,7 @@ class MarkupProcessor {
 		}
 		// And if we have any effect, we'll pass the children to the effects
 		// and the effects will replace the children.
-		const effects = this.onTemplateEffects(node, children, scope);
+		const effects = this.onTemplateEffects(node, scope, children);
 		if (is_template) {
 			// If it's a template node, then we're just returning the effects
 			// as we don't want the node.

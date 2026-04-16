@@ -891,7 +891,9 @@ export class MappingEffect extends Effect {
 				state.length = 0;
 			}
 		}
-		this.unsubrender(context);
+		context[this.id + Slot.State] = undefined;
+		context[this.id + Slot.Node] = undefined;
+		super.unrender(context, effector);
 	}
 }
 
@@ -997,7 +999,7 @@ export class FormattingEffect extends Effect {
 				node: node,
 				input: this.format?.args ? [input] : input,
 			});
-			return undefined;
+			return "";
 		}
 	}
 

@@ -318,6 +318,18 @@ export class Subscription extends Selection {
 		}
 		return ctx;
 	}
+
+	unrender(context) {
+		const ctx = this.applyContext(context);
+		const updater = ctx[this.id + Slot.State];
+		if (updater) {
+			Slot.Each(this.input, (slot) => {
+				Slot.Unsub(context, slot.id, updater);
+			});
+		}
+		ctx[this.id + Slot.State] = undefined;
+		ctx[this.id + Slot.Render] = undefined;
+	}
 }
 export class Argument extends Selection {
 	constructor(name) {
@@ -376,6 +388,21 @@ export class Cell extends Selection {
 			}
 		}
 		return context;
+	}
+
+	unrender(context) {
+		const state = context[this.id + Slot.State];
+		if (state) {
+			const [handler, updater] = state;
+			if (handler) {
+				Slot.Unsub(context, this.id, handler);
+			}
+			if (updater && this.source instanceof Slot) {
+				Slot.Unsub(context, this.source.id, updater);
+			}
+		}
+		context[this.id + Slot.State] = undefined;
+		context[this.id + Slot.Render] = undefined;
 	}
 }
 
@@ -475,7 +502,6 @@ export class DynamicEvaluation extends Selection {
 	}
 	applyContext(context) {
 		const value = Context.Run(context, this.evaluator);
-		this.value = value;
 		context[this.id] = value;
 		return context;
 	}

@@ -152,7 +152,11 @@ export class Slot {
 					yield _;
 				}
 			}
-		} else if (Object.getPrototypeOf(template) === Object.prototype) {
+		} else if (
+			template !== null &&
+			template !== undefined &&
+			Object.getPrototypeOf(template) === Object.prototype
+		) {
 			for (const k in template) {
 				for (const _ of Slot.Walk(template[k])) {
 					yield _;
@@ -728,7 +732,7 @@ export class Slot {
 	update(dict, context = Context.Get()) {
 		const patch = dict instanceof Slot ? dict.get() : dict;
 		const current = this.get();
-		const next = isPlainObject(current) ? current : {};
+		const next = isPlainObject(current) ? { ...current } : {};
 		if (patch && typeof patch === "object") {
 			Object.assign(next, patch);
 		}
@@ -754,10 +758,14 @@ export class Slot {
 			return this.get();
 		} else {
 			const v = this.list();
-			while (v.length < i) {
+			const target = i < 0 ? v.length + i : i;
+			if (target < 0) {
+				return v;
+			}
+			while (v.length < target) {
 				v.push(undefined);
 			}
-			v[i] = value;
+			v[target] = value;
 			this.set(v, true);
 			return v;
 		}
@@ -909,7 +917,7 @@ export class Observable {
 	update(dict) {
 		const patch = dict instanceof Slot ? dict.get() : dict;
 		const current = this.get();
-		const next = isPlainObject(current) ? current : {};
+		const next = isPlainObject(current) ? { ...current } : {};
 		if (patch && typeof patch === "object") {
 			Object.assign(next, patch);
 		}

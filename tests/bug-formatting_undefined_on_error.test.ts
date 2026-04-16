@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { $, h } from "../src/js/ui/hyperscript.js";
 import { FormattingEffect } from "../src/js/ui/effects.js";
 import { Signal } from "../src/js/ui/templates.js";
-import { Slot, Context } from "../src/js/ui/cells.js";
 import { installDom, mountWithHandle } from "./test-utils.ts";
 
 // Bug #10: FormattingEffect._format returns undefined when the
@@ -17,7 +16,7 @@ describe("bug formatting undefined on error", () => {
 		installDom();
 	});
 
-	test("_format returns undefined when formatter throws", () => {
+	test("_format returns a safe fallback when formatter throws", () => {
 		const throwingFormatter = () => {
 			throw new Error("formatter exploded");
 		};
@@ -25,12 +24,9 @@ describe("bug formatting undefined on error", () => {
 		const signal = new Signal("test");
 		const effect = new FormattingEffect(signal, throwingFormatter);
 
-		// _format should handle the error, but it returns undefined
-		// rather than a sensible fallback (empty string, previous value, etc.)
+		// _format should handle the error and return a safe fallback.
 		const result = effect._format("some input", null);
-		// BUG: result is undefined, which becomes "undefined" in the DOM
-		// when assigned to textNode.data in a real browser.
-		expect(result).not.toBeUndefined();
+		expect(result).toBe("");
 	});
 
 	test("_format returns string for valid input", () => {

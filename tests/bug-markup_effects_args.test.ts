@@ -37,7 +37,16 @@ describe("bug markup onTemplateEffects argument order", () => {
 	});
 
 	test("onTemplateNode passes arguments in correct order to onTemplateEffects", () => {
-		const proc = new MarkupProcessor();
+		let capturedScope;
+		let capturedContent;
+		class SpyProcessor extends MarkupProcessor {
+			onTemplateEffects(node, scope, content, effects = []) {
+				capturedScope = scope;
+				capturedContent = content;
+				return super.onTemplateEffects(node, scope, content, effects);
+			}
+		}
+		const proc = new SpyProcessor();
 
 		// Build a template node with x:text directive
 		const template = document.createElement("template");
@@ -52,23 +61,12 @@ describe("bug markup onTemplateEffects argument order", () => {
 		// Bug: onTemplateNode passes (node, children, scope) instead of
 		// (node, scope, children).
 		const result = proc.onTemplate(template);
+		expect(result).toBeDefined();
 
-		// If the scope and children were swapped, the FormattingEffect
-		// would have the scope object as its placeholder instead of null
-		// or a proper content value.
-		if (result.template.children) {
-			for (const child of result.template.children) {
-				if (child instanceof FormattingEffect) {
-					// The placeholder should not be a scope object
-					const ph = child.placeholder;
-					expect(
-						ph === null ||
-							ph === undefined ||
-							typeof ph === "string" ||
-							typeof ph === "number",
-					).toBe(true);
-				}
-			}
-		}
+		// Regression check (#4): second argument must be scope and
+		// third argument must be children/content.
+		expect(capturedScope).toBeDefined();
+		expect(Array.isArray(capturedContent)).toBe(true);
+		expect(Array.isArray(capturedScope)).toBe(false);
 	});
 });

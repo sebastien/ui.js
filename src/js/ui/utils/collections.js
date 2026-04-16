@@ -9,7 +9,7 @@ export function* iterkeys(v) {
 			yield i;
 		}
 	} else if (v instanceof Map) {
-		return v.keys();
+		yield* v.keys();
 	}
 }
 

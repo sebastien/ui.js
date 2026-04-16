@@ -157,7 +157,7 @@ function mixin(target, source) {
 
 const fastdom = new FastDom();
 
-export { raf, fastdom, FastDOM };
+export { raf, fastdom, FastDom as FastDOM };
 export default fastdom;
 
 // EOF

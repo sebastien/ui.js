@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { $, h } from "../src/js/ui/hyperscript.js";
 import { Slot } from "../src/js/ui/cells.js";
+import { MappingEffect } from "../src/js/ui/effects.js";
+import { component } from "../src/js/ui/templates.js";
 import {
 	installDom,
 	mountWithHandle,
@@ -21,9 +23,17 @@ describe("bug MappingEffect unrender cleanup", () => {
 
 	test("mapped list node cache is cleared after unrender", () => {
 		const App = ({ list }) => h.ul(list.map((item) => h.li(item)));
-		const { parent, effect, effector, ctx } = mountWithHandle(App, {
-			list: ["a", "b", "c"],
-		});
+		const comp = component(App);
+		const mapping = comp.template.children.find(
+			(_) => _ instanceof MappingEffect,
+		);
+		expect(mapping).toBeDefined();
+		const { parent, effect, effector, ctx, derivedContext } = mountWithHandle(
+			App,
+			{
+				list: ["a", "b", "c"],
+			},
+		);
 
 		const ul = findFirstByNodeName(parent, "ul");
 		expect(ul).toBeDefined();
@@ -36,27 +46,16 @@ describe("bug MappingEffect unrender cleanup", () => {
 			}
 		}
 		expect(liCount).toBe(3);
+		expect(derivedContext[mapping.id + Slot.State]).toBeDefined();
 
 		// Unrender the entire component
 		effect.unrender(ctx, effector);
 
-		// After unrender, walk the context checking for stale node
-		// references -- DOM nodes that survived unrender but are
-		// now parentless (detached). The MappingEffect's direct
-		// unsubrender call (bypassing super.unrender) may leave its
-		// own Slot.Node cache intact.
-		let staleNodeRefs = 0;
-		for (let i = 0; i < 500; i += 6) {
-			const nodeRef = ctx[i + Slot.Node];
-			if (nodeRef && typeof nodeRef === "object" && "nodeType" in nodeRef) {
-				if (!nodeRef.parentNode) {
-					staleNodeRefs++;
-				}
-			}
-		}
-
-		// Ideally zero stale node references after complete unrender
-		expect(staleNodeRefs).toBe(0);
+		// Regression check (#9): MappingEffect.unrender must clear state
+		// and node cache and run base Effect cleanup.
+		expect(derivedContext[mapping.id + Slot.State]).toBeUndefined();
+		expect(derivedContext[mapping.id + Slot.Node]).toBeUndefined();
+		expect(derivedContext[mapping.id + Slot.Render]).toBeUndefined();
 	});
 
 	test("mapped list renders items correctly", () => {
