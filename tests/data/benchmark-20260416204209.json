@@ -1,0 +1,118 @@
+{
+  "meta": {
+    "generatedAt": "2026-04-16T20:42:09.346Z",
+    "tag": null,
+    "count": 1,
+    "browser": "chrome",
+    "headless": true,
+    "benchmarks": [
+      "01_run1k"
+    ]
+  },
+  "comparison": {
+    "baseline": "preact-hooks",
+    "frameworks": {
+      "preact-hooks": {
+        "framework": "preact-hooks",
+        "keyed": true,
+        "benchmarks": {
+          "01_run1k": {
+            "total": 166.9,
+            "script": 33.9,
+            "paint": 130.7
+          }
+        },
+        "aggregates": {
+          "totalGeomean": 166.9,
+          "scriptGeomean": 33.9,
+          "paintGeomean": 130.7
+        },
+        "vsBaseline": {
+          "totalGeomean": 1,
+          "scriptGeomean": 1,
+          "paintGeomean": 1,
+          "benchmarks": {
+            "01_run1k": {
+              "total": 1,
+              "script": 1,
+              "paint": 1
+            }
+          }
+        }
+      },
+      "solid": {
+        "framework": "solid",
+        "keyed": true,
+        "benchmarks": {
+          "01_run1k": {
+            "total": 201.5,
+            "script": 9.6,
+            "paint": 189.8
+          }
+        },
+        "aggregates": {
+          "totalGeomean": 201.5,
+          "scriptGeomean": 9.6,
+          "paintGeomean": 189.8
+        },
+        "vsBaseline": {
+          "totalGeomean": 1.2073,
+          "scriptGeomean": 0.2832,
+          "paintGeomean": 1.4522,
+          "benchmarks": {
+            "01_run1k": {
+              "total": 1.2073,
+              "script": 0.2832,
+              "paint": 1.4522
+            }
+          }
+        }
+      },
+      "uijs": {
+        "framework": "uijs",
+        "keyed": true,
+        "benchmarks": {
+          "01_run1k": {
+            "total": 177.8,
+            "script": 54.1,
+            "paint": 121
+          }
+        },
+        "aggregates": {
+          "totalGeomean": 177.8,
+          "scriptGeomean": 54.1,
+          "paintGeomean": 121
+        },
+        "vsBaseline": {
+          "totalGeomean": 1.0653,
+          "scriptGeomean": 1.5959,
+          "paintGeomean": 0.9258,
+          "benchmarks": {
+            "01_run1k": {
+              "total": 1.0653,
+              "script": 1.5959,
+              "paint": 0.9258
+            }
+          }
+        }
+      }
+    }
+  },
+  "progress": {
+    "framework": "uijs",
+    "against": "2026-04-16T20:03:30.221Z",
+    "tag": "test-json-tracking-3",
+    "aggregateDeltaPct": {
+      "totalGeomean": -14.02,
+      "scriptGeomean": -6.72,
+      "paintGeomean": -17.57
+    },
+    "benchmarkDeltaPct": {
+      "01_run1k": {
+        "total": -14.02,
+        "script": -6.72,
+        "paint": -17.57
+      }
+    }
+  }
+}
