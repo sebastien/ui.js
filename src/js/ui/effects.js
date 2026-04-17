@@ -9,6 +9,34 @@ const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
 const TEMPLATE_KEY = Symbol.for("ui.templateKey");
 const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
 
+const getComponentName = (component, fallback) => {
+	const candidates = [component, fallback];
+	for (let i = 0; i < candidates.length; i++) {
+		const candidate = candidates[i];
+		const name = candidate?.name;
+		if (typeof name === "string" && name.length > 0) {
+			return name;
+		}
+	}
+	return "<anonymous>";
+};
+
+const resolveComponentTemplate = (component, origin, nameSource) => {
+	if (!component?.isComponent) {
+		onError(origin, "Given component function has not been initialised.", {
+			component,
+		});
+	}
+	const template = component?.template;
+	if (!template || typeof template.render !== "function") {
+		const name = getComponentName(component, nameSource);
+		throw new TypeError(
+			`Component "${name}" is missing a template. The component function probably forgot to return a template.`,
+		);
+	}
+	return template;
+};
+
 // TODO: Should be moved to utils/collections
 const isShallowEqual = (a, b) => {
 	if (Object.is(a, b)) {
@@ -207,24 +235,15 @@ export class ComponentEffect extends Effect {
 		}
 		// TODO: Not sure if we need to do that?
 		// derived[this.id] = undefined;
-		if (!this.component.isComponent) {
-			onError(
-				"effects.ComponentEffect",
-				"Given component function has not been initialised.",
-				{ component: this.component },
-			);
-		}
-		return this.component.template.render(
-			node,
-			position,
-			derived,
-			effector,
-			this.id,
+		const template = resolveComponentTemplate(
+			this.component,
+			"effects.ComponentEffect",
 		);
+		return template.render(node, position, derived, effector, this.id);
 	}
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
-		this.component.template.unrender(derived, effector, this.id);
+		this.component?.template?.unrender?.(derived, effector, this.id);
 		context[this.id + Slot.State] = undefined;
 		context[this.id + Slot.Node] = undefined;
 		context[this.id] = undefined;
@@ -281,6 +300,7 @@ export class DynamicComponentEffect extends Effect {
 			state = context[this.id + Slot.State] = {
 				value,
 				component,
+				nameSource: value,
 				derived,
 			};
 			context[this.id] = value;
@@ -289,13 +309,12 @@ export class DynamicComponentEffect extends Effect {
 		const derived = this.input.applyContext(context);
 		state.derived = derived;
 
-		return state.component.template.render(
-			node,
-			position,
-			derived,
-			effector,
-			this.id,
+		const template = resolveComponentTemplate(
+			state.component,
+			"effects.DynamicComponentEffect",
+			state.nameSource,
 		);
+		return template.render(node, position, derived, effector, this.id);
 	}
 	unrender(context, effector) {
 		context = this.derivation.applyContext(context);

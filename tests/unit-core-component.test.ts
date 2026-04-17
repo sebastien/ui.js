@@ -22,8 +22,33 @@ describe("unit core component", () => {
 		const { parent } = mountWithHandle(App, { current: A, value: "x" });
 		expect(parent.textContent).toContain("A");
 
-		const { parent: parentB } = mountWithHandle(App, { current: B, value: "y" });
+		const { parent: parentB } = mountWithHandle(App, {
+			current: B,
+			value: "y",
+		});
 		expect(parentB.textContent).toContain("B");
+	});
+
+	test("ComponentEffect throws clear error when component forgets to return template", () => {
+		function MissingLabel({ text }) {
+			h.span(text);
+		}
+		const App = ({ message }) => h.div(h(MissingLabel, { text: message }));
+
+		expect(() => mountWithHandle(App, { message: "Hello" })).toThrow(
+			'Component "MissingLabel" is missing a template',
+		);
+	});
+
+	test("DynamicComponentEffect throws clear error when selected component forgets to return template", () => {
+		function MissingDynamic({ value }) {
+			h.span(value);
+		}
+		const App = ({ current, value }) => h.div(h(current, { value: value }));
+
+		expect(() =>
+			mountWithHandle(App, { current: MissingDynamic, value: "x" }),
+		).toThrow(/Component "(MissingDynamic|<anonymous>)" is missing a template/);
 	});
 
 	test("DynamicEvaluation computes value in context", () => {

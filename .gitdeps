@@ -1,5 +1,5 @@
 # REPO URL BRANCH COMMIT?
-deps/domish git@github.com:sebastien/domish.git main 5987159f3bbabdc4684fa103206d25e97da2c9b0
-deps/sdk git@github.com:littletoolkit/littlesdk.git main 10d1146330a0806103f6a6ca3b9619380c576500
+deps/domish git@github.com:sebastien/domish.git main 164035bb3c3749f353700aefa8a8a1767c6d20a0
+deps/sdk git@github.com:littletoolkit/littlesdk.git main unknown
+deps/js-framework-benchmark https://github.com/krausest/js-framework-benchmark.git main unknown
 # EOF
-deps/js-framework-benchmark https://github.com/krausest/js-framework-benchmark.git master 5b3b779ae1c50d9c55716a12220fe08dc8b9fd83
