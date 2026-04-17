@@ -34,15 +34,6 @@ const objectExpression = (properties) => ({
 	properties,
 });
 
-const arrow = (params, body) => ({
-	type: "ArrowFunctionExpression",
-	params,
-	body,
-	expression: body.type !== "BlockStatement",
-	generator: false,
-	async: false,
-});
-
 const jsxName = (name) => {
 	if (!name) {
 		return "";
@@ -279,31 +270,36 @@ const compileElement = (node, state) => {
 
 const buildCompiledCallWithTemplate = (
 	templateIdentifierName,
+	bindingIdentifierName,
 	compiledResult,
 ) =>
 	call(identifier("compiled"), [
 		identifier(templateIdentifierName),
-		{
-			type: "ArrayExpression",
-			elements: compiledResult.bindings.map((binding) => {
-				const props = [objectProperty("kind", toLiteral(binding.kind))];
-				if (binding.name) {
-					props.push(objectProperty("name", toLiteral(binding.name)));
-				}
-				if (binding.event) {
-					props.push(objectProperty("event", toLiteral(binding.event)));
-				}
-				if (binding.marker) {
-					props.push(objectProperty("marker", toLiteral(binding.marker)));
-				}
-				if (binding.node) {
-					props.push(objectProperty("node", toLiteral(binding.node)));
-				}
-				props.push(objectProperty("get", arrow([], binding.get)));
-				return objectExpression(props);
-			}),
-		},
+		identifier(bindingIdentifierName),
+		...compiledResult.bindings.map((binding) => binding.get),
 	]);
+
+const buildBindingMetadataArray = (compiledResult) => ({
+	type: "ArrayExpression",
+	elements: compiledResult.bindings.map((binding) => {
+		const props = [objectProperty("kind", toLiteral(binding.kind))];
+		if (binding.name) {
+			props.push(objectProperty("name", toLiteral(binding.name)));
+		}
+		if (binding.event) {
+			props.push(objectProperty("event", toLiteral(binding.event)));
+		}
+		if (binding.marker) {
+			props.push(objectProperty("marker", toLiteral(binding.marker)));
+		}
+		if (binding.node) {
+			props.push(objectProperty("node", toLiteral(binding.node)));
+		}
+		return objectExpression(props);
+	}),
+});
+
+const makeHoistedBindingName = (templateName) => `${templateName}_b`;
 
 const collectTopLevelNames = (ast) => {
 	const names = new Set();
@@ -348,17 +344,33 @@ const hoistCompiledTemplates = (ast, state) => {
 	if (!state.hoisted.length) {
 		return;
 	}
-	const declarations = state.hoisted.map((entry) => ({
-		type: "VariableDeclaration",
-		kind: "const",
-		declarations: [
+	const declarations = state.hoisted.flatMap((entry) => {
+		const bindingsName = makeHoistedBindingName(entry.name);
+		return [
 			{
-				type: "VariableDeclarator",
-				id: identifier(entry.name),
-				init: toLiteral(entry.compiledResult.html),
+				type: "VariableDeclaration",
+				kind: "const",
+				declarations: [
+					{
+						type: "VariableDeclarator",
+						id: identifier(entry.name),
+						init: toLiteral(entry.compiledResult.html),
+					},
+				],
 			},
-		],
-	}));
+			{
+				type: "VariableDeclaration",
+				kind: "const",
+				declarations: [
+					{
+						type: "VariableDeclarator",
+						id: identifier(bindingsName),
+						init: buildBindingMetadataArray(entry.compiledResult),
+					},
+				],
+			},
+		];
+	});
 	const insertAt = ast.body.findIndex((_) => _.type !== "ImportDeclaration");
 	ast.body.splice(
 		insertAt === -1 ? ast.body.length : insertAt,
@@ -484,8 +496,10 @@ export const transform = (ast) => {
 			state.usesCompiled = true;
 			const hoistedName = makeHoistedName(state);
 			state.hoisted.push({ name: hoistedName, compiledResult });
+			const bindingHoistedName = makeHoistedBindingName(hoistedName);
 			const replacement = buildCompiledCallWithTemplate(
 				hoistedName,
+				bindingHoistedName,
 				compiledResult,
 			);
 			if (Array.isArray(parent[key])) {

@@ -41,6 +41,8 @@ export const App = ({ label }) => <div class="box"><span>{label}</span></div>;
 		expect(code.includes("compiled(")).toBe(true);
 		expect(code.includes('import {compiled} from "ui/uic/runtime"')).toBe(true);
 		expect(code.includes("uic:t")).toBe(true);
+		expect(code.includes("_uic1_b")).toBe(true);
+		expect(code.includes("get:")).toBe(false);
 	});
 
 	test("falls back to hyperscript for spread attributes", () => {
@@ -59,6 +61,24 @@ export const App = (props) => <div {...props}>ok</div>;
 				{ kind: "text", marker: "uic:t0", get: () => "world" },
 			]);
 		const App = () => template();
+		const { parent } = mountWithHandle(App, {});
+		expect(parent.textContent).toContain("world");
+		const div = parent.firstChild;
+		expect(div.getAttribute("title")).toBe("hello");
+	});
+
+	test("runtime compiled supports metadata plus direct values", () => {
+		const App = () =>
+			compiled(
+				'<div data-uic-node="uic:n0"><span><!--uic:t0--></span></div>',
+				[
+					{ kind: "attr", name: "title", node: "uic:n0" },
+					{ kind: "text", marker: "uic:t0" },
+				],
+				"hello",
+				"world",
+			);
+
 		const { parent } = mountWithHandle(App, {});
 		expect(parent.textContent).toContain("world");
 		const div = parent.firstChild;
