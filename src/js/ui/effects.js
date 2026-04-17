@@ -167,6 +167,10 @@ export class ComponentEffect extends Effect {
 		const prevValues = derived[this.id + Slot.State];
 		if (isMounted && prevValues !== undefined) {
 			const eslots = this._extractionSlots;
+			if (globalThis.__DEBUG_NOTIFY)
+				console.log(
+					`  ComponentEffect: mounted, checking eslots=${eslots?.length}`,
+				);
 			if (eslots) {
 				let changed = false;
 				for (let i = 0; i < eslots.length; i++) {
@@ -176,6 +180,16 @@ export class ComponentEffect extends Effect {
 					}
 				}
 				if (!changed) {
+					if (globalThis.__DEBUG_NOTIFY) {
+						console.log(
+							`  ComponentEffect: no change in extraction, returning existing`,
+						);
+						for (let i = 0; i < eslots.length; i++) {
+							console.log(
+								`    slot[${i}] id=${eslots[i]} ctx=${context[eslots[i]]} prev=${prevValues[i]} same=${Object.is(context[eslots[i]], prevValues[i])}`,
+							);
+						}
+					}
 					return existing;
 				}
 				// Update cached values
@@ -214,6 +228,10 @@ export class ComponentEffect extends Effect {
 				{ component: this.component },
 			);
 		}
+		if (globalThis.__DEBUG_NOTIFY)
+			console.log(
+				`  ComponentEffect: re-rendering template, component=${this.component?.name}`,
+			);
 		return this.component.template.render(
 			node,
 			position,
@@ -565,6 +583,64 @@ export class MappingEffect extends Effect {
 			return null;
 		}
 		return `u:${t}:${key}`;
+	}
+
+	// --
+	// Fast path for clearing all mapped items when the input becomes
+	// empty.  Instead of letting each per-item `template.unrender()`
+	// call `removeChild` individually (N DOM mutations), we first
+	// bulk-detach every mapped DOM node in a single pass, then walk
+	// the item contexts for subscription / lifecycle cleanup.  Because
+	// the nodes are already parentless at that point the DOM-removal
+	// code inside `VNode.unrender` becomes a no-op.
+	_fastClear(node, context, effector, templateId) {
+		const state = context[this.id + Slot.State];
+		if (!state) {
+			return;
+		}
+
+		// -- 1. Collect every item DOM node so we can detach in bulk ----
+		const nodeSlotId = templateId + Slot.Node;
+		const altNodeSlotId = this.id + Slot.Node;
+		const itemNodes = [];
+
+		if (Array.isArray(state)) {
+			// Flat indexed array: [ctx0, val0, ctx1, val1, …]
+			for (let i = 0; i < state.length; i += 2) {
+				const ctx = state[i];
+				if (ctx) {
+					const n = ctx[nodeSlotId] ?? ctx[altNodeSlotId];
+					if (n) itemNodes.push(n);
+				}
+			}
+		} else if (state.production instanceof Map) {
+			for (const ctx of state.production.values()) {
+				const n = ctx[nodeSlotId] ?? ctx[altNodeSlotId];
+				if (n) itemNodes.push(n);
+			}
+		}
+
+		// -- 2. Bulk DOM detach -----------------------------------------
+		for (let i = 0; i < itemNodes.length; i++) {
+			const n = itemNodes[i];
+			if (n.parentNode) {
+				n.parentNode.removeChild(n);
+			} else if (n._uiFragmentChildren) {
+				// DocumentFragment: children were moved into the DOM.
+				for (const child of n._uiFragmentChildren) {
+					if (child.parentNode) {
+						child.parentNode.removeChild(child);
+					}
+				}
+				n._uiFragmentMounted = false;
+			}
+		}
+
+		// -- 3. Context / subscription cleanup (DOM removal is now a no-op)
+		this._clearState(state, effector, templateId);
+
+		// -- 4. Reset mapping state -------------------------------------
+		context[this.id + Slot.State] = undefined;
 	}
 
 	// --
@@ -925,6 +1001,8 @@ export class MappingEffect extends Effect {
 				}
 				if (shouldRender) {
 					itemPos[1] = i;
+					if (globalThis.__DEBUG_NOTIFY)
+						console.log(`  rendering keyed template for i=${i}`);
 					ctx[nodeSlotId] = this.template.render(
 						node,
 						itemPos,
@@ -1004,6 +1082,22 @@ export class MappingEffect extends Effect {
 		const items = context[this.input.id];
 		// Cache template id for inner loop
 		const templateId = this.template.id ?? this.id;
+
+		// Fast path: when items is empty/null/undefined, bulk-clear all
+		// mapped nodes instead of going through per-item render paths.
+		const isEmpty =
+			!items ||
+			(Array.isArray(items) && items.length === 0) ||
+			(typeof items === "object" &&
+				!Array.isArray(items) &&
+				Object.keys(items).length === 0);
+		if (isEmpty) {
+			if (context[this.id + Slot.State]) {
+				this._fastClear(node, context, effector, templateId);
+			}
+			return;
+		}
+
 		// Reusable position array to avoid allocating [position, i] per item
 		const itemPos = [position, 0];
 
