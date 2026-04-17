@@ -4,6 +4,10 @@ const DERIVATION_KEY = Symbol("ui.cells.derivations");
 const DEPENDENTS_KEY = Symbol("ui.cells.dependents");
 const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
 
+// Reusable scratch containers for hot-path methods to avoid per-call allocations.
+const _dirtyStack = [];
+const _dirtyVisited = new Set();
+
 const isPlainObject = (value) =>
 	value && Object.getPrototypeOf(value) === Object.prototype;
 
@@ -225,8 +229,8 @@ export class Slot {
 	// --
 	// Subscribes a handler to the given slot id in context.
 	static Sub(context, id, handler) {
-		const subs =
-			context[id + Slot.Observable] || (context[id + Slot.Observable] = []);
+		const off = id + 1; // Slot.Observable
+		const subs = context[off] || (context[off] = []);
 		subs.push(handler);
 		return true;
 	}
@@ -234,11 +238,15 @@ export class Slot {
 	// --
 	// Unsubscribes a handler from the given slot id in context.
 	static Unsub(context, id, handler) {
-		const subs = context[id + Slot.Observable];
+		const subs = context[id + 1]; // Slot.Observable
 		if (subs) {
 			const i = subs.indexOf(handler);
 			if (i >= 0) {
-				subs.splice(i, 1);
+				const last = subs.length - 1;
+				if (i !== last) {
+					subs[i] = subs[last];
+				}
+				subs.pop();
 				return true;
 			}
 		}
@@ -300,27 +308,23 @@ export class Slot {
 		}
 		Slot.BatchedNotificationsByContext.delete(context);
 		++Slot.RenderCycle;
-		const handlers = [];
-		const seen = new Set();
+		// Use a single Map for dedup + value tracking. Map preserves
+		// insertion order, so we iterate entries() instead of maintaining
+		// a separate seen Set + handlers array.
 		const values = new Map();
 		for (let i = 0; i < batch.ids.length; i++) {
 			const id = batch.ids[i];
-			const subs = context[id + Slot.Observable];
+			const subs = context[id + 1]; // Slot.Observable
 			if (!subs?.length) {
 				continue;
 			}
 			const value = context[id];
 			for (let j = 0; j < subs.length; j++) {
-				const handler = subs[j];
-				values.set(handler, value);
-				if (!seen.has(handler)) {
-					seen.add(handler);
-					handlers.push(handler);
-				}
+				values.set(subs[j], value);
 			}
 		}
-		for (let i = 0; i < handlers.length; i++) {
-			if (handlers[i](values.get(handlers[i])) === false) {
+		for (const [handler, value] of values) {
+			if (handler(value) === false) {
 				break;
 			}
 		}
@@ -331,14 +335,15 @@ export class Slot {
 	static Notify(context, id, value, force) {
 		if (force || value !== context[id]) {
 			context[id] = value;
-			context[id + Slot.Revision] = (context[id + Slot.Revision] || 0) + 1;
+			const revOff = id + 2; // Slot.Revision
+			context[revOff] = (context[revOff] || 0) + 1;
 			Slot.MarkDependentsDirty(context, id);
-			if (Slot.IsBatching(context)) {
+			if (Slot.BatchDepthByContext.get(context) > 0) {
 				Slot.QueueBatchedNotification(context, id);
 				return;
 			}
 			++Slot.RenderCycle;
-			const subs = context[id + Slot.Observable];
+			const subs = context[id + 1]; // Slot.Observable
 			if (subs) {
 				for (let i = 0; i < subs.length; i++) {
 					if (subs[i](value) === false) {
@@ -459,9 +464,8 @@ export class Slot {
 	}
 
 	static Derivation(context, id) {
-		return context?.[DERIVATION_KEY]
-			? context[DERIVATION_KEY].get(id)
-			: undefined;
+		const registry = context[DERIVATION_KEY];
+		return registry ? registry.get(id) : undefined;
 	}
 
 	static CalculateRank(context, dependencies) {
@@ -510,8 +514,11 @@ export class Slot {
 		if (!dependents) {
 			return;
 		}
-		const visited = new Set();
-		const stack = [id];
+		const derivations = context[DERIVATION_KEY];
+		const visited = _dirtyVisited;
+		const stack = _dirtyStack;
+		// Reuse scratch containers — safe because this is synchronous.
+		stack.push(id);
 		while (stack.length > 0) {
 			const source = stack.pop();
 			const succ = dependents.get(source);
@@ -523,7 +530,7 @@ export class Slot {
 					continue;
 				}
 				visited.add(derivedId);
-				const meta = Slot.Derivation(context, derivedId);
+				const meta = derivations ? derivations.get(derivedId) : undefined;
 				if (meta) {
 					meta.dirty = true;
 					meta.stale = true;
@@ -532,6 +539,7 @@ export class Slot {
 				}
 			}
 		}
+		visited.clear();
 	}
 
 	static EnqueueDerived(context, id) {
@@ -542,7 +550,8 @@ export class Slot {
 		}
 		if (!ids.has(id)) {
 			ids.add(id);
-			Slot.Pending.push([context, id]);
+			// Push context and id as consecutive entries to avoid tuple allocation.
+			Slot.Pending.push(context, id);
 		}
 		if (!Slot.FlushQueued) {
 			Slot.FlushQueued = true;
@@ -558,19 +567,28 @@ export class Slot {
 		++Slot.RenderCycle;
 		const queue = Slot.Pending;
 		Slot.Pending = [];
-		for (let i = 0; i < queue.length; i++) {
-			const [ctx, id] = queue[i];
+		// Queue is flat pairs: [ctx0, id0, ctx1, id1, ...]
+		for (let i = 0; i < queue.length; i += 2) {
+			const ctx = queue[i];
+			const id = queue[i + 1];
 			const ids = Slot.PendingByContext.get(ctx);
 			ids?.delete(id);
 		}
-		const cycle = ++Slot.Cycle;
-		queue.sort((a, b) => {
-			const ma = Slot.Derivation(a[0], a[1]);
-			const mb = Slot.Derivation(b[0], b[1]);
+		// Sort by rank. Build a temporary index array to avoid rearranging
+		// the flat pair layout directly (sort operates on single elements).
+		const n = queue.length >> 1;
+		const indices = new Array(n);
+		for (let i = 0; i < n; i++) indices[i] = i;
+		indices.sort((a, b) => {
+			const ma = Slot.Derivation(queue[a << 1], queue[(a << 1) + 1]);
+			const mb = Slot.Derivation(queue[b << 1], queue[(b << 1) + 1]);
 			return (ma ? ma.rank : 0) - (mb ? mb.rank : 0);
 		});
-		for (let i = 0; i < queue.length; i++) {
-			const [context, id] = queue[i];
+		const cycle = ++Slot.Cycle;
+		for (let i = 0; i < n; i++) {
+			const base = indices[i] << 1;
+			const context = queue[base];
+			const id = queue[base + 1];
 			const meta = Slot.Derivation(context, id);
 			if (!meta?.dirty || meta.lazy) {
 				continue;
@@ -584,13 +602,14 @@ export class Slot {
 			return;
 		}
 		seen.add(id);
-		const meta = Slot.Derivation(context, id);
+		const registry = context[DERIVATION_KEY];
+		const meta = registry ? registry.get(id) : undefined;
 		if (!meta) {
 			return;
 		}
 		for (let i = 0; i < meta.dependencies.length; i++) {
 			const dep = meta.dependencies[i];
-			const depMeta = Slot.Derivation(context, dep.id);
+			const depMeta = registry ? registry.get(dep.id) : undefined;
 			if (depMeta && (depMeta.dirty || depMeta.stale)) {
 				Slot.FlushDerived(context, dep.id, seen);
 			}
@@ -609,10 +628,16 @@ export class Slot {
 		meta.dirty = false;
 		meta.stale = false;
 
-		const values = new Array(meta.dependencies.length);
+		const deps = meta.dependencies;
+		const n = deps.length;
+		// Reuse a cached values array on the meta to avoid per-evaluation allocation.
+		let values = meta._values;
+		if (!values || values.length !== n) {
+			values = meta._values = new Array(n);
+		}
 		let hasPromise = false;
-		for (let i = 0; i < meta.dependencies.length; i++) {
-			const value = context[meta.dependencies[i].id];
+		for (let i = 0; i < n; i++) {
+			const value = context[deps[i].id];
 			values[i] = value;
 			hasPromise = hasPromise || value instanceof Promise;
 		}

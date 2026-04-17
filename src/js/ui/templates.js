@@ -66,7 +66,8 @@ export class Injection extends Derivation {
 		const assignInjectedSlotValue = (target, id, value) => {
 			if (!Object.is(target[id], value)) {
 				target[id] = value;
-				target[id + Slot.Revision] = (target[id + Slot.Revision] || 0) + 1;
+				const revOff = id + 2; // Slot.Revision
+				target[revOff] = (target[revOff] || 0) + 1;
 				Slot.MarkDependentsDirty(target, id);
 			}
 		};
@@ -146,9 +147,10 @@ export class Injection extends Derivation {
 			// Ensure parent injection values are fresh before reading.
 			// This handles the case where a Cell value changed but the
 			// parent template hasn't re-rendered (e.g. conditional remount).
-			const parentInjection = context[Slot.Owner];
-			if (parentInjection instanceof Injection && context[Slot.Parent]) {
-				parentInjection.applyContext(context[Slot.Parent]);
+			// Slot.Owner=1, Slot.Parent=2
+			const parentInjection = context[1];
+			if (parentInjection instanceof Injection && context[2]) {
+				parentInjection.applyContext(context[2]);
 			}
 			const rematched = Slot.Match(this.args, inputData, context, []);
 			const matches = rematched.length ? rematched : cached;

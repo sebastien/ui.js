@@ -943,7 +943,6 @@ export class MappingEffect extends Effect {
 		const prevOrder = state.order;
 		const nextOrder = [];
 		const seen = new Set();
-		const warnedDuplicates = new Set();
 		const valueSlotId = this.valueSlot.id;
 		const keySlotId = this.keySlot.id;
 		const stateSlotId = this.id + Slot.State;
@@ -959,13 +958,10 @@ export class MappingEffect extends Effect {
 					token = `i:${i}`;
 				}
 				if (seen.has(token)) {
-					if (!warnedDuplicates.has(token)) {
-						warnedDuplicates.add(token);
-						console.warn("[uijs] Duplicate map key in MappingEffect", {
-							key: token,
-							index: i,
-						});
-					}
+					console.warn("[uijs] Duplicate map key in MappingEffect", {
+						key: token,
+						index: i,
+					});
 					token = `i:${i}`;
 				}
 				seen.add(token);
