@@ -25,7 +25,16 @@ import { VNode } from "./vdom.js";
 const RE_ATTRIBUTE = /^on(?<event>[A-Z][a-z]+)+$/;
 export const Fragment = "#fragment";
 const TEMPLATE_KEY = Symbol.for("ui.templateKey");
+const STATIC_ATTRS_KEY = Symbol.for("ui.staticAttrs");
+const STATIC_ATTRS_CACHE = new WeakMap();
 const createAttributes = (attributes) => {
+	if (attributes && attributes[STATIC_ATTRS_KEY] === true) {
+		const cached = STATIC_ATTRS_CACHE.get(attributes);
+		if (cached) {
+			return cached;
+		}
+	}
+
 	const attr = new Map();
 	if (attributes) {
 		for (const k in attributes) {
@@ -64,6 +73,9 @@ const createAttributes = (attributes) => {
 				);
 			}
 		}
+	}
+	if (attributes && attributes[STATIC_ATTRS_KEY] === true) {
+		STATIC_ATTRS_CACHE.set(attributes, attr);
 	}
 	return attr;
 };

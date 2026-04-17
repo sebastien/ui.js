@@ -744,18 +744,36 @@ export class MappingEffect extends Effect {
 		}
 
 		if (node?.childNodes) {
-			for (let i = 0; i < nextOrder.length; i++) {
-				const ctx = mapping.get(nextOrder[i]);
-				const itemNode = ctx?.[templateId + Slot.Node];
-				if (!itemNode) {
-					continue;
+			if (node.nodeType === Node.COMMENT_NODE && node.parentNode) {
+				// Mapping rendered against an anchor comment: keep mapped nodes
+				// ordered immediately before the anchor.
+				let cursor = node;
+				for (let i = nextOrder.length - 1; i >= 0; i--) {
+					const ctx = mapping.get(nextOrder[i]);
+					const itemNode = ctx?.[templateId + Slot.Node];
+					if (!itemNode) {
+						continue;
+					}
+					const at = cursor.previousSibling;
+					if (at !== itemNode) {
+						node.parentNode.insertBefore(itemNode, cursor);
+					}
+					cursor = itemNode;
 				}
-				const at = node.childNodes[i];
-				if (at !== itemNode) {
-					if (at) {
-						node.insertBefore(itemNode, at);
-					} else {
-						node.appendChild(itemNode);
+			} else {
+				for (let i = 0; i < nextOrder.length; i++) {
+					const ctx = mapping.get(nextOrder[i]);
+					const itemNode = ctx?.[templateId + Slot.Node];
+					if (!itemNode) {
+						continue;
+					}
+					const at = node.childNodes[i];
+					if (at !== itemNode) {
+						if (at) {
+							node.insertBefore(itemNode, at);
+						} else {
+							node.appendChild(itemNode);
+						}
 					}
 				}
 			}
