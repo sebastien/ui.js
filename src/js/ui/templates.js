@@ -143,6 +143,13 @@ export class Injection extends Derivation {
 		const stateKey = this.id + Slot.State;
 		const cached = context[stateKey];
 		if (cached) {
+			// Ensure parent injection values are fresh before reading.
+			// This handles the case where a Cell value changed but the
+			// parent template hasn't re-rendered (e.g. conditional remount).
+			const parentInjection = context[Slot.Owner];
+			if (parentInjection instanceof Injection && context[Slot.Parent]) {
+				parentInjection.applyContext(context[Slot.Parent]);
+			}
 			const rematched = Slot.Match(this.args, inputData, context, []);
 			const matches = rematched.length ? rematched : cached;
 			context[stateKey] = matches;
