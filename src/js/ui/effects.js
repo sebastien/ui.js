@@ -492,17 +492,6 @@ export class ConditionalEffect extends Effect {
 	}
 }
 
-function* _keys(value) {
-	if (Array.isArray(value)) {
-		for (let i = 0; i < value.length; i++) {
-			yield i;
-		}
-	} else {
-		for (const k in value) {
-			yield k;
-		}
-	}
-}
 export class MappingEffect extends Effect {
 	constructor(input, factory, valueSlot, keySlot, keyBy = undefined) {
 		super(input);
@@ -578,11 +567,16 @@ export class MappingEffect extends Effect {
 		return `u:${t}:${key}`;
 	}
 
-	_clearArrayState(state, effector, templateId) {
+	// --
+	// Clears any mapping state shape, unrendering all item contexts.
+	// Handles both flat array (indexed path) and {production, order}
+	// (keyed/object path).
+	_clearState(state, effector, templateId) {
 		if (!state) {
 			return;
 		}
 		if (Array.isArray(state)) {
+			// Flat array: [ctx0, val0, ctx1, val1, ...]
 			for (let i = 0; i < state.length; i += 2) {
 				if (state[i]) {
 					this.template.unrender(state[i], effector, templateId);
@@ -591,28 +585,218 @@ export class MappingEffect extends Effect {
 			state.length = 0;
 			return;
 		}
-		if (state instanceof Map) {
-			for (const [, ctx] of state.entries()) {
+		if (state.production instanceof Map) {
+			for (const [, ctx] of state.production.entries()) {
 				this.template.unrender(ctx, effector, templateId);
 			}
-			state.clear();
-			return;
-		}
-		if (state.mapping instanceof Map) {
-			for (const [, ctx] of state.mapping.entries()) {
-				this.template.unrender(ctx, effector, templateId);
-			}
-			state.mapping.clear();
-			if (Array.isArray(state.order)) {
+			state.production.clear();
+			if (state.order) {
 				state.order.length = 0;
 			}
 		}
 	}
 
+	// --
+	// Computes the Longest Increasing Subsequence of `arr`.
+	// Returns a Set of indices whose elements are part of the LIS
+	// (i.e. nodes that do NOT need to be moved).
+	// Uses the standard O(n log n) patience-sorting algorithm.
+	_computeLIS(arr) {
+		const n = arr.length;
+		if (n === 0) {
+			return new Set();
+		}
+		// tails[i] holds the smallest tail value for increasing
+		// subsequences of length i+1.
+		const tails = new Array(n);
+		// indices[i] holds the index in arr corresponding to tails[i].
+		const indices = new Array(n);
+		// prev[i] holds the predecessor index for reconstructing the LIS.
+		const prev = new Array(n);
+		let length = 0;
+
+		for (let i = 0; i < n; i++) {
+			const v = arr[i];
+			if (v < 0) {
+				// New items (no previous position) — always moved.
+				continue;
+			}
+			// Binary search for the leftmost tail >= v.
+			let lo = 0;
+			let hi = length;
+			while (lo < hi) {
+				const mid = (lo + hi) >> 1;
+				if (tails[mid] < v) {
+					lo = mid + 1;
+				} else {
+					hi = mid;
+				}
+			}
+			tails[lo] = v;
+			indices[lo] = i;
+			prev[i] = lo > 0 ? indices[lo - 1] : -1;
+			if (lo === length) {
+				length++;
+			}
+		}
+
+		// Reconstruct the LIS indices.
+		const result = new Set();
+		let k = indices[length - 1];
+		for (let i = length - 1; i >= 0; i--) {
+			result.add(k);
+			k = prev[k];
+		}
+		return result;
+	}
+
+	// --
+	// Reorders DOM nodes to match `nextOrder`, using LIS to
+	// minimise the number of DOM mutations.
+	_reorderDOM(node, production, nextOrder, prevOrder, templateId) {
+		if (!node?.childNodes || nextOrder.length === 0) {
+			return;
+		}
+
+		if (node.nodeType === Node.COMMENT_NODE && node.parentNode) {
+			// Anchor-comment mode: items sit before the anchor.
+			const parent = node.parentNode;
+
+			if (prevOrder.length === 0) {
+				// First render: just insert all items before the anchor.
+				for (let i = 0; i < nextOrder.length; i++) {
+					const ctx = production.get(nextOrder[i]);
+					const itemNode = ctx?.[templateId + Slot.Node];
+					if (itemNode && itemNode.parentNode !== parent) {
+						parent.insertBefore(itemNode, node);
+					}
+				}
+				return;
+			}
+
+			// Fast path: if order hasn't changed, skip entirely.
+			if (prevOrder.length === nextOrder.length) {
+				let same = true;
+				for (let i = 0; i < prevOrder.length; i++) {
+					if (prevOrder[i] !== nextOrder[i]) {
+						same = false;
+						break;
+					}
+				}
+				if (same) {
+					return;
+				}
+			}
+
+			// Build old-position lookup and compute LIS.
+			const oldPos = new Map();
+			for (let i = 0; i < prevOrder.length; i++) {
+				oldPos.set(prevOrder[i], i);
+			}
+			const positions = new Array(nextOrder.length);
+			for (let i = 0; i < nextOrder.length; i++) {
+				const p = oldPos.get(nextOrder[i]);
+				positions[i] = p !== undefined ? p : -1;
+			}
+			const stable = this._computeLIS(positions);
+
+			// Process in reverse so that each insertBefore places the
+			// node just before `cursor`, building the order bottom-up.
+			let cursor = node;
+			for (let i = nextOrder.length - 1; i >= 0; i--) {
+				const ctx = production.get(nextOrder[i]);
+				const itemNode = ctx?.[templateId + Slot.Node];
+				if (!itemNode) {
+					continue;
+				}
+				if (!stable.has(i)) {
+					parent.insertBefore(itemNode, cursor);
+				}
+				cursor = itemNode;
+			}
+		} else {
+			// Regular parent mode: children should match nextOrder.
+
+			if (prevOrder.length === 0) {
+				// First render: append items not yet in the parent.
+				for (let i = 0; i < nextOrder.length; i++) {
+					const ctx = production.get(nextOrder[i]);
+					const itemNode = ctx?.[templateId + Slot.Node];
+					if (itemNode && !itemNode.parentNode) {
+						node.appendChild(itemNode);
+					}
+				}
+				return;
+			}
+
+			// Fast path: if order hasn't changed, skip entirely.
+			if (prevOrder.length === nextOrder.length) {
+				let same = true;
+				for (let i = 0; i < prevOrder.length; i++) {
+					if (prevOrder[i] !== nextOrder[i]) {
+						same = false;
+						break;
+					}
+				}
+				if (same) {
+					return;
+				}
+			}
+
+			// Build old-position lookup and compute LIS.
+			const oldPos = new Map();
+			for (let i = 0; i < prevOrder.length; i++) {
+				oldPos.set(prevOrder[i], i);
+			}
+			const positions = new Array(nextOrder.length);
+			for (let i = 0; i < nextOrder.length; i++) {
+				const p = oldPos.get(nextOrder[i]);
+				positions[i] = p !== undefined ? p : -1;
+			}
+			const stable = this._computeLIS(positions);
+
+			for (let i = 0; i < nextOrder.length; i++) {
+				if (stable.has(i)) {
+					continue;
+				}
+				const ctx = production.get(nextOrder[i]);
+				const itemNode = ctx?.[templateId + Slot.Node];
+				if (!itemNode) {
+					continue;
+				}
+				const at = node.childNodes[i];
+				if (at !== itemNode) {
+					if (at) {
+						node.insertBefore(itemNode, at);
+					} else {
+						node.appendChild(itemNode);
+					}
+				}
+			}
+		}
+	}
+
+	// --
+	// Removes entries from production that are not in `nextKeySet`.
+	// Only called when production.size > nextKeySet.size.
+	_pruneStale(production, nextKeySet, effector, templateId) {
+		const toRemove = [];
+		for (const token of production.keys()) {
+			if (!nextKeySet.has(token)) {
+				toRemove.push(token);
+			}
+		}
+		for (let i = 0; i < toRemove.length; i++) {
+			const token = toRemove[i];
+			this.template.unrender(production.get(token), effector, templateId);
+			production.delete(token);
+		}
+	}
+
 	_renderArrayIndexed(items, node, itemPos, context, effector, templateId) {
 		let entries = context[this.id + Slot.State];
-		if (!entries || entries instanceof Map || entries.mapping) {
-			this._clearArrayState(entries, effector, templateId);
+		if (!entries || !Array.isArray(entries)) {
+			this._clearState(entries, effector, templateId);
 			entries = context[this.id + Slot.State] = [];
 		}
 		const prevCount = entries.length >> 1;
@@ -669,130 +853,145 @@ export class MappingEffect extends Effect {
 		}
 	}
 
-	_renderArrayKeyed(items, node, itemPos, context, effector, templateId) {
+	_renderKeyed(items, isArray, node, itemPos, context, effector, templateId) {
 		let state = context[this.id + Slot.State];
-		if (!state?.mapping || !state.order) {
-			this._clearArrayState(state, effector, templateId);
+		if (!state?.production || !state.order) {
+			this._clearState(state, effector, templateId);
 			state = context[this.id + Slot.State] = {
-				mapping: new Map(),
+				production: new Map(),
 				order: [],
 			};
 		}
-		const mapping = state.mapping;
-		const previousOrder = state.order;
+		const production = state.production;
+		const prevOrder = state.order;
 		const nextOrder = [];
 		const seen = new Set();
 		const warnedDuplicates = new Set();
+		const valueSlotId = this.valueSlot.id;
+		const keySlotId = this.keySlot.id;
+		const stateSlotId = this.id + Slot.State;
+		const nodeSlotId = templateId + Slot.Node;
+		const altNodeSlotId = this.id + Slot.Node;
+		const rendersOnIndexChange = this.rendersOnIndexChange;
 
-		for (let i = 0; i < items.length; i++) {
-			const value = items[i];
-			let token = this.normalizeKey(this.resolveKey(value, i, context));
-			if (!token) {
-				token = `i:${i}`;
-			}
-			if (seen.has(token)) {
-				if (!warnedDuplicates.has(token)) {
-					warnedDuplicates.add(token);
-					console.warn("[uijs] Duplicate map key in MappingEffect", {
-						key: token,
-						index: i,
-					});
+		if (isArray) {
+			for (let i = 0; i < items.length; i++) {
+				const value = items[i];
+				let token = this.normalizeKey(this.resolveKey(value, i, context));
+				if (!token) {
+					token = `i:${i}`;
 				}
-				token = `i:${i}`;
-			}
-			seen.add(token);
-			nextOrder.push(token);
+				if (seen.has(token)) {
+					if (!warnedDuplicates.has(token)) {
+						warnedDuplicates.add(token);
+						console.warn("[uijs] Duplicate map key in MappingEffect", {
+							key: token,
+							index: i,
+						});
+					}
+					token = `i:${i}`;
+				}
+				seen.add(token);
+				nextOrder.push(token);
 
-			let ctx = mapping.get(token);
-			let shouldRender = false;
-			if (!ctx) {
-				ctx = Object.create(context);
-				ctx[Slot.Parent] = context;
-				ctx[Slot.Owner] = this;
-				ctx[Slot.Name] = "MappingEffect";
-				ctx[this.id + Slot.State] = null;
-				ctx[this.valueSlot.id] = value;
-				ctx[this.keySlot.id] = i;
-				mapping.set(token, ctx);
-				shouldRender = true;
-			} else {
-				const existing =
-					ctx[templateId + Slot.Node] ?? ctx[this.id + Slot.Node];
-				const valueChanged = !(
-					existing && Object.is(ctx[this.valueSlot.id], value)
-				);
-				if (valueChanged) {
-					this.valueSlot.set(value, true, ctx);
-					ctx[this.valueSlot.id] = value;
+				let ctx = production.get(token);
+				let shouldRender;
+				if (!ctx) {
+					ctx = Object.create(context);
+					ctx[Slot.Parent] = context;
+					ctx[Slot.Owner] = this;
+					ctx[Slot.Name] = "MappingEffect";
+					ctx[stateSlotId] = null;
+					ctx[valueSlotId] = value;
+					ctx[keySlotId] = i;
+					production.set(token, ctx);
+					shouldRender = true;
+				} else {
+					const existing = ctx[nodeSlotId] ?? ctx[altNodeSlotId];
+					const valueChanged = !(
+						existing && Object.is(ctx[valueSlotId], value)
+					);
+					if (valueChanged) {
+						this.valueSlot.set(value, true, ctx);
+						ctx[valueSlotId] = value;
+					}
+					const indexChanged = !Object.is(ctx[keySlotId], i);
+					if (indexChanged) {
+						this.keySlot.set(i, true, ctx);
+						ctx[keySlotId] = i;
+					}
+					shouldRender =
+						!existing || valueChanged || (indexChanged && rendersOnIndexChange);
 				}
-				const indexChanged = !Object.is(ctx[this.keySlot.id], i);
-				if (indexChanged) {
-					this.keySlot.set(i, true, ctx);
-					ctx[this.keySlot.id] = i;
+				if (shouldRender) {
+					itemPos[1] = i;
+					ctx[nodeSlotId] = this.template.render(
+						node,
+						itemPos,
+						ctx,
+						effector,
+						templateId,
+					);
 				}
-				shouldRender =
-					!existing ||
-					valueChanged ||
-					(indexChanged && this.rendersOnIndexChange);
 			}
+		} else {
+			// Object iteration
+			let i = 0;
+			for (const k in items) {
+				const value = items[k];
+				const token = k;
+				seen.add(token);
+				nextOrder.push(token);
 
-			if (shouldRender) {
-				itemPos[1] = i;
-				ctx[templateId + Slot.Node] = this.template.render(
-					node,
-					itemPos,
-					ctx,
-					effector,
-					templateId,
-				);
+				let ctx = production.get(token);
+				let shouldRender;
+				if (!ctx) {
+					ctx = Object.create(context);
+					ctx[Slot.Parent] = context;
+					ctx[Slot.Owner] = this;
+					ctx[Slot.Name] = "MappingEffect";
+					ctx[stateSlotId] = null;
+					ctx[valueSlotId] = value;
+					ctx[keySlotId] = k;
+					production.set(token, ctx);
+					shouldRender = true;
+				} else {
+					const existing = ctx[nodeSlotId] ?? ctx[altNodeSlotId];
+					const valueChanged = !(
+						existing && Object.is(ctx[valueSlotId], value)
+					);
+					if (valueChanged) {
+						this.valueSlot.set(value, true, ctx);
+						ctx[valueSlotId] = value;
+					}
+					const indexChanged = !Object.is(ctx[keySlotId], k);
+					if (indexChanged) {
+						this.keySlot.set(k, true, ctx);
+						ctx[keySlotId] = k;
+					}
+					shouldRender =
+						!existing || valueChanged || (indexChanged && rendersOnIndexChange);
+				}
+				if (shouldRender) {
+					itemPos[1] = i;
+					ctx[nodeSlotId] = this.template.render(
+						node,
+						itemPos,
+						ctx,
+						effector,
+						templateId,
+					);
+				}
+				i++;
 			}
 		}
 
-		if (node?.childNodes) {
-			if (node.nodeType === Node.COMMENT_NODE && node.parentNode) {
-				// Mapping rendered against an anchor comment: keep mapped nodes
-				// ordered immediately before the anchor.
-				let cursor = node;
-				for (let i = nextOrder.length - 1; i >= 0; i--) {
-					const ctx = mapping.get(nextOrder[i]);
-					const itemNode = ctx?.[templateId + Slot.Node];
-					if (!itemNode) {
-						continue;
-					}
-					const at = cursor.previousSibling;
-					if (at !== itemNode) {
-						node.parentNode.insertBefore(itemNode, cursor);
-					}
-					cursor = itemNode;
-				}
-			} else {
-				for (let i = 0; i < nextOrder.length; i++) {
-					const ctx = mapping.get(nextOrder[i]);
-					const itemNode = ctx?.[templateId + Slot.Node];
-					if (!itemNode) {
-						continue;
-					}
-					const at = node.childNodes[i];
-					if (at !== itemNode) {
-						if (at) {
-							node.insertBefore(itemNode, at);
-						} else {
-							node.appendChild(itemNode);
-						}
-					}
-				}
-			}
-		}
+		// Reorder DOM nodes using LIS for minimum mutations.
+		this._reorderDOM(node, production, nextOrder, prevOrder, templateId);
 
-		for (let i = 0; i < previousOrder.length; i++) {
-			const token = previousOrder[i];
-			if (!seen.has(token)) {
-				const ctx = mapping.get(token);
-				if (ctx) {
-					this.template.unrender(ctx, effector, templateId);
-					mapping.delete(token);
-				}
-			}
+		// Prune removed keys.
+		if (production.size > seen.size) {
+			this._pruneStale(production, seen, effector, templateId);
 		}
 
 		state.order = nextOrder;
@@ -816,8 +1015,9 @@ export class MappingEffect extends Effect {
 				this.templateKey !== undefined ||
 				(firstAutoKey !== undefined && firstAutoKey !== null);
 			if (shouldUseKeyed) {
-				this._renderArrayKeyed(
+				this._renderKeyed(
 					items,
+					true,
 					node,
 					itemPos,
 					context,
@@ -835,133 +1035,31 @@ export class MappingEffect extends Effect {
 				);
 			}
 		} else {
-			// Object/Map inputs: use Map with revision-based cleanup.
-			// We retrieve the corresponding mapping state, typically `undefined`
-			// on the first run.
-			let mapping = context[this.id + Slot.State];
-			// We retrieve the revision number, which we set to `1` at first.
-			const revision = (context[this.id + Slot.Revision] =
-				(context[this.id + Slot.Revision] || 0) + 1);
-			// If there's no mapping defined, we create a new `Map`, which will
-			// be used to hold the state.
-			if (!mapping || !(mapping instanceof Map)) {
-				context[this.id + Slot.State] = mapping = new Map();
-			}
-			// Now we iterate over the keys for each item.
-			let i = 0;
-			if (items) {
-				for (const k in items) {
-					i = this._renderItem(
-						k,
-						items[k],
-						node,
-						itemPos,
-						i,
-						context,
-						effector,
-						mapping,
-						revision,
-						templateId,
-					);
-				}
-			}
-			// Remove mapping items that haven't been updated
-			if (mapping.size > i) {
-				const to_remove = [];
-				for (const [k, ctx] of mapping.entries()) {
-					if (ctx[this.id + Slot.Revision] !== revision) {
-						to_remove.push(k);
-					}
-				}
-				for (let j = 0; j < to_remove.length; j++) {
-					const k = to_remove[j];
-					this.template.unrender(mapping.get(k), effector, templateId);
-					mapping.delete(k);
-				}
-			}
-		}
-	}
-
-	_renderItem(
-		k,
-		value,
-		node,
-		itemPos,
-		i,
-		context,
-		effector,
-		mapping,
-		revision,
-		templateId,
-	) {
-		// Map stores ctx directly (no sub-array). Revision is tracked at
-		// ctx[this.id + Slot.Revision] and previous value is read from
-		// ctx[this.valueSlot.id].
-		let ctx = mapping.get(k);
-		let shouldRender = false;
-		// If there's no context, then we have a new key.
-		if (!ctx) {
-			// We start by creating a derived context, so that derivations
-			// won't affect the parent context.
-			ctx = Object.create(context);
-			ctx[Slot.Parent] = context;
-			ctx[Slot.Owner] = this;
-			ctx[Slot.Name] = "MappingEffect";
-			// We make sure that we can recurse this effect by nullifying
-			// the current node reference.
-			ctx[this.id + Slot.State] = null;
-			// Track the revision for stale entry detection.
-			ctx[this.id + Slot.Revision] = revision;
-			// Direct assignment on first render since no observables exist yet.
-			ctx[this.valueSlot.id] = value;
-			ctx[this.keySlot.id] = k;
-			// We register the context in the mapping.
-			mapping.set(k, ctx);
-			shouldRender = true;
-		} else {
-			// Update the revision so this entry is not cleaned up as stale.
-			ctx[this.id + Slot.Revision] = revision;
-			const existing = ctx[templateId + Slot.Node] ?? ctx[this.id + Slot.Node];
-			const valueChanged = !(
-				existing && Object.is(ctx[this.valueSlot.id], value)
-			);
-			if (valueChanged) {
-				this.valueSlot.set(value, true, ctx);
-				this.keySlot.set(k, true, ctx);
-			}
-			shouldRender = !existing || !valueChanged;
-		}
-		if (shouldRender) {
-			// Reuse the position array, just update the index
-			itemPos[1] = i;
-			ctx[templateId + Slot.Node] = this.template.render(
+			// Object inputs: use {production, order} with DOM reordering.
+			this._renderKeyed(
+				items,
+				false,
 				node,
 				itemPos,
-				ctx,
+				context,
 				effector,
 				templateId,
 			);
 		}
-		return i + 1;
 	}
+
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
 		const state = derived[this.id + Slot.State];
 		const templateId = this.template.id ?? this.id;
 		if (state) {
-			if (state instanceof Map) {
-				// Map stores ctx directly (no sub-array wrapper)
-				for (const [_k, ctx] of state.entries()) {
+			if (state.production instanceof Map) {
+				for (const [, ctx] of state.production.entries()) {
 					this.template.unrender(ctx, effector, templateId);
 				}
-				state.clear();
-			} else if (state.mapping instanceof Map) {
-				for (const [, ctx] of state.mapping.entries()) {
-					this.template.unrender(ctx, effector, templateId);
-				}
-				state.mapping.clear();
+				state.production.clear();
 				state.order.length = 0;
-			} else {
+			} else if (Array.isArray(state)) {
 				// Flat array: [ctx0, val0, ctx1, val1, ...]
 				for (let i = 0; i < state.length; i += 2) {
 					if (state[i]) {
