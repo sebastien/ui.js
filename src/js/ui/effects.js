@@ -575,7 +575,7 @@ export class MappingEffect extends Effect {
 	// the item contexts for subscription / lifecycle cleanup.  Because
 	// the nodes are already parentless at that point the DOM-removal
 	// code inside `VNode.unrender` becomes a no-op.
-	_fastClear(node, context, effector, templateId) {
+	_fastClear(_node, context, effector, templateId) {
 		const state = context[this.id + Slot.State];
 		if (!state) {
 			return;
