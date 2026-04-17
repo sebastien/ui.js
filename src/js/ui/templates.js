@@ -193,13 +193,10 @@ export class Injection extends Derivation {
 				if (typeof v.applyContext === "function") {
 					v.applyContext(context);
 				}
-				// If the target value is a slot, then we make sure that if it's
-				// removed, we update it.
 				assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
 				setInjectionAlias(derived, slot, v, context);
 				// Share the parent's subscriber array so that subscriptions
 				// in the derived context propagate to the parent.
-				// Ensure the parent subscriber array exists.
 				if (!context[v.id + Slot.Observable]) {
 					context[v.id + Slot.Observable] = [];
 				}

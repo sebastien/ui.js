@@ -77,6 +77,9 @@ export class Slot {
 	static Pending = [];
 	static PendingByContext = new WeakMap();
 	static FlushQueued = false;
+	// Global render cycle counter. Incremented at each notification wave
+	// to allow effects to deduplicate renders within the same cycle.
+	static RenderCycle = 0;
 	static BatchDepthByContext = new WeakMap();
 	static BatchedNotificationsByContext = new WeakMap();
 
@@ -296,6 +299,7 @@ export class Slot {
 			return;
 		}
 		Slot.BatchedNotificationsByContext.delete(context);
+		++Slot.RenderCycle;
 		const handlers = [];
 		const seen = new Set();
 		const values = new Map();
@@ -333,6 +337,7 @@ export class Slot {
 				Slot.QueueBatchedNotification(context, id);
 				return;
 			}
+			++Slot.RenderCycle;
 			const subs = context[id + Slot.Observable];
 			if (subs) {
 				for (let i = 0; i < subs.length; i++) {
@@ -550,6 +555,7 @@ export class Slot {
 		if (!Slot.Pending.length) {
 			return;
 		}
+		++Slot.RenderCycle;
 		const queue = Slot.Pending;
 		Slot.Pending = [];
 		for (let i = 0; i < queue.length; i++) {
@@ -731,6 +737,14 @@ export class Slot {
 				const alias = aliasContext[INJECTION_ALIASES]?.get?.(this.id);
 				if (alias?.sourceContext) {
 					Slot.Notify(alias.sourceContext, alias.sourceId, value, force);
+					// Also update the local slot so that local derived cells
+					// and subscribers in the derived context are notified.
+					if (
+						aliasContext !== alias.sourceContext ||
+						this.id !== alias.sourceId
+					) {
+						Slot.Notify(aliasContext, this.id, value, force);
+					}
 					return;
 				}
 				aliasContext = aliasContext[Slot.Parent];

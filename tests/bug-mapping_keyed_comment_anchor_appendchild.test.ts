@@ -49,11 +49,12 @@ describe("bug: keyed mapping under conditional anchor", () => {
 
 		const context = {};
 		expect(() =>
-			effect._renderArrayKeyed(
+			effect._renderKeyed(
 				[
 					{ id: 1, label: "alpha" },
 					{ id: 2, label: "beta" },
 				],
+				true,
 				anchor,
 				[0, 0],
 				context,

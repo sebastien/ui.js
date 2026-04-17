@@ -167,10 +167,6 @@ export class ComponentEffect extends Effect {
 		const prevValues = derived[this.id + Slot.State];
 		if (isMounted && prevValues !== undefined) {
 			const eslots = this._extractionSlots;
-			if (globalThis.__DEBUG_NOTIFY)
-				console.log(
-					`  ComponentEffect: mounted, checking eslots=${eslots?.length}`,
-				);
 			if (eslots) {
 				let changed = false;
 				for (let i = 0; i < eslots.length; i++) {
@@ -180,16 +176,6 @@ export class ComponentEffect extends Effect {
 					}
 				}
 				if (!changed) {
-					if (globalThis.__DEBUG_NOTIFY) {
-						console.log(
-							`  ComponentEffect: no change in extraction, returning existing`,
-						);
-						for (let i = 0; i < eslots.length; i++) {
-							console.log(
-								`    slot[${i}] id=${eslots[i]} ctx=${context[eslots[i]]} prev=${prevValues[i]} same=${Object.is(context[eslots[i]], prevValues[i])}`,
-							);
-						}
-					}
 					return existing;
 				}
 				// Update cached values
@@ -228,10 +214,6 @@ export class ComponentEffect extends Effect {
 				{ component: this.component },
 			);
 		}
-		if (globalThis.__DEBUG_NOTIFY)
-			console.log(
-				`  ComponentEffect: re-rendering template, component=${this.component?.name}`,
-			);
 		return this.component.template.render(
 			node,
 			position,
@@ -1001,8 +983,6 @@ export class MappingEffect extends Effect {
 				}
 				if (shouldRender) {
 					itemPos[1] = i;
-					if (globalThis.__DEBUG_NOTIFY)
-						console.log(`  rendering keyed template for i=${i}`);
 					ctx[nodeSlotId] = this.template.render(
 						node,
 						itemPos,
