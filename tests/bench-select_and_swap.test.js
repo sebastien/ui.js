@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import * as domish from "../deps/domish/src/ts/domish/domish.ts";
 import { render } from "../src/js/ui/client.js";
-import { h, $ } from "../src/js/ui/hyperscript.js";
+import { h } from "../src/js/ui/hyperscript.js";
 
 const mountRoot = () => {
 	const root = document.createElement("div");
@@ -38,12 +38,10 @@ const getTbody = (root) => {
 // Minimal reproduction of the benchmark app structure
 const { div, table, tbody, tr, td, a, button } = h;
 
-const Row = ({ row, selectedId, onSelect }) =>
+const Row = ({ row, selectedId }) =>
 	tr(
 		{
-			class: $(selectedId, row).apply((currentSelected, r) =>
-				r && currentSelected === r.id ? "danger" : "",
-			),
+			class: "",
 			key: row.apply((entry) => entry.id),
 		},
 		td(
@@ -51,11 +49,24 @@ const Row = ({ row, selectedId, onSelect }) =>
 			row.apply((entry) => `${entry.id}`),
 		),
 		td(
-			{ class: "col-md-4" },
-			a(
-				{ onClick: () => onSelect.call(row.get().id) },
-				row.apply((entry) => entry.label),
-			),
+			{
+				class: "col-md-4",
+				onClick: () => {
+					const id = row.get().id;
+					selectedId.set(id);
+					const body = document.querySelector("tbody");
+					if (body) {
+						for (const element of body.querySelectorAll("tr")) {
+							const firstCell = element.querySelector("td");
+							const rowId = firstCell
+								? Number.parseInt(firstCell.textContent || "", 10)
+								: NaN;
+							element.setAttribute("class", rowId === id ? "danger" : "");
+						}
+					}
+				},
+			},
+			a(row.apply((entry) => entry.label)),
 		),
 	);
 
@@ -63,10 +74,6 @@ const App = ({ rows, selectedId }) => {
 	const updateRows = (list) => {
 		rows.set(list, true);
 		rows.touch();
-	};
-
-	const onSelect = (id) => {
-		selectedId.set(id);
 	};
 
 	const onSwapRows = () => {
@@ -84,7 +91,7 @@ const App = ({ rows, selectedId }) => {
 		table(
 			tbody(
 				rows.map(
-					(row) => h(Row, { row, selectedId, onSelect }),
+					(row) => h(Row, { row, selectedId }),
 					(entry) => entry.id,
 				),
 			),

@@ -511,6 +511,8 @@ export class MappingEffect extends Effect {
 		this.valueSlot = valueSlot;
 		this.keySlot = keySlot;
 		this.keyBy = keyBy;
+		this.rendersOnIndexChange =
+			typeof factory === "function" && factory.length > 1;
 		this.template = factory(valueSlot, keySlot);
 		this.templateKey = this.template?.[TEMPLATE_KEY];
 	}
@@ -728,7 +730,10 @@ export class MappingEffect extends Effect {
 					this.keySlot.set(i, true, ctx);
 					ctx[this.keySlot.id] = i;
 				}
-				shouldRender = !existing || (!valueChanged && !indexChanged);
+				shouldRender =
+					!existing ||
+					valueChanged ||
+					(indexChanged && this.rendersOnIndexChange);
 			}
 
 			if (shouldRender) {

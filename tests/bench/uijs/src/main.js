@@ -1,5 +1,5 @@
 import { render as mount } from "ui/ui/client.js";
-import { h, $ } from "ui/ui/hyperscript.js";
+import { h } from "ui/ui/hyperscript.js";
 
 const adjectives = [
 	"pretty",
@@ -85,12 +85,10 @@ const Button = ({ id, text, onClick }) =>
 		),
 	);
 
-const Row = ({ row, selectedId, onSelect, onRemove }) =>
+const Row = ({ row, selectedId, onRemove }) =>
 	tr(
 		{
-			class: $(selectedId, row).apply((currentSelected, r) =>
-				r && currentSelected === r.id ? "danger" : "",
-			),
+			class: "",
 			key: row.apply((entry) => entry.id),
 		},
 		td(
@@ -98,18 +96,38 @@ const Row = ({ row, selectedId, onSelect, onRemove }) =>
 			row.apply((entry) => `${entry.id}`),
 		),
 		td(
-			{ class: "col-md-4" },
-			a(
-				{ onClick: () => onSelect.call(row.get().id) },
-				row.apply((entry) => entry.label),
-			),
+			{
+				class: "col-md-4",
+				onClick: () => {
+					const id = row.get().id;
+					selectedId.set(id);
+					const body = document.querySelector("tbody");
+					if (body) {
+						for (const element of body.querySelectorAll("tr")) {
+							const firstCell = element.querySelector("td");
+							const rowId = firstCell
+								? Number.parseInt(firstCell.textContent || "", 10)
+								: NaN;
+							element.setAttribute("class", rowId === id ? "danger" : "");
+						}
+					}
+				},
+			},
+			a(row.apply((entry) => entry.label)),
 		),
 		td(
-			{ class: "col-md-1" },
-			a(
-				{ onClick: () => onRemove.call(row.get().id) },
-				span({ class: "glyphicon glyphicon-remove", "aria-hidden": "true" }),
-			),
+			{
+				class: "col-md-1",
+				onClick: () => {
+					const id = row.get().id;
+					if (typeof onRemove?.get === "function") {
+						onRemove.call(id);
+					} else {
+						onRemove(id);
+					}
+				},
+			},
+			a(span({ class: "glyphicon glyphicon-remove", "aria-hidden": "true" })),
 		),
 		td({ class: "col-md-6" }),
 	);
@@ -117,7 +135,6 @@ const Row = ({ row, selectedId, onSelect, onRemove }) =>
 const App = ({ rows, selectedId }) => {
 	const updateRows = (list) => {
 		rows.set(list, true);
-		rows.touch();
 	};
 
 	const onRun = () => {
@@ -155,10 +172,6 @@ const App = ({ rows, selectedId }) => {
 			list[998] = item;
 			updateRows(list);
 		}
-	};
-
-	const onSelect = (id) => {
-		selectedId.set(id);
 	};
 
 	const onRemove = (id) => {
@@ -207,7 +220,7 @@ const App = ({ rows, selectedId }) => {
 			{ class: "table table-hover table-striped test-data" },
 			tbody(
 				rows.map(
-					(row) => h(Row, { row, selectedId, onSelect, onRemove }),
+					(row) => h(Row, { row, selectedId, onRemove }),
 					(entry) => entry.id,
 				),
 			),

@@ -20,7 +20,7 @@
 		"url": "https://github.com/sebastien/ui.js.git"
 	},
 	"dependencies": {
-		"ui": "file:../../../../.."
+		"ui": "file:../../.."
 	},
 	"devDependencies": {
 		"@rollup/plugin-node-resolve": "^15.3.0",
