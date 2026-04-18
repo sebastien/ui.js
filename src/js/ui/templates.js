@@ -57,12 +57,19 @@ export class Injection extends Derivation {
 	}
 
 	applyContext(context) {
+		// When reading a slot's value for injection, prefer the slot's
+		// own canonical context (Signal.context) over the parent rendering
+		// context. This ensures that a Signal whose value was updated in
+		// its own context (via signal.set()) is read correctly, even when
+		// the parent rendering context still holds a stale copy from the
+		// initial Cell.applyContext call.
 		const readSlotValue = (slot) => {
-			const meta = Slot.Derivation(context, slot.id);
+			const srcCtx = slot.context || context;
+			const meta = Slot.Derivation(srcCtx, slot.id);
 			if (meta && (meta.dirty || meta.stale)) {
-				Slot.FlushDerived(context, slot.id);
+				Slot.FlushDerived(srcCtx, slot.id);
 			}
-			return context[slot.id];
+			return srcCtx[slot.id];
 		};
 		const assignInjectedSlotValue = (target, id, value) => {
 			if (!Object.is(target[id], value)) {
@@ -185,7 +192,14 @@ export class Injection extends Derivation {
 		};
 		const expandShape = (value) => {
 			if (value instanceof Slot) {
-				return context[value.id];
+				// Preserve Slot identity so that the injection re-render
+				// loop takes the reactive alias path (v instanceof Slot)
+				// rather than the plain-value path. Without this, Slots
+				// passed as component props get resolved to their current
+				// context value, which breaks the INJECTION_ALIAS chain
+				// and prevents Signal.context-based propagation.
+				// The actual value is read later via readSlotValue().
+				return value;
 			}
 			if (Array.isArray(value)) {
 				return value.map((_) => expandShape(_));
@@ -505,7 +519,35 @@ export class Signal extends Cell {
 	}
 
 	applyContext(context = this.context) {
-		return super.applyContext(context);
+		const result = super.applyContext(context);
+		// When a Signal is applied to a non-canonical context (e.g. an
+		// external owner), subscribe to changes there and mirror them
+		// back to the Signal's own context. This ensures that injection
+		// reads (which resolve via signal.context) see the latest value
+		// even when set() targeted the external context.
+		if (context !== this.context && context) {
+			const syncKey = this.id + Slot.State + 1;
+			if (!context[syncKey]) {
+				const selfId = this.id;
+				const canonical = this.context;
+				let syncing = false;
+				Slot.Sub(context, selfId, (value) => {
+					// Guard against re-entrancy: Notify on canonical
+					// may trigger INJECTION_SOURCES that feed back.
+					if (syncing) {
+						return;
+					}
+					syncing = true;
+					try {
+						Slot.Notify(canonical, selfId, value, true);
+					} finally {
+						syncing = false;
+					}
+				});
+				context[syncKey] = true;
+			}
+		}
+		return result;
 	}
 
 	observable(context = this.context) {
