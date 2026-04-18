@@ -501,6 +501,22 @@ export class Cell extends Selection {
 				context[this.id] = context[this.source.id];
 				Slot.Sub(context, this.source.id, updater);
 				context[this.id + Slot.State].push(updater);
+				const sourceContext = this.source.context;
+				if (sourceContext && sourceContext !== context) {
+					const canonicalUpdater = (value) => {
+						Slot.Notify(
+							context,
+							selfId,
+							extractor ? extractor(value) : value,
+							true,
+						);
+					};
+					Slot.Sub(sourceContext, this.source.id, canonicalUpdater);
+					context[this.id + Slot.State].push(canonicalUpdater);
+					if (!Object.is(context[this.id], sourceContext[this.source.id])) {
+						context[this.id] = sourceContext[this.source.id];
+					}
+				}
 			} else if (!Object.hasOwn(context, this.id)) {
 				context[this.id] = this.extractor
 					? this.extractor(this.source)
@@ -559,7 +575,14 @@ export class Signal extends Cell {
 	}
 
 	set(value, force = true, context = this.context) {
-		return super.set(value, force, context);
+		const result = super.set(value, force, context);
+		if (context === this.context) {
+			const current = Context.Get();
+			if (current && current !== context) {
+				Slot.Notify(current, this.id, value, false);
+			}
+		}
+		return result;
 	}
 
 	update(dict, context = this.context) {

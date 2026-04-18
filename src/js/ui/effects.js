@@ -905,7 +905,7 @@ export class MappingEffect extends Effect {
 					this.keySlot.set(k, true, ctx);
 					entries[base + 1] = value;
 				}
-				shouldRender = !existing;
+				shouldRender = !existing || valueChanged;
 			}
 			if (shouldRender) {
 				itemPos[1] = k;
@@ -1072,6 +1072,10 @@ export class MappingEffect extends Effect {
 
 	render(node, position, context, effector) {
 		context = this.input.applyContext(context);
+		const meta = Slot.Derivation(context, this.input.id);
+		if (meta && (meta.dirty || meta.stale)) {
+			Slot.FlushDerived(context, this.input.id);
+		}
 		this.subrender(node, position, context, effector);
 		// We retrieve the mapped items, which are bound to this cell id.
 		const items = context[this.input.id];
@@ -1466,6 +1470,9 @@ export class EventHandlerEffect extends Effect {
 						? callback[BOUND_CONTEXT]
 						: context;
 				this.applyReturnedUpdates(updateContext, res);
+			}
+			if (Slot.FlushQueued) {
+				Slot.FlushPending();
 			}
 			// TODO: We should do post-processing.
 			return res;
