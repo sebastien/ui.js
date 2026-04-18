@@ -3,6 +3,7 @@ import { onError } from "./utils/logging.js";
 const DERIVATION_KEY = Symbol("ui.cells.derivations");
 const DEPENDENTS_KEY = Symbol("ui.cells.dependents");
 const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
+const INJECTION_SOURCES = Symbol.for("ui.injection.sources");
 
 // Reusable scratch containers for hot-path methods to avoid per-call allocations.
 const _dirtyStack = [];
@@ -338,6 +339,19 @@ export class Slot {
 			const revOff = id + 2; // Slot.Revision
 			context[revOff] = (context[revOff] || 0) + 1;
 			Slot.MarkDependentsDirty(context, id);
+			const mirrored = context[INJECTION_SOURCES]?.get?.(id);
+			if (mirrored?.length) {
+				for (let i = 0; i < mirrored.length; i++) {
+					const entry = mirrored[i];
+					if (!entry?.context) {
+						continue;
+					}
+					if (entry.context === context && entry.id === id) {
+						continue;
+					}
+					Slot.Notify(entry.context, entry.id, value, force);
+				}
+			}
 			if (Slot.BatchDepthByContext.get(context) > 0) {
 				Slot.QueueBatchedNotification(context, id);
 				return;

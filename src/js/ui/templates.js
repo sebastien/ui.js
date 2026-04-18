@@ -11,6 +11,7 @@ import { getSignature } from "./utils/inspect.js";
 
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
 const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
+const INJECTION_SOURCES = Symbol.for("ui.injection.sources");
 
 // TODO: Shouldn't that be an Input?
 // TODO: Not of these don't belong in templates, they are really about
@@ -77,20 +78,95 @@ export class Injection extends Derivation {
 			sourceSlot,
 			sourceContext,
 		) => {
-			let ownerContext = sourceContext;
-			while (
-				ownerContext &&
-				!Object.hasOwn(ownerContext, sourceSlot.id) &&
-				ownerContext[Slot.Parent]
-			) {
-				ownerContext = ownerContext[Slot.Parent];
-			}
+			const resolveSource = (context, slotId) => {
+				let currentContext = context;
+				let currentId = slotId;
+				let depth = 0;
+				while (currentContext && depth < 64) {
+					depth += 1;
+					let aliasContext = currentContext;
+					let found;
+					while (aliasContext) {
+						const alias = aliasContext[INJECTION_ALIASES]?.get?.(currentId);
+						if (alias?.sourceContext) {
+							found = alias;
+							break;
+						}
+						aliasContext = aliasContext[Slot.Parent];
+					}
+					if (!found) {
+						break;
+					}
+					currentContext = found.sourceContext;
+					currentId = found.sourceId;
+				}
+				return {
+					sourceContext: currentContext,
+					sourceId: currentId,
+				};
+			};
+			const removeReverseAlias = (
+				context,
+				sourceId,
+				targetContext,
+				targetId,
+			) => {
+				const bySource = context?.[INJECTION_SOURCES];
+				const targets = bySource?.get?.(sourceId);
+				if (!targets?.length) {
+					return;
+				}
+				for (let i = targets.length - 1; i >= 0; i--) {
+					const entry = targets[i];
+					if (entry?.context === targetContext && entry?.id === targetId) {
+						targets.splice(i, 1);
+					}
+				}
+				if (!targets.length) {
+					bySource.delete(sourceId);
+				}
+			};
+			const addReverseAlias = (context, sourceId, targetContext, targetId) => {
+				if (!context) {
+					return;
+				}
+				const bySource =
+					context[INJECTION_SOURCES] ||
+					(context[INJECTION_SOURCES] = new Map());
+				const targets = bySource.get(sourceId) || [];
+				for (let i = 0; i < targets.length; i++) {
+					const entry = targets[i];
+					if (entry?.context === targetContext && entry?.id === targetId) {
+						return;
+					}
+				}
+				targets.push({ context: targetContext, id: targetId });
+				bySource.set(sourceId, targets);
+			};
+			const startContext = sourceSlot?.context || sourceContext;
+			const resolved = resolveSource(startContext, sourceSlot.id);
+			const ownerContext = resolved.sourceContext;
+			const sourceId = resolved.sourceId;
 			const aliases =
 				derived[INJECTION_ALIASES] || (derived[INJECTION_ALIASES] = new Map());
+			const previous = aliases.get(targetSlot.id);
+			if (
+				previous?.sourceContext &&
+				(previous.sourceContext !== ownerContext ||
+					previous.sourceId !== sourceId)
+			) {
+				removeReverseAlias(
+					previous.sourceContext,
+					previous.sourceId,
+					derived,
+					targetSlot.id,
+				);
+			}
 			aliases.set(targetSlot.id, {
-				sourceId: sourceSlot.id,
+				sourceId: sourceId,
 				sourceContext: ownerContext,
 			});
+			addReverseAlias(ownerContext, sourceId, derived, targetSlot.id);
 		};
 		const bindFunctionToContext = (fn) => {
 			const bound = fn?.[BOUND_CONTEXT] ? fn[BOUND_CONTEXT] : context;
