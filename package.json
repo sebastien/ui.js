@@ -30,7 +30,8 @@
 		"bench:diff": "node tests/bench/js-framework-benchmark/diff.mjs",
 		"bench:swap": "bun scripts/bench-swap-standalone.mjs",
 		"bench:inspector": "node scripts/bench-inspector.mjs",
-		"bench:cases": "node scripts/bench-cases.mjs"
+		"bench:cases": "node scripts/bench-cases.mjs",
+		"bench:editor-tree": "node scripts/bench-editor-tree.mjs"
 	},
 	"devDependencies": {
 		"acorn": "^8.14.1",
