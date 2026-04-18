@@ -188,9 +188,15 @@ export class Injection extends Derivation {
 				if (!context) {
 					return;
 				}
-				const bySource =
-					context[INJECTION_SOURCES] ||
-					(context[INJECTION_SOURCES] = new Map());
+				// FIX: Use Object.hasOwn to prevent prototype-chain pollution.
+				// Without this, sibling item contexts created via Object.create(parent)
+				// share the same INJECTION_SOURCES map inherited from an ancestor.
+				// When a MappingEffect sets values for each item, Slot.Notify mirrors
+				// through the shared map, causing ALL items to receive the LAST item's
+				// value — producing the "all items show last item" duplication bug.
+				const bySource = Object.hasOwn(context, INJECTION_SOURCES)
+					? context[INJECTION_SOURCES]
+					: (context[INJECTION_SOURCES] = new Map());
 				const targets = bySource.get(sourceId) || [];
 				for (let i = targets.length - 1; i >= 0; i--) {
 					const entry = targets[i];
@@ -284,8 +290,19 @@ export class Injection extends Derivation {
 		// because V8 stores sparse integer-keyed properties on objects in
 		// dictionary mode (~80 bytes/entry), while arrays use holey elements
 		// mode (~8 bytes/entry) as long as the gap is below kMaxGap (1024).
+		//
+		// NOTE: Object.hasOwn guards below prevent reusing a derived context
+		// or cached state inherited from a parent context via the prototype
+		// chain. Without these, sibling contexts created by MappingEffect
+		// (via Object.create) can collide on shared slot IDs, leading to
+		// stale renders or wrong branch selections.
+		const hasOwnDerived = Object.hasOwn(context, this.id);
 		const derived = (context[this.id] =
-			context[this.id] ?? (this.derived ? Object.create(context) : {}));
+			hasOwnDerived && context[this.id]
+				? context[this.id]
+				: this.derived
+					? Object.create(context)
+					: {});
 		const cleanupKey = this.id + Slot.State + 2;
 		if (!derived[cleanupKey]) {
 			const cleanupContext = resolveUnmountContext(derived);
@@ -319,7 +336,9 @@ export class Injection extends Derivation {
 		// Check if we have a cached match result from a previous render.
 		// The match array is flat: [slot0, value0, slot1, value1, ...].
 		const stateKey = this.id + Slot.State;
-		const cached = context[stateKey];
+		const cached = Object.hasOwn(context, stateKey)
+			? context[stateKey]
+			: undefined;
 		if (cached) {
 			const cachedMatches = cached.matches || cached;
 			const cachedInput = cached.input;
@@ -331,10 +350,12 @@ export class Injection extends Derivation {
 			if (parentInjection instanceof Injection && context[2]) {
 				parentInjection.applyContext(context[2]);
 			}
-			const rematched =
-				cachedInput !== inputData
-					? Slot.Match(this.args, inputData, context, [])
-					: null;
+			const shouldRematch =
+				cachedInput !== inputData ||
+				(inputData !== null && typeof inputData === "object");
+			const rematched = shouldRematch
+				? Slot.Match(this.args, inputData, context, [])
+				: null;
 			const matches = rematched?.length ? rematched : cachedMatches;
 			context[stateKey] = {
 				input: inputData,
@@ -354,7 +375,10 @@ export class Injection extends Derivation {
 					}
 					assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
 					setInjectionAlias(derived, slot, v, context);
-					if (!context[v.id + Slot.Observable]) {
+					if (
+						!Object.hasOwn(context, v.id + Slot.Observable) ||
+						!context[v.id + Slot.Observable]
+					) {
 						context[v.id + Slot.Observable] = [];
 					}
 					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
@@ -391,7 +415,10 @@ export class Injection extends Derivation {
 				setInjectionAlias(derived, slot, v, context);
 				// Share the parent's subscriber array so that subscriptions
 				// in the derived context propagate to the parent.
-				if (!context[v.id + Slot.Observable]) {
+				if (
+					!Object.hasOwn(context, v.id + Slot.Observable) ||
+					!context[v.id + Slot.Observable]
+				) {
 					context[v.id + Slot.Observable] = [];
 				}
 				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
@@ -586,7 +613,12 @@ export class Cell extends Selection {
 		this.extractor = extractor;
 	}
 	applyContext(context) {
-		if (context[this.id + Slot.State] === undefined) {
+		const stateSlot = this.id + Slot.State;
+		const valueSlot = this.id;
+		if (
+			!Object.hasOwn(context, stateSlot) ||
+			context[stateSlot] === undefined
+		) {
 			// TODO: And we should also re-register
 			const handler = (value) => {
 				// It's important that we put the context here, as
@@ -601,7 +633,7 @@ export class Cell extends Selection {
 			};
 			this.observable(context);
 			Slot.Sub(context, this.id, handler);
-			context[this.id + Slot.State] = [handler];
+			context[stateSlot] = [handler];
 			if (this.source instanceof Slot) {
 				const extractor = this.extractor;
 				const selfId = this.id;
@@ -614,9 +646,9 @@ export class Cell extends Selection {
 						true,
 					);
 				};
-				context[this.id] = context[this.source.id];
+				context[valueSlot] = context[this.source.id];
 				Slot.Sub(context, this.source.id, updater);
-				context[this.id + Slot.State].push(updater);
+				context[stateSlot].push(updater);
 				const sourceContext = this.source.context;
 				if (sourceContext && sourceContext !== context) {
 					const canonicalUpdater = (value) => {
@@ -628,13 +660,13 @@ export class Cell extends Selection {
 						);
 					};
 					Slot.Sub(sourceContext, this.source.id, canonicalUpdater);
-					context[this.id + Slot.State].push(canonicalUpdater);
-					if (!Object.is(context[this.id], sourceContext[this.source.id])) {
-						context[this.id] = sourceContext[this.source.id];
+					context[stateSlot].push(canonicalUpdater);
+					if (!Object.is(context[valueSlot], sourceContext[this.source.id])) {
+						context[valueSlot] = sourceContext[this.source.id];
 					}
 				}
-			} else if (!Object.hasOwn(context, this.id)) {
-				context[this.id] = this.extractor
+			} else if (!Object.hasOwn(context, valueSlot)) {
+				context[valueSlot] = this.extractor
 					? this.extractor(this.source)
 					: this.source;
 			}
@@ -739,7 +771,11 @@ export class DerivedCell extends Selection {
 	}
 
 	applyContext(context) {
-		if (context[this.id + Slot.State] === undefined) {
+		const stateSlot = this.id + Slot.State;
+		if (
+			!Object.hasOwn(context, stateSlot) ||
+			context[stateSlot] === undefined
+		) {
 			Slot.Each(this.shape, (dependency) => {
 				if (
 					dependency &&
@@ -750,7 +786,7 @@ export class DerivedCell extends Selection {
 				}
 			});
 			Slot.Derive(this.shape, this.processor, this.lazy, this, context);
-			context[this.id + Slot.State] = true;
+			context[stateSlot] = true;
 		}
 		return context;
 	}
@@ -766,7 +802,10 @@ export class Extraction extends Selection {
 		this.args = args;
 	}
 	applyContext(context) {
-		const scope = (context[this.id] = context[this.id] || []);
+		const scope = (context[this.id] =
+			Object.hasOwn(context, this.id) && context[this.id]
+				? context[this.id]
+				: []);
 		for (const arg of this.args) {
 			assign(scope, arg.path, arg.id === undefined ? null : context[arg.id]);
 		}
@@ -799,7 +838,11 @@ export class Application extends Selection {
 
 	applyContext(context) {
 		// If there's an input, we apply its context
-		if (context[this.id + Slot.State] === undefined) {
+		const stateSlot = this.id + Slot.State;
+		if (
+			!Object.hasOwn(context, stateSlot) ||
+			context[stateSlot] === undefined
+		) {
 			this.input.applyContext(context);
 			const handler = this.isMultipleArguments
 				? (value) => this.set(this.transform(...value), false, context)
@@ -811,7 +854,7 @@ export class Application extends Selection {
 			context[this.id] = this.isMultipleArguments
 				? this.transform(...v)
 				: this.transform(v);
-			context[this.id + Slot.State] = handler;
+			context[stateSlot] = handler;
 		}
 
 		return context;
@@ -821,7 +864,10 @@ export class Application extends Selection {
 		this.applyContext(context);
 		// Render state is stored at Slot.Render (+5) as [rerender, renderState]
 		// where renderState tracks template detection and anchor nodes.
-		let rs = context[this.id + Slot.Render];
+		const renderSlot = this.id + Slot.Render;
+		let rs = Object.hasOwn(context, renderSlot)
+			? context[renderSlot]
+			: undefined;
 		let state = rs ? rs[1] : undefined;
 		if (state === undefined) {
 			// Check if this is a template mode (transform returns a renderable)
@@ -846,7 +892,7 @@ export class Application extends Selection {
 			if (rs) {
 				rs[1] = state;
 			} else {
-				rs = context[this.id + Slot.Render] = [null, state];
+				rs = context[renderSlot] = [null, state];
 			}
 		}
 		if (state && state.mode === "template") {
@@ -870,10 +916,10 @@ export class Application extends Selection {
 
 		context = this.applyContext(context);
 		// Refresh rs reference — applyContext may have switched context
-		rs = context[this.id + Slot.Render];
+		rs = Object.hasOwn(context, renderSlot) ? context[renderSlot] : undefined;
 		if (!rs) {
 			const rerender = () => this.render(node, position, context, effector, id);
-			rs = context[this.id + Slot.Render] = [rerender, state];
+			rs = context[renderSlot] = [rerender, state];
 			Slot.Sub(context, this.id, rerender);
 		} else if (!rs[0]) {
 			const rerender = () => this.render(node, position, context, effector, id);
@@ -908,11 +954,14 @@ export class Application extends Selection {
 	}
 
 	unrender(context, effector, id = this.id) {
-		const rs = context[this.id + Slot.Render];
+		const renderSlot = this.id + Slot.Render;
+		const rs = Object.hasOwn(context, renderSlot)
+			? context[renderSlot]
+			: undefined;
 		const state = rs ? rs[1] : undefined;
 		if (rs?.[0]) {
 			Slot.Unsub(context, this.id, rs[0]);
-			context[this.id + Slot.Render] = undefined;
+			context[renderSlot] = undefined;
 		}
 		if (state?.template?.unrender) {
 			state.template.unrender(state.context ?? context, effector, id);

@@ -9,6 +9,19 @@ const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
 const TEMPLATE_KEY = Symbol.for("ui.templateKey");
 const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
 
+const isMountedNode = (node) => {
+	if (!node) {
+		return false;
+	}
+	if (node.nodeType === Node.ATTRIBUTE_NODE) {
+		return !!node.ownerElement;
+	}
+	if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+		return !!node._uiFragmentMounted || !!node.uiParentElement;
+	}
+	return !!node.parentNode;
+};
+
 const getComponentName = (component, fallback) => {
 	const candidates = [component, fallback];
 	for (let i = 0; i < candidates.length; i++) {
@@ -84,7 +97,7 @@ export class Effect extends Slot {
 	// changes.
 	subrender(node, position, context, effector) {
 		const render_id = this.id + Slot.Render;
-		if (!context[render_id]) {
+		if (!Object.hasOwn(context, render_id) || !context[render_id]) {
 			const rerender = () => {
 				return this.render(node, position, context, effector);
 			};
@@ -100,7 +113,7 @@ export class Effect extends Slot {
 	// changes.
 	unsubrender(context) {
 		const render_id = this.id + Slot.Render;
-		if (context[render_id]) {
+		if (Object.hasOwn(context, render_id) && context[render_id]) {
 			if (this.input) {
 				Slot.Unsub(context, this.input.id, context[render_id]);
 			}
@@ -184,7 +197,10 @@ export class ComponentEffect extends Effect {
 			context[this.id] = true;
 		}
 		const derived = this.input.applyContext(context);
-		const existing = derived[this.id + Slot.Node];
+		const nodeSlotId = this.id + Slot.Node;
+		const existing = Object.hasOwn(derived, nodeSlotId)
+			? derived[nodeSlotId]
+			: undefined;
 		const isMounted = existing
 			? existing.nodeType === Node.ATTRIBUTE_NODE
 				? !!existing.ownerElement
@@ -272,7 +288,11 @@ export class DynamicComponentEffect extends Effect {
 	render(node, position, context, effector) {
 		context = this.derivation.applyContext(context);
 		const value = context[this.derivation.id];
-		let state = context[this.id + Slot.State];
+		const stateSlotId = this.id + Slot.State;
+		const nodeSlotId = this.id + Slot.Node;
+		let state = Object.hasOwn(context, stateSlotId)
+			? context[stateSlotId]
+			: undefined;
 
 		if (
 			!state ||
@@ -291,13 +311,15 @@ export class DynamicComponentEffect extends Effect {
 			context[this.input.id + Slot.State] = undefined;
 			// Clear node cache so the newly selected template renders from
 			// a fresh anchor/node layout. Effect cache is on the DOM node itself.
-			const oldNode = context[this.id + Slot.Node];
+			const oldNode = Object.hasOwn(context, nodeSlotId)
+				? context[nodeSlotId]
+				: undefined;
 			if (oldNode) {
 				oldNode._uiEffects = undefined;
 			}
-			context[this.id + Slot.Node] = null;
+			context[nodeSlotId] = null;
 			const derived = this.input.applyContext(context);
-			state = context[this.id + Slot.State] = {
+			state = context[stateSlotId] = {
 				value,
 				component,
 				nameSource: value,
@@ -318,11 +340,14 @@ export class DynamicComponentEffect extends Effect {
 	}
 	unrender(context, effector) {
 		context = this.derivation.applyContext(context);
-		const state = context[this.id + Slot.State];
+		const stateSlotId = this.id + Slot.State;
+		const state = Object.hasOwn(context, stateSlotId)
+			? context[stateSlotId]
+			: undefined;
 		if (state?.component?.template?.unrender && state.derived) {
 			state.component.template.unrender(state.derived, effector, this.id);
 		}
-		context[this.id + Slot.State] = undefined;
+		context[stateSlotId] = undefined;
 		context[this.id] = undefined;
 		super.unrender(context, effector);
 	}
@@ -336,8 +361,8 @@ export class ApplicationEffect extends Effect {
 		context = this.input.applyContext(context);
 		// When we apply we create a new context detached from the previous
 		// one, so that we don't leak values.
-		let ctx = context[this.id];
-		if (!context[this.id]) {
+		let ctx = Object.hasOwn(context, this.id) ? context[this.id] : undefined;
+		if (!ctx) {
 			ctx = {
 				[Slot.Owner]: this,
 				[Slot.Parent]: context,
@@ -374,7 +399,9 @@ export class ConditionalEffect extends Effect {
 		// State is [previousBranchIndex, branchNode, branchInitialized0, branchInitialized1, ...]
 		// We store branch node directly in state[1] instead of in a child context,
 		// avoiding Object.create() for each branch.
-		let state = context[this.id + Slot.State];
+		let state = Object.hasOwn(context, this.id + Slot.State)
+			? context[this.id + Slot.State]
+			: undefined;
 		if (!state) {
 			context[this.id + Slot.State] = state = [undefined, undefined];
 		}
@@ -469,7 +496,9 @@ export class ConditionalEffect extends Effect {
 			// Clear the node cache so the new branch gets a
 			// fresh render instead of reusing the old branch's node.
 			// Effect cache is stored on the DOM node itself.
-			const oldNode = context[this.id + Slot.Node];
+			const oldNode = Object.hasOwn(context, this.id + Slot.Node)
+				? context[this.id + Slot.Node]
+				: undefined;
 			if (oldNode) {
 				oldNode._uiEffects = undefined;
 			}
@@ -493,7 +522,9 @@ export class ConditionalEffect extends Effect {
 	}
 
 	unrender(context, effector) {
-		const state = context[this.id + Slot.State];
+		const state = Object.hasOwn(context, this.id + Slot.State)
+			? context[this.id + Slot.State]
+			: undefined;
 		if (state && state[0] !== undefined) {
 			const activeEffect = this.resolveBranchEffect(state[0]);
 			if (activeEffect?.unrender) {
@@ -595,7 +626,9 @@ export class MappingEffect extends Effect {
 	// the nodes are already parentless at that point the DOM-removal
 	// code inside `VNode.unrender` becomes a no-op.
 	_fastClear(_node, context, effector, templateId) {
-		const state = context[this.id + Slot.State];
+		const state = Object.hasOwn(context, this.id + Slot.State)
+			? context[this.id + Slot.State]
+			: undefined;
 		if (!state) {
 			return;
 		}
@@ -761,6 +794,16 @@ export class MappingEffect extends Effect {
 					}
 				}
 				if (same) {
+					for (let i = 0; i < nextOrder.length; i++) {
+						const ctx = production.get(nextOrder[i]);
+						const itemNode = ctx?.[templateId + Slot.Node];
+						if (!itemNode) {
+							continue;
+						}
+						if (itemNode.parentNode !== parent) {
+							parent.insertBefore(itemNode, node);
+						}
+					}
 					return;
 				}
 			}
@@ -816,6 +859,16 @@ export class MappingEffect extends Effect {
 					}
 				}
 				if (same) {
+					for (let i = 0; i < nextOrder.length; i++) {
+						const ctx = production.get(nextOrder[i]);
+						const itemNode = ctx?.[templateId + Slot.Node];
+						if (!itemNode) {
+							continue;
+						}
+						if (itemNode.parentNode !== node) {
+							node.appendChild(itemNode);
+						}
+					}
 					return;
 				}
 			}
@@ -871,7 +924,9 @@ export class MappingEffect extends Effect {
 	}
 
 	_renderArrayIndexed(items, node, itemPos, context, effector, templateId) {
-		let entries = context[this.id + Slot.State];
+		let entries = Object.hasOwn(context, this.id + Slot.State)
+			? context[this.id + Slot.State]
+			: undefined;
 		if (!entries || !Array.isArray(entries)) {
 			this._clearState(entries, effector, templateId);
 			entries = context[this.id + Slot.State] = [];
@@ -897,15 +952,19 @@ export class MappingEffect extends Effect {
 				entries[base + 1] = value;
 				shouldRender = true;
 			} else {
-				const existing =
-					ctx[templateId + Slot.Node] ?? ctx[this.id + Slot.Node];
-				const valueChanged = !(existing && Object.is(entries[base + 1], value));
+				const existing = Object.hasOwn(ctx, templateId + Slot.Node)
+					? ctx[templateId + Slot.Node]
+					: Object.hasOwn(ctx, this.id + Slot.Node)
+						? ctx[this.id + Slot.Node]
+						: undefined;
+				const mounted = isMountedNode(existing);
+				const valueChanged = !(mounted && Object.is(entries[base + 1], value));
 				if (valueChanged) {
 					this.valueSlot.set(value, true, ctx);
 					this.keySlot.set(k, true, ctx);
 					entries[base + 1] = value;
 				}
-				shouldRender = !existing || valueChanged;
+				shouldRender = !mounted || valueChanged;
 			}
 			if (shouldRender) {
 				itemPos[1] = k;
@@ -931,7 +990,9 @@ export class MappingEffect extends Effect {
 	}
 
 	_renderKeyed(items, isArray, node, itemPos, context, effector, templateId) {
-		let state = context[this.id + Slot.State];
+		let state = Object.hasOwn(context, this.id + Slot.State)
+			? context[this.id + Slot.State]
+			: undefined;
 		if (!state?.production || !state.order) {
 			this._clearState(state, effector, templateId);
 			state = context[this.id + Slot.State] = {
@@ -943,6 +1004,9 @@ export class MappingEffect extends Effect {
 		const prevOrder = state.order;
 		const nextOrder = [];
 		const seen = new Set();
+		const staleRenders = [];
+		const parentNode =
+			node?.nodeType === Node.COMMENT_NODE ? node.parentNode : node;
 		const valueSlotId = this.valueSlot.id;
 		const keySlotId = this.keySlot.id;
 		const stateSlotId = this.id + Slot.State;
@@ -969,6 +1033,10 @@ export class MappingEffect extends Effect {
 
 				let ctx = production.get(token);
 				let shouldRender;
+				let existing;
+				const previousValue = ctx?.[valueSlotId];
+				const previousToken = ctx?._uiMapToken;
+				const tokenChanged = ctx ? previousToken !== token : false;
 				if (!ctx) {
 					ctx = Object.create(context);
 					ctx[Slot.Parent] = context;
@@ -980,10 +1048,14 @@ export class MappingEffect extends Effect {
 					production.set(token, ctx);
 					shouldRender = true;
 				} else {
-					const existing = ctx[nodeSlotId] ?? ctx[altNodeSlotId];
-					const valueChanged = !(
-						existing && Object.is(ctx[valueSlotId], value)
-					);
+					existing = Object.hasOwn(ctx, nodeSlotId)
+						? ctx[nodeSlotId]
+						: Object.hasOwn(ctx, altNodeSlotId)
+							? ctx[altNodeSlotId]
+							: undefined;
+					const mounted = isMountedNode(existing);
+					const valueChanged =
+						tokenChanged || !(mounted && Object.is(ctx[valueSlotId], value));
 					if (valueChanged) {
 						this.valueSlot.set(value, true, ctx);
 						ctx[valueSlotId] = value;
@@ -994,9 +1066,10 @@ export class MappingEffect extends Effect {
 						ctx[keySlotId] = i;
 					}
 					shouldRender =
-						!existing || valueChanged || (indexChanged && rendersOnIndexChange);
+						!mounted || valueChanged || (indexChanged && rendersOnIndexChange);
 				}
 				if (shouldRender) {
+					const previousNode = isMountedNode(existing) ? existing : null;
 					itemPos[1] = i;
 					ctx[nodeSlotId] = this.template.render(
 						node,
@@ -1005,7 +1078,20 @@ export class MappingEffect extends Effect {
 						effector,
 						templateId,
 					);
+					const nextNode = ctx[nodeSlotId];
+					if (previousNode && nextNode && previousNode !== nextNode) {
+						staleRenders.push({ previousNode, nextNode });
+					}
 				}
+				if (
+					previousValue !== undefined &&
+					!Object.is(previousValue, value) &&
+					Object.is(ctx[valueSlotId], previousValue)
+				) {
+					this.valueSlot.set(value, true, ctx);
+					ctx[valueSlotId] = value;
+				}
+				ctx._uiMapToken = token;
 			}
 		} else {
 			// Object iteration
@@ -1018,6 +1104,10 @@ export class MappingEffect extends Effect {
 
 				let ctx = production.get(token);
 				let shouldRender;
+				let existing;
+				const previousValue = ctx?.[valueSlotId];
+				const previousToken = ctx?._uiMapToken;
+				const tokenChanged = ctx ? previousToken !== token : false;
 				if (!ctx) {
 					ctx = Object.create(context);
 					ctx[Slot.Parent] = context;
@@ -1029,10 +1119,14 @@ export class MappingEffect extends Effect {
 					production.set(token, ctx);
 					shouldRender = true;
 				} else {
-					const existing = ctx[nodeSlotId] ?? ctx[altNodeSlotId];
-					const valueChanged = !(
-						existing && Object.is(ctx[valueSlotId], value)
-					);
+					existing = Object.hasOwn(ctx, nodeSlotId)
+						? ctx[nodeSlotId]
+						: Object.hasOwn(ctx, altNodeSlotId)
+							? ctx[altNodeSlotId]
+							: undefined;
+					const mounted = isMountedNode(existing);
+					const valueChanged =
+						tokenChanged || !(mounted && Object.is(ctx[valueSlotId], value));
 					if (valueChanged) {
 						this.valueSlot.set(value, true, ctx);
 						ctx[valueSlotId] = value;
@@ -1043,9 +1137,10 @@ export class MappingEffect extends Effect {
 						ctx[keySlotId] = k;
 					}
 					shouldRender =
-						!existing || valueChanged || (indexChanged && rendersOnIndexChange);
+						!mounted || valueChanged || (indexChanged && rendersOnIndexChange);
 				}
 				if (shouldRender) {
+					const previousNode = isMountedNode(existing) ? existing : null;
 					itemPos[1] = i;
 					ctx[nodeSlotId] = this.template.render(
 						node,
@@ -1054,8 +1149,38 @@ export class MappingEffect extends Effect {
 						effector,
 						templateId,
 					);
+					const nextNode = ctx[nodeSlotId];
+					if (previousNode && nextNode && previousNode !== nextNode) {
+						staleRenders.push({ previousNode, nextNode });
+					}
 				}
+				if (
+					previousValue !== undefined &&
+					!Object.is(previousValue, value) &&
+					Object.is(ctx[valueSlotId], previousValue)
+				) {
+					this.valueSlot.set(value, true, ctx);
+					ctx[valueSlotId] = value;
+				}
+				ctx._uiMapToken = token;
 				i++;
+			}
+		}
+
+		if (staleRenders.length > 0) {
+			for (let i = 0; i < staleRenders.length; i++) {
+				const entry = staleRenders[i];
+				const staleNode = entry.previousNode;
+				if (!staleNode || staleNode === entry.nextNode) {
+					continue;
+				}
+				if (staleNode.nodeType === Node.ATTRIBUTE_NODE) {
+					if (staleNode.ownerElement) {
+						staleNode.ownerElement.removeAttributeNode(staleNode);
+					}
+				} else if (staleNode.parentNode) {
+					staleNode.parentNode.removeChild(staleNode);
+				}
 			}
 		}
 
@@ -1091,7 +1216,10 @@ export class MappingEffect extends Effect {
 				!Array.isArray(items) &&
 				Object.keys(items).length === 0);
 		if (isEmpty) {
-			if (context[this.id + Slot.State]) {
+			const state = Object.hasOwn(context, this.id + Slot.State)
+				? context[this.id + Slot.State]
+				: undefined;
+			if (state) {
 				this._fastClear(node, context, effector, templateId);
 			}
 			return;
@@ -1143,7 +1271,9 @@ export class MappingEffect extends Effect {
 
 	unrender(context, effector) {
 		const derived = super.unrender(context, effector);
-		const state = derived[this.id + Slot.State];
+		const state = Object.hasOwn(derived, this.id + Slot.State)
+			? derived[this.id + Slot.State]
+			: undefined;
 		const templateId = this.template.id ?? this.id;
 		if (state) {
 			if (state.production instanceof Map) {
@@ -1188,14 +1318,20 @@ export class FormattingEffect extends Effect {
 		// TODO: We need to know when we need to unrender/clear
 		this.subrender(node, position, context, effector);
 		const input = context[this.input?.id];
-		let state = context[this.id + Slot.State];
+		const stateSlotId = this.id + Slot.State;
+		const nodeSlotId = this.id + Slot.Node;
+		let state = Object.hasOwn(context, stateSlotId)
+			? context[stateSlotId]
+			: undefined;
 		if (!state || typeof state !== "object" || !Object.hasOwn(state, "token")) {
-			state = context[this.id + Slot.State] = {
+			state = context[stateSlotId] = {
 				input: undefined,
 				token: 0,
 			};
 		}
-		const textNode = context[this.id + Slot.Node];
+		const textNode = Object.hasOwn(context, nodeSlotId)
+			? context[nodeSlotId]
+			: undefined;
 		// We make sure to guard a re-render, and only proceed if there'sure
 		// a data change.
 		if (!Object.is(input, state.input) || textNode === undefined) {
@@ -1206,11 +1342,13 @@ export class FormattingEffect extends Effect {
 			const token = ++state.token;
 			if (isPromiseLike(input)) {
 				if (!textNode && node?.nodeType === Node.TEXT_NODE) {
-					context[this.id + Slot.Node] = node;
+					context[nodeSlotId] = node;
 				}
 				Promise.resolve(input)
 					.then((resolved) => {
-						const current = context[this.id + Slot.State];
+						const current = Object.hasOwn(context, stateSlotId)
+							? context[stateSlotId]
+							: undefined;
 						if (
 							!current ||
 							current.token !== token ||
@@ -1219,13 +1357,11 @@ export class FormattingEffect extends Effect {
 							return;
 						}
 						const output = this._format(resolved, node);
-						const target = context[this.id + Slot.Node];
+						const target = Object.hasOwn(context, nodeSlotId)
+							? context[nodeSlotId]
+							: undefined;
 						if (!target) {
-							context[this.id + Slot.Node] = effector.ensureText(
-								node,
-								position,
-								output,
-							);
+							context[nodeSlotId] = effector.ensureText(node, position, output);
 							return;
 						}
 						target.data = output;
@@ -1243,9 +1379,9 @@ export class FormattingEffect extends Effect {
 			if (!textNode) {
 				if (node?.nodeType === Node.TEXT_NODE) {
 					node.data = output;
-					return (context[this.id + Slot.Node] = node);
+					return (context[nodeSlotId] = node);
 				}
-				return (context[this.id + Slot.Node] = effector.ensureText(
+				return (context[nodeSlotId] = effector.ensureText(
 					node,
 					position,
 					output,
@@ -1276,15 +1412,17 @@ export class FormattingEffect extends Effect {
 
 	unrender(context, effector) {
 		const c = super.unrender(context, effector);
-		const textNode = c[this.id + Slot.Node];
+		const nodeSlotId = this.id + Slot.Node;
+		const stateSlotId = this.id + Slot.State;
+		const textNode = Object.hasOwn(c, nodeSlotId) ? c[nodeSlotId] : undefined;
 		if (textNode?.parentNode) {
 			textNode.parentNode.removeChild(textNode);
 		}
 		// Clear cached text node and previous value so re-rendering
 		// after a conditional round-trip creates a fresh text node
 		// instead of returning a detached one.
-		c[this.id + Slot.Node] = undefined;
-		c[this.id + Slot.State] = undefined;
+		c[nodeSlotId] = undefined;
+		c[stateSlotId] = undefined;
 	}
 }
 
@@ -1297,9 +1435,12 @@ export class AttributeEffect extends Effect {
 		context = this.input.applyContext(context);
 		this.subrender(node, position, context, effector);
 		const input = context[this.input.id];
-		let state = context[this.id + Slot.State];
+		const stateSlotId = this.id + Slot.State;
+		let state = Object.hasOwn(context, stateSlotId)
+			? context[stateSlotId]
+			: undefined;
 		if (!state || typeof state !== "object" || !Object.hasOwn(state, "token")) {
-			state = context[this.id + Slot.State] = {
+			state = context[stateSlotId] = {
 				input: undefined,
 				token: 0,
 				attributeState: undefined,
@@ -1313,7 +1454,9 @@ export class AttributeEffect extends Effect {
 			if (isPromiseLike(candidate)) {
 				Promise.resolve(candidate)
 					.then((resolved) => {
-						const current = context[this.id + Slot.State];
+						const current = Object.hasOwn(context, stateSlotId)
+							? context[stateSlotId]
+							: undefined;
 						if (!current || current.token !== token) {
 							return;
 						}
@@ -1344,7 +1487,9 @@ export class AttributeEffect extends Effect {
 		if (isPromiseLike(input)) {
 			Promise.resolve(input)
 				.then((resolvedInput) => {
-					const current = context[this.id + Slot.State];
+					const current = Object.hasOwn(context, stateSlotId)
+						? context[stateSlotId]
+						: undefined;
 					if (
 						!current ||
 						current.token !== token ||
@@ -1369,7 +1514,8 @@ export class AttributeEffect extends Effect {
 	}
 
 	unrender(context, effector) {
-		context[this.id + Slot.State] = undefined;
+		const stateSlotId = this.id + Slot.State;
+		context[stateSlotId] = undefined;
 		super.unrender(context, effector);
 	}
 }
@@ -1401,12 +1547,18 @@ export class RefEffect extends Effect {
 
 	render(node, _position, context, _effector) {
 		const stateId = this.id + Slot.State;
-		const target = node?.ownerElement ?? context[this.id + Slot.Node];
+		const target =
+			node?.ownerElement ??
+			(Object.hasOwn(context, this.id + Slot.Node)
+				? context[this.id + Slot.Node]
+				: undefined);
 		if (!target) {
 			return node;
 		}
 		context[this.id + Slot.Node] = target;
-		const state = context[stateId];
+		const state = Object.hasOwn(context, stateId)
+			? context[stateId]
+			: undefined;
 		if (state?.target !== target) {
 			if (state?.ref) {
 				this.assign(state.ref, state.context ?? context, null);
@@ -1422,13 +1574,16 @@ export class RefEffect extends Effect {
 	}
 
 	unrender(context, effector) {
-		const state = context[this.id + Slot.State];
+		const stateSlotId = this.id + Slot.State;
+		const state = Object.hasOwn(context, stateSlotId)
+			? context[stateSlotId]
+			: undefined;
 		if (state?.ref) {
 			this.assign(state.ref, state.context ?? context, null);
 		} else {
 			this.assign(this.resolveRef(context), context, null);
 		}
-		context[this.id + Slot.State] = undefined;
+		context[stateSlotId] = undefined;
 		context[this.id + Slot.Node] = undefined;
 		super.unrender(context, effector);
 	}
@@ -1539,11 +1694,15 @@ export class EventHandlerEffect extends Effect {
 		const eventName = this.event.startsWith("on")
 			? this.event.substring(2)
 			: this.event;
-		const target = node?.ownerElement ?? context[this.id + Slot.Node];
+		const target =
+			node?.ownerElement ??
+			(Object.hasOwn(context, this.id + Slot.Node)
+				? context[this.id + Slot.Node]
+				: undefined);
 		if (target) {
 			context[this.id + Slot.Node] = target;
 		}
-		let state = context[stateId];
+		let state = Object.hasOwn(context, stateId) ? context[stateId] : undefined;
 		if (!Object.hasOwn(context, stateId) || state === undefined) {
 			if (!target) {
 				return node;
@@ -1582,11 +1741,14 @@ export class EventHandlerEffect extends Effect {
 	}
 
 	unrender(context, effector) {
-		const state = context[this.id + Slot.State];
+		const stateSlotId = this.id + Slot.State;
+		const state = Object.hasOwn(context, stateSlotId)
+			? context[stateSlotId]
+			: undefined;
 		if (state?.target && state?.wrapper) {
 			state.target.removeEventListener(state.eventName, state.wrapper);
 		}
-		context[this.id + Slot.State] = undefined;
+		context[stateSlotId] = undefined;
 		super.unrender(context, effector);
 	}
 
@@ -1599,7 +1761,11 @@ export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 	render(node, _position, context, _effector) {
 		this.input?.applyContext(context);
 		const stateId = this.id + Slot.State;
-		const target = node?.ownerElement ?? context[this.id + Slot.Node];
+		const target =
+			node?.ownerElement ??
+			(Object.hasOwn(context, this.id + Slot.Node)
+				? context[this.id + Slot.Node]
+				: undefined);
 		if (target) {
 			context[this.id + Slot.Node] = target;
 		}
@@ -1612,8 +1778,9 @@ export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 			}
 			context[stateId] = true;
 		}
-		if (!context[this.id]) {
-			context[this.id] = (context[this.id] ?? 0) + 1;
+		if (!Object.hasOwn(context, this.id) || !context[this.id]) {
+			const previous = Object.hasOwn(context, this.id) ? context[this.id] : 0;
+			context[this.id] = previous + 1;
 			if (this.event === "onmount") {
 				Context.Run(context, this.wrapper, [target]);
 			}
@@ -1621,13 +1788,19 @@ export class LifecycleEventHandlerEffect extends EventHandlerEffect {
 		return node ?? target;
 	}
 	unrender(context, effector, id) {
-		const previous = context[this.id] ?? 0;
+		const previous = Object.hasOwn(context, this.id)
+			? (context[this.id] ?? 0)
+			: 0;
 		if (previous <= 0) {
 			return;
 		}
 		context[this.id] = previous - 1;
 		if (previous === 1 && this.event === "onunmount") {
-			Context.Run(context, this.wrapper, [context[this.id + Slot.Node]]);
+			Context.Run(context, this.wrapper, [
+				Object.hasOwn(context, this.id + Slot.Node)
+					? context[this.id + Slot.Node]
+					: undefined,
+			]);
 		}
 		super.unrender(context, effector, id);
 	}

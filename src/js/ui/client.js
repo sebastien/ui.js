@@ -49,8 +49,10 @@ const render = (
 	const effect = component(componentFunction).application(input);
 
 	// We setup a context
-	const ctx = (context[effect.id] =
-		context[effect.id] ?? Object.create(context));
+	let ctx = context[effect.id];
+	if (!Object.hasOwn(context, effect.id) || !ctx) {
+		ctx = context[effect.id] = Object.create(context);
+	}
 	ctx[Slot.Owner] = effect;
 	ctx[Slot.Parent] = context;
 	ctx[Slot.Name] = "client";
@@ -58,8 +60,9 @@ const render = (
 	ctx[Slot.Input] = data;
 	// We create the parent node, stored at the effect's own node slot
 	// to avoid colliding with numeric metadata keys (0-3).
-	const node = (ctx[effect.id + Slot.Node] =
-		ctx[effect.id + Slot.Node] ||
+	const nodeSlot = effect.id + Slot.Node;
+	const node = (ctx[nodeSlot] =
+		(Object.hasOwn(ctx, nodeSlot) ? ctx[nodeSlot] : undefined) ||
 		// The effector will detect if the parent is a DocumentFragment, and if
 		// the `ui*` fields have been set, this will be used instead.
 		Object.assign(document.createDocumentFragment(), {

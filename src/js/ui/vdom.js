@@ -234,6 +234,42 @@ export class VNode {
 		}
 	}
 
+	static AreResolvedEffectsEquivalent(left, right) {
+		if (left === right) {
+			return true;
+		}
+		if (!Array.isArray(left) || !Array.isArray(right)) {
+			return false;
+		}
+		if (left.length !== right.length) {
+			return false;
+		}
+		for (let i = 0; i < left.length; i++) {
+			if (left[i]?.[0] !== right[i]?.[0] || left[i]?.[1] !== right[i]?.[1]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	static HasDuplicateEffectTargets(resolved) {
+		if (!Array.isArray(resolved) || resolved.length < 2) {
+			return false;
+		}
+		const seen = new Set();
+		for (let i = 0; i < resolved.length; i++) {
+			const target = resolved[i]?.[0];
+			if (!target || target.nodeType === Node.ATTRIBUTE_NODE) {
+				continue;
+			}
+			if (seen.has(target)) {
+				return true;
+			}
+			seen.add(target);
+		}
+		return false;
+	}
+
 	constructor(ns, name, attributes, children) {
 		this.ns = ns;
 		this.name = name;
@@ -304,7 +340,9 @@ export class VNode {
 		// This will create the VNode if it doesn't exist, rendering effects
 		// as they go. Otherwise only the effects will be renderer, and the
 		// node will be attached to the parent.
-		const existing = context[id + Slot.Node];
+		const existing = Object.hasOwn(context, id + Slot.Node)
+			? context[id + Slot.Node]
+			: undefined;
 		const effects = this.effects;
 		const n = effects.length;
 		const _isFragment = this.name === "#fragment";
@@ -349,50 +387,48 @@ export class VNode {
 			const previousResolved = existing._uiEffects;
 			let resolved = previousResolved;
 			if (!VNode.AreEffectTargetsValid(resolved, effects, existing, context)) {
-				// Cached targets are stale (eg: external DOM edits). Try re-resolve on
-				// the current node first, then replace with a fresh clone if needed.
 				resolved = resolveEffects(existing);
-				const hasNewResolution =
-					Array.isArray(resolved) && resolved !== previousResolved;
-				if (hasNewResolution) {
+				const hasNewResolution = !VNode.AreResolvedEffectsEquivalent(
+					previousResolved,
+					resolved,
+				);
+				if (resolved && hasNewResolution) {
 					VNode.CleanupResolvedEffects(previousResolved, context, effector);
+					existing._uiEffects = resolved;
+				} else if (resolved && previousResolved) {
+					resolved = previousResolved;
 				}
-				if (!resolved) {
-					const replacement = this.clone();
-					const replacementResolved = resolveEffects(replacement);
-					if (!replacementResolved) {
-						if (!existing.parentNode) {
-							if (
-								existing.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */ &&
-								existing._uiFragmentChildren
-							) {
-								for (const child of existing._uiFragmentChildren) {
-									if (!child.parentNode) existing.appendChild(child);
-								}
+			}
+			if (!resolved || VNode.HasDuplicateEffectTargets(resolved)) {
+				const replacement = this.clone();
+				const replacementResolved = resolveEffects(replacement);
+				if (!replacementResolved) {
+					if (!existing.parentNode) {
+						if (
+							existing.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */ &&
+							existing._uiFragmentChildren
+						) {
+							for (const child of existing._uiFragmentChildren) {
+								if (!child.parentNode) existing.appendChild(child);
 							}
-							effector.appendChild(parent, existing, position);
 						}
-						return existing;
+						effector.appendChild(parent, existing, position);
 					}
-					if (!hasNewResolution) {
-						VNode.CleanupResolvedEffects(previousResolved, context, effector);
-					}
-					renderEffects(replacementResolved);
-					replacement._uiEffects = replacementResolved;
-					context[id + Slot.Node] = replacement;
-					if (replacement.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
-						replacement._uiFragmentChildren = Array.from(
-							replacement.childNodes,
-						);
-					}
-					if (existing.parentNode) {
-						existing.parentNode.replaceChild(replacement, existing);
-					} else {
-						effector.appendChild(parent, replacement, position);
-					}
-					return replacement;
+					return existing;
 				}
-				existing._uiEffects = resolved;
+				VNode.CleanupResolvedEffects(previousResolved, context, effector);
+				renderEffects(replacementResolved);
+				replacement._uiEffects = replacementResolved;
+				context[id + Slot.Node] = replacement;
+				if (replacement.nodeType === 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
+					replacement._uiFragmentChildren = Array.from(replacement.childNodes);
+				}
+				if (existing.parentNode) {
+					existing.parentNode.replaceChild(replacement, existing);
+				} else {
+					effector.appendChild(parent, replacement, position);
+				}
+				return replacement;
 			}
 			renderEffects(resolved);
 			if (!existing.parentNode) {
@@ -415,7 +451,9 @@ export class VNode {
 	}
 
 	unrender(context, effector, id) {
-		const existing = context[id + Slot.Node];
+		const existing = Object.hasOwn(context, id + Slot.Node)
+			? context[id + Slot.Node]
+			: undefined;
 		if (existing) {
 			if (existing.parentNode) {
 				existing.parentNode.removeChild(existing);
