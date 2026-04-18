@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import * as domish from "../deps/domish/src/ts/domish/domish.ts";
-import { component } from "../src/js/ui/templates.js";
+import { component, Subscription } from "../src/js/ui/templates.js";
 import { DOMEffector } from "../src/js/ui/effectors.js";
 import { Slot } from "../src/js/ui/cells.js";
 import { h, $ } from "../src/js/ui/hyperscript.js";
@@ -341,5 +341,72 @@ describe("core cleanup and unmounting", () => {
 
 		const after = derivedContext[subsKey]?.length ?? 0;
 		expect(after).toBe(before - 1);
+	});
+
+	test("signal mirror subscription stays stable and is released on unrender", () => {
+		const documentSignal = $.signal("v0");
+
+		const App = ({ document }) => h.div(document);
+		const { effect, effector, ctx, derivedContext } = mountWithHandle(App, {
+			document: documentSignal,
+		});
+
+		const subsKey = documentSignal.id + Slot.Observable;
+		const syncKey = documentSignal.id + Slot.State + 1;
+		const ownerContext = derivedContext[syncKey] ? derivedContext : ctx;
+		documentSignal.observable(ownerContext);
+		const before = ownerContext[subsKey]?.length ?? 0;
+		expect(before).toBeGreaterThan(0);
+		expect(ownerContext[syncKey]).toBeDefined();
+
+		for (let i = 1; i <= 25; i++) {
+			documentSignal.set(`v${i}`, true, ownerContext);
+		}
+
+		const afterUpdates = ownerContext[subsKey]?.length ?? 0;
+		expect(afterUpdates).toBe(before);
+
+		effect.unrender(ctx, effector);
+
+		const afterUnmount = ownerContext[subsKey]?.length ?? 0;
+		expect(afterUnmount).toBeLessThan(before);
+		expect(ownerContext[syncKey]).toBeUndefined();
+	});
+
+	test("subscription selection stays stable and is released on unrender", () => {
+		const source = $.cell(0);
+		const selected = new Subscription(source).apply((value) => `v:${value}`);
+
+		const App = () => h.div(selected);
+		const { effect, effector, ctx, derivedContext } = mountWithHandle(App, {});
+
+		const ownerContext =
+			derivedContext[selected.input.id + Slot.State] !== undefined
+				? derivedContext
+				: ctx;
+
+		source.observable(ownerContext);
+		const sourceObsKey = source.id + Slot.Observable;
+		const stateKey = selected.input.id + Slot.State;
+		const cleanupKey = selected.input.id + Slot.State + 1;
+		const before = ownerContext[sourceObsKey]?.length ?? 0;
+
+		expect(before).toBeGreaterThan(0);
+		expect(ownerContext[stateKey]).toBeDefined();
+		expect(ownerContext[cleanupKey]).toBeDefined();
+
+		for (let i = 1; i <= 25; i++) {
+			source.set(i, true, ownerContext);
+		}
+
+		const afterUpdates = ownerContext[sourceObsKey]?.length ?? 0;
+		expect(afterUpdates).toBe(before);
+
+		effect.unrender(ctx, effector);
+
+		const afterUnmount = ownerContext[sourceObsKey]?.length ?? 0;
+		expect(afterUnmount).toBeLessThan(before);
+		expect(ownerContext[stateKey]).toBeUndefined();
+		expect(ownerContext[cleanupKey]).toBeUndefined();
 	});
 });
