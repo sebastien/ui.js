@@ -12,6 +12,36 @@ import { getSignature } from "./utils/inspect.js";
 const BOUND_CONTEXT = Symbol.for("ui.boundContext");
 const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
 const INJECTION_SOURCES = Symbol.for("ui.injection.sources");
+const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
+
+const registerUnmountCleanup = (context, dispose) => {
+	if (!context || typeof dispose !== "function") {
+		return undefined;
+	}
+	const cleanups = context[EFFECT_CLEANUPS] || (context[EFFECT_CLEANUPS] = []);
+	const entry = {
+		disposed: false,
+		dispose: () => {
+			if (entry.disposed) {
+				return;
+			}
+			entry.disposed = true;
+			dispose();
+		},
+	};
+	cleanups.push(entry);
+	return entry;
+};
+
+const resolveUnmountContext = (context) => {
+	if (!context) {
+		return context;
+	}
+	const owner = context[Slot.Owner];
+	const inputId = owner?.input?.id;
+	const derived = inputId !== undefined ? context[inputId] : undefined;
+	return derived && typeof derived === "object" ? derived : context;
+};
 
 // TODO: Shouldn't that be an Input?
 // TODO: Not of these don't belong in templates, they are really about
@@ -162,8 +192,15 @@ export class Injection extends Derivation {
 					context[INJECTION_SOURCES] ||
 					(context[INJECTION_SOURCES] = new Map());
 				const targets = bySource.get(sourceId) || [];
-				for (let i = 0; i < targets.length; i++) {
+				for (let i = targets.length - 1; i >= 0; i--) {
 					const entry = targets[i];
+					const entryContext = entry?.context;
+					const owner = entryContext?.[Slot.Owner];
+					const parent = entryContext?.[Slot.Parent];
+					if (owner && parent && parent[owner.id] !== entryContext) {
+						targets.splice(i, 1);
+						continue;
+					}
 					if (entry?.context === targetContext && entry?.id === targetId) {
 						return;
 					}
@@ -249,6 +286,35 @@ export class Injection extends Derivation {
 		// mode (~8 bytes/entry) as long as the gap is below kMaxGap (1024).
 		const derived = (context[this.id] =
 			context[this.id] ?? (this.derived ? Object.create(context) : {}));
+		const cleanupKey = this.id + Slot.State + 2;
+		if (!derived[cleanupKey]) {
+			const cleanupContext = resolveUnmountContext(derived);
+			derived[cleanupKey] = registerUnmountCleanup(cleanupContext, () => {
+				const aliases = derived[INJECTION_ALIASES];
+				if (aliases?.size) {
+					for (const [targetId, alias] of aliases) {
+						const sourceContext = alias?.sourceContext;
+						const sourceId = alias?.sourceId;
+						const bySource = sourceContext?.[INJECTION_SOURCES];
+						const targets = bySource?.get?.(sourceId);
+						if (!targets?.length) {
+							continue;
+						}
+						for (let i = targets.length - 1; i >= 0; i--) {
+							const entry = targets[i];
+							if (entry?.context === derived && entry?.id === targetId) {
+								targets.splice(i, 1);
+							}
+						}
+						if (!targets.length) {
+							bySource.delete(sourceId);
+						}
+					}
+					aliases.clear();
+				}
+				derived[cleanupKey] = undefined;
+			});
+		}
 
 		// Check if we have a cached match result from a previous render.
 		// The match array is flat: [slot0, value0, slot1, value1, ...].
@@ -474,11 +540,29 @@ export class Subscription extends Selection {
 				// FIXME: Updates seem to be triggered too many times
 				Slot.Notify(ctx, this.id, Slot.Expand(this.input, context), true);
 			};
+			const ids = [];
+			const seen = new Set();
 			Slot.Each(this.input, (slot) => {
+				if (!slot || seen.has(slot.id)) {
+					return;
+				}
+				seen.add(slot.id);
+				ids.push(slot.id);
 				Slot.Sub(context, slot.id, updater);
 			});
 			ctx[this.id] = Slot.Expand(this.input, context);
 			ctx[this.id + Slot.State] = updater;
+			const cleanupKey = this.id + Slot.State + 1;
+			if (!ctx[cleanupKey]) {
+				const cleanupContext = resolveUnmountContext(ctx);
+				ctx[cleanupKey] = registerUnmountCleanup(cleanupContext, () => {
+					for (let i = 0; i < ids.length; i++) {
+						Slot.Unsub(context, ids[i], updater);
+					}
+					ctx[this.id + Slot.State] = undefined;
+					ctx[cleanupKey] = undefined;
+				});
+			}
 		}
 		return ctx;
 	}
@@ -579,7 +663,7 @@ export class Signal extends Cell {
 				const selfId = this.id;
 				const canonical = this.context;
 				let syncing = false;
-				Slot.Sub(context, selfId, (value) => {
+				const listener = (value) => {
 					// Guard against re-entrancy: Notify on canonical
 					// may trigger INJECTION_SOURCES that feed back.
 					if (syncing) {
@@ -591,8 +675,16 @@ export class Signal extends Cell {
 					} finally {
 						syncing = false;
 					}
-				});
-				context[syncKey] = true;
+				};
+				Slot.Sub(context, selfId, listener);
+				const cleanupContext = resolveUnmountContext(context);
+				context[syncKey] = {
+					listener,
+					cleanup: registerUnmountCleanup(cleanupContext, () => {
+						Slot.Unsub(context, selfId, listener);
+						context[syncKey] = undefined;
+					}),
+				};
 			}
 		}
 		return result;
@@ -818,12 +910,6 @@ export class Application extends Selection {
 	unrender(context, effector, id = this.id) {
 		const rs = context[this.id + Slot.Render];
 		const state = rs ? rs[1] : undefined;
-		if (state?.mode === "template") {
-			if (state.template?.unrender) {
-				state.template.unrender(state.context ?? context, effector, id);
-			}
-			return;
-		}
 		if (rs?.[0]) {
 			Slot.Unsub(context, this.id, rs[0]);
 			context[this.id + Slot.Render] = undefined;
