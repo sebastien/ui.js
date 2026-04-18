@@ -57,6 +57,7 @@ export class Injection extends Derivation {
 	}
 
 	applyContext(context) {
+		const resolvedAliasSources = new WeakMap();
 		// When reading a slot's value for injection, prefer the slot's
 		// own canonical context (Signal.context) over the parent rendering
 		// context. This ensures that a Signal whose value was updated in
@@ -85,6 +86,26 @@ export class Injection extends Derivation {
 			sourceSlot,
 			sourceContext,
 		) => {
+			const getResolvedSource = (context, slotId) => {
+				if (!context) {
+					return {
+						sourceContext: context,
+						sourceId: slotId,
+					};
+				}
+				let byId = resolvedAliasSources.get(context);
+				if (!byId) {
+					byId = new Map();
+					resolvedAliasSources.set(context, byId);
+				}
+				const hit = byId.get(slotId);
+				if (hit) {
+					return hit;
+				}
+				const value = resolveSource(context, slotId);
+				byId.set(slotId, value);
+				return value;
+			};
 			const resolveSource = (context, slotId) => {
 				let currentContext = context;
 				let currentId = slotId;
@@ -151,7 +172,7 @@ export class Injection extends Derivation {
 				bySource.set(sourceId, targets);
 			};
 			const startContext = sourceSlot?.context || sourceContext;
-			const resolved = resolveSource(startContext, sourceSlot.id);
+			const resolved = getResolvedSource(startContext, sourceSlot.id);
 			const ownerContext = resolved.sourceContext;
 			const sourceId = resolved.sourceId;
 			const aliases =
@@ -227,13 +248,15 @@ export class Injection extends Derivation {
 		// dictionary mode (~80 bytes/entry), while arrays use holey elements
 		// mode (~8 bytes/entry) as long as the gap is below kMaxGap (1024).
 		const derived = (context[this.id] =
-			context[this.id] ?? (this.derived ? Object.create(context) : []));
+			context[this.id] ?? (this.derived ? Object.create(context) : {}));
 
 		// Check if we have a cached match result from a previous render.
 		// The match array is flat: [slot0, value0, slot1, value1, ...].
 		const stateKey = this.id + Slot.State;
 		const cached = context[stateKey];
 		if (cached) {
+			const cachedMatches = cached.matches || cached;
+			const cachedInput = cached.input;
 			// Ensure parent injection values are fresh before reading.
 			// This handles the case where a Cell value changed but the
 			// parent template hasn't re-rendered (e.g. conditional remount).
@@ -242,9 +265,15 @@ export class Injection extends Derivation {
 			if (parentInjection instanceof Injection && context[2]) {
 				parentInjection.applyContext(context[2]);
 			}
-			const rematched = Slot.Match(this.args, inputData, context, []);
-			const matches = rematched.length ? rematched : cached;
-			context[stateKey] = matches;
+			const rematched =
+				cachedInput !== inputData
+					? Slot.Match(this.args, inputData, context, [])
+					: null;
+			const matches = rematched?.length ? rematched : cachedMatches;
+			context[stateKey] = {
+				input: inputData,
+				matches,
+			};
 			// Re-render path: reuse the cached match pairs, just update values.
 			// The structure (which slots map to which data slots) doesn't change,
 			// only the resolved values in the context may have changed.
@@ -313,7 +342,10 @@ export class Injection extends Derivation {
 			}
 		}
 		// Cache the match results for subsequent re-renders
-		context[stateKey] = matches;
+		context[stateKey] = {
+			input: inputData,
+			matches,
+		};
 		return derived;
 	}
 }
@@ -528,9 +560,9 @@ export class Cell extends Selection {
 }
 
 export class Signal extends Cell {
-	constructor(source, context = []) {
+	constructor(source, context = {}) {
 		super(source);
-		this.context = context || [];
+		this.context = context || {};
 		this.applyContext(this.context);
 	}
 

@@ -393,7 +393,7 @@ select.effect = (selection, handler, options = undefined) => {
 
 select.watch = select.effect;
 
-select.signal = (value, context = []) => {
+select.signal = (value, context = {}) => {
 	return new Signal(value, context);
 };
 

@@ -109,6 +109,41 @@ export class Slot {
 	static State = 4; // Offset of the state
 	static Render = 5; // Offset of the render data
 
+	static ReadValue(context, id) {
+		return context ? context[id] : undefined;
+	}
+
+	static WriteValue(context, id, value) {
+		if (!context) {
+			return value;
+		}
+		context[id] = value;
+		return value;
+	}
+
+	static ReadObservable(context, id) {
+		return context ? context[id + Slot.Observable] : undefined;
+	}
+
+	static EnsureObservable(context, id) {
+		if (!context) {
+			return undefined;
+		}
+		if (!context[id + Slot.Observable]) {
+			context[id + Slot.Observable] = [];
+		}
+		return context[id + Slot.Observable];
+	}
+
+	static BumpRevision(context, id) {
+		if (!context) {
+			return 0;
+		}
+		const rev = (context[id + Slot.Revision] || 0) + 1;
+		context[id + Slot.Revision] = rev;
+		return rev;
+	}
+
 	// --
 	// Matches the given `template` against the given `data`, returning
 	// a flat array of alternating [slot, value, slot, value, ...] pairs
@@ -230,8 +265,10 @@ export class Slot {
 	// --
 	// Subscribes a handler to the given slot id in context.
 	static Sub(context, id, handler) {
-		const off = id + 1; // Slot.Observable
-		const subs = context[off] || (context[off] = []);
+		const subs = Slot.EnsureObservable(context, id);
+		if (!subs) {
+			return false;
+		}
 		subs.push(handler);
 		return true;
 	}
@@ -239,7 +276,7 @@ export class Slot {
 	// --
 	// Unsubscribes a handler from the given slot id in context.
 	static Unsub(context, id, handler) {
-		const subs = context[id + 1]; // Slot.Observable
+		const subs = Slot.ReadObservable(context, id);
 		if (subs) {
 			const i = subs.indexOf(handler);
 			if (i >= 0) {
@@ -257,7 +294,7 @@ export class Slot {
 	// --
 	// Publishes a value to all subscribers of the given slot id in context.
 	static Pub(context, id, value) {
-		const subs = context[id + Slot.Observable];
+		const subs = Slot.ReadObservable(context, id);
 		if (subs) {
 			for (let i = 0; i < subs.length; i++) {
 				if (subs[i](value) === false) {
@@ -315,11 +352,11 @@ export class Slot {
 		const values = new Map();
 		for (let i = 0; i < batch.ids.length; i++) {
 			const id = batch.ids[i];
-			const subs = context[id + 1]; // Slot.Observable
+			const subs = Slot.ReadObservable(context, id);
 			if (!subs?.length) {
 				continue;
 			}
-			const value = context[id];
+			const value = Slot.ReadValue(context, id);
 			for (let j = 0; j < subs.length; j++) {
 				values.set(subs[j], value);
 			}
@@ -333,11 +370,24 @@ export class Slot {
 
 	// --
 	// Sets a value for the given slot id in context and notifies subscribers.
-	static Notify(context, id, value, force) {
-		if (force || value !== context[id]) {
-			context[id] = value;
-			const revOff = id + 2; // Slot.Revision
-			context[revOff] = (context[revOff] || 0) + 1;
+	static Notify(context, id, value, force, seen = undefined) {
+		if (!context) {
+			return;
+		}
+		const wave = seen || new WeakMap();
+		let ids = wave.get(context);
+		if (!ids) {
+			ids = new Set();
+			wave.set(context, ids);
+		}
+		if (ids.has(id)) {
+			return;
+		}
+		ids.add(id);
+		const previous = Slot.ReadValue(context, id);
+		if (force || value !== previous) {
+			Slot.WriteValue(context, id, value);
+			Slot.BumpRevision(context, id);
 			Slot.MarkDependentsDirty(context, id);
 			const mirrored = context[INJECTION_SOURCES]?.get?.(id);
 			if (mirrored?.length) {
@@ -349,7 +399,7 @@ export class Slot {
 					if (entry.context === context && entry.id === id) {
 						continue;
 					}
-					Slot.Notify(entry.context, entry.id, value, force);
+					Slot.Notify(entry.context, entry.id, value, force, wave);
 				}
 			}
 			if (Slot.BatchDepthByContext.get(context) > 0) {
@@ -357,7 +407,7 @@ export class Slot {
 				return;
 			}
 			++Slot.RenderCycle;
-			const subs = context[id + 1]; // Slot.Observable
+			const subs = Slot.ReadObservable(context, id);
 			if (subs) {
 				for (let i = 0; i < subs.length; i++) {
 					if (subs[i](value) === false) {
@@ -546,6 +596,9 @@ export class Slot {
 				visited.add(derivedId);
 				const meta = derivations ? derivations.get(derivedId) : undefined;
 				if (meta) {
+					if (meta.dirty) {
+						continue;
+					}
 					meta.dirty = true;
 					meta.stale = true;
 					Slot.EnqueueDerived(context, derivedId);
@@ -736,10 +789,7 @@ export class Slot {
 	// directly to avoid intermediate object allocation.
 	observable(context = Context.Get()) {
 		if (context) {
-			// Ensure subscriber array is initialized in the context.
-			if (!context[this.id + Slot.Observable]) {
-				context[this.id + Slot.Observable] = [];
-			}
+			Slot.EnsureObservable(context, this.id);
 			return context;
 		}
 		onError(
@@ -756,7 +806,7 @@ export class Slot {
 				Slot.FlushDerived(ctx, this.id);
 			}
 		}
-		return ctx ? ctx[this.id] : undefined;
+		return Slot.ReadValue(ctx, this.id);
 	}
 
 	call(...args) {
@@ -959,22 +1009,19 @@ export class Observable {
 		this.context = context;
 		// Initialize the value in context
 		if (value !== undefined) {
-			context[id] = value;
+			Slot.WriteValue(context, id, value);
 		}
-		// Ensure subscriber array exists
-		if (!context[id + Slot.Observable]) {
-			context[id + Slot.Observable] = [];
-		}
+		Slot.EnsureObservable(context, id);
 	}
 
 	get subs() {
-		return this.context[this.id + Slot.Observable];
+		return Slot.ReadObservable(this.context, this.id);
 	}
 
 	// --
 	// Returns the value of this observable within the context.
 	get value() {
-		return this.context[this.id];
+		return Slot.ReadValue(this.context, this.id);
 	}
 
 	set value(value) {

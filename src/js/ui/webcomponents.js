@@ -168,7 +168,7 @@ class UIWebComponent extends BaseHTMLElement {
 			return;
 		}
 		const data = { ...this.initial, ...this.readAttributes() };
-		this.context = [];
+		this.context = {};
 		this.context[Slot.Owner] = this.component.template;
 		this.context[Slot.Parent] = null;
 		this.context[Slot.Name] = `webcomponent:${this.localName}`;
