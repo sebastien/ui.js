@@ -14,6 +14,17 @@ const INJECTION_ALIASES = Symbol.for("ui.injection.aliases");
 const INJECTION_SOURCES = Symbol.for("ui.injection.sources");
 const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
 
+// --
+// ## Object.hasOwn pattern
+//
+// Like effects.js, this module uses `Object.hasOwn()` for all context
+// property reads. Contexts are prototype-chained (Object.create), so bare
+// reads walk up to ancestors/siblings. The critical instance is in
+// `addReverseAlias` (INJECTION_SOURCES), where shared maps caused the
+// MappingEffect sibling list duplication bug. The same guard is applied
+// uniformly to Cell, DerivedCell, Extraction, Application, and Observable
+// slot reads to prevent any prototype-chain state leakage.
+
 const registerUnmountCleanup = (context, dispose) => {
 	if (!context || typeof dispose !== "function") {
 		return undefined;

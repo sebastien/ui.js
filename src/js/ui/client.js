@@ -48,7 +48,9 @@ const render = (
 	// an effect mapped with the given input.
 	const effect = component(componentFunction).application(input);
 
-	// We setup a context
+	// We setup a context. We use Object.hasOwn to avoid inheriting a
+	// sibling's or ancestor's context via the prototype chain — each
+	// client mount must get its own isolated context.
 	let ctx = context[effect.id];
 	if (!Object.hasOwn(context, effect.id) || !ctx) {
 		ctx = context[effect.id] = Object.create(context);
@@ -60,6 +62,7 @@ const render = (
 	ctx[Slot.Input] = data;
 	// We create the parent node, stored at the effect's own node slot
 	// to avoid colliding with numeric metadata keys (0-3).
+	// Object.hasOwn prevents reusing a stale node cached on an ancestor context.
 	const nodeSlot = effect.id + Slot.Node;
 	const node = (ctx[nodeSlot] =
 		(Object.hasOwn(ctx, nodeSlot) ? ctx[nodeSlot] : undefined) ||

@@ -9,6 +9,29 @@ const CURRENT_EVENT_TARGET = Symbol.for("ui.currentEventTarget");
 const TEMPLATE_KEY = Symbol.for("ui.templateKey");
 const EFFECT_CLEANUPS = Symbol.for("ui.effect.cleanups");
 
+// --
+// ## Object.hasOwn pattern
+//
+// Throughout this module, property reads on `context` use `Object.hasOwn()`
+// instead of a simple truthy check (e.g. `context[slot]`). This is critical
+// because contexts are created via `Object.create(parent)`, so a bare
+// property read walks the prototype chain and may return a value cached on
+// a *parent* or *sibling* context. This caused a class of bugs where:
+// - MappingEffect items shared cached state (all rendering as the last item)
+// - ConditionalEffect branches inherited stale DOM nodes from previous renders
+// - Component/Application effects reused ancestor contexts instead of creating
+//   their own
+//
+// `Object.hasOwn(context, key)` ensures we only read values explicitly set on
+// *this* context, never inherited ones.
+
+// --
+// Checks whether a DOM node is actually mounted in the document tree.
+// Used instead of a simple truthiness check on cached nodes because
+// ConditionalEffect branch switches can detach nodes (removing their
+// parentNode) while they still exist in the context cache. Treating
+// detached nodes as unmounted forces a fresh re-render instead of
+// reusing stale DOM references.
 const isMountedNode = (node) => {
 	if (!node) {
 		return false;
@@ -94,7 +117,8 @@ export class Effect extends Slot {
 
 	// --
 	// Registers the render function to be triggered when the input
-	// changes.
+	// changes. Object.hasOwn prevents inheriting a stale render slot
+	// from a parent context — each context must own its subscription.
 	subrender(node, position, context, effector) {
 		const render_id = this.id + Slot.Render;
 		if (!Object.hasOwn(context, render_id) || !context[render_id]) {
@@ -198,6 +222,8 @@ export class ComponentEffect extends Effect {
 		}
 		const derived = this.input.applyContext(context);
 		const nodeSlotId = this.id + Slot.Node;
+		// Object.hasOwn: avoid inheriting a cached node from a parent
+		// context, which would cause sibling components to share a DOM node.
 		const existing = Object.hasOwn(derived, nodeSlotId)
 			? derived[nodeSlotId]
 			: undefined;
@@ -794,6 +820,9 @@ export class MappingEffect extends Effect {
 					}
 				}
 				if (same) {
+					// Order unchanged, but items may have been detached by a
+					// ConditionalEffect branch switch (e.g., editor overlay).
+					// Re-parent any orphaned item nodes so they appear in the DOM.
 					for (let i = 0; i < nextOrder.length; i++) {
 						const ctx = production.get(nextOrder[i]);
 						const itemNode = ctx?.[templateId + Slot.Node];
@@ -1004,6 +1033,9 @@ export class MappingEffect extends Effect {
 		const prevOrder = state.order;
 		const nextOrder = [];
 		const seen = new Set();
+		// Track items whose DOM node was replaced during re-render.
+		// After the loop, we remove these stale nodes from the DOM to
+		// prevent ghost elements from a previous ConditionalEffect branch.
 		const staleRenders = [];
 		const parentNode =
 			node?.nodeType === Node.COMMENT_NODE ? node.parentNode : node;
@@ -1048,11 +1080,16 @@ export class MappingEffect extends Effect {
 					production.set(token, ctx);
 					shouldRender = true;
 				} else {
+					// Object.hasOwn: each item context must read its own cached
+					// node, not one inherited from the parent mapping context.
 					existing = Object.hasOwn(ctx, nodeSlotId)
 						? ctx[nodeSlotId]
 						: Object.hasOwn(ctx, altNodeSlotId)
 							? ctx[altNodeSlotId]
 							: undefined;
+					// Use isMountedNode instead of truthiness — a cached node
+					// that was detached by a ConditionalEffect branch switch
+					// should be treated as absent, forcing a fresh render.
 					const mounted = isMountedNode(existing);
 					const valueChanged =
 						tokenChanged || !(mounted && Object.is(ctx[valueSlotId], value));
@@ -1119,6 +1156,7 @@ export class MappingEffect extends Effect {
 					production.set(token, ctx);
 					shouldRender = true;
 				} else {
+					// Object.hasOwn: same guard as above for object iteration path.
 					existing = Object.hasOwn(ctx, nodeSlotId)
 						? ctx[nodeSlotId]
 						: Object.hasOwn(ctx, altNodeSlotId)

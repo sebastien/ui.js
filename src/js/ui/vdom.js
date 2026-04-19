@@ -234,6 +234,9 @@ export class VNode {
 		}
 	}
 
+	// Compares two resolved effect arrays (each entry is [target, effect])
+	// to determine if re-rendering is needed. Avoids unnecessary cleanup
+	// and re-application when the resolution hasn't actually changed.
 	static AreResolvedEffectsEquivalent(left, right) {
 		if (left === right) {
 			return true;
@@ -252,6 +255,9 @@ export class VNode {
 		return true;
 	}
 
+	// Detects when multiple effects resolve to the same DOM target node.
+	// This indicates a corrupted resolution (e.g. from prototype chain
+	// pollution) and triggers a full node replacement as a safety fallback.
 	static HasDuplicateEffectTargets(resolved) {
 		if (!Array.isArray(resolved) || resolved.length < 2) {
 			return false;
@@ -340,6 +346,8 @@ export class VNode {
 		// This will create the VNode if it doesn't exist, rendering effects
 		// as they go. Otherwise only the effects will be renderer, and the
 		// node will be attached to the parent.
+		// Object.hasOwn prevents inheriting a node cached on an ancestor
+		// context — each rendering scope must track its own DOM node.
 		const existing = Object.hasOwn(context, id + Slot.Node)
 			? context[id + Slot.Node]
 			: undefined;
@@ -451,6 +459,8 @@ export class VNode {
 	}
 
 	unrender(context, effector, id) {
+		// Same Object.hasOwn guard as in render — only remove nodes
+		// owned by this specific context, not inherited ones.
 		const existing = Object.hasOwn(context, id + Slot.Node)
 			? context[id + Slot.Node]
 			: undefined;

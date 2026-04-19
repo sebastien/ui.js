@@ -5,7 +5,7 @@
 
 // Module: utils/fastdom
 // Batches DOM reads and writes to reduce layout thrashing. This module is a
-// FastDom scheduling pattern that exposes a shared instance for queueing
+// FastDOM scheduling pattern that exposes a shared instance for queueing
 // measurement and mutation work.
 //
 // See: <https://raw.githubusercontent.com/wilsonpage/fastdom/refs/heads/master/fastdom.js>
@@ -28,14 +28,14 @@ const raf = win
 //
 // ----------------------------------------------------------------------------
 
-// Class: FastDom
+// Class: FastDOM
 // Scheduler that batches `measure` and `mutate` work into animation frames.
 // - reads - queued read tasks
 // - writes - queued write tasks
 // - isRunning - indicates whether a queue is currently flushing
 // - raf - frame scheduler used to trigger flushes
 // - catch - optional error handler for flush failures
-class FastDom {
+class FastDOM {
 	constructor() {
 		this.reads = [];
 		this.writes = [];
@@ -45,10 +45,10 @@ class FastDom {
 		this.scheduled = false;
 	}
 
-	// Method: runFastDomTasks
+	// Method: runFastDOMTasks
 	// Flushes the queued `tasks` and leaves `isRunning` consistent even when a
 	// task throws.
-	runFastDomTasks(tasks) {
+	runFastDOMTasks(tasks) {
 		this.isRunning = true;
 		try {
 			let task;
@@ -124,8 +124,8 @@ function flush(fastdom) {
 	let error;
 
 	try {
-		fastdom.runFastDomTasks(reads);
-		fastdom.runFastDomTasks(writes);
+		fastdom.runFastDOMTasks(reads);
+		fastdom.runFastDOMTasks(writes);
 	} catch (e) {
 		error = e;
 	}
@@ -155,7 +155,7 @@ function mixin(target, source) {
 	}
 }
 
-const fastdom = new FastDom();
+const fastdom = new FastDOM();
 
 export { raf, fastdom, FastDOM };
 export default fastdom;
