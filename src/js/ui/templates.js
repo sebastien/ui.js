@@ -938,6 +938,17 @@ export class Application extends Selection {
 				state = { anchor: undefined, context: undefined };
 				rs[1] = state;
 			}
+			// Clean up any previously rendered plain-text node that
+			// was created by ensureContent on a prior render pass.
+			// This happens when a ConditionalEffect branch switch
+			// triggers both a subscription rerender (using the old
+			// mount target) and a parent-chain rerender (using the
+			// new mount target), each calling Application.render
+			// with a different node.
+			if (state.textNode?.parentNode) {
+				state.textNode.parentNode.removeChild(state.textNode);
+			}
+			state.textNode = undefined;
 			if (node?.nodeType === Node.TEXT_NODE) {
 				state.anchor = state.anchor?.parentNode
 					? state.anchor
@@ -955,7 +966,18 @@ export class Application extends Selection {
 				id,
 			);
 		}
-		return effector.ensureContent(node, position, output);
+		// Track the rendered text node so we can clean it up if
+		// a later render pass uses a different mount target.
+		if (!state) {
+			state = { anchor: undefined, context: undefined };
+			rs[1] = state;
+		}
+		if (state.textNode?.parentNode) {
+			state.textNode.parentNode.removeChild(state.textNode);
+		}
+		const result = effector.ensureContent(node, position, output);
+		state.textNode = result;
+		return result;
 	}
 
 	unrender(context, effector, id = this.id) {

@@ -213,6 +213,230 @@ describe("bug littlewiki jj link prefix duplication", () => {
 		expect(texts).toEqual([PREFIX]);
 	});
 
+	test("conditional branch switch with shared content effect does not leak stale text nodes", () => {
+		// Regression guard for the root cause: when a ConditionalEffect switches
+		// branches, FormattingEffect's cached text node from the old branch could
+		// be detached but still referenced in context. This test uses overlapping
+		// IDs (like texto parser output) to force keyed slot reuse where a node
+		// switches from type:"element" to type:"text", triggering a branch switch
+		// in type.match that must not leak the old text node.
+		const initialTree = {
+			id: 1,
+			type: "element",
+			name: "content",
+			children: [
+				{
+					id: 2,
+					type: "element",
+					name: "paragraph",
+					children: [
+						// ID 3 is an element with children — its type.match
+						// will be in the "element" branch
+						{
+							id: 3,
+							type: "element",
+							name: "a",
+							attributes: { href: "http://example.com" },
+							children: [
+								{ id: 4, type: "text", content: "link", children: [] },
+							],
+						},
+					],
+				},
+			],
+		};
+
+		const switchedTree = {
+			id: 1,
+			type: "element",
+			name: "content",
+			children: [
+				{
+					id: 2,
+					type: "element",
+					name: "paragraph",
+					children: [
+						// ID 3 is now text — type.match switches from "element" to "text"
+						// The content FormattingEffect cached text node from the "element"
+						// branch's child rendering must not leak into this branch.
+						{ id: 3, type: "text", content: PREFIX, children: [] },
+						{
+							id: 4,
+							type: "element",
+							name: "a",
+							attributes: { href: JJ_URL },
+							children: [
+								{ id: 5, type: "text", content: JJ_URL, children: [] },
+							],
+						},
+					],
+				},
+			],
+		};
+
+		const tree = $.cell(initialTree);
+
+		function NodeView({ node }) {
+			const { type, name, content } = $.get(node);
+			const href = node.apply((current) => current?.attributes?.href);
+			const children = node
+				.apply((current) => current?.children || [])
+				.map(
+					(child) => h(NodeView, { node: child }),
+					(item) => item?.id,
+				);
+			return type.match((_) =>
+				_.case("text", h(Fragment, null, content)).else(
+					name.match((_) =>
+						_.case("content", h.article(children))
+							.case("paragraph", h.p(children))
+							.case("a", h.a({ href }, children))
+							.else(h.div(children)),
+					),
+				),
+			);
+		}
+
+		const App = () => h.div(h(NodeView, { node: tree }));
+		const { parent, derivedContext } = mountWithHandle(App, {});
+
+		// Switch to tree where ID 3 changes from element to text
+		tree.set(switchedTree, true, derivedContext);
+
+		const paragraph = findNode(
+			parent,
+			(node) =>
+				node.nodeName?.toLowerCase?.() === "p" &&
+				node.textContent?.includes(PREFIX),
+		);
+		expect(paragraph).toBeDefined();
+		expect(paragraph.textContent).toBe(EXPECTED);
+
+		// The critical check: exactly one prefix text node, no duplicates
+		const texts = directTextNodes(paragraph)
+			.map((_) => _.data)
+			.filter((_) => _.trim().length > 0);
+		expect(texts).toEqual([PREFIX]);
+
+		// Verify no detached text nodes remain as children of the paragraph.
+		// In real browsers, a stale cached text node can get re-inserted
+		// alongside the fresh one. Even if domish doesn't reproduce the
+		// duplication visually, we verify every direct text child is the same
+		// node the framework intends (i.e., it appears exactly once).
+		const allTextData = directTextNodes(paragraph).map((_) => _.data);
+		const duplicates = allTextData.filter(
+			(v, i) => v.trim().length > 0 && allTextData.indexOf(v) !== i,
+		);
+		expect(duplicates).toEqual([]);
+	});
+
+	test("bare content Application in branch does not duplicate text on double render", () => {
+		// This test exercises the ACTUAL bug path from the real app:
+		// _.case("text", content) passes the content Application directly
+		// (NOT wrapped in Fragment), which triggers Application.render in
+		// templates.js. When both subscription rerender and parent-chain
+		// rerender fire in the same notification cycle, Application.render
+		// is called twice with different mount targets, creating duplicate
+		// text nodes. The fix tracks the rendered text node in state and
+		// removes the old one before creating the new one.
+		const initialTree = {
+			id: 1,
+			type: "element",
+			name: "content",
+			children: [
+				{
+					id: 2,
+					type: "element",
+					name: "paragraph",
+					children: [
+						{
+							id: 3,
+							type: "element",
+							name: "a",
+							attributes: { href: "http://example.com" },
+							children: [
+								{ id: 4, type: "text", content: "link", children: [] },
+							],
+						},
+					],
+				},
+			],
+		};
+
+		const switchedTree = {
+			id: 1,
+			type: "element",
+			name: "content",
+			children: [
+				{
+					id: 2,
+					type: "element",
+					name: "paragraph",
+					children: [
+						{ id: 3, type: "text", content: PREFIX, children: [] },
+						{
+							id: 4,
+							type: "element",
+							name: "a",
+							attributes: { href: JJ_URL },
+							children: [
+								{ id: 5, type: "text", content: JJ_URL, children: [] },
+							],
+						},
+					],
+				},
+			],
+		};
+
+		const tree = $.cell(initialTree);
+
+		function NodeView({ node }) {
+			const { type, name, content } = $.get(node);
+			const href = node.apply((current) => current?.attributes?.href);
+			const children = node
+				.apply((current) => current?.children || [])
+				.map(
+					(child) => h(NodeView, { node: child }),
+					(item) => item?.id,
+				);
+			// NOTE: bare `content` (not h(Fragment, null, content)) — this is
+			// the pattern used in the real Texto.jsx at line 329 and triggers
+			// Application.render in templates.js
+			return type.match((_) =>
+				_.case("text", content).else(
+					name.match((_) =>
+						_.case("content", h.article(children))
+							.case("paragraph", h.p(children))
+							.case("a", h.a({ href }, children))
+							.else(h.div(children)),
+					),
+				),
+			);
+		}
+
+		const App = () => h.div(h(NodeView, { node: tree }));
+		const { parent, derivedContext } = mountWithHandle(App, {});
+
+		// Switch: ID 3 changes from element to text, triggering branch switch
+		// in type.match. Both subscription and parent-chain render fire.
+		tree.set(switchedTree, true, derivedContext);
+
+		const paragraph = findNode(
+			parent,
+			(node) =>
+				node.nodeName?.toLowerCase?.() === "p" &&
+				node.textContent?.includes(PREFIX),
+		);
+		expect(paragraph).toBeDefined();
+		expect(paragraph.textContent).toBe(EXPECTED);
+
+		// The critical assertion: only one text node with the prefix content
+		const texts = directTextNodes(paragraph)
+			.map((_) => _.data)
+			.filter((_) => _.trim().length > 0);
+		expect(texts).toEqual([PREFIX]);
+	});
+
 	test("position-keyed source switch does not duplicate prefix before jj link", async () => {
 		const flush = async () => {
 			await new Promise((resolve) => queueMicrotask(resolve));

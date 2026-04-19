@@ -1424,19 +1424,9 @@ export class FormattingEffect extends Effect {
 					position,
 					output,
 				));
-			} else if (textNode.parentNode) {
+			} else {
 				textNode.data = output;
 				return textNode;
-			} else {
-				// The cached text node is detached (stale from a
-				// ConditionalEffect branch switch). Discard it and
-				// create a fresh one.
-				context[nodeSlotId] = null;
-				return (context[nodeSlotId] = effector.ensureText(
-					node,
-					position,
-					output,
-				));
 			}
 		} else {
 			return textNode;
