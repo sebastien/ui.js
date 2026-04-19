@@ -9,7 +9,8 @@
 
 *UI.js* is a toolkit to create interactive user interfaces in
 JavaScript. UIjs is lightweight and fast, supports fine-grained granularity,
-components and comes fully equipped to do rich UIs.
+components and comes fully equipped to do rich UIs. It is competitive in
+performance with SolidJS.
 
 ## In a nutshell
 
@@ -40,13 +41,17 @@ render(Hello, { message: "Hello, world!" }, document.getElementById("Hello"));
 
 ### API
 
-- `render(Component, data, node)`: Mounts a component to a DOM node.
-- `ui(Component, data, node)`: Alias for `render`.
+Start with `import ui, {h,$} from "@ui"`:
+
+- `ui(Component, data, node)`: Mounts a component to a DOM node.
 - `h`: Hyperscript helpers (`h.div`, `h.span`, ...) for constructing UI elements.
-- `$`: Creates reactive state cells.
-- `select`: Creates reactive DOM selections.
-- `webcomponent(name, Component, initial?)`: Registers a custom element exposing a UI.js component.
-- `globals`: Object exposing the global context.
+- `$.cell(value)`: Creates a local reactive cell
+- `$.signal(value)`: Creates a global reactive cell
+- `$.cell(selection,processor)`: Creates a local derived cell from the selection cells
+
+There are some nice little extras avaialble:
+- `$.webcomponent(name, Component, initial?)`: Registers a custom element exposing a UI.js component.
+- `$.clsx(...)`: CLSX-like class attribute
 
 ### Web Components
 
@@ -79,6 +84,18 @@ updates the wrapped component state.
 - *Granular rendering*: updates target the minimal DOM surface.
 - *No build step required*: runs directly in browsers with ESM.
 - *Small reactive primitives*: selections, cells, and template effects.
+
+# Why
+
+UI.js is designed a simple, integrated UI library with incremental,
+fine-grained reactive rendering at its core, and was created to match specific
+use cases like interactive rich editors (tree structures), visual editors (fast
+response times) and data visualisation (large amount of elements), where
+tyically other frameworks don't do well.
+
+UI.js was created primarily to give control to be able to tweak and optimise
+for these edges cases, while also letting room for experimenting with different
+ways to express reactivity and Web UIs in general.
 
 # References
 

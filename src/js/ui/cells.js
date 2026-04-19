@@ -129,10 +129,11 @@ export class Slot {
 		if (!context) {
 			return undefined;
 		}
-		if (!context[id + Slot.Observable]) {
-			context[id + Slot.Observable] = [];
+		const key = id + Slot.Observable;
+		if (!Object.hasOwn(context, key)) {
+			context[key] = [];
 		}
-		return context[id + Slot.Observable];
+		return context[key];
 	}
 
 	static BumpRevision(context, id) {
@@ -510,21 +511,17 @@ export class Slot {
 	}
 
 	static Derivations(context) {
-		let map = context[DERIVATION_KEY];
-		if (!map) {
-			map = new Map();
-			context[DERIVATION_KEY] = map;
+		if (!Object.hasOwn(context, DERIVATION_KEY)) {
+			context[DERIVATION_KEY] = new Map();
 		}
-		return map;
+		return context[DERIVATION_KEY];
 	}
 
 	static Dependents(context) {
-		let map = context[DEPENDENTS_KEY];
-		if (!map) {
-			map = new Map();
-			context[DEPENDENTS_KEY] = map;
+		if (!Object.hasOwn(context, DEPENDENTS_KEY)) {
+			context[DEPENDENTS_KEY] = new Map();
 		}
-		return map;
+		return context[DEPENDENTS_KEY];
 	}
 
 	static Derivation(context, id) {

@@ -386,10 +386,7 @@ export class Injection extends Derivation {
 					}
 					assignInjectedSlotValue(derived, slot.id, readSlotValue(v));
 					setInjectionAlias(derived, slot, v, context);
-					if (
-						!Object.hasOwn(context, v.id + Slot.Observable) ||
-						!context[v.id + Slot.Observable]
-					) {
+					if (!context[v.id + Slot.Observable]) {
 						context[v.id + Slot.Observable] = [];
 					}
 					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
@@ -426,10 +423,7 @@ export class Injection extends Derivation {
 				setInjectionAlias(derived, slot, v, context);
 				// Share the parent's subscriber array so that subscriptions
 				// in the derived context propagate to the parent.
-				if (
-					!Object.hasOwn(context, v.id + Slot.Observable) ||
-					!context[v.id + Slot.Observable]
-				) {
+				if (!context[v.id + Slot.Observable]) {
 					context[v.id + Slot.Observable] = [];
 				}
 				derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];

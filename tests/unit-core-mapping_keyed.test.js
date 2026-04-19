@@ -23,7 +23,10 @@ const findButtonsByText = (root, text) => {
 const getEditingLabels = (root) => {
 	const labels = [];
 	root.iterWalk((node) => {
-		if (node.nodeName.toLowerCase() === "span" && node.getAttribute("data-role") === "editing") {
+		if (
+			node.nodeName.toLowerCase() === "span" &&
+			node.getAttribute("data-role") === "editing"
+		) {
 			labels.push(node.textContent);
 		}
 		return undefined;
@@ -41,19 +44,25 @@ const createApp = (useExplicitKey = false) => {
 					_.case(
 						true,
 						div(
-							span({ "data-role": "editing" }, item.apply((value) => `Editing ${value.label}`)),
-							button({ onClick: () => ({ isEdited: false }) }, "Save")
-						)
+							span(
+								{ "data-role": "editing" },
+								item.apply((value) => `Editing ${value.label}`),
+							),
+							button({ onClick: () => ({ isEdited: false }) }, "Save"),
+						),
 					),
 				(_) =>
 					_.else(
 						div(
-							span({ "data-role": "label" }, item.apply((value) => value.label)),
+							span(
+								{ "data-role": "label" },
+								item.apply((value) => value.label),
+							),
 							button({ onClick: () => ({ isEdited: true }) }, "Edit"),
-							button({ onClick: () => onRemove.call(item.get()) }, "Remove")
-						)
-					)
-			)
+							button({ onClick: () => onRemove.call(item.get()) }, "Remove"),
+						),
+					),
+			),
 		);
 
 	const App = ({ items }) => {
@@ -65,8 +74,11 @@ const createApp = (useExplicitKey = false) => {
 		};
 		return ul(
 			useExplicitKey
-				? items.map((item) => h(TodoItem, { item, items, onRemove }), (value) => value.id)
-				: items.map((item) => h(TodoItem, { item, items, onRemove }))
+				? items.map(
+						(item) => h(TodoItem, { item, items, onRemove }),
+						(value) => value.id,
+					)
+				: items.map((item) => h(TodoItem, { item, items, onRemove })),
 		);
 	};
 
@@ -89,7 +101,7 @@ describe("mapping keyed behavior", () => {
 					{ id: 3, label: "Item #3" },
 				],
 			},
-			root
+			root,
 		);
 
 		const editButtons = findButtonsByText(root, "Edit");
@@ -114,7 +126,7 @@ describe("mapping keyed behavior", () => {
 					{ id: 3, label: "Item #3" },
 				],
 			},
-			root
+			root,
 		);
 
 		const editButtons = findButtonsByText(root, "Edit");
@@ -133,9 +145,13 @@ describe("mapping keyed behavior", () => {
 		render(
 			createApp(false),
 			{
-				items: [{ label: "Item #1" }, { label: "Item #2" }, { label: "Item #3" }],
+				items: [
+					{ label: "Item #1" },
+					{ label: "Item #2" },
+					{ label: "Item #3" },
+				],
 			},
-			root
+			root,
 		);
 
 		const editButtons = findButtonsByText(root, "Edit");
@@ -166,7 +182,7 @@ describe("mapping keyed behavior", () => {
 						{ id: 2, label: "Item #2" },
 					],
 				},
-				root
+				root,
 			);
 		} finally {
 			console.warn = originalWarn;
