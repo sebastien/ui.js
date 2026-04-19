@@ -2,6 +2,7 @@ import { Context, Slot } from "./cells.js";
 import {
 	ConditionalEffect,
 	ContextBoundEffect,
+	Effect,
 	FormattingEffect,
 	MappingEffect,
 	TemplateEffect,
@@ -378,9 +379,10 @@ export class Injection extends Derivation {
 			for (let i = 0; i < matches.length; i += 2) {
 				const slot = matches[i];
 				const v = matches[i + 1];
-				const isRenderableChildren =
-					slot?.name === "children" && v && typeof v.render === "function";
-				if (v instanceof Slot && !isRenderableChildren) {
+				const isRenderableTemplate =
+					v instanceof Effect ||
+					(slot?.name === "children" && v && typeof v.render === "function");
+				if (v instanceof Slot && !isRenderableTemplate) {
 					if (typeof v.applyContext === "function") {
 						v.applyContext(context);
 					}
@@ -390,7 +392,7 @@ export class Injection extends Derivation {
 						context[v.id + Slot.Observable] = [];
 					}
 					derived[slot.id + Slot.Observable] = context[v.id + Slot.Observable];
-				} else if (isRenderableChildren) {
+				} else if (isRenderableTemplate) {
 					derived[slot.id] = new ContextBoundEffect(v, context);
 				} else {
 					derived[slot.id] =
@@ -413,9 +415,10 @@ export class Injection extends Derivation {
 		for (let i = 0; i < matches.length; i += 2) {
 			const slot = matches[i];
 			const v = matches[i + 1];
-			const isRenderableChildren =
-				slot?.name === "children" && v && typeof v.render === "function";
-			if (v instanceof Slot && !isRenderableChildren) {
+			const isRenderableTemplate =
+				v instanceof Effect ||
+				(slot?.name === "children" && v && typeof v.render === "function");
+			if (v instanceof Slot && !isRenderableTemplate) {
 				if (typeof v.applyContext === "function") {
 					v.applyContext(context);
 				}
@@ -434,7 +437,7 @@ export class Injection extends Derivation {
 				derived[slot.id] =
 					typeof v === "function"
 						? bindFunctionToContext(v)
-						: slot?.name === "children" && v && typeof v.render === "function"
+						: isRenderableTemplate
 							? new ContextBoundEffect(v, context)
 							: v;
 			}

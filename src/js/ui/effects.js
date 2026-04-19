@@ -1365,6 +1365,8 @@ export class FormattingEffect extends Effect {
 			state = context[stateSlotId] = {
 				input: undefined,
 				token: 0,
+				template: undefined,
+				anchor: undefined,
 			};
 		}
 		const textNode = Object.hasOwn(context, nodeSlotId)
@@ -1374,13 +1376,48 @@ export class FormattingEffect extends Effect {
 		// a data change.
 		if (!Object.is(input, state.input) || textNode === undefined) {
 			state.input = input;
+			if (input && typeof input.render === "function") {
+				if (
+					state.template &&
+					state.template !== input &&
+					typeof state.template.unrender === "function"
+				) {
+					state.template.unrender(context, effector, this.id);
+				}
+				state.template = input;
+				let target = node;
+				if (textNode?.parentNode) {
+					state.anchor = state.anchor?.parentNode
+						? state.anchor
+						: document.createComment("");
+					textNode.parentNode.replaceChild(state.anchor, textNode);
+					context[nodeSlotId] = undefined;
+					target = state.anchor;
+				} else if (node?.nodeType === Node.TEXT_NODE) {
+					state.anchor = state.anchor?.parentNode
+						? state.anchor
+						: document.createComment("");
+					if (node.parentNode && state.anchor !== node) {
+						node.parentNode.replaceChild(state.anchor, node);
+					}
+					target = state.anchor;
+				} else if (state.anchor?.parentNode) {
+					target = state.anchor;
+				}
+				return input.render(target, position, context, effector, this.id);
+			}
+			if (state.template && typeof state.template.unrender === "function") {
+				state.template.unrender(context, effector, this.id);
+			}
+			state.template = undefined;
+			const mountNode = state.anchor?.parentNode ? state.anchor : node;
 			// Promise semantics:
 			// - keep currently rendered text while pending,
 			// - only apply the latest pending promise result.
 			const token = ++state.token;
 			if (isPromiseLike(input)) {
-				if (!textNode && node?.nodeType === Node.TEXT_NODE) {
-					context[nodeSlotId] = node;
+				if (!textNode && mountNode?.nodeType === Node.TEXT_NODE) {
+					context[nodeSlotId] = mountNode;
 				}
 				Promise.resolve(input)
 					.then((resolved) => {
@@ -1394,33 +1431,37 @@ export class FormattingEffect extends Effect {
 						) {
 							return;
 						}
-						const output = this._format(resolved, node);
+						const output = this._format(resolved, mountNode);
 						const target = Object.hasOwn(context, nodeSlotId)
 							? context[nodeSlotId]
 							: undefined;
 						if (!target) {
-							context[nodeSlotId] = effector.ensureText(node, position, output);
+							context[nodeSlotId] = effector.ensureText(
+								mountNode,
+								position,
+								output,
+							);
 							return;
 						}
 						target.data = output;
 					})
 					.catch((error) =>
 						onRuntimeError(error, this.format?.toString(), {
-							node,
+							node: mountNode,
 							input,
 						}),
 					);
-				return textNode ?? node;
+				return textNode ?? mountNode;
 			}
 
-			const output = this._format(input, node);
+			const output = this._format(input, mountNode);
 			if (!textNode) {
-				if (node?.nodeType === Node.TEXT_NODE) {
-					node.data = output;
-					return (context[nodeSlotId] = node);
+				if (mountNode?.nodeType === Node.TEXT_NODE) {
+					mountNode.data = output;
+					return (context[nodeSlotId] = mountNode);
 				}
 				return (context[nodeSlotId] = effector.ensureText(
-					node,
+					mountNode,
 					position,
 					output,
 				));
@@ -1452,7 +1493,11 @@ export class FormattingEffect extends Effect {
 		const c = super.unrender(context, effector);
 		const nodeSlotId = this.id + Slot.Node;
 		const stateSlotId = this.id + Slot.State;
+		const state = Object.hasOwn(c, stateSlotId) ? c[stateSlotId] : undefined;
 		const textNode = Object.hasOwn(c, nodeSlotId) ? c[nodeSlotId] : undefined;
+		if (state?.template?.unrender) {
+			state.template.unrender(c, effector, this.id);
+		}
 		if (textNode?.parentNode) {
 			textNode.parentNode.removeChild(textNode);
 		}
