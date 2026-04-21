@@ -346,49 +346,32 @@ const formatDeltaTable = (rows) => {
 };
 
 const formatSummaryTable = (summaries) => {
-	const phaseNames = [
-		...new Set(summaries.flatMap((summary) => Object.keys(summary.phases))),
-	];
+	const formatWithUnit = (value, unit) =>
+		Number.isFinite(value) ? `${value.toFixed(2)} ${unit}` : "n/a";
 	const rows = summaries.map((summary) => ({
 		framework: summary.framework,
-		initialMs: `${summary.initialMs}`,
-		patchTotalMs: `${summary.patchTotalMs}`,
-		heapBeforeMB: `${summary.heapBeforeMB ?? "n/a"}`,
-		heapPeakMB: `${summary.heapPeakMB ?? "n/a"}`,
-		heapAfterMB: `${summary.heapAfterMB ?? "n/a"}`,
-		heapDeltaMB: `${summary.heapDeltaMB ?? "n/a"}`,
-		nodeCount: `${summary.nodeCount}`,
-		...Object.fromEntries(
-			phaseNames.map((name) => [name, `${summary.phases[name] ?? 0}`]),
-		),
+		initial: formatWithUnit(summary.initialMs, "ms"),
+		patchTotal: formatWithUnit(summary.patchTotalMs, "ms"),
+		heapPeak: formatWithUnit(summary.heapPeakMB, "MB"),
+		heapDelta: formatWithUnit(summary.heapDeltaMB, "MB"),
+		nodeCount: Number.isFinite(summary.nodeCount)
+			? `${Math.round(summary.nodeCount)}`
+			: "n/a",
 	}));
 	const headers = [
-		"framework",
-		"initialMs",
-		"patchTotalMs",
-		"heapBeforeMB",
-		"heapPeakMB",
-		"heapAfterMB",
-		"heapDeltaMB",
-		...phaseNames,
-		"nodeCount",
+		"Framework",
+		"Initial",
+		"Patch Total",
+		"Heap Peak",
+		"Heap Delta",
+		"Node Count",
 	];
-	const widths = Object.fromEntries(
-		headers.map((header) => [
-			header,
-			Math.max(
-				header.length,
-				...rows.map((row) => `${row[header] ?? ""}`.length),
-			),
-		]),
-	);
 	return [
-		headers.map((header) => header.padEnd(widths[header])).join("  "),
-		headers.map((header) => "-".repeat(widths[header])).join("  "),
-		...rows.map((row) =>
-			headers
-				.map((header) => `${row[header] ?? ""}`.padEnd(widths[header]))
-				.join("  "),
+		`| ${headers.join(" | ")} |`,
+		"|-----------|---------|-------------|-----------|------------|------------|",
+		...rows.map(
+			(row) =>
+				`| ${row.framework} | ${row.initial} | ${row.patchTotal} | ${row.heapPeak} | ${row.heapDelta} | ${row.nodeCount} |`,
 		),
 	].join("\n");
 };
@@ -472,13 +455,14 @@ const main = async () => {
 		console.log(
 			`Inspector benchmark across ${summaries[0]?.logs || 0} logs, ${options.runs} run(s) per framework.\n`,
 		);
-		console.log(formatSummaryTable(summaries));
 		console.log("\nVerification:");
 		console.log(JSON.stringify(summaryVerification, null, 2));
 		console.log("\nDelta vs previous inspector snapshot:");
 		console.log(formatDeltaTable(comparison));
 		console.log("\nRaw summary:");
 		console.log(JSON.stringify(summaries, null, 2));
+		console.log("\nSummary:");
+		console.log(formatSummaryTable(summaries));
 
 		if (options.save) {
 			await mkdir(INSPECTOR_RESULTS_DIR, { recursive: true });
